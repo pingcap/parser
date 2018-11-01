@@ -1,8 +1,8 @@
-ARCH      := "`uname -s`"
-LINUX     := "Linux"
-MAC       := "Darwin"
+.PHONY: all parser goyacc clean
 
-.PHONEY: all parser goyacc
+ARCH:="`uname -s`"
+MAC:="Darwin"
+LINUX:="Linux"
 
 all: parser.go
 
@@ -28,3 +28,7 @@ parser: goyacc-bin
 goyacc-bin:
 	go get ./goyacc/
 	go build -o bin/goyacc goyacc/main.go
+
+clean:
+	go clean -i ./...
+	rm -rf *.out
