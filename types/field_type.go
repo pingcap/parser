@@ -105,13 +105,39 @@ func (ft *FieldType) Init(tp byte) {
 	ft.Decimal = UnspecifiedLength
 }
 
+// GetDefaultFieldLengthAndDecimal returns the default display length (flen)
+// and decimal length for column,  taking into account the sign.
+// Refer: source of MySQL 5.7, adjust_max_effective_column_length()
+func (ft *FieldType) GetDefaultFieldLengthAndDecimal() (flen int, decimal int) {
+	flen, decimal = mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
+	if !mysql.HasUnsignedFlag(ft.Flag) {
+		return
+	}
+
+	switch ft.Tp {
+	case mysql.TypeInt24:
+		fallthrough
+	case mysql.TypeLong:
+		fallthrough
+	case mysql.TypeTiny:
+		fallthrough
+	case mysql.TypeShort:
+		// Take out the sign
+		flen -= 1
+	case mysql.TypeLonglong:
+		// BINGINT is always 20 no matter the sign
+	}
+
+	return
+}
+
 // CompactStr only considers Tp/CharsetBin/Flen/Deimal.
 // This is used for showing column type in infoschema.
 func (ft *FieldType) CompactStr() string {
 	ts := TypeToStr(ft.Tp, ft.Charset)
 	suffix := ""
 
-	defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
+	defaultFlen, defaultDecimal := ft.GetDefaultFieldLengthAndDecimal()
 	isDecimalNotDefault := ft.Decimal != defaultDecimal && ft.Decimal != 0 && ft.Decimal != UnspecifiedLength
 
 	// displayFlen and displayDecimal are flen and decimal values with `-1` substituted with default value.
@@ -146,7 +172,7 @@ func (ft *FieldType) CompactStr() string {
 		}
 	case mysql.TypeNewDecimal:
 		suffix = fmt.Sprintf("(%d,%d)", displayFlen, displayDecimal)
-	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
+	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString, mysql.TypeYear:
 		// Flen is always shown.
 		suffix = fmt.Sprintf("(%d)", displayFlen)
 	}
