@@ -115,13 +115,7 @@ func (ft *FieldType) GetDefaultFieldLengthAndDecimal() (flen int, decimal int) {
 	}
 
 	switch ft.Tp {
-	case mysql.TypeInt24:
-		fallthrough
-	case mysql.TypeLong:
-		fallthrough
-	case mysql.TypeTiny:
-		fallthrough
-	case mysql.TypeShort:
+	case mysql.TypeInt24, mysql.TypeLong, mysql.TypeTiny, mysql.TypeShort:
 		// Take out the sign
 		flen -= 1
 	case mysql.TypeLonglong:
