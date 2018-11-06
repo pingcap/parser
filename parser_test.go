@@ -36,6 +36,7 @@ func TestT(t *testing.T) {
 var _ = Suite(&testParserSuite{})
 
 type testParserSuite struct {
+	enableWindowFunc bool
 }
 
 func (s *testParserSuite) TestSimple(c *C) {
@@ -63,6 +64,8 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"when", "where", "write", "xor", "year_month", "zerofill",
 		"generated", "virtual", "stored", "usage",
 		"delayed", "high_priority", "low_priority",
+		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
+		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -88,7 +91,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"start", "global", "tables", "tablespace", "text", "time", "timestamp", "tidb", "transaction", "truncate", "unknown",
 		"value", "warnings", "year", "now", "substr", "subpartition", "subpartitions", "substring", "mode", "any", "some", "user", "identified",
 		"collation", "comment", "avg_row_length", "checksum", "compression", "connection", "key_block_size",
-		"max_rows", "min_rows", "national", "row", "quarter", "escape", "grants", "status", "fields", "triggers",
+		"max_rows", "min_rows", "national", "quarter", "escape", "grants", "status", "fields", "triggers",
 		"delay_key_write", "isolation", "partitions", "repeatable", "committed", "uncommitted", "only", "serializable", "level",
 		"curtime", "variables", "dayname", "version", "btree", "hash", "row_format", "dynamic", "fixed", "compressed",
 		"compact", "redundant", "sql_no_cache sql_no_cache", "sql_cache sql_cache", "action", "round",
@@ -97,6 +100,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"ln", "log", "log2", "log10", "timestampdiff", "pi", "quote", "none", "super", "shared", "exclusive",
 		"always", "stats", "stats_meta", "stats_histogram", "stats_buckets", "stats_healthy", "tidb_version", "replication", "slave", "client",
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
+		"following", "preceding", "unbounded", "respect", "nulls", "current", "last",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -248,6 +252,9 @@ type testErrMsgCase struct {
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := New()
+	if s.enableWindowFunc {
+		parser.EnableWindowFunc()
+	}
 	for _, t := range table {
 		_, err := parser.Parse(t.src, "", "")
 		comment := Commentf("source %v", t.src)
@@ -829,7 +836,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"CREATE TABLE t( c1 TIME(2), c2 DATETIME(2), c3 TIMESTAMP(2) );", true},
 
 		// for row
-		{"select row(1)", false},
+		{"select row(1)", true},
 		{"select row(1, 1,)", false},
 		{"select (1, 1,)", false},
 		{"select row(1, 1) > row(1, 1), row(1, 1, 1) > row(1, 1, 1)", true},
@@ -2434,4 +2441,19 @@ func (s *testParserSuite) TestNotExistsSubquery(c *C) {
 		c.Assert(ok, IsTrue)
 		c.Assert(exists.Not, Equals, tt.ok)
 	}
+}
+
+func (s *testParserSuite) TestWindowFunctionIdentifier(c *C) {
+	var table []testCase
+	s.enableWindowFunc = true
+	for key := range windowFuncTokenMap {
+		table = append(table, testCase{fmt.Sprintf("select 1 %s", key), false})
+	}
+	s.RunTest(c, table)
+
+	s.enableWindowFunc = false
+	for i := range table {
+		table[i].ok = true
+	}
+	s.RunTest(c, table)
 }
