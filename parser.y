@@ -352,7 +352,7 @@ import (
 	minRows		"MIN_ROWS"
 	names		"NAMES"
 	national	"NATIONAL"
-	next			"NEXT"
+	next		"NEXT"
 	no		"NO"
 	none		"NONE"
 	nulls		"NULLS"
