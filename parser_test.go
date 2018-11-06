@@ -836,12 +836,13 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"CREATE TABLE t( c1 TIME(2), c2 DATETIME(2), c3 TIMESTAMP(2) );", true},
 
 		// for row
-		{"select row(1)", true},
+		{"select row(1)", false},
 		{"select row(1, 1,)", false},
 		{"select (1, 1,)", false},
 		{"select row(1, 1) > row(1, 1), row(1, 1, 1) > row(1, 1, 1)", true},
 		{"Select (1, 1) > (1, 1)", true},
-		{"create table t (row int)", true},
+		{"create table t (`row` int)", true},
+		{"create table t (row int)", false},
 
 		// for cast with charset
 		{"SELECT *, CAST(data AS CHAR CHARACTER SET utf8) FROM t;", true},
@@ -1366,8 +1367,10 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"use `select`", true},
 		{"use select", false},
 		{`select * from t as a`, true},
-		{"select 1 full, 1 row, 1 abs", true},
-		{"select * from t full, t1 row, t2 abs", true},
+		{"select 1 full, 1 row, 1 abs", false},
+		{"select 1 full, 1 `row`, 1 abs", true},
+		{"select * from t full, t1 row, t2 abs", false},
+		{"select * from t full, t1 `row`, t2 abs", true},
 		// for issue 1878, identifiers may begin with digit.
 		{"create database 123test", true},
 		{"create database 123", false},
@@ -1375,8 +1378,6 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"create table `123` (123a1 int)", true},
 		{"create table 123 (123a1 int)", false},
 		{fmt.Sprintf("select * from t%cble", 0), false},
-		{"select 1 full, 1 row, 1 abs", true},
-		{"select * from t full, t1 row, t2 abs", true},
 		// for issue 3954, should NOT be recognized as identifiers.
 		{`select .78+123`, true},
 		{`select .78+.21`, true},
