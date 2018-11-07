@@ -352,7 +352,6 @@ import (
 	minRows		"MIN_ROWS"
 	names		"NAMES"
 	national	"NATIONAL"
-	next		"NEXT"
 	no		"NO"
 	none		"NONE"
 	nulls		"NULLS"
@@ -443,7 +442,7 @@ import (
 	extract			"EXTRACT"
 	getFormat		"GET_FORMAT"
 	groupConcat		"GROUP_CONCAT"
-	id			"ID"
+	next_row_id		"NEXT_ROW_ID"
 	inplace 		"INPLACE"
 	internal		"INTERNAL"
 	min			"MIN"
@@ -2901,7 +2900,7 @@ UnReservedKeyword:
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
 | "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "MODIFY" | "EVENTS" | "PARTITIONS"
-| "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES" | "NEXT"
+| "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER"
 
@@ -2913,7 +2912,7 @@ TiDBKeyword:
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
 | "INPLACE" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM" | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" 
-| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" | "ID"
+| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" | "NEXT_ROW_ID"
 
 /************************************************************************************
  *
@@ -5255,7 +5254,7 @@ AdminStmt:
 		    JobNumber: $5.(int64),
 		}
 	}
-|	"ADMIN" "SHOW" TableName "NEXT" "ROW" "ID"
+|	"ADMIN" "SHOW" TableName "NEXT_ROW_ID"
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminShowNextRowID,
