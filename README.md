@@ -40,7 +40,7 @@ If some error is reported, you can ignore it and still edit the `go.mod` file ma
 
 ### Step 3: Merge the PR about the parser to this repository
 
-Pull a request to this repository. **Link the related PR in TiDB in your PR description or comment**.
+File a PR to this repository. **Link the related PR in TiDB in your PR description or comment.**
 
 The PR will be reviewed, if everything goes well, it will be merged.
 
