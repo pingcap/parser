@@ -38,7 +38,7 @@ If some error is reported, you can ignore it and still edit the `go.mod` file ma
 
 3. File a PR to TiDB.
 
-### Step 3, merge the parser to this repository
+### Step 3: Merge the PR about the parser to this repository
 
 Pull a request to this repository. **Link the related PR in TiDB in your PR description or comment**.
 
