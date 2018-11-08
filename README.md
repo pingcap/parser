@@ -42,7 +42,7 @@ If some error is reported, you can ignore it and still edit the `go.mod` file ma
 
 File a PR to this repository. **Link the related PR in TiDB in your PR description or comment.**
 
-The PR will be reviewed, if everything goes well, it will be merged.
+This PR will be reviewed, and if everything goes well, it will be merged.
 
 ### Step 4, update TiDB to use the latest parser
 
