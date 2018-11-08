@@ -8,7 +8,7 @@ Suppose you want to pull a request to TiDB, and the PR needs to change the parse
 
 ### Step 1, make changes in your parser repository
 
-Fork this repository to your own account, commit the changes to your repository.
+Fork this repository to your own account and commit the changes to your repository.
 
 * Don't forget to run `make test` before you commit!
 * Make sure the `parser.go` is updated.
