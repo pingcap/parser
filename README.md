@@ -15,7 +15,7 @@ Fork this repository to your own account and commit the changes to your reposito
 
 Suppose the forked repository is `https://github.com/your-repo/parser`.
 
-### Step 2, let TiDB use your parser changes and run CI
+### Step 2: Make your parser changes take effect in TiDB and run CI
 
 In your TiDB repository, modify the `go.mod` file, remove `github.com/pingcap/parser` from the `require` instruction, add a new line at the end of file like this:
 
