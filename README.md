@@ -4,7 +4,7 @@ TiDB SQL Parser
 
 ## How to update parser for TiDB
 
-Suppose you want to pull a request to TiDB, and the PR needs to change the parser, here is how to do it.
+Assuming that you want to file a PR (pull request) to TiDB, and your PR includes a change in the parser, implement the following steps to update the parser in TiDB.
 
 ### Step 1, make changes in your parser repository
 
