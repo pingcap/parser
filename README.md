@@ -20,7 +20,7 @@ Suppose the forked repository is `https://github.com/your-repo/parser`.
 
 ### Step 2: Make your parser changes take effect in TiDB and run CI
 
-In your TiDB repository, modify the `go.mod` file, remove `github.com/pingcap/parser` from the `require` instruction, add a new line at the end of file like this:
+1. In your TiDB repository, modify the `go.mod` file, remove `github.com/pingcap/parser` from the `require` instruction, and add a new line at the end of the file like this:
 
 ```
 replace github.com/pingcap/parser => github.com/your-repo/parser v0.0.0-20181102150703-4acd198f5092
