@@ -1,5 +1,3 @@
-#!/bin/bash
-
 {
 	  mv go.mod1 go.mod
 	  mv go.sum1 go.sum

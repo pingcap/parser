@@ -7,7 +7,7 @@ LINUX:="Linux"
 all: parser.go
 
 test: parser.go
-	./build.sh
+	sh test.sh
 
 parser.go: parser.y
 	make parser
