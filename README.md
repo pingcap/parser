@@ -44,7 +44,7 @@ File a PR to this repository. **Link the related PR in TiDB in your PR descripti
 
 This PR will be reviewed, and if everything goes well, it will be merged.
 
-### Step 4, update TiDB to use the latest parser
+### Step 4: Update TiDB to use the latest parser
 
 In your TiDB pull request, modify the `go.mod` file manually or use this command:
 
