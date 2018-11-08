@@ -52,4 +52,4 @@ In your TiDB pull request, modify the `go.mod` file manually or use this command
 GO111MODULE=on go get -u github.com/pingcap/parser@master
 ```
 
-Make sure the `replace` instruction is changed back to the `require` instruction and the version is latest.
+Make sure the `replace` instruction is changed back to the `require` instruction and the version is the latest.
