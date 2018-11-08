@@ -442,6 +442,7 @@ import (
 	extract			"EXTRACT"
 	getFormat		"GET_FORMAT"
 	groupConcat		"GROUP_CONCAT"
+	next_row_id		"NEXT_ROW_ID"
 	inplace 		"INPLACE"
 	internal		"INTERNAL"
 	min			"MIN"
@@ -2935,7 +2936,7 @@ TiDBKeyword:
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
 | "INPLACE" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM" | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" 
-| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" 
+| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" | "NEXT_ROW_ID"
 
 /************************************************************************************
  *
@@ -5551,6 +5552,13 @@ AdminStmt:
 		$$ = &ast.AdminStmt{
 		    Tp: ast.AdminShowDDLJobs,
 		    JobNumber: $5.(int64),
+		}
+	}
+|	"ADMIN" "SHOW" TableName "NEXT_ROW_ID"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminShowNextRowID,
+			Tables: []*ast.TableName{$3.(*ast.TableName)},
 		}
 	}
 |	"ADMIN" "CHECK" "TABLE" TableNameList
