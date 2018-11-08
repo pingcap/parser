@@ -34,7 +34,7 @@ You can get correct version information by running this command in your TiDB dir
 GO111MODULE=on go get -u github.com/your-repo/parser@master
 ```
 
-If you get some error output, never mind. You can still edit the `go.mod` file manually.
+If some error is reported, you can ignore it and still edit the `go.mod` file manually.
 
 Pull a request to TiDB.
 
