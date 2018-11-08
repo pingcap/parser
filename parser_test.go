@@ -2523,3 +2523,13 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 	s.enableWindowFunc = true
 	s.RunTest(c, table)
 }
+
+func (s *testParserSuite) TestFieldText(c *C) {
+	parser := New()
+	stmts, err := parser.Parse("select a from t", "", "")
+	if err != nil {
+		panic(err)
+	}
+	tmp := stmts[0].(*ast.SelectStmt)
+	c.Assert(fmt.Sprintf("%v", tmp.Fields.Fields[0].Text()), Equals, "a")
+}
