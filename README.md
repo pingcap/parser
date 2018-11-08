@@ -6,7 +6,7 @@ TiDB SQL Parser
 
 Assuming that you want to file a PR (pull request) to TiDB, and your PR includes a change in the parser, implement the following steps to update the parser in TiDB.
 
-### Step 1, make changes in your parser repository
+### Step 1: Make changes in your parser repository
 
 Fork this repository to your own account and commit the changes to your repository.
 
