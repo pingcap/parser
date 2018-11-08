@@ -36,7 +36,7 @@ GO111MODULE=on go get -u github.com/your-repo/parser@master
 
 If some error is reported, you can ignore it and still edit the `go.mod` file manually.
 
-Pull a request to TiDB.
+3. File a PR to TiDB.
 
 ### Step 3, merge the parser to this repository
 
