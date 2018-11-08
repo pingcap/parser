@@ -28,7 +28,7 @@ replace github.com/pingcap/parser => github.com/your-repo/parser v0.0.0-20181102
 
 This change tells TiDB to use the modified parser from your repository.
 
-You can get correct version information by running this command in your TiDB directory:
+2. You can get correct version information by running this command in your TiDB directory:
 
 ```
 GO111MODULE=on go get -u github.com/your-repo/parser@master
