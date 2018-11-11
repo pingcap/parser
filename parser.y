@@ -718,6 +718,7 @@ import (
 	PartitionDefinitionList 	"Partition definition list"
 	PartitionDefinitionListOpt	"Partition definition list option"
 	PartitionOpt			"Partition option"
+    PartitionNameOpt        "Partition name list option"
 	PartitionNameList		"Partition name list"
 	PartitionNumOpt			"PARTITION NUM option"
 	PartDefValuesOpt		"VALUES {LESS THAN {(expr | value_list) | MAXVALUE} | IN {value_list}"
@@ -2028,6 +2029,15 @@ PartDefOption:
 	}
 
 
+PartitionNameOpt:
+    {
+        $$ = nil
+    }
+|  "PARTITION" '(' PartitionNameList  ')'
+    {
+        $$ = $3
+    }
+
 PartDefValuesOpt:
 	{
 		$$ = nil
@@ -2945,16 +2955,17 @@ NotKeywordToken:
  *  TODO: support PARTITION
  **********************************************************************************/
 InsertIntoStmt:
-	"INSERT" PriorityOpt IgnoreOptional IntoOpt TableName "PARTITION" '(' PartitionNameList  ')' InsertValues OnDuplicateKeyUpdate
+	"INSERT" PriorityOpt IgnoreOptional IntoOpt TableName PartitionNameOpt InsertValues OnDuplicateKeyUpdate
 	{
-		x := $6.(*ast.InsertStmt)
+		x := $7.(*ast.InsertStmt)
 		x.Priority = $2.(mysql.PriorityEnum)
 		x.IgnoreErr = $3.(bool)
 		// Wraps many layers here so that it can be processed the same way as select statement.
 		ts := &ast.TableSource{Source: $5.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
-		if $7 != nil {
-			x.OnDuplicate = $7.([]*ast.Assignment)
+		x.Partitions = $6.([]*ast.PartitionName)
+		if $8 != nil {
+			x.OnDuplicate = $8.([]*ast.Assignment)
 		}
 		$$ = x
 	}
