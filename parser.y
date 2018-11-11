@@ -2031,7 +2031,7 @@ PartDefOption:
 
 PartitionNameOpt:
     {
-        $$ = []model.model.CIStr{}
+        $$ = []model.CIStr{}
     }
 |  "PARTITION" '(' PartitionNameList  ')'
     {
