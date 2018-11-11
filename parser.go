@@ -8510,7 +8510,7 @@ yynewstate:
 			// Wraps many layers here so that it can be processed the same way as select statement.
 			ts := &ast.TableSource{Source: yyS[yypt-3].item.(*ast.TableName)}
 			x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
-			x.Partitions = yyS[yypt-2].item.([]*ast.PartitionName)
+			x.PartitionNames = yyS[yypt-2].item.([]*model.CIStr)
 			if yyS[yypt-0].item != nil {
 				x.OnDuplicate = yyS[yypt-0].item.([]*ast.Assignment)
 			}
