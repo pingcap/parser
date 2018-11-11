@@ -721,7 +721,7 @@ type InsertStmt struct {
 	Priority    mysql.PriorityEnum
 	OnDuplicate []*Assignment
 	Select      ResultSetNode
-	PartitionNames	[]*model.CIStr
+	PartitionNames	[]model.CIStr
 }
 
 // Accept implements Node Accept interface.

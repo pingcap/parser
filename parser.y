@@ -2031,7 +2031,7 @@ PartDefOption:
 
 PartitionNameOpt:
     {
-        $$ = nil
+        $$ = []model.model.CIStr{}
     }
 |  "PARTITION" '(' PartitionNameList  ')'
     {
@@ -2963,7 +2963,7 @@ InsertIntoStmt:
 		// Wraps many layers here so that it can be processed the same way as select statement.
 		ts := &ast.TableSource{Source: $5.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
-		x.PartitionNames = $6.([]*model.CIStr)
+		x.PartitionNames = $6.([]model.CIStr)
 		if $8 != nil {
 			x.OnDuplicate = $8.([]*ast.Assignment)
 		}
