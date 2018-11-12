@@ -90,6 +90,7 @@ import (
 	convert			"CONVERT"
 	create			"CREATE"
 	cross 			"CROSS"
+	cumeDist		"CUME_DIST"
 	currentDate 		"CURRENT_DATE"
 	currentTime 		"CURRENT_TIME"
 	currentTs		"CURRENT_TIMESTAMP"
@@ -104,6 +105,7 @@ import (
 	defaultKwd		"DEFAULT"
 	delayed			"DELAYED"
 	deleteKwd		"DELETE"
+	denseRank		"DENSE_RANK"
 	desc			"DESC"
 	describe		"DESCRIBE"
 	distinct		"DISTINCT"
@@ -118,6 +120,7 @@ import (
 	exists			"EXISTS"
 	explain			"EXPLAIN"
 	falseKwd		"FALSE"
+	firstValue		"FIRST_VALUE"
 	floatType		"FLOAT"
 	forKwd			"FOR"
 	force			"FORCE"
@@ -127,6 +130,7 @@ import (
 	generated		"GENERATED"
 	grant			"GRANT"
 	group			"GROUP"
+	groups			"GROUPS"
 	having			"HAVING"
 	highPriority		"HIGH_PRIORITY"
 	hourMicrosecond		"HOUR_MICROSECOND"
@@ -153,6 +157,9 @@ import (
 	key			"KEY"
 	keys			"KEYS"
 	kill			"KILL"
+	lag			"LAG"
+	lastValue		"LAST_VALUE"
+	lead			"LEAD"
 	leading			"LEADING"
 	left			"LEFT"
 	like			"LIKE"
@@ -174,6 +181,8 @@ import (
 	mod 			"MOD"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
+	nthValue		"NTH_VALUE"
+	ntile			"NTILE"
 	null			"NULL"
 	numericType		"NUMERIC"
 	nvarcharType		"NVARCHAR"
@@ -182,13 +191,16 @@ import (
 	or			"OR"
 	order			"ORDER"
 	outer			"OUTER"
+	over			"OVER"
 	packKeys		"PACK_KEYS"
 	partition		"PARTITION"
+	percentRank		"PERCENT_RANK"
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	rangeKwd		"RANGE"
+	rank			"RANK"
 	read			"READ"
 	realType		"REAL"
 	references		"REFERENCES"
@@ -200,6 +212,9 @@ import (
 	revoke			"REVOKE"
 	right			"RIGHT"
 	rlike			"RLIKE"
+	row			"ROW"
+	rows			"ROWS"
+	rowNumber		"ROW_NUMBER"
 	secondMicrosecond	"SECOND_MICROSECOND"
 	selectKwd		"SELECT"
 	set			"SET"
@@ -239,6 +254,7 @@ import (
 	when			"WHEN"
 	where			"WHERE"
 	write			"WRITE"
+	window			"WINDOW"
 	with			"WITH"
 	xor 			"XOR"
 	yearMonth		"YEAR_MONTH"
@@ -278,6 +294,7 @@ import (
 	compression	"COMPRESSION"
 	connection 	"CONNECTION"
 	consistent	"CONSISTENT"
+	current		"CURRENT"
 	day		"DAY"
 	data 		"DATA"
 	dateType	"DATE"
@@ -303,6 +320,7 @@ import (
 	first		"FIRST"
 	fixed		"FIXED"
 	flush		"FLUSH"
+	following	"FOLLOWING"
 	format		"FORMAT"
 	full		"FULL"
 	function	"FUNCTION"
@@ -316,6 +334,7 @@ import (
 	jsonType	"JSON"
 	keyBlockSize	"KEY_BLOCK_SIZE"
 	local		"LOCAL"
+	last		"LAST"
 	less		"LESS"
 	level		"LEVEL"
 	master		"MASTER"
@@ -335,12 +354,14 @@ import (
 	national	"NATIONAL"
 	no		"NO"
 	none		"NONE"
+	nulls		"NULLS"
 	offset		"OFFSET"
 	only		"ONLY"
 	password	"PASSWORD"
 	partitions	"PARTITIONS"
 	pipesAsOr
 	plugins		"PLUGINS"
+	preceding	"PRECEDING"
 	prepare		"PREPARE"
 	privileges	"PRIVILEGES"
 	process		"PROCESS"
@@ -354,11 +375,11 @@ import (
 	redundant	"REDUNDANT"
 	reload		"RELOAD"
 	repeatable	"REPEATABLE"
+	respect		"RESPECT"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
 	rollback	"ROLLBACK"
 	routine		"ROUTINE"
-	row 		"ROW"
 	rowCount	"ROW_COUNT"
 	rowFormat	"ROW_FORMAT"
 	second		"SECOND"
@@ -394,6 +415,7 @@ import (
 	transaction	"TRANSACTION"
 	triggers	"TRIGGERS"
 	truncate	"TRUNCATE"
+	unbounded	"UNBOUNDED"
 	uncommitted	"UNCOMMITTED"
 	unknown 	"UNKNOWN"
 	user		"USER"
@@ -420,6 +442,7 @@ import (
 	extract			"EXTRACT"
 	getFormat		"GET_FORMAT"
 	groupConcat		"GROUP_CONCAT"
+	next_row_id		"NEXT_ROW_ID"
 	inplace 		"INPLACE"
 	internal		"INTERNAL"
 	min			"MIN"
@@ -787,6 +810,30 @@ import (
 	WithGrantOptionOpt	"With Grant Option opt"
 	ElseOpt			"Optional else clause"
 	Type			"Types"
+
+	OptExistingWindowName	"Optional existing WINDOW name"
+	OptFromFirstLast	"Optional FROM FIRST/LAST"
+	OptLLDefault		"Optional LEAD/LAG default"
+	OptLeadLagInfo		"Optional LEAD/LAG info"
+	OptNullTreatment	"Optional NULL treatment"
+	OptPartitionClause	"Optional PARTITION clause"
+	OptWindowOrderByClause	"Optional ORDER BY clause in WINDOW"
+	OptWindowFrameClause	"Optional FRAME clause in WINDOW"
+	OptWindowingClause	"Optional OVER clause"
+	WindowingClause		"OVER clause"
+	WindowClauseOptional	"Optional WINDOW clause"
+	WindowDefinitionList	"WINDOW definition list"
+	WindowDefinition	"WINDOW definition"
+	WindowFrameUnits	"WINDOW frame units"
+	WindowFrameBetween	"WINDOW frame between"
+	WindowFrameBound	"WINDOW frame bound"
+	WindowFrameExtent	"WINDOW frame extent"
+	WindowFrameStart	"WINDOW frame start"
+	WindowFuncCall		"WINDOW function call"
+	WindowName		"WINDOW name"
+	WindowNameOrSpec	"WINDOW name or spec"
+	WindowSpec		"WINDOW spec"
+	WindowSpecDetails	"WINDOW spec details"
 
 	BetweenOrNotOp		"Between predicate"
 	IsOrNotOp		"Is predicate"
@@ -2868,17 +2915,17 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET"
-| "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FORMAT" | "FULL" |"GLOBAL"
-| "HASH" | "HOUR" | "LESS" | "LOCAL" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
+| "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
+| "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
 | "ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken 
-| "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
+| "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
-| "MIN_ROWS" | "NATIONAL" | "ROW" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
-| "REPEATABLE" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
+| "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
+| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "MODIFY" | "EVENTS" | "PARTITIONS"
-| "NONE" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
-| "MICROSECOND" | "MINUTE" | "PLUGINS" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
+| "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
+| "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER"
 
 
@@ -2889,7 +2936,7 @@ TiDBKeyword:
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
 | "INPLACE" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM" | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" 
-| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" 
+| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" | "NEXT_ROW_ID"
 
 /************************************************************************************
  *
@@ -3310,6 +3357,11 @@ SimpleExpr:
 	{
 		// TODO: Create a builtin function hold expr and collation. When do evaluation, convert expr result using the collation.
 		$$ = $1
+	}
+|	WindowFuncCall
+	{
+		// TODO: Remove this fake ast placeholder.
+		$$ = ast.NewParamMarkerExpr(yyS[yypt].offset)
 	}
 |	Literal
 |	paramMarker
@@ -3790,31 +3842,31 @@ TrimDirection:
 	}
 
 SumExpr:
-	"AVG" '(' BuggyDefaultFalseDistinctOpt Expression ')'
+	"AVG" '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
-|	builtinBitAnd '(' Expression ')'
+|	builtinBitAnd '(' Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}}
 	}
-|	builtinBitAnd '(' "ALL" Expression ')'
+|	builtinBitAnd '(' "ALL" Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}}
 	}
-|	builtinBitOr '(' Expression ')'
+|	builtinBitOr '(' Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}}
 	}
-|	builtinBitOr '(' "ALL" Expression ')'
+|	builtinBitOr '(' "ALL" Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}}
 	}
-|	builtinBitXor '(' Expression ')'
+|	builtinBitXor '(' Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}}
 	}
-|	builtinBitXor '(' "ALL" Expression ')'
+|	builtinBitXor '(' "ALL" Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}}
 	}
@@ -3822,15 +3874,15 @@ SumExpr:
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: $4.([]ast.ExprNode), Distinct: true}
 	}
-|	builtinCount '(' "ALL" Expression ')'
+|	builtinCount '(' "ALL" Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}}
 	}
-|	builtinCount '(' Expression ')'
+|	builtinCount '(' Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}}
 	}
-|	builtinCount '(' '*' ')'
+|	builtinCount '(' '*' ')'  OptWindowingClause
 	{
 		args := []ast.ExprNode{ast.NewValueExpr(1)}
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: args}
@@ -3841,23 +3893,23 @@ SumExpr:
 		args = append(args, $6.(ast.ExprNode))
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
 	}
-|	builtinMax '(' BuggyDefaultFalseDistinctOpt Expression ')'
+|	builtinMax '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
-|	builtinMin '(' BuggyDefaultFalseDistinctOpt Expression ')'
+|	builtinMin '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
-|	builtinSum '(' BuggyDefaultFalseDistinctOpt Expression ')'
+|	builtinSum '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
-|	builtinStddevPop '(' BuggyDefaultFalseDistinctOpt Expression ')'
+|	builtinStddevPop '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
-|	builtinStddevSamp '(' BuggyDefaultFalseDistinctOpt Expression ')'
+|	builtinStddevSamp '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
@@ -4072,8 +4124,8 @@ CastType:
 			x.Flag |= mysql.BinaryFlag
 		}
 		if x.Charset == "" {
-			x.Charset = charset.CharsetUTF8
-			x.Collate = charset.CollationUTF8
+			x.Charset = mysql.DefaultCharset
+			x.Collate = mysql.DefaultCollationName
 		}
 		$$ = x
 	}
@@ -4142,8 +4194,8 @@ CastType:
 	{
 		x := types.NewFieldType(mysql.TypeJSON)
 		x.Flag |= mysql.BinaryFlag | (mysql.ParseToJSONFlag)
-		x.Charset = charset.CharsetUTF8
-		x.Collate = charset.CollationUTF8
+		x.Charset = mysql.DefaultCharset
+		x.Collate = mysql.DefaultCollationName
 		$$ = x
 	}
 
@@ -4317,7 +4369,7 @@ SelectStmtFromDual:
 
 SelectStmtFromTable:
 	SelectStmtBasic "FROM"
-	TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause
+	TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
 	{
 		st := $1.(*ast.SelectStmt)
 		st.From = $3.(*ast.TableRefsClause)
@@ -4326,7 +4378,7 @@ SelectStmtFromTable:
 		}
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
-			lastEnd := parser.endOffset(&yyS[yypt-4])
+			lastEnd := parser.endOffset(&yyS[yypt-5])
 			lastField.SetText(parser.src[lastField.Offset:lastEnd])
 		}
 		if $4 != nil {
@@ -4397,6 +4449,277 @@ SelectStmt:
 FromDual:
 	"FROM" "DUAL"
 
+WindowClauseOptional:
+	{
+		$$ = nil
+	}
+|	"WINDOW" WindowDefinitionList
+	{
+		$$ = nil
+	}
+
+WindowDefinitionList:
+	WindowDefinition
+	{
+		$$ = nil
+	}
+|	WindowDefinitionList ',' WindowDefinition
+	{
+		$$ = nil
+	}
+
+WindowDefinition:
+	WindowName "AS" WindowSpec
+	{
+		$$ = nil
+	}
+
+WindowName:
+	Identifier
+	{
+		$$ = nil
+	}
+
+WindowSpec:
+	'(' WindowSpecDetails ')'
+	{
+		$$ = nil
+	}
+
+WindowSpecDetails:
+	OptExistingWindowName OptPartitionClause OptWindowOrderByClause OptWindowFrameClause
+	{
+		$$ = nil
+	}
+
+OptExistingWindowName:
+	{
+		$$ = nil
+	}
+|	WindowName
+	{
+		$$ = nil
+	}
+
+OptPartitionClause:
+	{
+		$$ = nil
+	}
+|	"PARTITION" "BY" ByList
+	{
+		$$ = nil
+	}
+
+OptWindowOrderByClause:
+	{
+		$$ = nil
+	}
+|	"ORDER" "BY" ByList
+	{
+		$$ = nil
+	}
+
+OptWindowFrameClause:
+	{
+		$$ = nil
+	}
+|	WindowFrameUnits WindowFrameExtent
+	{
+		$$ = nil
+	}
+
+WindowFrameUnits:
+	"ROWS"
+	{
+		$$ = nil
+	}
+|	"RANGE"
+	{
+		$$ = nil
+	}
+|	"GROUPS"
+	{
+		$$ = nil
+	}
+
+WindowFrameExtent:
+	WindowFrameStart
+	{
+		$$ = nil
+	}
+|	WindowFrameBetween
+	{
+		$$ = nil
+	}
+
+WindowFrameStart:
+	"UNBOUNDED" "PRECEDING"
+	{
+		$$ = nil
+	}
+|	NumLiteral "PRECEDING"
+	{
+		$$ = nil
+	}
+|	paramMarker "PRECEDING"
+	{
+		$$ = nil
+	}
+|	"INTERVAL" Expression TimeUnit "PRECEDING"
+	{
+		$$ = nil
+	}
+|	"CURRENT" "ROW"
+	{
+		$$ = nil
+	}
+
+WindowFrameBetween:
+	"BETWEEN" WindowFrameBound "AND" WindowFrameBound
+	{
+		$$ = nil
+	}
+
+WindowFrameBound:
+	WindowFrameStart
+	{
+		$$ = nil
+	}
+|	"UNBOUNDED" "FOLLOWING"
+	{
+		$$ = nil
+	}
+|	NumLiteral "FOLLOWING"
+	{
+		$$ = nil
+	}
+|	paramMarker "FOLLOWING"
+	{
+		$$ = nil
+	}
+|	"INTERVAL" Expression TimeUnit "FOLLOWING"
+	{
+		$$ = nil
+	}
+
+OptWindowingClause:
+	{
+		$$ = nil
+	}
+|	WindowingClause
+	{
+		$$ = nil
+	}
+
+WindowingClause:
+	"OVER" WindowNameOrSpec
+	{
+		$$ = nil
+	}
+
+WindowNameOrSpec:
+	WindowName
+	{
+		$$ = nil
+	}
+|	WindowSpec
+	{
+		$$ = nil
+	}
+
+WindowFuncCall:
+	"ROW_NUMBER" '(' ')' WindowingClause
+	{
+		$$ = nil
+	}
+|	"RANK" '(' ')' WindowingClause
+	{
+		$$ = nil
+	}
+|	"DENSE_RANK" '(' ')' WindowingClause
+	{
+		$$ = nil
+	}
+|	"CUME_DIST" '(' ')' WindowingClause
+	{
+		$$ = nil
+	}
+|	"PERCENT_RANK" '(' ')' WindowingClause
+	{
+		$$ = nil
+	}
+|	"NTILE" '(' SimpleExpr ')' WindowingClause
+	{
+		$$ = nil
+	}
+|	"LEAD" '(' Expression OptLeadLagInfo ')' OptNullTreatment WindowingClause
+	{
+		$$ = nil
+	}
+|	"LAG" '(' Expression OptLeadLagInfo ')' OptNullTreatment WindowingClause
+	{
+		$$ = nil
+	}
+|	"FIRST_VALUE" '(' Expression ')' OptNullTreatment WindowingClause
+	{
+		$$ = nil
+	}
+|	"LAST_VALUE" '(' Expression ')' OptNullTreatment WindowingClause
+	{
+		$$ = nil
+	}
+|	"NTH_VALUE" '(' Expression ',' SimpleExpr ')' OptFromFirstLast OptNullTreatment WindowingClause
+	{
+		$$ = nil
+	}
+
+OptLeadLagInfo:
+	{
+		$$ = nil
+	}
+|	',' NumLiteral OptLLDefault
+	{
+		$$ = nil
+	}
+|	',' paramMarker OptLLDefault
+	{
+		$$ = nil
+	}
+
+OptLLDefault:
+	{
+		$$ = nil
+	}
+|	',' Expression
+	{
+		$$ = nil
+	}
+
+OptNullTreatment:
+	{
+		$$ = nil
+	}
+|	"RESPECT" "NULLS"
+	{
+		$$ = nil
+	}
+|	"IGNORE" "NULLS"
+	{
+		$$ = nil
+	}
+
+OptFromFirstLast:
+	{
+		$$ = nil
+	}
+|	"FROM" "FIRST"
+	{
+		$$ = nil
+	}
+|	"FROM" "LAST"
+	{
+		$$ = nil
+	}
 
 TableRefsClause:
 	TableRefs
@@ -5229,6 +5552,13 @@ AdminStmt:
 		$$ = &ast.AdminStmt{
 		    Tp: ast.AdminShowDDLJobs,
 		    JobNumber: $5.(int64),
+		}
+	}
+|	"ADMIN" "SHOW" TableName "NEXT_ROW_ID"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminShowNextRowID,
+			Tables: []*ast.TableName{$3.(*ast.TableName)},
 		}
 	}
 |	"ADMIN" "CHECK" "TABLE" TableNameList
