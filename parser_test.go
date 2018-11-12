@@ -2030,8 +2030,37 @@ func (s *testParserSuite) TestUnion(c *C) {
 		{"select * from (select 1 union select 2) as a", true},
 		{"insert into t select c1 from t1 union select c2 from t2", true},
 		{"insert into t (c) select c1 from t1 union select c2 from t2", true},
+		{"select 2 as a from dual union select 1 as b from dual order by a", true},
 	}
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestUnionOrderBy(c *C) {
+	parser := New()
+	if s.enableWindowFunc {
+		parser.EnableWindowFunc()
+	}
+
+	tests := []struct {
+		src  string
+		sort []bool
+	}{
+		{"select 2 as a from dual union select 1 as b from dual order by a", []bool{false, false, true}},
+		{"select 2 as a from dual union (select 1 as b from dual order by a)", []bool{false, true, false}},
+		{"(select 2 as a from dual order by a) union select 1 as b from dual order by a", []bool{true, false, true}},
+	}
+
+	for _, t := range tests {
+		stmt, err := parser.Parse(t.src, "", "")
+		c.Assert(err, IsNil)
+		us := stmt[0].(*ast.UnionStmt)
+		var i int
+		for _, s := range us.SelectList.Selects {
+			c.Assert((s.OrderBy != nil) == t.sort[i], IsTrue)
+			i++
+		}
+		c.Assert((us.OrderBy != nil) == t.sort[i], IsTrue)
+	}
 }
 
 func (s *testParserSuite) TestLikeEscape(c *C) {
