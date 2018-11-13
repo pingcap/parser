@@ -747,7 +747,7 @@ import (
 	SelectStmtLimit			"SELECT statement optional LIMIT clause"
 	SelectStmtOpts			"Select statement options"
 	SelectStmtBasic			"SELECT statement from constant value"
-	SelectStmtFromDual			"SELECT statement from dual"
+	SelectStmtFromDualTable			"SELECT statement from dual table"
 	SelectStmtFromTable			"SELECT statement from table"
 	SelectStmtGroup			"SELECT statement optional GROUP BY clause"
 	ShowTargetFilterable    	"Show target that can be filtered by WHERE or LIKE"
@@ -1904,9 +1904,18 @@ PartitionOpt:
 	{
 		$$ = nil
 	}
-|	"PARTITION" "BY" "HASH" '(' Expression ')' PartitionNumOpt PartitionDefinitionListOpt
+|	"PARTITION" "BY" "HASH" '(' Expression ')' PartitionNumOpt
 	{
-		$$ = nil
+		tmp := &ast.PartitionOptions{
+			Tp: model.PartitionTypeHash,
+			Expr: $5.(ast.ExprNode),
+			// If you do not include a PARTITIONS clause, the number of partitions defaults to 1
+			Num: 1,
+		}
+		if $7 != nil {
+			tmp.Num = getUint64FromNUM($7)
+		}
+		$$ = tmp
 	}
 |	"PARTITION" "BY" "RANGE" '(' Expression ')' PartitionNumOpt SubPartitionOpt PartitionDefinitionListOpt
 	{
@@ -1946,9 +1955,13 @@ SubPartitionNumOpt:
 	{}
 
 PartitionNumOpt:
-	{}
+	{
+		$$ = nil
+	}
 |	"PARTITIONS" NUM
-	{}
+	{
+		$$ = $2
+	}
 
 PartitionDefinitionListOpt:
 	/* empty */ %prec lowerThanCreateTableSelect
@@ -4407,24 +4420,19 @@ SelectStmtBasic:
 		$$ = st
 	}
 
-SelectStmtFromDual:
-	SelectStmtBasic FromDual WhereClauseOptional OrderByOptional
+SelectStmtFromDualTable:
+	SelectStmtBasic FromDual WhereClauseOptional
 	{
 		st := $1.(*ast.SelectStmt)
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
-			lastEnd := yyS[yypt-2].offset-1	
+			lastEnd := yyS[yypt-1].offset-1
 			lastField.SetText(parser.src[lastField.Offset:lastEnd])
 		}
 		if $3 != nil {
 			st.Where = $3.(ast.ExprNode)
 		}
-
-		if $4 != nil {
-			st.OrderBy = $4.(*ast.OrderByClause)
-		}
 	}
-
 
 SelectStmtFromTable:
 	SelectStmtBasic "FROM"
@@ -4486,13 +4494,16 @@ SelectStmt:
 		}
 		$$ = st
 	}
-|	SelectStmtFromDual SelectStmtLimit SelectLockOpt
+|	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt
 	{
 		st := $1.(*ast.SelectStmt)
-		st.LockTp = $3.(ast.SelectLockType)
 		if $2 != nil {
-			st.Limit = $2.(*ast.Limit)
+			st.OrderBy = $2.(*ast.OrderByClause)
 		}
+		if $3 != nil {
+			st.Limit = $3.(*ast.Limit)
+		}
+		st.LockTp = $4.(ast.SelectLockType)
 		$$ = st
 	}
 |	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt
@@ -5261,19 +5272,24 @@ UnionStmt:
 		}
 		$$ = union
 	}
-|	UnionClauseList "UNION" UnionOpt SelectStmtFromDual SelectStmtLimit SelectLockOpt
+|	UnionClauseList "UNION" UnionOpt SelectStmtFromDualTable OrderByOptional
+    SelectStmtLimit SelectLockOpt
 	{
 		st := $4.(*ast.SelectStmt)
 		union := $1.(*ast.UnionStmt)
 		st.IsAfterUnionDistinct = $3.(bool)
 		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
-		endOffset := parser.endOffset(&yyS[yypt-4])
+		endOffset := parser.endOffset(&yyS[yypt-5])
 		parser.setLastSelectFieldText(lastSelect, endOffset)
 		union.SelectList.Selects = append(union.SelectList.Selects, st)
 		if $5 != nil {
-		    union.Limit = $5.(*ast.Limit)
-		} else {
-		    st.LockTp = $6.(ast.SelectLockType)
+			union.OrderBy = $5.(*ast.OrderByClause)
+		}
+		if $6 != nil {
+			union.Limit = $6.(*ast.Limit)
+		}
+		if $5 == nil && $6 == nil {
+			st.LockTp = $7.(ast.SelectLockType)
 		}
 		$$ = union
 	}
