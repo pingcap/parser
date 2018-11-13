@@ -1,5 +1,4 @@
 bin/
-y.go
 *.output
 .idea/
 go.mod
