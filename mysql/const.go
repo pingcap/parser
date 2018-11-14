@@ -399,7 +399,7 @@ var AllColumnPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv}
 const AllPrivilegeLiteral = "ALL PRIVILEGES"
 
 // DefaultSQLMode for GLOBAL_VARIABLES
-const DefaultSQLMode = "STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION"
+const DefaultSQLMode = "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 
 // DefaultLengthOfMysqlTypes is the map for default physical length of MySQL data types.
 // See http://dev.mysql.com/doc/refman/5.7/en/storage-requirements.html
@@ -504,6 +504,11 @@ func (m SQLMode) HasNoBackslashEscapesMode() bool {
 // HasIgnoreSpaceMode detects if 'IGNORE_SPACE' mode is set in SQLMode
 func (m SQLMode) HasIgnoreSpaceMode() bool {
 	return m&ModeIgnoreSpace == ModeIgnoreSpace
+}
+
+// HasNoAutoCreateUserMode detects if 'NO_AUTO_CREATE_USER' mode is set in SQLMode
+func (m SQLMode) HasNoAutoCreateUserMode() bool {
+	return m&ModeNoAutoCreateUser == ModeNoAutoCreateUser
 }
 
 // consts for sql modes.

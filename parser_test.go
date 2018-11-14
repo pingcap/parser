@@ -36,6 +36,7 @@ func TestT(t *testing.T) {
 var _ = Suite(&testParserSuite{})
 
 type testParserSuite struct {
+	enableWindowFunc bool
 }
 
 func (s *testParserSuite) TestSimple(c *C) {
@@ -63,6 +64,8 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"when", "where", "write", "xor", "year_month", "zerofill",
 		"generated", "virtual", "stored", "usage",
 		"delayed", "high_priority", "low_priority",
+		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
+		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -88,7 +91,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"start", "global", "tables", "tablespace", "text", "time", "timestamp", "tidb", "transaction", "truncate", "unknown",
 		"value", "warnings", "year", "now", "substr", "subpartition", "subpartitions", "substring", "mode", "any", "some", "user", "identified",
 		"collation", "comment", "avg_row_length", "checksum", "compression", "connection", "key_block_size",
-		"max_rows", "min_rows", "national", "row", "quarter", "escape", "grants", "status", "fields", "triggers",
+		"max_rows", "min_rows", "national", "quarter", "escape", "grants", "status", "fields", "triggers",
 		"delay_key_write", "isolation", "partitions", "repeatable", "committed", "uncommitted", "only", "serializable", "level",
 		"curtime", "variables", "dayname", "version", "btree", "hash", "row_format", "dynamic", "fixed", "compressed",
 		"compact", "redundant", "sql_no_cache sql_no_cache", "sql_cache sql_cache", "action", "round",
@@ -97,6 +100,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"ln", "log", "log2", "log10", "timestampdiff", "pi", "quote", "none", "super", "shared", "exclusive",
 		"always", "stats", "stats_meta", "stats_histogram", "stats_buckets", "stats_healthy", "tidb_version", "replication", "slave", "client",
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
+		"following", "preceding", "unbounded", "respect", "nulls", "current", "last",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -248,6 +252,9 @@ type testErrMsgCase struct {
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := New()
+	if s.enableWindowFunc {
+		parser.EnableWindowFunc()
+	}
 	for _, t := range table {
 		_, err := parser.Parse(t.src, "", "")
 		comment := Commentf("source %v", t.src)
@@ -431,6 +438,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show ddl jobs -1;", false},
 		{"admin show ddl job queries 1", true},
 		{"admin show ddl job queries 1, 2, 3, 4", true},
+		{"admin show t1 next_row_id", true},
 		{"admin check table t1, t2;", true},
 		{"admin check index tableName idxName;", true},
 		{"admin check index tableName idxName (1, 2), (4, 5);", true},
@@ -834,7 +842,8 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select (1, 1,)", false},
 		{"select row(1, 1) > row(1, 1), row(1, 1, 1) > row(1, 1, 1)", true},
 		{"Select (1, 1) > (1, 1)", true},
-		{"create table t (row int)", true},
+		{"create table t (`row` int)", true},
+		{"create table t (row int)", false},
 
 		// for cast with charset
 		{"SELECT *, CAST(data AS CHAR CHARACTER SET utf8) FROM t;", true},
@@ -1359,8 +1368,10 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"use `select`", true},
 		{"use select", false},
 		{`select * from t as a`, true},
-		{"select 1 full, 1 row, 1 abs", true},
-		{"select * from t full, t1 row, t2 abs", true},
+		{"select 1 full, 1 row, 1 abs", false},
+		{"select 1 full, 1 `row`, 1 abs", true},
+		{"select * from t full, t1 row, t2 abs", false},
+		{"select * from t full, t1 `row`, t2 abs", true},
 		// for issue 1878, identifiers may begin with digit.
 		{"create database 123test", true},
 		{"create database 123", false},
@@ -1368,8 +1379,6 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"create table `123` (123a1 int)", true},
 		{"create table 123 (123a1 int)", false},
 		{fmt.Sprintf("select * from t%cble", 0), false},
-		{"select 1 full, 1 row, 1 abs", true},
-		{"select * from t full, t1 row, t2 abs", true},
 		// for issue 3954, should NOT be recognized as identifiers.
 		{`select .78+123`, true},
 		{`select .78+.21`, true},
@@ -1457,6 +1466,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 		// partition option
 		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true},
+		{"create table t (c int) PARTITION BY HASH (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", false},
 		{"create table t (c int) PARTITION BY RANGE (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", true},
 		{"create table t (c int, `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '') PARTITION BY RANGE (UNIX_TIMESTAMP(create_time)) (PARTITION p201610 VALUES LESS THAN(1477929600), PARTITION p201611 VALUES LESS THAN(1480521600),PARTITION p201612 VALUES LESS THAN(1483200000),PARTITION p201701 VALUES LESS THAN(1485878400),PARTITION p201702 VALUES LESS THAN(1488297600),PARTITION p201703 VALUES LESS THAN(1490976000))", true},
 		{"CREATE TABLE `md_product_shop` (`shopCode` varchar(4) DEFAULT NULL COMMENT '地点') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 /*!50100 PARTITION BY KEY (shopCode) PARTITIONS 19 */;", true},
@@ -2021,8 +2031,45 @@ func (s *testParserSuite) TestUnion(c *C) {
 		{"select * from (select 1 union select 2) as a", true},
 		{"insert into t select c1 from t1 union select c2 from t2", true},
 		{"insert into t (c) select c1 from t1 union select c2 from t2", true},
+		{"select 2 as a from dual union select 1 as b from dual order by a", true},
 	}
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestUnionOrderBy(c *C) {
+	parser := New()
+	if s.enableWindowFunc {
+		parser.EnableWindowFunc()
+	}
+
+	tests := []struct {
+		src        string
+		hasOrderBy []bool
+	}{
+		{"select 2 as a from dual union select 1 as b from dual order by a", []bool{false, false, true}},
+		{"select 2 as a from dual union (select 1 as b from dual order by a)", []bool{false, true, false}},
+		{"(select 2 as a from dual order by a) union select 1 as b from dual order by a", []bool{true, false, true}},
+		{"select 1 a, 2 b from dual order by a", []bool{true}},
+		{"select 1 a, 2 b from dual", []bool{false}},
+	}
+
+	for _, t := range tests {
+		stmt, err := parser.Parse(t.src, "", "")
+		c.Assert(err, IsNil)
+		us, ok := stmt[0].(*ast.UnionStmt)
+		if ok {
+			var i int
+			for _, s := range us.SelectList.Selects {
+				c.Assert(s.OrderBy != nil, Equals, t.hasOrderBy[i])
+				i++
+			}
+			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])
+		}
+		ss, ok := stmt[0].(*ast.SelectStmt)
+		if ok {
+			c.Assert(ss.OrderBy != nil, Equals, t.hasOrderBy[0])
+		}
+	}
 }
 
 func (s *testParserSuite) TestLikeEscape(c *C) {
@@ -2434,4 +2481,91 @@ func (s *testParserSuite) TestNotExistsSubquery(c *C) {
 		c.Assert(ok, IsTrue)
 		c.Assert(exists.Not, Equals, tt.ok)
 	}
+}
+
+func (s *testParserSuite) TestWindowFunctionIdentifier(c *C) {
+	var table []testCase
+	s.enableWindowFunc = true
+	for key := range windowFuncTokenMap {
+		table = append(table, testCase{fmt.Sprintf("select 1 %s", key), false})
+	}
+	s.RunTest(c, table)
+
+	s.enableWindowFunc = false
+	for i := range table {
+		table[i].ok = true
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestWindowFunctions(c *C) {
+	table := []testCase{
+		// For window function descriptions.
+		// See https://dev.mysql.com/doc/refman/8.0/en/window-function-descriptions.html
+		{`SELECT CUME_DIST() OVER w FROM t;`, true},
+		{`SELECT DENSE_RANK() OVER w FROM t;`, true},
+		{`SELECT FIRST_VALUE(val) OVER w FROM t;`, true},
+		{`SELECT FIRST_VALUE(val) RESPECT NULLS OVER w FROM t;`, true},
+		{`SELECT FIRST_VALUE(val) IGNORE NULLS OVER w FROM t;`, true},
+		{`SELECT LAG(val) OVER w FROM t;`, true},
+		{`SELECT LAG(val, 1) OVER w FROM t;`, true},
+		{`SELECT LAG(val, 1, def) OVER w FROM t;`, true},
+		{`SELECT LAST_VALUE(val) OVER w FROM t;`, true},
+		{`SELECT LEAD(val) OVER w FROM t;`, true},
+		{`SELECT LEAD(val, 1) OVER w FROM t;`, true},
+		{`SELECT LEAD(val, 1, def) OVER w FROM t;`, true},
+		{`SELECT NTH_VALUE(val, 233) OVER w FROM t;`, true},
+		{`SELECT NTH_VALUE(val, 233) FROM FIRST OVER w FROM t;`, true},
+		{`SELECT NTH_VALUE(val, 233) FROM LAST OVER w FROM t;`, true},
+		{`SELECT NTH_VALUE(val, 233) FROM LAST IGNORE NULLS OVER w FROM t;`, true},
+		{`SELECT NTH_VALUE(val) OVER w FROM t;`, false},
+		{`SELECT NTILE(233) OVER w FROM t;`, true},
+		{`SELECT PERCENT_RANK() OVER w FROM t;`, true},
+		{`SELECT RANK() OVER w FROM t;`, true},
+		{`SELECT ROW_NUMBER() OVER w FROM t;`, true},
+		{`SELECT n, LAG(n, 1, 0) OVER w, LEAD(n, 1, 0) OVER w, n + LAG(n, 1, 0) OVER w FROM fib;`, true},
+
+		// For window function concepts and syntax.
+		// See https://dev.mysql.com/doc/refman/8.0/en/window-functions-usage.html
+		{`SELECT SUM(profit) OVER(PARTITION BY country) AS country_profit FROM sales;`, true},
+		{`SELECT SUM(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT AVG(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT BIT_XOR(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT COUNT(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT COUNT(ALL profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT COUNT(*) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT MAX(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT MIN(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT SUM(profit) OVER() AS country_profit FROM sales;`, true},
+		{`SELECT ROW_NUMBER() OVER(PARTITION BY country) AS row_num1 FROM sales;`, true},
+		{`SELECT ROW_NUMBER() OVER(PARTITION BY country, d ORDER BY year, product) AS row_num2 FROM sales;`, true},
+
+		// For window function frame specification.
+		// See https://dev.mysql.com/doc/refman/8.0/en/window-functions-frames.html
+		{`SELECT SUM(val) OVER (PARTITION BY subject ORDER BY time ROWS UNBOUNDED PRECEDING) FROM t;`, true},
+		{`SELECT AVG(val) OVER (PARTITION BY subject ORDER BY time ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;`, true},
+		{`SELECT AVG(val) OVER (ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;`, true},
+		{`SELECT AVG(val) OVER (ROWS BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;`, true},
+		{`SELECT AVG(val) OVER (RANGE BETWEEN INTERVAL 5 DAY PRECEDING AND INTERVAL '2:30' MINUTE_SECOND FOLLOWING) FROM t;`, true},
+		{`SELECT AVG(val) OVER (RANGE BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;`, true},
+		{`SELECT AVG(val) OVER (RANGE CURRENT ROW) FROM t;`, true},
+
+		// For named windows.
+		// See https://dev.mysql.com/doc/refman/8.0/en/window-functions-named-windows.html
+		{`SELECT RANK() OVER w FROM t WINDOW w AS (ORDER BY val);`, true},
+		{`SELECT RANK() OVER w FROM t WINDOW w AS ();`, true},
+		{`SELECT FIRST_VALUE(year) OVER (w ORDER BY year ASC) AS first FROM sales WINDOW w AS (PARTITION BY country);`, true},
+		{`SELECT RANK() OVER w1 FROM t WINDOW w1 AS (w2), w2 AS (), w3 AS (w1);`, true},
+		{`SELECT RANK() OVER w1 FROM t WINDOW w1 AS (w2), w2 AS (w3), w3 AS (w1);`, true},
+	}
+	s.enableWindowFunc = true
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestFieldText(c *C) {
+	parser := New()
+	stmts, err := parser.Parse("select a from t", "", "")
+	c.Assert(err, IsNil)
+	tmp := stmts[0].(*ast.SelectStmt)
+	c.Assert(tmp.Fields.Fields[0].Text(), Equals, "a")
 }
