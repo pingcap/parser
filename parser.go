@@ -7012,13 +7012,13 @@ yynewstate:
 	case 11:
 		{
 			parser.yyVAL.item = &ast.PartitionOptions{
-				Num: yyS[yypt-0].item.(uint64),
+				Num: getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
 	case 12:
 		{
 			parser.yyVAL.item = &ast.PartitionOptions{
-				Num: yyS[yypt-0].item.(uint64),
+				Num: getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
 	case 13:

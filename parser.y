@@ -1052,13 +1052,13 @@ AlterTableSpec:
 |	"ADD" "PARTITION" "PARTITIONS" NUM
 		{
 			$$ = &ast.PartitionOptions{
-			Num: $4.(uint64),
+			Num: getUint64FromNUM($4),
 		}
 	}
 |	"COALESCE" "PARTITION" NUM
 		{
 			$$ = &ast.PartitionOptions{
-			Num: $3.(uint64),
+			Num: getUint64FromNUM($3),
 		}
 	}
 |	"DROP" ColumnKeywordOpt ColumnName RestrictOrCascadeOpt
