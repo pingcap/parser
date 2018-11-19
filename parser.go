@@ -8038,6 +8038,8 @@ yynewstate:
 				Stmt:   yyS[yypt-0].statement,
 				Format: "row",
 			}
+			startOffset := parser.startOffset(&yyS[yypt])
+			yyS[yypt-0].statement.SetText(string(parser.src[startOffset:]))
 		}
 	case 243:
 		{

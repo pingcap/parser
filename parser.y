@@ -2377,6 +2377,8 @@ TraceStmt:
 			Stmt:	$2,
 			Format: "row",
 		}
+    startOffset := parser.startOffset(&yyS[yypt])
+    $2.SetText(string(parser.src[startOffset:]))
 	}
 
 ExplainSym:

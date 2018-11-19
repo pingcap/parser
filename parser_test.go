@@ -2569,3 +2569,13 @@ func (s *testParserSuite) TestFieldText(c *C) {
 	tmp := stmts[0].(*ast.SelectStmt)
 	c.Assert(tmp.Fields.Fields[0].Text(), Equals, "a")
 }
+
+func (s *testParserSuite) TestXXX(c *C) {
+	parser := New()
+	stmts, err := parser.Parse("trace select a from t", "", "")
+	c.Assert(err, IsNil)
+	tmp := stmts[0].(*ast.TraceStmt)
+	fmt.Println(tmp.Text())
+	fmt.Println(tmp.Stmt.Text())
+	fmt.Println(tmp.Stmt)
+}
