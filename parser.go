@@ -8036,7 +8036,7 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.TraceStmt{
 				Stmt:   yyS[yypt-0].statement,
-				Format: "row",
+				Format: "json",
 			}
 			startOffset := parser.startOffset(&yyS[yypt])
 			yyS[yypt-0].statement.SetText(string(parser.src[startOffset:]))
