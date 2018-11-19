@@ -16,7 +16,6 @@ package parser_test
 import (
 	"fmt"
 	"github.com/pingcap/parser"
-	// 0. import parser_driver implemented by TiDB(user also can implement own driver by self).
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -24,15 +23,15 @@ import (
 func Example_parseSQL() {
 
 	// 0. make sure import parser_driver implemented by TiDB(user also can implement own driver by self).
-	// import _ "github.com/pingcap/tidb/types/parser_driver" in import part.
+	// and add `import _ "github.com/pingcap/tidb/types/parser_driver"` in the head of file.
 
 	// 1. Create a parser, this is a NOT thread-safe but heavy object,
-	// it is better to reuse it in thread-safe way as possible  as we can.
+	// it is better to reuse it in thread-safe way as possible as we can.
 	p := parser.New()
 
 	// 2. Parse a text SQL into AST([]ast.StmtNode)
 	stmtNodes, err := p.Parse("select * from tbl where id = 1", "", "")
 
-	// 3. Use AST to do cool things~
+	// 3. Use AST to do cool thing~
 	fmt.Println(stmtNodes[0], err)
 }
