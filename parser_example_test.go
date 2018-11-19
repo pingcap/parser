@@ -23,6 +23,9 @@ import (
 // This example show how to parse a text sql into ast.
 func Example_parseSQL() {
 
+	// 0. make sure import parser_driver implemented by TiDB(user also can implement own driver by self).
+	// import _ "github.com/pingcap/tidb/types/parser_driver" in import part.
+
 	// 1. Create a parser, this is a NOT thread-safe but heavy object,
 	// it is better to reuse it in thread-safe way as possible  as we can.
 	p := parser.New()
