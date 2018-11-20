@@ -66,6 +66,8 @@ func (ts *testAstFormatSuite) TestAstFormat(c *C) {
 		{`-  4`, `-4`},
 		{`- ( - 4 ) `, `-(-4)`},
 		{`a%b`, "`a` % `b`"},
+		{`a%b+6`, "`a` % `b` + 6"},
+		{`a%(b+6)`, "`a` % (`b` + 6)"},
 		// Functions.
 		{` json_extract ( a,'$.b',"$.\"c d\"" ) `, "json_extract(`a`, \"$.b\", \"$.\\\"c d\\\"\")"},
 		{` length ( a )`, "length(`a`)"},
