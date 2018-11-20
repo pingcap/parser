@@ -65,6 +65,7 @@ func (ts *testAstFormatSuite) TestAstFormat(c *C) {
 		{`"abc" not regexp '.*bc?'`, `"abc" NOT REGEXP ".*bc?"`},
 		{`-  4`, `-4`},
 		{`- ( - 4 ) `, `-(-4)`},
+		{`a%b`, "`a` % `b`"},
 		// Functions.
 		{` json_extract ( a,'$.b',"$.\"c d\"" ) `, "json_extract(`a`, \"$.b\", \"$.\\\"c d\\\"\")"},
 		{` length ( a )`, "length(`a`)"},
