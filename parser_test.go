@@ -2206,6 +2206,8 @@ func (s *testParserSuite) TestTrace(c *C) {
 		{"trace replace into foo values (1 || 2)", true},
 		{"trace update t set id = id + 1 order by id desc;", true},
 		{"trace select c1 from t1 union (select c2 from t2) limit 1, 1", true},
+		{"trace format = 'row' select c1 from t1 union (select c2 from t2) limit 1, 1", true},
+		{"trace format = 'json' update t set id = id + 1 order by id desc;", true},
 	}
 	s.RunTest(c, table)
 }
@@ -2569,9 +2571,16 @@ func (s *testParserSuite) TestFieldText(c *C) {
 	tmp := stmts[0].(*ast.SelectStmt)
 	c.Assert(tmp.Fields.Fields[0].Text(), Equals, "a")
 
-	stmts, err = parser.Parse("trace select a from t", "", "")
-	c.Assert(err, IsNil)
-	traceStmt := stmts[0].(*ast.TraceStmt)
-	c.Assert(traceStmt.Text(), Equals, "trace select a from t")
-	c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	sqls := []string{
+		"trace select a from t",
+		"trace format = 'row' select a from t",
+		"trace format = 'json' select a from t",
+	}
+	for _, sql := range sqls {
+		stmts, err = parser.Parse(sql, "", "")
+		c.Assert(err, IsNil)
+		traceStmt := stmts[0].(*ast.TraceStmt)
+		c.Assert(traceStmt.Text(), Equals, sql)
+		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
 }
