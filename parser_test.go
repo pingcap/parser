@@ -1466,6 +1466,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 		// partition option
 		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true},
+		{"create table t (c int) PARTITION BY HASH (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", false},
 		{"create table t (c int) PARTITION BY RANGE (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", true},
 		{"create table t (c int, `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '') PARTITION BY RANGE (UNIX_TIMESTAMP(create_time)) (PARTITION p201610 VALUES LESS THAN(1477929600), PARTITION p201611 VALUES LESS THAN(1480521600),PARTITION p201612 VALUES LESS THAN(1483200000),PARTITION p201701 VALUES LESS THAN(1485878400),PARTITION p201702 VALUES LESS THAN(1488297600),PARTITION p201703 VALUES LESS THAN(1490976000))", true},
 		{"CREATE TABLE `md_product_shop` (`shopCode` varchar(4) DEFAULT NULL COMMENT '地点') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 /*!50100 PARTITION BY KEY (shopCode) PARTITIONS 19 */;", true},
@@ -1659,6 +1660,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true},
 		{"alter table t drop partition p2;", true},
+		{"alter table employees add partition partitions 1;", true},
+		{"alter table employees add partition partitions 2;", true},
+		{"alter table clients coalesce partition 3;", true},
+		{"alter table clients coalesce partition 4;", true},
 		{"ALTER TABLE t DISABLE KEYS", true},
 		{"ALTER TABLE t ENABLE KEYS", true},
 		{"ALTER TABLE t MODIFY COLUMN a varchar(255)", true},
@@ -2030,8 +2035,45 @@ func (s *testParserSuite) TestUnion(c *C) {
 		{"select * from (select 1 union select 2) as a", true},
 		{"insert into t select c1 from t1 union select c2 from t2", true},
 		{"insert into t (c) select c1 from t1 union select c2 from t2", true},
+		{"select 2 as a from dual union select 1 as b from dual order by a", true},
 	}
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestUnionOrderBy(c *C) {
+	parser := New()
+	if s.enableWindowFunc {
+		parser.EnableWindowFunc()
+	}
+
+	tests := []struct {
+		src        string
+		hasOrderBy []bool
+	}{
+		{"select 2 as a from dual union select 1 as b from dual order by a", []bool{false, false, true}},
+		{"select 2 as a from dual union (select 1 as b from dual order by a)", []bool{false, true, false}},
+		{"(select 2 as a from dual order by a) union select 1 as b from dual order by a", []bool{true, false, true}},
+		{"select 1 a, 2 b from dual order by a", []bool{true}},
+		{"select 1 a, 2 b from dual", []bool{false}},
+	}
+
+	for _, t := range tests {
+		stmt, err := parser.Parse(t.src, "", "")
+		c.Assert(err, IsNil)
+		us, ok := stmt[0].(*ast.UnionStmt)
+		if ok {
+			var i int
+			for _, s := range us.SelectList.Selects {
+				c.Assert(s.OrderBy != nil, Equals, t.hasOrderBy[i])
+				i++
+			}
+			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])
+		}
+		ss, ok := stmt[0].(*ast.SelectStmt)
+		if ok {
+			c.Assert(ss.OrderBy != nil, Equals, t.hasOrderBy[0])
+		}
+	}
 }
 
 func (s *testParserSuite) TestLikeEscape(c *C) {
@@ -2168,6 +2210,8 @@ func (s *testParserSuite) TestTrace(c *C) {
 		{"trace replace into foo values (1 || 2)", true},
 		{"trace update t set id = id + 1 order by id desc;", true},
 		{"trace select c1 from t1 union (select c2 from t2) limit 1, 1", true},
+		{"trace format = 'row' select c1 from t1 union (select c2 from t2) limit 1, 1", true},
+		{"trace format = 'json' update t set id = id + 1 order by id desc;", true},
 	}
 	s.RunTest(c, table)
 }
@@ -2522,4 +2566,25 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 	}
 	s.enableWindowFunc = true
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestFieldText(c *C) {
+	parser := New()
+	stmts, err := parser.Parse("select a from t", "", "")
+	c.Assert(err, IsNil)
+	tmp := stmts[0].(*ast.SelectStmt)
+	c.Assert(tmp.Fields.Fields[0].Text(), Equals, "a")
+
+	sqls := []string{
+		"trace select a from t",
+		"trace format = 'row' select a from t",
+		"trace format = 'json' select a from t",
+	}
+	for _, sql := range sqls {
+		stmts, err = parser.Parse(sql, "", "")
+		c.Assert(err, IsNil)
+		traceStmt := stmts[0].(*ast.TraceStmt)
+		c.Assert(traceStmt.Text(), Equals, sql)
+		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
 }
