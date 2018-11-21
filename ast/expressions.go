@@ -14,7 +14,6 @@
 package ast
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"regexp"
@@ -138,13 +137,7 @@ func (n *BinaryOperationExpr) Format(w io.Writer) {
 	fmt.Fprint(w, " ")
 	n.Op.Format(w)
 	fmt.Fprint(w, " ")
-	if n.Op == opcode.Mod {
-		var r = bytes.NewBuffer([]byte{})
-		n.R.Format(r)
-		io.WriteString(w, r.String())
-	} else {
-		n.R.Format(w)
-	}
+	n.R.Format(w)
 }
 
 // Accept implements Node interface.
