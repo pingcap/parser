@@ -10,7 +10,6 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package ast
 
 import (
@@ -171,6 +170,7 @@ const (
 	Year             = "year"
 	YearWeek         = "yearweek"
 	LastDay          = "last_day"
+	Tso              = "from_tso"
 
 	// string functions
 	ASCII           = "ascii"
