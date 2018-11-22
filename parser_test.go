@@ -1660,6 +1660,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true},
 		{"alter table t drop partition p2;", true},
+		{"alter table employees add partition partitions 1;", true},
+		{"alter table employees add partition partitions 2;", true},
+		{"alter table clients coalesce partition 3;", true},
+		{"alter table clients coalesce partition 4;", true},
 		{"ALTER TABLE t DISABLE KEYS", true},
 		{"ALTER TABLE t ENABLE KEYS", true},
 		{"ALTER TABLE t MODIFY COLUMN a varchar(255)", true},
@@ -2559,6 +2563,11 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 		{`SELECT FIRST_VALUE(year) OVER (w ORDER BY year ASC) AS first FROM sales WINDOW w AS (PARTITION BY country);`, true},
 		{`SELECT RANK() OVER w1 FROM t WINDOW w1 AS (w2), w2 AS (), w3 AS (w1);`, true},
 		{`SELECT RANK() OVER w1 FROM t WINDOW w1 AS (w2), w2 AS (w3), w3 AS (w1);`, true},
+
+		// For tidb_parse_tso
+		{`select tidb_parse_tso(1)`, true},
+		{`select from_unixtime(404411537129996288)`, true},
+		{`select from_unixtime(404411537129996288.22)`, true},
 	}
 	s.enableWindowFunc = true
 	s.RunTest(c, table)
