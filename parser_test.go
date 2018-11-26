@@ -14,7 +14,6 @@
 package parser
 
 import (
-	"bytes"
 	"fmt"
 	"runtime"
 	"strings"
@@ -2575,33 +2574,32 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 }
 
 type windowFrameBoundChecker struct {
-	buf          bytes.Buffer
-	inFrameBound bool
+	fb         *ast.FrameBound
+	exprRc     int
+	timeUnitRc int
 }
 
 // Enter implements ast.Visitor interface.
 func (wfc *windowFrameBoundChecker) Enter(inNode ast.Node) (outNode ast.Node, skipChildren bool) {
 	if _, ok := inNode.(*ast.FrameBound); ok {
-		wfc.inFrameBound = true
-		return inNode, false
+		wfc.fb = inNode.(*ast.FrameBound)
 	}
-	return inNode, true
+	return inNode, false
 }
 
 // Leave implements ast.Visitor interface.
 func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bool) {
 	if _, ok := inNode.(*ast.FrameBound); ok {
-		wfc.inFrameBound = false
+		wfc.fb = nil
 	}
-	if wfc.inFrameBound {
-		wfc.buf.WriteString(inNode.Text())
-		wfc.buf.WriteString("_")
+	if wfc.fb != nil {
+		if inNode == wfc.fb.Expr {
+			wfc.exprRc += 1
+		} else if inNode == wfc.fb.Unit {
+			wfc.timeUnitRc += 1
+		}
 	}
 	return inNode, true
-}
-
-func (wfc *windowFrameBoundChecker) Text() string {
-	return wfc.buf.String()
 }
 
 // For issue #51
@@ -2610,19 +2608,21 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 	parser := New()
 	parser.EnableWindowFunc()
 	table := []struct {
-		s string
-		r string
+		s          string
+		exprRc     int
+		timeUnitRc int
 	}{
-		{`SELECT AVG(val) OVER (RANGE INTERVAL '2:30' MINUTE_SECOND PRECEDING) FROM t;`, "2:30_MINUTE_SECOND_"},
-		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, "5_"},
-		{`SELECT AVG(val) OVER () FROM t;`, ""},
+		{`SELECT AVG(val) OVER (RANGE INTERVAL '2:30' MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
+		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, 0},
+		{`SELECT AVG(val) OVER () FROM t;`, 0, 0},
 	}
 	for _, t := range table {
 		stmt, err := parser.ParseOneStmt(t.s, "", "")
 		c.Assert(err, IsNil)
 		checker := windowFrameBoundChecker{}
 		stmt.Accept(&checker)
-		c.Assert(checker.Text(), Equals, t.r)
+		c.Assert(checker.exprRc, Equals, t.exprRc)
+		c.Assert(checker.timeUnitRc, Equals, t.timeUnitRc)
 	}
 
 }
