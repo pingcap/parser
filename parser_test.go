@@ -1660,6 +1660,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true},
 		{"alter table t drop partition p2;", true},
+		{"alter table employees add partition partitions 1;", true},
+		{"alter table employees add partition partitions 2;", true},
+		{"alter table clients coalesce partition 3;", true},
+		{"alter table clients coalesce partition 4;", true},
 		{"ALTER TABLE t DISABLE KEYS", true},
 		{"ALTER TABLE t ENABLE KEYS", true},
 		{"ALTER TABLE t MODIFY COLUMN a varchar(255)", true},
@@ -2206,6 +2210,8 @@ func (s *testParserSuite) TestTrace(c *C) {
 		{"trace replace into foo values (1 || 2)", true},
 		{"trace update t set id = id + 1 order by id desc;", true},
 		{"trace select c1 from t1 union (select c2 from t2) limit 1, 1", true},
+		{"trace format = 'row' select c1 from t1 union (select c2 from t2) limit 1, 1", true},
+		{"trace format = 'json' update t set id = id + 1 order by id desc;", true},
 	}
 	s.RunTest(c, table)
 }
@@ -2557,9 +2563,68 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 		{`SELECT FIRST_VALUE(year) OVER (w ORDER BY year ASC) AS first FROM sales WINDOW w AS (PARTITION BY country);`, true},
 		{`SELECT RANK() OVER w1 FROM t WINDOW w1 AS (w2), w2 AS (), w3 AS (w1);`, true},
 		{`SELECT RANK() OVER w1 FROM t WINDOW w1 AS (w2), w2 AS (w3), w3 AS (w1);`, true},
+
+		// For tidb_parse_tso
+		{`select tidb_parse_tso(1)`, true},
+		{`select from_unixtime(404411537129996288)`, true},
+		{`select from_unixtime(404411537129996288.22)`, true},
 	}
 	s.enableWindowFunc = true
 	s.RunTest(c, table)
+}
+
+type windowFrameBoundChecker struct {
+	fb         *ast.FrameBound
+	exprRc     int
+	timeUnitRc int
+}
+
+// Enter implements ast.Visitor interface.
+func (wfc *windowFrameBoundChecker) Enter(inNode ast.Node) (outNode ast.Node, skipChildren bool) {
+	if _, ok := inNode.(*ast.FrameBound); ok {
+		wfc.fb = inNode.(*ast.FrameBound)
+	}
+	return inNode, false
+}
+
+// Leave implements ast.Visitor interface.
+func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bool) {
+	if _, ok := inNode.(*ast.FrameBound); ok {
+		wfc.fb = nil
+	}
+	if wfc.fb != nil {
+		if inNode == wfc.fb.Expr {
+			wfc.exprRc += 1
+		} else if inNode == wfc.fb.Unit {
+			wfc.timeUnitRc += 1
+		}
+	}
+	return inNode, true
+}
+
+// For issue #51
+// See https://github.com/pingcap/parser/pull/51 for details
+func (s *testParserSuite) TestVisitFrameBound(c *C) {
+	parser := New()
+	parser.EnableWindowFunc()
+	table := []struct {
+		s          string
+		exprRc     int
+		timeUnitRc int
+	}{
+		{`SELECT AVG(val) OVER (RANGE INTERVAL '2:30' MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
+		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, 0},
+		{`SELECT AVG(val) OVER () FROM t;`, 0, 0},
+	}
+	for _, t := range table {
+		stmt, err := parser.ParseOneStmt(t.s, "", "")
+		c.Assert(err, IsNil)
+		checker := windowFrameBoundChecker{}
+		stmt.Accept(&checker)
+		c.Assert(checker.exprRc, Equals, t.exprRc)
+		c.Assert(checker.timeUnitRc, Equals, t.timeUnitRc)
+	}
+
 }
 
 func (s *testParserSuite) TestFieldText(c *C) {
@@ -2568,4 +2633,17 @@ func (s *testParserSuite) TestFieldText(c *C) {
 	c.Assert(err, IsNil)
 	tmp := stmts[0].(*ast.SelectStmt)
 	c.Assert(tmp.Fields.Fields[0].Text(), Equals, "a")
+
+	sqls := []string{
+		"trace select a from t",
+		"trace format = 'row' select a from t",
+		"trace format = 'json' select a from t",
+	}
+	for _, sql := range sqls {
+		stmts, err = parser.Parse(sql, "", "")
+		c.Assert(err, IsNil)
+		traceStmt := stmts[0].(*ast.TraceStmt)
+		c.Assert(traceStmt.Text(), Equals, sql)
+		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
 }
