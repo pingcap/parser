@@ -34,6 +34,7 @@ type AnalyzeTableStmt struct {
 	IndexFlag bool
 }
 
+// Restore implements Node Restore interface.
 func (n *AnalyzeTableStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -62,6 +63,7 @@ type DropStatsStmt struct {
 	Table *TableName
 }
 
+// Restore implements Node Restore interface.
 func (n *DropStatsStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -88,6 +90,7 @@ type LoadStatsStmt struct {
 	Path string
 }
 
+// Restore implements Node Restore interface.
 func (n *LoadStatsStmt) Restore() *SQLSentence {
 	panic("implement me")
 }

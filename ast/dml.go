@@ -82,6 +82,7 @@ type Join struct {
 	StraightJoin bool
 }
 
+// Restore implements Node Restore interface.
 func (n *Join) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -129,6 +130,7 @@ type TableName struct {
 	IndexHints []*IndexHint
 }
 
+// Restore implements Node Restore interface.
 func (n *TableName) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -177,6 +179,7 @@ type DeleteTableList struct {
 	Tables []*TableName
 }
 
+// Restore implements Node Restore interface.
 func (n *DeleteTableList) Restore() *SQLSentence {
 	panic("Not implemented")
 }
@@ -207,6 +210,7 @@ type OnCondition struct {
 	Expr ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *OnCondition) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -238,6 +242,7 @@ type TableSource struct {
 	AsName model.CIStr
 }
 
+// Restore implements Node Restore interface.
 func (n *TableSource) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -288,6 +293,7 @@ type WildCardField struct {
 	Schema model.CIStr
 }
 
+// Restore implements Node Restore interface.
 func (n *WildCardField) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -322,6 +328,7 @@ type SelectField struct {
 	Auxiliary bool
 }
 
+// Restore implements Node Restore interface.
 func (n *SelectField) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -350,6 +357,7 @@ type FieldList struct {
 	Fields []*SelectField
 }
 
+// Restore implements Node Restore interface.
 func (n *FieldList) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -378,6 +386,7 @@ type TableRefsClause struct {
 	TableRefs *Join
 }
 
+// Restore implements Node Restore interface.
 func (n *TableRefsClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -405,6 +414,7 @@ type ByItem struct {
 	Desc bool
 }
 
+// Restore implements Node Restore interface.
 func (n *ByItem) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -430,6 +440,7 @@ type GroupByClause struct {
 	Items []*ByItem
 }
 
+// Restore implements Node Restore interface.
 func (n *GroupByClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -457,6 +468,7 @@ type HavingClause struct {
 	Expr ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *HavingClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -483,6 +495,7 @@ type OrderByClause struct {
 	ForUnion bool
 }
 
+// Restore implements Node Restore interface.
 func (n *OrderByClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -540,6 +553,7 @@ type SelectStmt struct {
 	IsInBraces bool
 }
 
+// Restore implements Node Restore interface.
 func (n *SelectStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -638,6 +652,7 @@ type UnionSelectList struct {
 	Selects []*SelectStmt
 }
 
+// Restore implements Node Restore interface.
 func (n *UnionSelectList) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -670,6 +685,7 @@ type UnionStmt struct {
 	Limit      *Limit
 }
 
+// Restore implements Node Restore interface.
 func (n *UnionStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -714,6 +730,7 @@ type Assignment struct {
 	Expr ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *Assignment) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -752,6 +769,7 @@ type LoadDataStmt struct {
 	IgnoreLines uint64
 }
 
+// Restore implements Node Restore interface.
 func (n *LoadDataStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -809,6 +827,7 @@ type InsertStmt struct {
 	Select      ResultSetNode
 }
 
+// Restore implements Node Restore interface.
 func (n *InsertStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -889,6 +908,7 @@ type DeleteStmt struct {
 	TableHints []*TableOptimizerHint
 }
 
+// Restore implements Node Restore interface.
 func (n *DeleteStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -953,6 +973,7 @@ type UpdateStmt struct {
 	TableHints    []*TableOptimizerHint
 }
 
+// Restore implements Node Restore interface.
 func (n *UpdateStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1008,6 +1029,7 @@ type Limit struct {
 	Offset ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *Limit) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1092,6 +1114,7 @@ type ShowStmt struct {
 	Where       ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *ShowStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1156,6 +1179,7 @@ type WindowSpec struct {
 	Frame       *FrameClause
 }
 
+// Restore implements Node Restore interface.
 func (n *WindowSpec) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1198,6 +1222,7 @@ type PartitionByClause struct {
 	Items []*ByItem
 }
 
+// Restore implements Node Restore interface.
 func (n *PartitionByClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1238,6 +1263,7 @@ type FrameClause struct {
 	Extent FrameExtent
 }
 
+// Restore implements Node Restore interface.
 func (n *FrameClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1290,6 +1316,7 @@ type FrameBound struct {
 	Unit ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *FrameBound) Restore() *SQLSentence {
 	panic("implement me")
 }

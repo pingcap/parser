@@ -97,6 +97,7 @@ type TraceStmt struct {
 	Format string
 }
 
+// Restore implements Node Restore interface.
 func (n *TraceStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -127,6 +128,7 @@ type ExplainStmt struct {
 	Analyze bool
 }
 
+// Restore implements Node Restore interface.
 func (n *ExplainStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -157,6 +159,7 @@ type PrepareStmt struct {
 	SQLVar  *VariableExpr
 }
 
+// Restore implements Node Restore interface.
 func (n *PrepareStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -186,6 +189,7 @@ type DeallocateStmt struct {
 	Name string
 }
 
+// Restore implements Node Restore interface.
 func (n *DeallocateStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -218,6 +222,7 @@ type ExecuteStmt struct {
 	ExecID    uint32
 }
 
+// Restore implements Node Restore interface.
 func (n *ExecuteStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -245,6 +250,7 @@ type BeginStmt struct {
 	stmtNode
 }
 
+// Restore implements Node Restore interface.
 func (n *BeginStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -267,6 +273,7 @@ type BinlogStmt struct {
 	Str string
 }
 
+// Restore implements Node Restore interface.
 func (n *BinlogStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -287,6 +294,7 @@ type CommitStmt struct {
 	stmtNode
 }
 
+// Restore implements Node Restore interface.
 func (n *CommitStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -307,6 +315,7 @@ type RollbackStmt struct {
 	stmtNode
 }
 
+// Restore implements Node Restore interface.
 func (n *RollbackStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -329,6 +338,7 @@ type UseStmt struct {
 	DBName string
 }
 
+// Restore implements Node Restore interface.
 func (n *UseStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -364,6 +374,7 @@ type VariableAssignment struct {
 	ExtendValue ValueExpr
 }
 
+// Restore implements Node Restore interface.
 func (n *VariableAssignment) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -404,6 +415,7 @@ type FlushStmt struct {
 	ReadLock        bool
 }
 
+// Restore implements Node Restore interface.
 func (n *FlushStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -438,6 +450,7 @@ type KillStmt struct {
 	TiDBExtension bool
 }
 
+// Restore implements Node Restore interface.
 func (n *KillStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -459,6 +472,7 @@ type SetStmt struct {
 	Variables []*VariableAssignment
 }
 
+// Restore implements Node Restore interface.
 func (n *SetStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -510,6 +524,7 @@ type SetPwdStmt struct {
 	Password string
 }
 
+// Restore implements Node Restore interface.
 func (n *SetPwdStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -577,6 +592,7 @@ type CreateUserStmt struct {
 	Specs       []*UserSpec
 }
 
+// Restore implements Node Restore interface.
 func (n *CreateUserStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -612,6 +628,7 @@ type AlterUserStmt struct {
 	Specs       []*UserSpec
 }
 
+// Restore implements Node Restore interface.
 func (n *AlterUserStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -646,6 +663,7 @@ type DropUserStmt struct {
 	UserList []*auth.UserIdentity
 }
 
+// Restore implements Node Restore interface.
 func (n *DropUserStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -667,6 +685,7 @@ type DoStmt struct {
 	Exprs []ExprNode
 }
 
+// Restore implements Node Restore interface.
 func (n *DoStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -758,6 +777,7 @@ type AdminStmt struct {
 	ShowSlow     *ShowSlow
 }
 
+// Restore implements Node Restore interface.
 func (n *AdminStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -789,6 +809,7 @@ type PrivElem struct {
 	Cols []*ColumnName
 }
 
+// Restore implements Node Restore interface.
 func (n *PrivElem) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -851,6 +872,7 @@ type RevokeStmt struct {
 	Users      []*UserSpec
 }
 
+// Restore implements Node Restore interface.
 func (n *RevokeStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -883,6 +905,7 @@ type GrantStmt struct {
 	WithGrant  bool
 }
 
+// Restore implements Node Restore interface.
 func (n *GrantStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -952,6 +975,7 @@ type TableOptimizerHint struct {
 	MaxExecutionTime uint64
 }
 
+// Restore implements Node Restore interface.
 func (n *TableOptimizerHint) Restore() *SQLSentence {
 	panic("implement me")
 }
