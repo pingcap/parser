@@ -97,6 +97,10 @@ type TraceStmt struct {
 	Format string
 }
 
+func (n *TraceStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *TraceStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -121,6 +125,10 @@ type ExplainStmt struct {
 	Stmt    StmtNode
 	Format  string
 	Analyze bool
+}
+
+func (n *ExplainStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -149,6 +157,10 @@ type PrepareStmt struct {
 	SQLVar  *VariableExpr
 }
 
+func (n *PrepareStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *PrepareStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -172,6 +184,10 @@ type DeallocateStmt struct {
 	stmtNode
 
 	Name string
+}
+
+func (n *DeallocateStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -202,6 +218,10 @@ type ExecuteStmt struct {
 	ExecID    uint32
 }
 
+func (n *ExecuteStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -225,6 +245,10 @@ type BeginStmt struct {
 	stmtNode
 }
 
+func (n *BeginStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *BeginStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -243,6 +267,10 @@ type BinlogStmt struct {
 	Str string
 }
 
+func (n *BinlogStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *BinlogStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -257,6 +285,10 @@ func (n *BinlogStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type CommitStmt struct {
 	stmtNode
+}
+
+func (n *CommitStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -275,6 +307,10 @@ type RollbackStmt struct {
 	stmtNode
 }
 
+func (n *RollbackStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *RollbackStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -291,6 +327,10 @@ type UseStmt struct {
 	stmtNode
 
 	DBName string
+}
+
+func (n *UseStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -322,6 +362,10 @@ type VariableAssignment struct {
 	// For SetCharsetStmt, Value is charset, ExtendValue is collation.
 	// TODO: Use SetStmt to implement set password statement.
 	ExtendValue ValueExpr
+}
+
+func (n *VariableAssignment) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node interface.
@@ -360,6 +404,10 @@ type FlushStmt struct {
 	ReadLock        bool
 }
 
+func (n *FlushStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *FlushStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -390,6 +438,10 @@ type KillStmt struct {
 	TiDBExtension bool
 }
 
+func (n *KillStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *KillStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -405,6 +457,10 @@ type SetStmt struct {
 	stmtNode
 	// Variables is the list of variable assignment.
 	Variables []*VariableAssignment
+}
+
+func (n *SetStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -452,6 +508,10 @@ type SetPwdStmt struct {
 
 	User     *auth.UserIdentity
 	Password string
+}
+
+func (n *SetPwdStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -517,6 +577,10 @@ type CreateUserStmt struct {
 	Specs       []*UserSpec
 }
 
+func (n *CreateUserStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *CreateUserStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -546,6 +610,10 @@ type AlterUserStmt struct {
 	IfExists    bool
 	CurrentAuth *AuthOption
 	Specs       []*UserSpec
+}
+
+func (n *AlterUserStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -578,6 +646,10 @@ type DropUserStmt struct {
 	UserList []*auth.UserIdentity
 }
 
+func (n *DropUserStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *DropUserStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -593,6 +665,10 @@ type DoStmt struct {
 	stmtNode
 
 	Exprs []ExprNode
+}
+
+func (n *DoStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -682,6 +758,10 @@ type AdminStmt struct {
 	ShowSlow     *ShowSlow
 }
 
+func (n *AdminStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -707,6 +787,10 @@ type PrivElem struct {
 
 	Priv mysql.PrivilegeType
 	Cols []*ColumnName
+}
+
+func (n *PrivElem) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -767,6 +851,10 @@ type RevokeStmt struct {
 	Users      []*UserSpec
 }
 
+func (n *RevokeStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *RevokeStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -793,6 +881,10 @@ type GrantStmt struct {
 	Level      *GrantLevel
 	Users      []*UserSpec
 	WithGrant  bool
+}
+
+func (n *GrantStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -858,6 +950,10 @@ type TableOptimizerHint struct {
 	// Statement Execution Time Optimizer Hints
 	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
 	MaxExecutionTime uint64
+}
+
+func (n *TableOptimizerHint) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.

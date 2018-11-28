@@ -38,6 +38,8 @@ type Node interface {
 	Text() string
 	// SetText sets original text to the Node.
 	SetText(text string)
+	// Restore returns the sql text from ast tree
+	Restore() *SQLSentence
 }
 
 // Flags indicates whether an expression contains certain types of expression.

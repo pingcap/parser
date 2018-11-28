@@ -14,3 +14,5 @@ require (
 	golang.org/x/net v0.0.0-20181029044818-c44066c5c816
 	golang.org/x/text v0.3.0
 )
+
+replace github.com/pingcap/tidb => github.com/leoppro/tidb v0.0.0-00000000000000-5791a57a03b7

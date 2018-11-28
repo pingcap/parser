@@ -82,6 +82,10 @@ type Join struct {
 	StraightJoin bool
 }
 
+func (n *Join) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *Join) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -123,6 +127,10 @@ type TableName struct {
 	TableInfo *model.TableInfo
 
 	IndexHints []*IndexHint
+}
+
+func (n *TableName) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -169,6 +177,10 @@ type DeleteTableList struct {
 	Tables []*TableName
 }
 
+func (n *DeleteTableList) Restore() *SQLSentence {
+	panic("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *DeleteTableList) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -193,6 +205,10 @@ type OnCondition struct {
 	node
 
 	Expr ExprNode
+}
+
+func (n *OnCondition) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -220,6 +236,10 @@ type TableSource struct {
 
 	// AsName is the alias name of the table source.
 	AsName model.CIStr
+}
+
+func (n *TableSource) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -268,6 +288,10 @@ type WildCardField struct {
 	Schema model.CIStr
 }
 
+func (n *WildCardField) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *WildCardField) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -298,6 +322,10 @@ type SelectField struct {
 	Auxiliary bool
 }
 
+func (n *SelectField) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *SelectField) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -320,6 +348,10 @@ type FieldList struct {
 	node
 
 	Fields []*SelectField
+}
+
+func (n *FieldList) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -346,6 +378,10 @@ type TableRefsClause struct {
 	TableRefs *Join
 }
 
+func (n *TableRefsClause) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *TableRefsClause) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -369,6 +405,10 @@ type ByItem struct {
 	Desc bool
 }
 
+func (n *ByItem) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *ByItem) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -388,6 +428,10 @@ func (n *ByItem) Accept(v Visitor) (Node, bool) {
 type GroupByClause struct {
 	node
 	Items []*ByItem
+}
+
+func (n *GroupByClause) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -413,6 +457,10 @@ type HavingClause struct {
 	Expr ExprNode
 }
 
+func (n *HavingClause) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *HavingClause) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -433,6 +481,10 @@ type OrderByClause struct {
 	node
 	Items    []*ByItem
 	ForUnion bool
+}
+
+func (n *OrderByClause) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -486,6 +538,10 @@ type SelectStmt struct {
 	IsAfterUnionDistinct bool
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
+}
+
+func (n *SelectStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -582,6 +638,10 @@ type UnionSelectList struct {
 	Selects []*SelectStmt
 }
 
+func (n *UnionSelectList) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *UnionSelectList) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -608,6 +668,10 @@ type UnionStmt struct {
 	SelectList *UnionSelectList
 	OrderBy    *OrderByClause
 	Limit      *Limit
+}
+
+func (n *UnionStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -650,6 +714,10 @@ type Assignment struct {
 	Expr ExprNode
 }
 
+func (n *Assignment) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *Assignment) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -682,6 +750,10 @@ type LoadDataStmt struct {
 	FieldsInfo  *FieldsClause
 	LinesInfo   *LinesClause
 	IgnoreLines uint64
+}
+
+func (n *LoadDataStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -735,6 +807,10 @@ type InsertStmt struct {
 	Priority    mysql.PriorityEnum
 	OnDuplicate []*Assignment
 	Select      ResultSetNode
+}
+
+func (n *InsertStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -813,6 +889,10 @@ type DeleteStmt struct {
 	TableHints []*TableOptimizerHint
 }
 
+func (n *DeleteStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *DeleteStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -873,6 +953,10 @@ type UpdateStmt struct {
 	TableHints    []*TableOptimizerHint
 }
 
+func (n *UpdateStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *UpdateStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -922,6 +1006,10 @@ type Limit struct {
 
 	Count  ExprNode
 	Offset ExprNode
+}
+
+func (n *Limit) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -1004,6 +1092,10 @@ type ShowStmt struct {
 	Where       ExprNode
 }
 
+func (n *ShowStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *ShowStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -1064,6 +1156,10 @@ type WindowSpec struct {
 	Frame       *FrameClause
 }
 
+func (n *WindowSpec) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *WindowSpec) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -1102,6 +1198,10 @@ type PartitionByClause struct {
 	Items []*ByItem
 }
 
+func (n *PartitionByClause) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *PartitionByClause) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -1136,6 +1236,10 @@ type FrameClause struct {
 
 	Type   FrameType
 	Extent FrameExtent
+}
+
+func (n *FrameClause) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -1184,6 +1288,10 @@ type FrameBound struct {
 	// `Unit` is used to indicate the units in which the `Expr` should be interpreted.
 	// For example: '2:30' MINUTE_SECOND.
 	Unit ExprNode
+}
+
+func (n *FrameBound) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.

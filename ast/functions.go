@@ -327,6 +327,10 @@ type FuncCallExpr struct {
 	Args []ExprNode
 }
 
+func (n *FuncCallExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *FuncCallExpr) Format(w io.Writer) {
 	fmt.Fprintf(w, "%s(", n.FnName.L)
@@ -397,6 +401,10 @@ type FuncCastExpr struct {
 	Tp *types.FieldType
 	// FunctionType is either Cast, Convert or Binary.
 	FunctionType CastFunctionType
+}
+
+func (n *FuncCastExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -503,6 +511,10 @@ type AggregateFuncExpr struct {
 	Distinct bool
 }
 
+func (n *AggregateFuncExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *AggregateFuncExpr) Format(w io.Writer) {
 	panic("Not implemented")
@@ -569,6 +581,10 @@ type WindowFuncExpr struct {
 	FromLast bool
 	// Spec is the specification of this window.
 	Spec WindowSpec
+}
+
+func (n *WindowFuncExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format formats the window function expression into a Writer.

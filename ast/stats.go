@@ -34,6 +34,10 @@ type AnalyzeTableStmt struct {
 	IndexFlag bool
 }
 
+func (n *AnalyzeTableStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *AnalyzeTableStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -58,6 +62,10 @@ type DropStatsStmt struct {
 	Table *TableName
 }
 
+func (n *DropStatsStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *DropStatsStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -78,6 +86,10 @@ type LoadStatsStmt struct {
 	stmtNode
 
 	Path string
+}
+
+func (n *LoadStatsStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.

@@ -78,6 +78,10 @@ type BetweenExpr struct {
 	Not bool
 }
 
+func (n *BetweenExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *BetweenExpr) Format(w io.Writer) {
 	n.Expr.Format(w)
@@ -131,6 +135,10 @@ type BinaryOperationExpr struct {
 	R ExprNode
 }
 
+func (n *BinaryOperationExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *BinaryOperationExpr) Format(w io.Writer) {
 	n.L.Format(w)
@@ -172,6 +180,10 @@ type WhenClause struct {
 	Result ExprNode
 }
 
+func (n *WhenClause) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *WhenClause) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -203,6 +215,10 @@ type CaseExpr struct {
 	WhenClauses []*WhenClause
 	// ElseClause is the else result expression.
 	ElseClause ExprNode
+}
+
+func (n *CaseExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -269,6 +285,10 @@ type SubqueryExpr struct {
 	Exists     bool
 }
 
+func (n *SubqueryExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *SubqueryExpr) Format(w io.Writer) {
 	panic("Not implemented")
@@ -305,6 +325,10 @@ type CompareSubqueryExpr struct {
 	All bool
 }
 
+func (n *CompareSubqueryExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *CompareSubqueryExpr) Format(w io.Writer) {
 	panic("Not implemented")
@@ -336,6 +360,10 @@ type ColumnName struct {
 	Schema model.CIStr
 	Table  model.CIStr
 	Name   model.CIStr
+}
+
+func (n *ColumnName) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -386,6 +414,10 @@ type ColumnNameExpr struct {
 	Refer *ResultField
 }
 
+func (n *ColumnNameExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *ColumnNameExpr) Format(w io.Writer) {
 	name := strings.Replace(n.Name.String(), ".", "`.`", -1)
@@ -412,6 +444,10 @@ type DefaultExpr struct {
 	exprNode
 	// Name is the column name.
 	Name *ColumnName
+}
+
+func (n *DefaultExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -446,6 +482,10 @@ type ExistsSubqueryExpr struct {
 	Not bool
 }
 
+func (n *ExistsSubqueryExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *ExistsSubqueryExpr) Format(w io.Writer) {
 	panic("Not implemented")
@@ -477,6 +517,10 @@ type PatternInExpr struct {
 	Not bool
 	// Sel is the subquery, may be rewritten to other type of expression.
 	Sel ExprNode
+}
+
+func (n *PatternInExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -534,6 +578,10 @@ type IsNullExpr struct {
 	Not bool
 }
 
+func (n *IsNullExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *IsNullExpr) Format(w io.Writer) {
 	n.Expr.Format(w)
@@ -568,6 +616,10 @@ type IsTruthExpr struct {
 	Not bool
 	// True indicates checking true or false.
 	True int64
+}
+
+func (n *IsTruthExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -614,6 +666,10 @@ type PatternLikeExpr struct {
 
 	PatChars []byte
 	PatTypes []byte
+}
+
+func (n *PatternLikeExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -669,6 +725,10 @@ type ParenthesesExpr struct {
 	Expr ExprNode
 }
 
+func (n *ParenthesesExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *ParenthesesExpr) Format(w io.Writer) {
 	fmt.Fprint(w, "(")
@@ -704,6 +764,10 @@ type PositionExpr struct {
 	P ExprNode
 	// Refer is the result field the position refers to.
 	Refer *ResultField
+}
+
+func (n *PositionExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -742,6 +806,10 @@ type PatternRegexpExpr struct {
 	Re *regexp.Regexp
 	// Sexpr is the string for Expr expression.
 	Sexpr *string
+}
+
+func (n *PatternRegexpExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -783,6 +851,10 @@ type RowExpr struct {
 	Values []ExprNode
 }
 
+func (n *RowExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *RowExpr) Format(w io.Writer) {
 	panic("Not implemented")
@@ -814,6 +886,10 @@ type UnaryOperationExpr struct {
 	V ExprNode
 }
 
+func (n *UnaryOperationExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *UnaryOperationExpr) Format(w io.Writer) {
 	n.Op.Format(w)
@@ -840,6 +916,10 @@ type ValuesExpr struct {
 	exprNode
 	// Column is column name.
 	Column *ColumnNameExpr
+}
+
+func (n *ValuesExpr) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Format the ExprNode into a Writer.
@@ -879,6 +959,10 @@ type VariableExpr struct {
 	Value ExprNode
 }
 
+func (n *VariableExpr) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Format the ExprNode into a Writer.
 func (n *VariableExpr) Format(w io.Writer) {
 	panic("Not implemented")
@@ -906,6 +990,10 @@ func (n *VariableExpr) Accept(v Visitor) (Node, bool) {
 // MaxValueExpr is the expression for "maxvalue" used in partition.
 type MaxValueExpr struct {
 	exprNode
+}
+
+func (n *MaxValueExpr) Restore() *SQLSentence {
+	panic("Not implemented")
 }
 
 // Format the ExprNode into a Writer.

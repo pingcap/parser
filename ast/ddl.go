@@ -71,6 +71,10 @@ type CreateDatabaseStmt struct {
 	Options     []*DatabaseOption
 }
 
+func (n *CreateDatabaseStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *CreateDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -90,6 +94,10 @@ type DropDatabaseStmt struct {
 	Name     string
 }
 
+func (n *DropDatabaseStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -106,6 +114,10 @@ type IndexColName struct {
 
 	Column *ColumnName
 	Length int
+}
+
+func (n *IndexColName) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -132,6 +144,10 @@ type ReferenceDef struct {
 	IndexColNames []*IndexColName
 	OnDelete      *OnDeleteOpt
 	OnUpdate      *OnUpdateOpt
+}
+
+func (n *ReferenceDef) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -199,6 +215,10 @@ type OnDeleteOpt struct {
 	ReferOpt ReferOptionType
 }
 
+func (n *OnDeleteOpt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *OnDeleteOpt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -213,6 +233,10 @@ func (n *OnDeleteOpt) Accept(v Visitor) (Node, bool) {
 type OnUpdateOpt struct {
 	node
 	ReferOpt ReferOptionType
+}
+
+func (n *OnUpdateOpt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -259,6 +283,10 @@ type ColumnOption struct {
 	Refer *ReferenceDef
 }
 
+func (n *ColumnOption) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *ColumnOption) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -288,6 +316,10 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
+}
+
+func (n *IndexOption) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -330,6 +362,10 @@ type Constraint struct {
 	Option *IndexOption // Index Options
 }
 
+func (n *Constraint) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *Constraint) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -370,6 +406,10 @@ type ColumnDef struct {
 	Options []*ColumnOption
 }
 
+func (n *ColumnDef) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *ColumnDef) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -406,6 +446,10 @@ type CreateTableStmt struct {
 	Partition   *PartitionOptions
 	OnDuplicate OnDuplicateCreateTableSelectType
 	Select      ResultSetNode
+}
+
+func (n *CreateTableStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -461,6 +505,10 @@ type DropTableStmt struct {
 	Tables   []*TableName
 }
 
+func (n *DropTableStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *DropTableStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -489,6 +537,10 @@ type RenameTableStmt struct {
 	// TableToTables is only useful for syncer which depends heavily on tidb parser to do some dirty work for now.
 	// TODO: Refactor this when you are going to add full support for multiple schema changes.
 	TableToTables []*TableToTable
+}
+
+func (n *RenameTableStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -527,6 +579,10 @@ type TableToTable struct {
 	NewTable *TableName
 }
 
+func (n *TableToTable) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *TableToTable) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -558,6 +614,10 @@ type CreateViewStmt struct {
 	Select    StmtNode
 }
 
+func (n *CreateViewStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 	// TODO: implement the details.
@@ -574,6 +634,10 @@ type CreateIndexStmt struct {
 	Unique        bool
 	IndexColNames []*IndexColName
 	IndexOption   *IndexOption
+}
+
+func (n *CreateIndexStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -613,6 +677,10 @@ type DropIndexStmt struct {
 	IfExists  bool
 	IndexName string
 	Table     *TableName
+}
+
+func (n *DropIndexStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
@@ -703,6 +771,10 @@ type ColumnPosition struct {
 	RelativeColumn *ColumnName
 }
 
+func (n *ColumnPosition) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *ColumnPosition) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -779,6 +851,10 @@ type AlterTableSpec struct {
 	Num             uint64
 }
 
+func (n *AlterTableSpec) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *AlterTableSpec) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -833,6 +909,10 @@ type AlterTableStmt struct {
 	Specs []*AlterTableSpec
 }
 
+func (n *AlterTableStmt) Restore() *SQLSentence {
+	panic("implement me")
+}
+
 // Accept implements Node Accept interface.
 func (n *AlterTableStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -861,6 +941,10 @@ type TruncateTableStmt struct {
 	ddlNode
 
 	Table *TableName
+}
+
+func (n *TruncateTableStmt) Restore() *SQLSentence {
+	panic("implement me")
 }
 
 // Accept implements Node Accept interface.
