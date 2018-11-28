@@ -14,6 +14,7 @@
 package ast
 
 import (
+	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
 )
@@ -547,21 +548,102 @@ func (n *TableToTable) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// ViewAlgorithm is VIEW's SQL AlGORITHM characteristic.
+// See https://dev.mysql.com/doc/refman/5.7/en/view-algorithms.html
+type ViewAlgorithm int
+
+const (
+	AlgorithmUndefined ViewAlgorithm = iota
+	AlgorithmMerge
+	AlgorithmTemptable
+)
+
+func (v *ViewAlgorithm) String() string {
+	switch *v {
+	case AlgorithmMerge:
+		return "MERGE"
+	case AlgorithmTemptable:
+		return "TEMPTABLE"
+	case AlgorithmUndefined:
+		return "UNDEFINED"
+	default:
+		return "UNDEFINED"
+	}
+}
+
+// ViewSecurity is VIEW's SQL SECURITY characteristic.
+// See https://dev.mysql.com/doc/refman/5.7/en/create-view.html
+type ViewSecurity int
+
+const (
+	SecurityDefiner ViewSecurity = iota
+	SecurityInvoker
+)
+
+func (v *ViewSecurity) String() string {
+	switch *v {
+	case SecurityInvoker:
+		return "INVOKER"
+	case SecurityDefiner:
+		return "DEFINER"
+	default:
+		return "DEFINER"
+	}
+}
+
+// ViewCheckOption is VIEW's WITH CHECK OPTION clause part.
+// See https://dev.mysql.com/doc/refman/5.7/en/view-check-option.html
+type ViewCheckOption int
+
+const (
+	CheckOptionLocal ViewCheckOption = iota
+	CheckOptionCascaded
+)
+
+func (v *ViewCheckOption) String() string {
+	switch *v {
+	case CheckOptionLocal:
+		return "LOCAL"
+	case CheckOptionCascaded:
+		return "CASCADED"
+	default:
+		return "CASCADED"
+	}
+}
+
 // CreateViewStmt is a statement to create a View.
 // See https://dev.mysql.com/doc/refman/5.7/en/create-view.html
 type CreateViewStmt struct {
 	ddlNode
 
-	OrReplace bool
-	ViewName  *TableName
-	Cols      []model.CIStr
-	Select    StmtNode
+	OrReplace   bool
+	ViewName    *TableName
+	Cols        []model.CIStr
+	Select      StmtNode
+	Algorithm   ViewAlgorithm
+	Definer     *auth.UserIdentity
+	Security    ViewSecurity
+	CheckOption ViewCheckOption
 }
 
 // Accept implements Node Accept interface.
 func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
-	// TODO: implement the details.
-	return n, true
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*CreateViewStmt)
+	node, ok := n.ViewName.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.ViewName = node.(*TableName)
+	selnode, ok := n.Select.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Select = selnode.(*SelectStmt)
+	return v.Leave(n)
 }
 
 // CreateIndexStmt is a statement to create an index.

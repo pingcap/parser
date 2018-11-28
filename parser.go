@@ -7867,14 +7867,24 @@ yynewstate:
 		{
 			startOffset := parser.startOffset(&yyS[yypt-1])
 			selStmt := yyS[yypt-1].statement.(*ast.SelectStmt)
-			selStmt.SetText(string(parser.src[startOffset:]))
+			selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 			x := &ast.CreateViewStmt{
 				OrReplace: yyS[yypt-9].item.(bool),
 				ViewName:  yyS[yypt-4].item.(*ast.TableName),
 				Select:    selStmt,
+				Algorithm: yyS[yypt-8].item.(ast.ViewAlgorithm),
+				Definer:   yyS[yypt-7].item.(*auth.UserIdentity),
+				Security:  yyS[yypt-6].item.(ast.ViewSecurity),
 			}
 			if yyS[yypt-3].item != nil {
 				x.Cols = yyS[yypt-3].item.([]model.CIStr)
+			}
+			if yyS[yypt-0].item != nil {
+				x.CheckOption = yyS[yypt-0].item.(ast.ViewCheckOption)
+				endOffset := parser.startOffset(&yyS[yypt])
+				selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+			} else {
+				x.CheckOption = ast.CheckOptionCascaded
 			}
 			parser.yyVAL.statement = x
 		}
@@ -7888,23 +7898,23 @@ yynewstate:
 		}
 	case 203:
 		{
-			parser.yyVAL.item = "UNDEFINED"
+			parser.yyVAL.item = ast.AlgorithmUndefined
 		}
 	case 204:
 		{
-			parser.yyVAL.item = strings.ToUpper(yyS[yypt-0].ident)
+			parser.yyVAL.item = ast.AlgorithmUndefined
 		}
 	case 205:
 		{
-			parser.yyVAL.item = strings.ToUpper(yyS[yypt-0].ident)
+			parser.yyVAL.item = ast.AlgorithmMerge
 		}
 	case 206:
 		{
-			parser.yyVAL.item = strings.ToUpper(yyS[yypt-0].ident)
+			parser.yyVAL.item = ast.AlgorithmTemptable
 		}
 	case 207:
 		{
-			parser.yyVAL.item = nil
+			parser.yyVAL.item = &auth.UserIdentity{CurrentUser: true}
 		}
 	case 208:
 		{
@@ -7912,15 +7922,15 @@ yynewstate:
 		}
 	case 209:
 		{
-			parser.yyVAL.item = "DEFINER"
+			parser.yyVAL.item = ast.SecurityDefiner
 		}
 	case 210:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.item = ast.SecurityDefiner
 		}
 	case 211:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.item = ast.SecurityInvoker
 		}
 	case 212:
 		{
@@ -7948,11 +7958,11 @@ yynewstate:
 		}
 	case 218:
 		{
-			parser.yyVAL.item = yyS[yypt-2].ident
+			parser.yyVAL.item = ast.CheckOptionCascaded
 		}
 	case 219:
 		{
-			parser.yyVAL.item = yyS[yypt-2].ident
+			parser.yyVAL.item = ast.CheckOptionLocal
 		}
 	case 220:
 		{
