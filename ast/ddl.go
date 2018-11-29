@@ -61,6 +61,7 @@ type DatabaseOption struct {
 	Value string
 }
 
+// Restore implements Recoverable interface.
 func (n *DatabaseOption) Restore() *SQLSentence {
 	ss := NewSQLSentence()
 	switch n.Tp {
@@ -82,7 +83,7 @@ type CreateDatabaseStmt struct {
 	Options     []*DatabaseOption
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *CreateDatabaseStmt) Restore() *SQLSentence {
 	ss := NewSQLSentence()
 	ss.Text("CREATE DATABASE")
@@ -115,7 +116,7 @@ type DropDatabaseStmt struct {
 	Name     string
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *DropDatabaseStmt) Restore() *SQLSentence {
 	ss := NewSQLSentence()
 	ss.Text("DROP DATABASE ")
@@ -144,7 +145,7 @@ type IndexColName struct {
 	Length int
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *IndexColName) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -175,7 +176,7 @@ type ReferenceDef struct {
 	OnUpdate      *OnUpdateOpt
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ReferenceDef) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -245,7 +246,7 @@ type OnDeleteOpt struct {
 	ReferOpt ReferOptionType
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *OnDeleteOpt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -266,7 +267,7 @@ type OnUpdateOpt struct {
 	ReferOpt ReferOptionType
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *OnUpdateOpt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -315,7 +316,7 @@ type ColumnOption struct {
 	Refer *ReferenceDef
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ColumnOption) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -351,7 +352,7 @@ type IndexOption struct {
 	Comment      string
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *IndexOption) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -396,7 +397,7 @@ type Constraint struct {
 	Option *IndexOption // Index Options
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *Constraint) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -441,7 +442,7 @@ type ColumnDef struct {
 	Options []*ColumnOption
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ColumnDef) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -484,7 +485,7 @@ type CreateTableStmt struct {
 	Select      ResultSetNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *CreateTableStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -542,7 +543,7 @@ type DropTableStmt struct {
 	Tables   []*TableName
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *DropTableStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -577,7 +578,7 @@ type RenameTableStmt struct {
 	TableToTables []*TableToTable
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *RenameTableStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -618,7 +619,7 @@ type TableToTable struct {
 	NewTable *TableName
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *TableToTable) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -654,7 +655,7 @@ type CreateViewStmt struct {
 	Select    StmtNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *CreateViewStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -677,7 +678,7 @@ type CreateIndexStmt struct {
 	IndexOption   *IndexOption
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *CreateIndexStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -721,7 +722,7 @@ type DropIndexStmt struct {
 	Table     *TableName
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *DropIndexStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -814,7 +815,7 @@ type ColumnPosition struct {
 	RelativeColumn *ColumnName
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ColumnPosition) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -895,7 +896,7 @@ type AlterTableSpec struct {
 	Num             uint64
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *AlterTableSpec) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -954,7 +955,7 @@ type AlterTableStmt struct {
 	Specs []*AlterTableSpec
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *AlterTableStmt) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -989,7 +990,7 @@ type TruncateTableStmt struct {
 	Table *TableName
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *TruncateTableStmt) Restore() *SQLSentence {
 	panic("implement me")
 }

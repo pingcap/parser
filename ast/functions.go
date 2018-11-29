@@ -327,7 +327,7 @@ type FuncCallExpr struct {
 	Args []ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *FuncCallExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -404,7 +404,7 @@ type FuncCastExpr struct {
 	FunctionType CastFunctionType
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *FuncCastExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -513,7 +513,7 @@ type AggregateFuncExpr struct {
 	Distinct bool
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *AggregateFuncExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -586,7 +586,7 @@ type WindowFuncExpr struct {
 	Spec WindowSpec
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *WindowFuncExpr) Restore() *SQLSentence {
 	panic("implement me")
 }

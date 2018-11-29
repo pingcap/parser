@@ -78,7 +78,7 @@ type BetweenExpr struct {
 	Not bool
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *BetweenExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -136,7 +136,7 @@ type BinaryOperationExpr struct {
 	R ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *BinaryOperationExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -182,7 +182,7 @@ type WhenClause struct {
 	Result ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *WhenClause) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -220,7 +220,7 @@ type CaseExpr struct {
 	ElseClause ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *CaseExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -289,7 +289,7 @@ type SubqueryExpr struct {
 	Exists     bool
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *SubqueryExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -330,7 +330,7 @@ type CompareSubqueryExpr struct {
 	All bool
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *CompareSubqueryExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -368,7 +368,7 @@ type ColumnName struct {
 	Name   model.CIStr
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ColumnName) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -421,7 +421,7 @@ type ColumnNameExpr struct {
 	Refer *ResultField
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ColumnNameExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -454,7 +454,7 @@ type DefaultExpr struct {
 	Name *ColumnName
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *DefaultExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -491,7 +491,7 @@ type ExistsSubqueryExpr struct {
 	Not bool
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ExistsSubqueryExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -529,7 +529,7 @@ type PatternInExpr struct {
 	Sel ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *PatternInExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -589,7 +589,7 @@ type IsNullExpr struct {
 	Not bool
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *IsNullExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -630,7 +630,7 @@ type IsTruthExpr struct {
 	True int64
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *IsTruthExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -681,7 +681,7 @@ type PatternLikeExpr struct {
 	PatTypes []byte
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *PatternLikeExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -739,7 +739,7 @@ type ParenthesesExpr struct {
 	Expr ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ParenthesesExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -781,7 +781,7 @@ type PositionExpr struct {
 	Refer *ResultField
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *PositionExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -824,7 +824,7 @@ type PatternRegexpExpr struct {
 	Sexpr *string
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *PatternRegexpExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -868,7 +868,7 @@ type RowExpr struct {
 	Values []ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *RowExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -904,7 +904,7 @@ type UnaryOperationExpr struct {
 	V ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *UnaryOperationExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -937,7 +937,7 @@ type ValuesExpr struct {
 	Column *ColumnNameExpr
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *ValuesExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -979,7 +979,7 @@ type VariableExpr struct {
 	Value ExprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *VariableExpr) Restore() *SQLSentence {
 	panic("implement me")
 }
@@ -1013,7 +1013,7 @@ type MaxValueExpr struct {
 	exprNode
 }
 
-// Restore implements Node Restore interface.
+// Restore implements Recoverable interface.
 func (n *MaxValueExpr) Restore() *SQLSentence {
 	panic("Not implemented")
 }
