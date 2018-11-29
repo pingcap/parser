@@ -269,7 +269,9 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 			switch stmt.(type) {
 			case *ast.DropDatabaseStmt,
 				*ast.CreateDatabaseStmt:
-				restoreSQL := stmt.Restore().String()
+				var sb strings.Builder
+				stmt.Restore(&sb)
+				restoreSQL := sb.String()
 				restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
 				stmt.Accept(&cleaner)
 				restoreStmt.Accept(&cleaner)

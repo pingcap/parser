@@ -79,7 +79,7 @@ type BetweenExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *BetweenExpr) Restore() *SQLSentence {
+func (n *BetweenExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -137,7 +137,7 @@ type BinaryOperationExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *BinaryOperationExpr) Restore() *SQLSentence {
+func (n *BinaryOperationExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -183,7 +183,7 @@ type WhenClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *WhenClause) Restore() *SQLSentence {
+func (n *WhenClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -221,7 +221,7 @@ type CaseExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CaseExpr) Restore() *SQLSentence {
+func (n *CaseExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -290,7 +290,7 @@ type SubqueryExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SubqueryExpr) Restore() *SQLSentence {
+func (n *SubqueryExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -331,7 +331,7 @@ type CompareSubqueryExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CompareSubqueryExpr) Restore() *SQLSentence {
+func (n *CompareSubqueryExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -369,7 +369,7 @@ type ColumnName struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnName) Restore() *SQLSentence {
+func (n *ColumnName) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -422,7 +422,7 @@ type ColumnNameExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnNameExpr) Restore() *SQLSentence {
+func (n *ColumnNameExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -455,7 +455,7 @@ type DefaultExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DefaultExpr) Restore() *SQLSentence {
+func (n *DefaultExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -492,7 +492,7 @@ type ExistsSubqueryExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ExistsSubqueryExpr) Restore() *SQLSentence {
+func (n *ExistsSubqueryExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -530,7 +530,7 @@ type PatternInExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PatternInExpr) Restore() *SQLSentence {
+func (n *PatternInExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -590,7 +590,7 @@ type IsNullExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *IsNullExpr) Restore() *SQLSentence {
+func (n *IsNullExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -631,7 +631,7 @@ type IsTruthExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *IsTruthExpr) Restore() *SQLSentence {
+func (n *IsTruthExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -682,7 +682,7 @@ type PatternLikeExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PatternLikeExpr) Restore() *SQLSentence {
+func (n *PatternLikeExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -740,7 +740,7 @@ type ParenthesesExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ParenthesesExpr) Restore() *SQLSentence {
+func (n *ParenthesesExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -782,7 +782,7 @@ type PositionExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PositionExpr) Restore() *SQLSentence {
+func (n *PositionExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -825,7 +825,7 @@ type PatternRegexpExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PatternRegexpExpr) Restore() *SQLSentence {
+func (n *PatternRegexpExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -869,7 +869,7 @@ type RowExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RowExpr) Restore() *SQLSentence {
+func (n *RowExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -905,7 +905,7 @@ type UnaryOperationExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *UnaryOperationExpr) Restore() *SQLSentence {
+func (n *UnaryOperationExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -938,7 +938,7 @@ type ValuesExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ValuesExpr) Restore() *SQLSentence {
+func (n *ValuesExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -980,7 +980,7 @@ type VariableExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *VariableExpr) Restore() *SQLSentence {
+func (n *VariableExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1014,7 +1014,7 @@ type MaxValueExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *MaxValueExpr) Restore() *SQLSentence {
+func (n *MaxValueExpr) Restore(sb *strings.Builder) {
 	panic("Not implemented")
 }
 

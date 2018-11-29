@@ -17,6 +17,7 @@ package ast
 
 import (
 	"io"
+	"strings"
 
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
@@ -25,7 +26,7 @@ import (
 // Recoverable can be restored to sql text
 type Recoverable interface {
 	// Restore returns the sql text from ast tree
-	Restore() *SQLSentence
+	Restore(sb *strings.Builder)
 }
 
 // Node is the basic element of the AST.

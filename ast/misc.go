@@ -98,7 +98,7 @@ type TraceStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TraceStmt) Restore() *SQLSentence {
+func (n *TraceStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -129,7 +129,7 @@ type ExplainStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ExplainStmt) Restore() *SQLSentence {
+func (n *ExplainStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -160,7 +160,7 @@ type PrepareStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PrepareStmt) Restore() *SQLSentence {
+func (n *PrepareStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -190,7 +190,7 @@ type DeallocateStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DeallocateStmt) Restore() *SQLSentence {
+func (n *DeallocateStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -223,7 +223,7 @@ type ExecuteStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ExecuteStmt) Restore() *SQLSentence {
+func (n *ExecuteStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -251,7 +251,7 @@ type BeginStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *BeginStmt) Restore() *SQLSentence {
+func (n *BeginStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -274,7 +274,7 @@ type BinlogStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *BinlogStmt) Restore() *SQLSentence {
+func (n *BinlogStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -295,7 +295,7 @@ type CommitStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CommitStmt) Restore() *SQLSentence {
+func (n *CommitStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -316,7 +316,7 @@ type RollbackStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RollbackStmt) Restore() *SQLSentence {
+func (n *RollbackStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -339,7 +339,7 @@ type UseStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *UseStmt) Restore() *SQLSentence {
+func (n *UseStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -375,7 +375,7 @@ type VariableAssignment struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *VariableAssignment) Restore() *SQLSentence {
+func (n *VariableAssignment) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -416,7 +416,7 @@ type FlushStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FlushStmt) Restore() *SQLSentence {
+func (n *FlushStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -451,7 +451,7 @@ type KillStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *KillStmt) Restore() *SQLSentence {
+func (n *KillStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -473,7 +473,7 @@ type SetStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SetStmt) Restore() *SQLSentence {
+func (n *SetStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -525,7 +525,7 @@ type SetPwdStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SetPwdStmt) Restore() *SQLSentence {
+func (n *SetPwdStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -593,7 +593,7 @@ type CreateUserStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateUserStmt) Restore() *SQLSentence {
+func (n *CreateUserStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -629,7 +629,7 @@ type AlterUserStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AlterUserStmt) Restore() *SQLSentence {
+func (n *AlterUserStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -664,7 +664,7 @@ type DropUserStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropUserStmt) Restore() *SQLSentence {
+func (n *DropUserStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -686,7 +686,7 @@ type DoStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DoStmt) Restore() *SQLSentence {
+func (n *DoStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -778,7 +778,7 @@ type AdminStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AdminStmt) Restore() *SQLSentence {
+func (n *AdminStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -810,7 +810,7 @@ type PrivElem struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PrivElem) Restore() *SQLSentence {
+func (n *PrivElem) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -873,7 +873,7 @@ type RevokeStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RevokeStmt) Restore() *SQLSentence {
+func (n *RevokeStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -906,7 +906,7 @@ type GrantStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *GrantStmt) Restore() *SQLSentence {
+func (n *GrantStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -976,7 +976,7 @@ type TableOptimizerHint struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableOptimizerHint) Restore() *SQLSentence {
+func (n *TableOptimizerHint) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 

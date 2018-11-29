@@ -17,6 +17,7 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"strings"
 )
 
 var (
@@ -83,7 +84,7 @@ type Join struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *Join) Restore() *SQLSentence {
+func (n *Join) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -131,7 +132,7 @@ type TableName struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableName) Restore() *SQLSentence {
+func (n *TableName) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -180,7 +181,7 @@ type DeleteTableList struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DeleteTableList) Restore() *SQLSentence {
+func (n *DeleteTableList) Restore(sb *strings.Builder) {
 	panic("Not implemented")
 }
 
@@ -211,7 +212,7 @@ type OnCondition struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *OnCondition) Restore() *SQLSentence {
+func (n *OnCondition) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -243,7 +244,7 @@ type TableSource struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableSource) Restore() *SQLSentence {
+func (n *TableSource) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -294,7 +295,7 @@ type WildCardField struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *WildCardField) Restore() *SQLSentence {
+func (n *WildCardField) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -329,7 +330,7 @@ type SelectField struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SelectField) Restore() *SQLSentence {
+func (n *SelectField) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -358,7 +359,7 @@ type FieldList struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FieldList) Restore() *SQLSentence {
+func (n *FieldList) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -387,7 +388,7 @@ type TableRefsClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableRefsClause) Restore() *SQLSentence {
+func (n *TableRefsClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -415,7 +416,7 @@ type ByItem struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ByItem) Restore() *SQLSentence {
+func (n *ByItem) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -441,7 +442,7 @@ type GroupByClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *GroupByClause) Restore() *SQLSentence {
+func (n *GroupByClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -469,7 +470,7 @@ type HavingClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *HavingClause) Restore() *SQLSentence {
+func (n *HavingClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -496,7 +497,7 @@ type OrderByClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *OrderByClause) Restore() *SQLSentence {
+func (n *OrderByClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -554,7 +555,7 @@ type SelectStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SelectStmt) Restore() *SQLSentence {
+func (n *SelectStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -653,7 +654,7 @@ type UnionSelectList struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *UnionSelectList) Restore() *SQLSentence {
+func (n *UnionSelectList) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -686,7 +687,7 @@ type UnionStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *UnionStmt) Restore() *SQLSentence {
+func (n *UnionStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -731,7 +732,7 @@ type Assignment struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *Assignment) Restore() *SQLSentence {
+func (n *Assignment) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -770,7 +771,7 @@ type LoadDataStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *LoadDataStmt) Restore() *SQLSentence {
+func (n *LoadDataStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -828,7 +829,7 @@ type InsertStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *InsertStmt) Restore() *SQLSentence {
+func (n *InsertStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -909,7 +910,7 @@ type DeleteStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DeleteStmt) Restore() *SQLSentence {
+func (n *DeleteStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -974,7 +975,7 @@ type UpdateStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *UpdateStmt) Restore() *SQLSentence {
+func (n *UpdateStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1030,7 +1031,7 @@ type Limit struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *Limit) Restore() *SQLSentence {
+func (n *Limit) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1115,7 +1116,7 @@ type ShowStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ShowStmt) Restore() *SQLSentence {
+func (n *ShowStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1180,7 +1181,7 @@ type WindowSpec struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *WindowSpec) Restore() *SQLSentence {
+func (n *WindowSpec) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1223,7 +1224,7 @@ type PartitionByClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PartitionByClause) Restore() *SQLSentence {
+func (n *PartitionByClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1264,7 +1265,7 @@ type FrameClause struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FrameClause) Restore() *SQLSentence {
+func (n *FrameClause) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -1317,7 +1318,7 @@ type FrameBound struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FrameBound) Restore() *SQLSentence {
+func (n *FrameBound) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 

@@ -16,6 +16,7 @@ package ast
 import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
+	"strings"
 )
 
 var (
@@ -62,15 +63,15 @@ type DatabaseOption struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DatabaseOption) Restore() *SQLSentence {
-	ss := NewSQLSentence()
+func (n *DatabaseOption) Restore(sb *strings.Builder) {
 	switch n.Tp {
 	case DatabaseOptionCharset:
-		ss.Text("CHARACTER SET = ").Text(n.Value)
+		sb.WriteString("CHARACTER SET = ")
+		sb.WriteString(n.Value)
 	case DatabaseOptionCollate:
-		ss.Text("COLLATE = ").Text(n.Value)
+		sb.WriteString("COLLATE = ")
+		sb.WriteString(n.Value)
 	}
-	return ss
 }
 
 // CreateDatabaseStmt is a statement to create a database.
@@ -84,17 +85,16 @@ type CreateDatabaseStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateDatabaseStmt) Restore() *SQLSentence {
-	ss := NewSQLSentence()
-	ss.Text("CREATE DATABASE")
+func (n *CreateDatabaseStmt) Restore(sb *strings.Builder) {
+	sb.WriteString("CREATE DATABASE ")
 	if n.IfNotExists {
-		ss.Text(" IF NOT EXISTS")
+		sb.WriteString("IF NOT EXISTS ")
 	}
-	ss.Text(n.Name)
+	sb.WriteString(n.Name)
 	for _, option := range n.Options {
-		ss.Space().Sentence(option.Restore())
+		sb.WriteString(" ")
+		option.Restore(sb)
 	}
-	return ss
 }
 
 // Accept implements Node Accept interface.
@@ -117,14 +117,13 @@ type DropDatabaseStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropDatabaseStmt) Restore() *SQLSentence {
+func (n *DropDatabaseStmt) Restore(sb *strings.Builder) {
 	ss := NewSQLSentence()
 	ss.Text("DROP DATABASE ")
 	if n.IfExists {
 		ss.Text("IF EXISTS ")
 	}
 	ss.Text(n.Name)
-	return ss
 }
 
 // Accept implements Node Accept interface.
@@ -146,7 +145,7 @@ type IndexColName struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *IndexColName) Restore() *SQLSentence {
+func (n *IndexColName) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -177,7 +176,7 @@ type ReferenceDef struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ReferenceDef) Restore() *SQLSentence {
+func (n *ReferenceDef) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -247,7 +246,7 @@ type OnDeleteOpt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *OnDeleteOpt) Restore() *SQLSentence {
+func (n *OnDeleteOpt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -268,7 +267,7 @@ type OnUpdateOpt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *OnUpdateOpt) Restore() *SQLSentence {
+func (n *OnUpdateOpt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -317,7 +316,7 @@ type ColumnOption struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnOption) Restore() *SQLSentence {
+func (n *ColumnOption) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -353,7 +352,7 @@ type IndexOption struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *IndexOption) Restore() *SQLSentence {
+func (n *IndexOption) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -398,7 +397,7 @@ type Constraint struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *Constraint) Restore() *SQLSentence {
+func (n *Constraint) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -443,7 +442,7 @@ type ColumnDef struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnDef) Restore() *SQLSentence {
+func (n *ColumnDef) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -486,7 +485,7 @@ type CreateTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateTableStmt) Restore() *SQLSentence {
+func (n *CreateTableStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -544,7 +543,7 @@ type DropTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropTableStmt) Restore() *SQLSentence {
+func (n *DropTableStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -579,7 +578,7 @@ type RenameTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RenameTableStmt) Restore() *SQLSentence {
+func (n *RenameTableStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -620,7 +619,7 @@ type TableToTable struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableToTable) Restore() *SQLSentence {
+func (n *TableToTable) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -656,7 +655,7 @@ type CreateViewStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateViewStmt) Restore() *SQLSentence {
+func (n *CreateViewStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -679,7 +678,7 @@ type CreateIndexStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateIndexStmt) Restore() *SQLSentence {
+func (n *CreateIndexStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -723,7 +722,7 @@ type DropIndexStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropIndexStmt) Restore() *SQLSentence {
+func (n *DropIndexStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -816,7 +815,7 @@ type ColumnPosition struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnPosition) Restore() *SQLSentence {
+func (n *ColumnPosition) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -897,7 +896,7 @@ type AlterTableSpec struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AlterTableSpec) Restore() *SQLSentence {
+func (n *AlterTableSpec) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -956,7 +955,7 @@ type AlterTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AlterTableStmt) Restore() *SQLSentence {
+func (n *AlterTableStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -991,7 +990,7 @@ type TruncateTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TruncateTableStmt) Restore() *SQLSentence {
+func (n *TruncateTableStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 

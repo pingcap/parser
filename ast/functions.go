@@ -16,6 +16,7 @@ package ast
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
@@ -328,7 +329,7 @@ type FuncCallExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FuncCallExpr) Restore() *SQLSentence {
+func (n *FuncCallExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -405,7 +406,7 @@ type FuncCastExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FuncCastExpr) Restore() *SQLSentence {
+func (n *FuncCastExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -514,7 +515,7 @@ type AggregateFuncExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AggregateFuncExpr) Restore() *SQLSentence {
+func (n *AggregateFuncExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -587,7 +588,7 @@ type WindowFuncExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *WindowFuncExpr) Restore() *SQLSentence {
+func (n *WindowFuncExpr) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 

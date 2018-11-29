@@ -13,7 +13,10 @@
 
 package ast
 
-import "github.com/pingcap/parser/model"
+import (
+	"github.com/pingcap/parser/model"
+	"strings"
+)
 
 var (
 	_ StmtNode = &AnalyzeTableStmt{}
@@ -35,7 +38,7 @@ type AnalyzeTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AnalyzeTableStmt) Restore() *SQLSentence {
+func (n *AnalyzeTableStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -64,7 +67,7 @@ type DropStatsStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropStatsStmt) Restore() *SQLSentence {
+func (n *DropStatsStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
@@ -91,7 +94,7 @@ type LoadStatsStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *LoadStatsStmt) Restore() *SQLSentence {
+func (n *LoadStatsStmt) Restore(sb *strings.Builder) {
 	panic("implement me")
 }
 
