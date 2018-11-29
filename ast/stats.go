@@ -14,6 +14,7 @@
 package ast
 
 import (
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"strings"
 )
@@ -38,8 +39,8 @@ type AnalyzeTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AnalyzeTableStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *AnalyzeTableStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -67,8 +68,8 @@ type DropStatsStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropStatsStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *DropStatsStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -94,8 +95,8 @@ type LoadStatsStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *LoadStatsStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *LoadStatsStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.

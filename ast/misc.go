@@ -16,6 +16,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"github.com/pingcap/errors"
 	"strings"
 
 	"github.com/pingcap/parser/auth"
@@ -98,8 +99,8 @@ type TraceStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TraceStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *TraceStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -129,8 +130,8 @@ type ExplainStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ExplainStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *ExplainStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -160,8 +161,8 @@ type PrepareStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PrepareStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *PrepareStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -190,8 +191,8 @@ type DeallocateStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DeallocateStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *DeallocateStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -223,8 +224,8 @@ type ExecuteStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ExecuteStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *ExecuteStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -251,8 +252,8 @@ type BeginStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *BeginStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *BeginStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -274,8 +275,8 @@ type BinlogStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *BinlogStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *BinlogStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -295,8 +296,8 @@ type CommitStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CommitStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *CommitStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -316,8 +317,8 @@ type RollbackStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RollbackStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *RollbackStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -339,8 +340,8 @@ type UseStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *UseStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *UseStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -375,8 +376,8 @@ type VariableAssignment struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *VariableAssignment) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *VariableAssignment) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node interface.
@@ -416,8 +417,8 @@ type FlushStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FlushStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *FlushStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -451,8 +452,8 @@ type KillStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *KillStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *KillStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -473,8 +474,8 @@ type SetStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SetStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *SetStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -525,8 +526,8 @@ type SetPwdStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *SetPwdStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *SetPwdStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -593,8 +594,8 @@ type CreateUserStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateUserStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *CreateUserStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -629,8 +630,8 @@ type AlterUserStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AlterUserStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *AlterUserStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -664,8 +665,8 @@ type DropUserStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropUserStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *DropUserStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -686,8 +687,8 @@ type DoStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DoStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *DoStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -778,8 +779,8 @@ type AdminStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AdminStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *AdminStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -810,8 +811,8 @@ type PrivElem struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *PrivElem) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *PrivElem) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -873,8 +874,8 @@ type RevokeStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RevokeStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *RevokeStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -906,8 +907,8 @@ type GrantStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *GrantStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *GrantStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -976,8 +977,8 @@ type TableOptimizerHint struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableOptimizerHint) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *TableOptimizerHint) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.

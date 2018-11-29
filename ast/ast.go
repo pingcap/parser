@@ -26,7 +26,7 @@ import (
 // Recoverable can be restored to sql text
 type Recoverable interface {
 	// Restore returns the sql text from ast tree
-	Restore(sb *strings.Builder)
+	Restore(sb *strings.Builder) error
 }
 
 // Node is the basic element of the AST.

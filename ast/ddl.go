@@ -14,6 +14,7 @@
 package ast
 
 import (
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
 	"strings"
@@ -63,7 +64,7 @@ type DatabaseOption struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DatabaseOption) Restore(sb *strings.Builder) {
+func (n *DatabaseOption) Restore(sb *strings.Builder) error {
 	switch n.Tp {
 	case DatabaseOptionCharset:
 		sb.WriteString("CHARACTER SET = ")
@@ -72,6 +73,7 @@ func (n *DatabaseOption) Restore(sb *strings.Builder) {
 		sb.WriteString("COLLATE = ")
 		sb.WriteString(n.Value)
 	}
+	return nil
 }
 
 // CreateDatabaseStmt is a statement to create a database.
@@ -85,18 +87,20 @@ type CreateDatabaseStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateDatabaseStmt) Restore(sb *strings.Builder) {
+func (n *CreateDatabaseStmt) Restore(sb *strings.Builder) error {
 	sb.WriteString("CREATE DATABASE ")
 	if n.IfNotExists {
 		sb.WriteString("IF NOT EXISTS ")
 	}
-	sb.WriteString("`")
-	sb.WriteString(n.Name)
-	sb.WriteString("`")
+	WriteName(sb, n.Name)
 	for _, option := range n.Options {
 		sb.WriteString(" ")
-		option.Restore(sb)
+		err := option.Restore(sb)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -119,14 +123,13 @@ type DropDatabaseStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropDatabaseStmt) Restore(sb *strings.Builder) {
+func (n *DropDatabaseStmt) Restore(sb *strings.Builder) error {
 	sb.WriteString("DROP DATABASE ")
 	if n.IfExists {
 		sb.WriteString("IF EXISTS ")
 	}
-	sb.WriteString("`")
-	sb.WriteString(n.Name)
-	sb.WriteString("`")
+	WriteName(sb, n.Name)
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -148,8 +151,8 @@ type IndexColName struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *IndexColName) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *IndexColName) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -179,8 +182,8 @@ type ReferenceDef struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ReferenceDef) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *ReferenceDef) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -249,8 +252,8 @@ type OnDeleteOpt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *OnDeleteOpt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *OnDeleteOpt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -270,8 +273,8 @@ type OnUpdateOpt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *OnUpdateOpt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *OnUpdateOpt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -319,8 +322,8 @@ type ColumnOption struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnOption) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *ColumnOption) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -355,8 +358,8 @@ type IndexOption struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *IndexOption) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *IndexOption) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -400,8 +403,8 @@ type Constraint struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *Constraint) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *Constraint) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -445,8 +448,8 @@ type ColumnDef struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnDef) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *ColumnDef) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -488,8 +491,8 @@ type CreateTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateTableStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *CreateTableStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -546,8 +549,8 @@ type DropTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropTableStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *DropTableStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -581,8 +584,8 @@ type RenameTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *RenameTableStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *RenameTableStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -622,8 +625,8 @@ type TableToTable struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TableToTable) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *TableToTable) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -658,8 +661,8 @@ type CreateViewStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateViewStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *CreateViewStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -681,8 +684,8 @@ type CreateIndexStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *CreateIndexStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *CreateIndexStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -725,8 +728,8 @@ type DropIndexStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *DropIndexStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *DropIndexStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -818,8 +821,8 @@ type ColumnPosition struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *ColumnPosition) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *ColumnPosition) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -899,8 +902,8 @@ type AlterTableSpec struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AlterTableSpec) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *AlterTableSpec) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -958,8 +961,8 @@ type AlterTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AlterTableStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *AlterTableStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -993,8 +996,8 @@ type TruncateTableStmt struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *TruncateTableStmt) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *TruncateTableStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.

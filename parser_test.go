@@ -266,19 +266,19 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 		c.Assert(err, IsNil, comment)
 		// restore correctness test
 		for _, stmt := range stmts {
-			switch stmt.(type) {
-			case *ast.DropDatabaseStmt,
-				*ast.CreateDatabaseStmt:
-				var sb strings.Builder
-				stmt.Restore(&sb)
-				restoreSQL := sb.String()
-				comment := Commentf("source %v \nrestore %v", t.src, restoreSQL)
-				restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
-				c.Assert(err, IsNil, comment)
-				stmt.Accept(&cleaner)
-				restoreStmt.Accept(&cleaner)
-				c.Assert(restoreStmt, DeepEquals, stmt, comment)
+			var sb strings.Builder
+			err := stmt.Restore(&sb)
+			if err != nil {
+				c.Assert(err.Error(), Equals, "Not implemented", comment)
+				continue
 			}
+			restoreSQL := sb.String()
+			comment := Commentf("source %v \nrestore %v", t.src, restoreSQL)
+			restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
+			c.Assert(err, IsNil, comment)
+			stmt.Accept(&cleaner)
+			restoreStmt.Accept(&cleaner)
+			c.Assert(restoreStmt, DeepEquals, stmt, comment)
 		}
 	}
 }
@@ -1393,6 +1393,7 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"create database 123test", true},
 		{"create database 123", false},
 		{"create database `123`", true},
+		{"create database `12``3`", true},
 		{"create table `123` (123a1 int)", true},
 		{"create table 123 (123a1 int)", false},
 		{fmt.Sprintf("select * from t%cble", 0), false},
@@ -1514,6 +1515,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create schema if exists xxx", false},
 		{"create schema if not exists xxx", true},
 		// for drop database/schema/table/stats
+		{"drop database xxx", true},
 		{"drop database xxx", true},
 		{"drop database if exists xxx", true},
 		{"drop database if not exists xxx", false},

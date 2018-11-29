@@ -15,6 +15,7 @@ package ast
 
 import (
 	"fmt"
+	"github.com/pingcap/errors"
 	"io"
 	"strings"
 
@@ -329,8 +330,8 @@ type FuncCallExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FuncCallExpr) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *FuncCallExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Format the ExprNode into a Writer.
@@ -406,8 +407,8 @@ type FuncCastExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *FuncCastExpr) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *FuncCastExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Format the ExprNode into a Writer.
@@ -515,8 +516,8 @@ type AggregateFuncExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *AggregateFuncExpr) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *AggregateFuncExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Format the ExprNode into a Writer.
@@ -588,8 +589,8 @@ type WindowFuncExpr struct {
 }
 
 // Restore implements Recoverable interface.
-func (n *WindowFuncExpr) Restore(sb *strings.Builder) {
-	panic("implement me")
+func (n *WindowFuncExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Format formats the window function expression into a Writer.

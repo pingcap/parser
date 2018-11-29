@@ -108,6 +108,8 @@ github.com/leoppro/tidb v0.0.0-00000000000000-5791a57a03b7 h1:t9oZ5f5OO46px5blv5
 github.com/leoppro/tidb v0.0.0-00000000000000-5791a57a03b7/go.mod h1:B8fFZPvn+zh0LEJODdc+br1SRRbljoZakm3ATyH0JuY=
 github.com/leoppro/tidb v0.0.0-00000000000000-812fd5698f7b h1:RGNCcA7g6cl0x6Dk9FjxLC9XHRggitWe4lH7EvewyaA=
 github.com/leoppro/tidb v0.0.0-00000000000000-812fd5698f7b/go.mod h1:B8fFZPvn+zh0LEJODdc+br1SRRbljoZakm3ATyH0JuY=
+github.com/leoppro/tidb v0.0.0-00000000000000-aa8ec4ce061f h1:/m009OmMg7sgg2WrdiTfotiLYiZBBRZSHH9ECVD8WMQ=
+github.com/leoppro/tidb v0.0.0-00000000000000-aa8ec4ce061f/go.mod h1:B8fFZPvn+zh0LEJODdc+br1SRRbljoZakm3ATyH0JuY=
 github.com/leoppro/tidb v0.0.0-00000000000000-f790373f69fa h1:42ueISbhV36GHTYwiWeFAP0WxunRka1BD4z6GtzPglQ=
 github.com/leoppro/tidb v0.0.0-00000000000000-f790373f69fa/go.mod h1:B8fFZPvn+zh0LEJODdc+br1SRRbljoZakm3ATyH0JuY=
 github.com/mattn/go-shellwords v1.0.3/go.mod h1:3xCvwCdWdlDJUrvuMn7Wuy9eWs4pE8vqg+NOMyg4B2o=
