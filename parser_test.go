@@ -252,16 +252,30 @@ type testErrMsgCase struct {
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := New()
+	var cleaner nodeTextCleaner
 	if s.enableWindowFunc {
 		parser.EnableWindowFunc()
 	}
 	for _, t := range table {
-		_, err := parser.Parse(t.src, "", "")
+		stmts, err := parser.Parse(t.src, "", "")
 		comment := Commentf("source %v", t.src)
-		if t.ok {
-			c.Assert(err, IsNil, comment)
-		} else {
+		if !t.ok {
 			c.Assert(err, NotNil, comment)
+			return
+		}
+		c.Assert(err, IsNil, comment)
+		// restore correctness test
+		for _, stmt := range stmts {
+			switch stmt.(type) {
+			case *ast.DropDatabaseStmt,
+				*ast.CreateDatabaseStmt:
+				restoreSQL := stmt.Restore().String()
+				restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
+				stmt.Accept(&cleaner)
+				restoreStmt.Accept(&cleaner)
+				c.Assert(err, IsNil, comment)
+				c.Assert(restoreStmt, DeepEquals, stmt, comment)
+			}
 		}
 	}
 }
@@ -2600,6 +2614,20 @@ func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bo
 		}
 	}
 	return inNode, true
+}
+
+type nodeTextCleaner struct {
+}
+
+// Enter implements Visitor interface.
+func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	in.SetText("")
+	return in, false
+}
+
+// Leave implements Visitor interface.
+func (checker *nodeTextCleaner) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
 }
 
 // For issue #51

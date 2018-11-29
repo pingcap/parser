@@ -61,6 +61,17 @@ type DatabaseOption struct {
 	Value string
 }
 
+func (n *DatabaseOption) Restore() *SQLSentence {
+	ss := NewSQLSentence()
+	switch n.Tp {
+	case DatabaseOptionCharset:
+		ss.Text("CHARACTER SET = ").Text(n.Value)
+	case DatabaseOptionCollate:
+		ss.Text("COLLATE = ").Text(n.Value)
+	}
+	return ss
+}
+
 // CreateDatabaseStmt is a statement to create a database.
 // See https://dev.mysql.com/doc/refman/5.7/en/create-database.html
 type CreateDatabaseStmt struct {
@@ -73,7 +84,16 @@ type CreateDatabaseStmt struct {
 
 // Restore implements Node Restore interface.
 func (n *CreateDatabaseStmt) Restore() *SQLSentence {
-	panic("implement me")
+	ss := NewSQLSentence()
+	ss.Text("CREATE DATABASE")
+	if n.IfNotExists {
+		ss.Text(" IF NOT EXISTS")
+	}
+	ss.Text(n.Name)
+	for _, option := range n.Options {
+		ss.Space().Sentence(option.Restore())
+	}
+	return ss
 }
 
 // Accept implements Node Accept interface.

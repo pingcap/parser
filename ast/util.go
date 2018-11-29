@@ -13,7 +13,9 @@
 
 package ast
 
-import "strings"
+import (
+	"strings"
+)
 
 // TextElement is an element of a SQLSentence.
 type TextElement struct {

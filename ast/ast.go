@@ -22,9 +22,16 @@ import (
 	"github.com/pingcap/parser/types"
 )
 
+// Recoverable can be restored to sql text
+type Recoverable interface {
+	// Restore returns the sql text from ast tree
+	Restore() *SQLSentence
+}
+
 // Node is the basic element of the AST.
 // Interfaces embed Node should have 'Node' name suffix.
 type Node interface {
+	Recoverable
 	// Accept accepts Visitor to visit itself.
 	// The returned node should replace original node.
 	// ok returns false to stop visiting.
@@ -38,8 +45,6 @@ type Node interface {
 	Text() string
 	// SetText sets original text to the Node.
 	SetText(text string)
-	// Restore returns the sql text from ast tree
-	Restore() *SQLSentence
 }
 
 // Flags indicates whether an expression contains certain types of expression.
