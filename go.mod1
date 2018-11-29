@@ -1,6 +1,7 @@
 module github.com/pingcap/parser
 
 require (
+	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
 	github.com/cznic/mathutil v0.0.0-20181021201202-eba54fb065b7
 	github.com/cznic/parser v0.0.0-20160622100904-31edd927e5b1
 	github.com/cznic/sortutil v0.0.0-20150617083342-4c7342852e65
@@ -15,4 +16,4 @@ require (
 	golang.org/x/text v0.3.0
 )
 
-replace github.com/pingcap/tidb => github.com/leoppro/tidb v0.0.0-00000000000000-5791a57a03b7
+replace github.com/pingcap/tidb => github.com/leoppro/tidb v0.0.0-00000000000000-f790373f69fa
