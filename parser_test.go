@@ -1516,7 +1516,6 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create schema if not exists xxx", true},
 		// for drop database/schema/table/stats
 		{"drop database xxx", true},
-		{"drop database xxx", true},
 		{"drop database if exists xxx", true},
 		{"drop database if not exists xxx", false},
 		{"drop schema xxx", true},
