@@ -90,7 +90,9 @@ func (n *CreateDatabaseStmt) Restore(sb *strings.Builder) {
 	if n.IfNotExists {
 		sb.WriteString("IF NOT EXISTS ")
 	}
+	sb.WriteString("`")
 	sb.WriteString(n.Name)
+	sb.WriteString("`")
 	for _, option := range n.Options {
 		sb.WriteString(" ")
 		option.Restore(sb)
@@ -118,12 +120,13 @@ type DropDatabaseStmt struct {
 
 // Restore implements Recoverable interface.
 func (n *DropDatabaseStmt) Restore(sb *strings.Builder) {
-	ss := NewSQLSentence()
-	ss.Text("DROP DATABASE ")
+	sb.WriteString("DROP DATABASE ")
 	if n.IfExists {
-		ss.Text("IF EXISTS ")
+		sb.WriteString("IF EXISTS ")
 	}
-	ss.Text(n.Name)
+	sb.WriteString("`")
+	sb.WriteString(n.Name)
+	sb.WriteString("`")
 }
 
 // Accept implements Node Accept interface.

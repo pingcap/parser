@@ -261,7 +261,7 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 		comment := Commentf("source %v", t.src)
 		if !t.ok {
 			c.Assert(err, NotNil, comment)
-			return
+			continue
 		}
 		c.Assert(err, IsNil, comment)
 		// restore correctness test
@@ -272,10 +272,11 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 				var sb strings.Builder
 				stmt.Restore(&sb)
 				restoreSQL := sb.String()
+				comment := Commentf("source %v \nrestore %v", t.src, restoreSQL)
 				restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
+				c.Assert(err, IsNil, comment)
 				stmt.Accept(&cleaner)
 				restoreStmt.Accept(&cleaner)
-				c.Assert(err, IsNil, comment)
 				c.Assert(restoreStmt, DeepEquals, stmt, comment)
 			}
 		}
