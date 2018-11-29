@@ -199,6 +199,7 @@ import (
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
+	spatial			"SPATIAL"
 	rangeKwd		"RANGE"
 	rank			"RANK"
 	read			"READ"
@@ -1794,6 +1795,14 @@ CreateIndexStmtUnique:
 |	"UNIQUE"
 	{
 		$$ = true
+	}
+|	"FULLTEXT"
+	{
+		$$ = false
+	}
+|	"SPATIAL"
+	{
+		$$ = false
 	}
 
 IndexColName:

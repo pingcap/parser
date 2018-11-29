@@ -1740,6 +1740,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true},
 
+		// for https://github.com/pingcap/parser/issues/54
+		{"CREATE UNIQUE INDEX idx ON t (a)", true},
+		{"CREATE FULLTEXT INDEX idx ON t (a)", true},
+		{"CREATE SPATIAL INDEX idx ON t (a)", true},
+
 		// for rename table statement
 		{"RENAME TABLE t TO t1", true},
 		{"RENAME TABLE t t1", false},

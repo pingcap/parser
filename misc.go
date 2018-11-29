@@ -395,6 +395,7 @@ var tokenMap = map[string]int{
 	"QUERIES":                  queries,
 	"QUICK":                    quick,
 	"SHARD_ROW_ID_BITS":        shardRowIDBits,
+	"SPATIAL":                  spatial,
 	"RANGE":                    rangeKwd,
 	"RECOVER":                  recover,
 	"READ":                     read,
