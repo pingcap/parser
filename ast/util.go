@@ -1,4 +1,4 @@
-// Copyright 2017 PingCAP, Inc.
+// Copyright 2018 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,26 +17,81 @@ import (
 	"strings"
 )
 
-type NodeTextCleaner struct {
+// IsReadOnly checks whether the input ast is readOnly.
+func IsReadOnly(node Node) bool {
+	switch st := node.(type) {
+	case *SelectStmt:
+		if st.LockTp == SelectLockForUpdate {
+			return false
+		}
+
+		checker := readOnlyChecker{
+			readOnly: true,
+		}
+
+		node.Accept(&checker)
+		return checker.readOnly
+	case *ExplainStmt, *DoStmt:
+		return true
+	default:
+		return false
+	}
+}
+
+// CleanNodeText set the text of node and all child node empty.
+func CleanNodeText(node Node) {
+	var cleaner nodeTextCleaner
+	node.Accept(&cleaner)
+}
+
+// readOnlyChecker checks whether a query's ast is readonly, if it satisfied
+// 1. selectstmt;
+// 2. need not to set var;
+// it is readonly statement.
+type readOnlyChecker struct {
+	readOnly bool
 }
 
 // Enter implements Visitor interface.
-func (checker *NodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
+func (checker *readOnlyChecker) Enter(in Node) (out Node, skipChildren bool) {
+	switch node := in.(type) {
+	case *VariableExpr:
+		// like func rewriteVariable(), this stands for SetVar.
+		if !node.IsSystem && node.Value != nil {
+			checker.readOnly = false
+			return in, true
+		}
+	}
+	return in, false
+}
+
+// Leave implements Visitor interface.
+func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
+	return in, checker.readOnly
+}
+
+type nodeTextCleaner struct {
+}
+
+// Enter implements Visitor interface.
+func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 	in.SetText("")
 	return in, false
 }
 
 // Leave implements Visitor interface.
-func (checker *NodeTextCleaner) Leave(in Node) (out Node, ok bool) {
+func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
 	return in, true
 }
 
+// WriteName append escaped `name` with back quote to `sb`.
 func WriteName(sb *strings.Builder, name string) {
 	sb.WriteString("`")
 	sb.WriteString(EscapeName(name))
 	sb.WriteString("`")
 }
 
+// EscapeName escape the `name`
 func EscapeName(name string) string {
 	return strings.Replace(name, "`", "``", -1)
 }

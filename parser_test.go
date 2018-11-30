@@ -252,7 +252,6 @@ type testErrMsgCase struct {
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := New()
-	var cleaner ast.NodeTextCleaner
 	if s.enableWindowFunc {
 		parser.EnableWindowFunc()
 	}
@@ -276,8 +275,8 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 			comment := Commentf("source %v \nrestore %v", t.src, restoreSQL)
 			restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
 			c.Assert(err, IsNil, comment)
-			stmt.Accept(&cleaner)
-			restoreStmt.Accept(&cleaner)
+			ast.CleanNodeText(stmt)
+			ast.CleanNodeText(restoreStmt)
 			c.Assert(restoreStmt, DeepEquals, stmt, comment)
 		}
 	}

@@ -104,7 +104,6 @@ func (tc *testExpressionsSuite) TestExpresionsVisitorCover(c *C) {
 	}
 }
 func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
-	var cleaner NodeTextCleaner
 	parser := parser.New()
 	testNodes := []string{"select ++1", "select -+1", "select --1", "select -1"}
 	for _, node := range testNodes {
@@ -119,8 +118,8 @@ func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 		comment = Commentf("source %v ; restore %v", node, restoreSql)
 		stmt2, err := parser.ParseOneStmt(restoreSql, "", "")
 		c.Assert(err, IsNil, comment)
-		stmt.Accept(&cleaner)
-		stmt2.Accept(&cleaner)
+		CleanNodeText(stmt)
+		CleanNodeText(stmt2)
 		c.Assert(stmt2, DeepEquals, stmt, comment)
 	}
 }
