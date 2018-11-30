@@ -252,7 +252,7 @@ type testErrMsgCase struct {
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := New()
-	var cleaner nodeTextCleaner
+	var cleaner ast.NodeTextCleaner
 	if s.enableWindowFunc {
 		parser.EnableWindowFunc()
 	}
@@ -2618,20 +2618,6 @@ func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bo
 		}
 	}
 	return inNode, true
-}
-
-type nodeTextCleaner struct {
-}
-
-// Enter implements Visitor interface.
-func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
-	in.SetText("")
-	return in, false
-}
-
-// Leave implements Visitor interface.
-func (checker *nodeTextCleaner) Leave(in ast.Node) (out ast.Node, ok bool) {
-	return in, true
 }
 
 // For issue #51
