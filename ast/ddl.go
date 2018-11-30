@@ -548,69 +548,6 @@ func (n *TableToTable) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// ViewAlgorithm is VIEW's SQL AlGORITHM characteristic.
-// See https://dev.mysql.com/doc/refman/5.7/en/view-algorithms.html
-type ViewAlgorithm int
-
-const (
-	AlgorithmUndefined ViewAlgorithm = iota
-	AlgorithmMerge
-	AlgorithmTemptable
-)
-
-func (v *ViewAlgorithm) String() string {
-	switch *v {
-	case AlgorithmMerge:
-		return "MERGE"
-	case AlgorithmTemptable:
-		return "TEMPTABLE"
-	case AlgorithmUndefined:
-		return "UNDEFINED"
-	default:
-		return "UNDEFINED"
-	}
-}
-
-// ViewSecurity is VIEW's SQL SECURITY characteristic.
-// See https://dev.mysql.com/doc/refman/5.7/en/create-view.html
-type ViewSecurity int
-
-const (
-	SecurityDefiner ViewSecurity = iota
-	SecurityInvoker
-)
-
-func (v *ViewSecurity) String() string {
-	switch *v {
-	case SecurityInvoker:
-		return "INVOKER"
-	case SecurityDefiner:
-		return "DEFINER"
-	default:
-		return "DEFINER"
-	}
-}
-
-// ViewCheckOption is VIEW's WITH CHECK OPTION clause part.
-// See https://dev.mysql.com/doc/refman/5.7/en/view-check-option.html
-type ViewCheckOption int
-
-const (
-	CheckOptionLocal ViewCheckOption = iota
-	CheckOptionCascaded
-)
-
-func (v *ViewCheckOption) String() string {
-	switch *v {
-	case CheckOptionLocal:
-		return "LOCAL"
-	case CheckOptionCascaded:
-		return "CASCADED"
-	default:
-		return "CASCADED"
-	}
-}
-
 // CreateViewStmt is a statement to create a View.
 // See https://dev.mysql.com/doc/refman/5.7/en/create-view.html
 type CreateViewStmt struct {
@@ -620,10 +557,10 @@ type CreateViewStmt struct {
 	ViewName    *TableName
 	Cols        []model.CIStr
 	Select      StmtNode
-	Algorithm   ViewAlgorithm
+	Algorithm   model.ViewAlgorithm
 	Definer     *auth.UserIdentity
-	Security    ViewSecurity
-	CheckOption ViewCheckOption
+	Security    model.ViewSecurity
+	CheckOption model.ViewCheckOption
 }
 
 // Accept implements Node Accept interface.

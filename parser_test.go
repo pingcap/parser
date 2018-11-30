@@ -2240,10 +2240,10 @@ func (s *testParserSuite) TestView(c *C) {
 	c.Assert(err, IsNil)
 	v, ok := sms[0].(*ast.CreateViewStmt)
 	c.Assert(ok, IsTrue)
-	c.Assert(v.Algorithm, Equals, ast.AlgorithmUndefined)
+	c.Assert(v.Algorithm, Equals, model.AlgorithmUndefined)
 	c.Assert(v.Select.Text(), Equals, "select * from t")
-	c.Assert(v.Security, Equals, ast.SecurityDefiner)
-	c.Assert(v.CheckOption, Equals, ast.CheckOptionCascaded)
+	c.Assert(v.Security, Equals, model.SecurityDefiner)
+	c.Assert(v.CheckOption, Equals, model.CheckOptionCascaded)
 
 	src := `CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = root@localhost
                   SQL SECURITY DEFINER
@@ -2256,15 +2256,15 @@ func (s *testParserSuite) TestView(c *C) {
 	v, ok = st.(*ast.CreateViewStmt)
 	c.Assert(ok, IsTrue)
 	c.Assert(v.OrReplace, IsTrue)
-	c.Assert(v.Algorithm, Equals, ast.AlgorithmUndefined)
+	c.Assert(v.Algorithm, Equals, model.AlgorithmUndefined)
 	c.Assert(v.Definer.Username, Equals, "root")
 	c.Assert(v.Definer.Hostname, Equals, "localhost")
 	c.Assert(v.Cols[0], Equals, model.CIStr{"a", "a"})
 	c.Assert(v.Cols[1], Equals, model.CIStr{"b", "b"})
 	c.Assert(v.Cols[2], Equals, model.CIStr{"c", "c"})
 	c.Assert(v.Select.Text(), Equals, "select c,d,e from t")
-	c.Assert(v.Security, Equals, ast.SecurityDefiner)
-	c.Assert(v.CheckOption, Equals, ast.CheckOptionCascaded)
+	c.Assert(v.Security, Equals, model.SecurityDefiner)
+	c.Assert(v.CheckOption, Equals, model.CheckOptionCascaded)
 }
 
 func (s *testParserSuite) TestTimestampDiffUnit(c *C) {

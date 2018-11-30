@@ -2137,19 +2137,19 @@ CreateViewStmt:
  			OrReplace:     $2.(bool),
 			ViewName:      $7.(*ast.TableName),
 			Select:        selStmt,
-			Algorithm:     $3.(ast.ViewAlgorithm),
+			Algorithm:     $3.(model.ViewAlgorithm),
 			Definer:       $4.(*auth.UserIdentity),
-			Security:      $5.(ast.ViewSecurity),
+			Security:      $5.(model.ViewSecurity),
 		}
 		if $8 != nil{
 			x.Cols = $8.([]model.CIStr)
 		}
 		if $11 !=nil {
-		    x.CheckOption = $11.(ast.ViewCheckOption)
+		    x.CheckOption = $11.(model.ViewCheckOption)
 		    endOffset := parser.startOffset(&yyS[yypt])
 		    selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 		} else {
-		    x.CheckOption = ast.CheckOptionCascaded
+		    x.CheckOption = model.CheckOptionCascaded
 		}
 		$$ = x
 	}
@@ -2166,19 +2166,19 @@ OrReplace:
 ViewAlgorithm:
 	/* EMPTY */
 	{
-		$$ = ast.AlgorithmUndefined
+		$$ = model.AlgorithmUndefined
 	}
 |	"ALGORITHM" "=" "UNDEFINED"
 	{
-		$$ = ast.AlgorithmUndefined
+		$$ = model.AlgorithmUndefined
 	}
 |	"ALGORITHM" "=" "MERGE"
 	{
-		$$ = ast.AlgorithmMerge
+		$$ = model.AlgorithmMerge
 	}
 |	"ALGORITHM" "=" "TEMPTABLE"
 	{
-		$$ = ast.AlgorithmTemptable
+		$$ = model.AlgorithmTemptable
 	}
 
 ViewDefiner:
@@ -2194,15 +2194,15 @@ ViewDefiner:
 ViewSQLSecurity:
 	/* EMPTY */
 	{
-		$$ = ast.SecurityDefiner
+		$$ = model.SecurityDefiner
 	}
 |   "SQL" "SECURITY" "DEFINER"
 	 {
-		 $$ = ast.SecurityDefiner
+		 $$ = model.SecurityDefiner
 	 }
 |   "SQL" "SECURITY" "INVOKER"
 	 {
-		 $$ = ast.SecurityInvoker
+		 $$ = model.SecurityInvoker
 	 }
 
 ViewName:
@@ -2238,11 +2238,11 @@ ViewCheckOption:
 	}
 |   "WITH" "CASCADED" "CHECK" "OPTION"
 	{
-		$$ = ast.CheckOptionCascaded
+		$$ = model.CheckOptionCascaded
 	}
 |   "WITH" "LOCAL" "CHECK" "OPTION"
 	{
-		$$ = ast.CheckOptionLocal
+		$$ = model.CheckOptionLocal
 	}
 
 /******************************************************************

@@ -7872,19 +7872,19 @@ yynewstate:
 				OrReplace: yyS[yypt-9].item.(bool),
 				ViewName:  yyS[yypt-4].item.(*ast.TableName),
 				Select:    selStmt,
-				Algorithm: yyS[yypt-8].item.(ast.ViewAlgorithm),
+				Algorithm: yyS[yypt-8].item.(model.ViewAlgorithm),
 				Definer:   yyS[yypt-7].item.(*auth.UserIdentity),
-				Security:  yyS[yypt-6].item.(ast.ViewSecurity),
+				Security:  yyS[yypt-6].item.(model.ViewSecurity),
 			}
 			if yyS[yypt-3].item != nil {
 				x.Cols = yyS[yypt-3].item.([]model.CIStr)
 			}
 			if yyS[yypt-0].item != nil {
-				x.CheckOption = yyS[yypt-0].item.(ast.ViewCheckOption)
+				x.CheckOption = yyS[yypt-0].item.(model.ViewCheckOption)
 				endOffset := parser.startOffset(&yyS[yypt])
 				selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 			} else {
-				x.CheckOption = ast.CheckOptionCascaded
+				x.CheckOption = model.CheckOptionCascaded
 			}
 			parser.yyVAL.statement = x
 		}
@@ -7898,19 +7898,19 @@ yynewstate:
 		}
 	case 203:
 		{
-			parser.yyVAL.item = ast.AlgorithmUndefined
+			parser.yyVAL.item = model.AlgorithmUndefined
 		}
 	case 204:
 		{
-			parser.yyVAL.item = ast.AlgorithmUndefined
+			parser.yyVAL.item = model.AlgorithmUndefined
 		}
 	case 205:
 		{
-			parser.yyVAL.item = ast.AlgorithmMerge
+			parser.yyVAL.item = model.AlgorithmMerge
 		}
 	case 206:
 		{
-			parser.yyVAL.item = ast.AlgorithmTemptable
+			parser.yyVAL.item = model.AlgorithmTemptable
 		}
 	case 207:
 		{
@@ -7922,15 +7922,15 @@ yynewstate:
 		}
 	case 209:
 		{
-			parser.yyVAL.item = ast.SecurityDefiner
+			parser.yyVAL.item = model.SecurityDefiner
 		}
 	case 210:
 		{
-			parser.yyVAL.item = ast.SecurityDefiner
+			parser.yyVAL.item = model.SecurityDefiner
 		}
 	case 211:
 		{
-			parser.yyVAL.item = ast.SecurityInvoker
+			parser.yyVAL.item = model.SecurityInvoker
 		}
 	case 212:
 		{
@@ -7958,11 +7958,11 @@ yynewstate:
 		}
 	case 218:
 		{
-			parser.yyVAL.item = ast.CheckOptionCascaded
+			parser.yyVAL.item = model.CheckOptionCascaded
 		}
 	case 219:
 		{
-			parser.yyVAL.item = ast.CheckOptionLocal
+			parser.yyVAL.item = model.CheckOptionLocal
 		}
 	case 220:
 		{
