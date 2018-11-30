@@ -3101,9 +3101,10 @@ OnDuplicateKeyUpdate:
  *  TODO: support PARTITION
  **********************************************************************************/
 ReplaceIntoStmt:
-	"REPLACE" PriorityOpt IntoOpt TableName InsertValues
+	"REPLACE" PriorityOpt IntoOpt TableName PartitionNameOpt InsertValues
 	{
-		x := $5.(*ast.InsertStmt)
+		x := $6.(*ast.InsertStmt)
+		x.PartitionNames = $5.([]model.CIStr)
 		x.IsReplace = true
 		x.Priority = $2.(mysql.PriorityEnum)
 		ts := &ast.TableSource{Source: $4.(*ast.TableName)}
