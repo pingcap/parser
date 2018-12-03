@@ -286,8 +286,8 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
 		restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
 		c.Assert(err, IsNil, comment)
-		ast.CleanNodeText(stmt)
-		ast.CleanNodeText(restoreStmt)
+		CleanNodeText(stmt)
+		CleanNodeText(restoreStmt)
 		c.Assert(restoreStmt, DeepEquals, stmt, comment)
 		if restoreSQLs != "" {
 			restoreSQLs += "; "
@@ -2703,4 +2703,27 @@ func (s *testParserSuite) TestFieldText(c *C) {
 		c.Assert(traceStmt.Text(), Equals, sql)
 		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
 	}
+}
+
+// CleanNodeText set the text of node and all child node empty.
+// For test only.
+func CleanNodeText(node ast.Node) {
+	var cleaner nodeTextCleaner
+	node.Accept(&cleaner)
+}
+
+// nodeTextCleaner clean the text of a node and it's child node.
+// For test only.
+type nodeTextCleaner struct {
+}
+
+// Enter implements Visitor interface.
+func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	in.SetText("")
+	return in, false
+}
+
+// Leave implements Visitor interface.
+func (checker *nodeTextCleaner) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
 }

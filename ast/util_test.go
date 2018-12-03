@@ -59,3 +59,26 @@ func (s *testCacheableSuite) TestWriteName(c *C) {
 	sb.WriteString(";")
 	c.Assert(sb.String(), Equals, "``;`abc`;`ab``c`;`ab````c`;`ab`` ``c`;")
 }
+
+// CleanNodeText set the text of node and all child node empty.
+// For test only.
+func CleanNodeText(node Node) {
+	var cleaner nodeTextCleaner
+	node.Accept(&cleaner)
+}
+
+// nodeTextCleaner clean the text of a node and it's child node.
+// For test only.
+type nodeTextCleaner struct {
+}
+
+// Enter implements Visitor interface.
+func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
+	in.SetText("")
+	return in, false
+}
+
+// Leave implements Visitor interface.
+func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
+	return in, true
+}

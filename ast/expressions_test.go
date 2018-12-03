@@ -118,6 +118,7 @@ func (tc *testExpressionsSuite) createTestCase4UnaryOperationExpr() []exprTestCa
 		{"select -1", "SELECT -1"},
 	}
 }
+
 func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 	parser := parser.New()
 	var testNodes []exprTestCase

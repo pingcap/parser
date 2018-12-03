@@ -36,13 +36,6 @@ func IsReadOnly(node Node) bool {
 	}
 }
 
-// CleanNodeText set the text of node and all child node empty.
-// For test only.
-func CleanNodeText(node Node) {
-	var cleaner nodeTextCleaner
-	node.Accept(&cleaner)
-}
-
 // readOnlyChecker checks whether a query's ast is readonly, if it satisfied
 // 1. selectstmt;
 // 2. need not to set var;
@@ -67,22 +60,6 @@ func (checker *readOnlyChecker) Enter(in Node) (out Node, skipChildren bool) {
 // Leave implements Visitor interface.
 func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
 	return in, checker.readOnly
-}
-
-// nodeTextCleaner clean the text of a node and it's child node.
-// For test only.
-type nodeTextCleaner struct {
-}
-
-// Enter implements Visitor interface.
-func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
-	in.SetText("")
-	return in, false
-}
-
-// Leave implements Visitor interface.
-func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
-	return in, true
 }
 
 // WriteName append escaped `name` with back quote to `sb`.
