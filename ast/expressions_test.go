@@ -106,17 +106,25 @@ func (tc *testExpressionsSuite) TestExpresionsVisitorCover(c *C) {
 }
 func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 	parser := parser.New()
-	testNodes := []string{"select ++1", "select -+1", "select --1", "select -1"}
+	testNodes := []struct {
+		sourceSQL string
+		expectSQL string
+	}{{"select ++1", "SELECT ++1"},
+		{"select --1", "SELECT --1"},
+		{"select -+1", "SELECT -+1"},
+		{"select -1", "SELECT -1"}}
+
 	for _, node := range testNodes {
-		stmt, err := parser.ParseOneStmt(node, "", "")
-		comment := Commentf("source %v", node)
+		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
+		comment := Commentf("source %#v", node)
 		c.Assert(err, IsNil, comment)
 		var sb strings.Builder
 		sb.WriteString("SELECT ")
 		err = stmt.(*SelectStmt).Fields.Fields[0].Expr.Restore(&sb)
 		c.Assert(err, IsNil, comment)
 		restoreSql := sb.String()
-		comment = Commentf("source %v ; restore %v", node, restoreSql)
+		comment = Commentf("source %#v; restore %v", node, restoreSql)
+		c.Assert(restoreSql, Equals, node.expectSQL, comment)
 		stmt2, err := parser.ParseOneStmt(restoreSql, "", "")
 		c.Assert(err, IsNil, comment)
 		CleanNodeText(stmt)
