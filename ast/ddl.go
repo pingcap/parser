@@ -14,6 +14,7 @@
 package ast
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pingcap/errors"
@@ -73,6 +74,8 @@ func (n *DatabaseOption) Restore(sb *strings.Builder) error {
 	case DatabaseOptionCollate:
 		sb.WriteString("COLLATE = ")
 		sb.WriteString(n.Value)
+	default:
+		return errors.New(fmt.Sprintf("invalid DatabaseOptionType: %d", n.Tp))
 	}
 	return nil
 }
@@ -98,7 +101,7 @@ func (n *CreateDatabaseStmt) Restore(sb *strings.Builder) error {
 		sb.WriteString(" ")
 		err := option.Restore(sb)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 	return nil
