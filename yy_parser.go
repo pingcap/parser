@@ -135,9 +135,9 @@ func (parser *Parser) SetSQLMode(mode mysql.SQLMode) {
 	parser.lexer.SetSQLMode(mode)
 }
 
-// SetWindowFunc controls whether the parser to parse syntax related with window function.
-func (parser *Parser) SetWindowFunc(val bool) {
-	parser.lexer.SetWindowFunc(val)
+// EnableWindowFunc controls whether the parser to parse syntax related with window function.
+func (parser *Parser) EnableWindowFunc(val bool) {
+	parser.lexer.EnableWindowFunc(val)
 }
 
 // ParseErrorWith returns "You have a syntax error near..." error message compatible with mysql.
