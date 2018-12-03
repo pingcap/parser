@@ -104,15 +104,24 @@ func (tc *testExpressionsSuite) TestExpresionsVisitorCover(c *C) {
 		v.node.Accept(visitor1{})
 	}
 }
-func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
-	parser := parser.New()
-	testNodes := []struct {
-		sourceSQL string
-		expectSQL string
-	}{{"select ++1", "SELECT ++1"},
+
+type exprTestCase struct {
+	sourceSQL string
+	expectSQL string
+}
+
+func (tc *testExpressionsSuite) createTestCase4UnaryOperationExpr() []exprTestCase {
+	return []exprTestCase{
+		{"select ++1", "SELECT ++1"},
 		{"select --1", "SELECT --1"},
 		{"select -+1", "SELECT -+1"},
-		{"select -1", "SELECT -1"}}
+		{"select -1", "SELECT -1"},
+	}
+}
+func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
+	parser := parser.New()
+	var testNodes []exprTestCase
+	testNodes = append(testNodes, tc.createTestCase4UnaryOperationExpr()...)
 
 	for _, node := range testNodes {
 		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
