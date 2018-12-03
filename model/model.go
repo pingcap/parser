@@ -238,6 +238,15 @@ func (t *TableInfo) GetPkColInfo() *ColumnInfo {
 	return nil
 }
 
+func (t *TableInfo) GetAutoIncrementColInfo() *ColumnInfo {
+	for _, colInfo := range t.Columns {
+		if mysql.HasAutoIncrementFlag(colInfo.Flag) {
+			return colInfo
+		}
+	}
+	return nil
+}
+
 // Cols returns the columns of the table in public state.
 func (t *TableInfo) Cols() []*ColumnInfo {
 	publicColumns := make([]*ColumnInfo, len(t.Columns))
@@ -314,6 +323,7 @@ type PartitionInfo struct {
 	Enable bool `json:"enable"`
 
 	Definitions []PartitionDefinition `json:"definitions"`
+	Num         uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
