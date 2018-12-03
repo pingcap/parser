@@ -184,7 +184,7 @@ type DeleteTableList struct {
 
 // Restore implements Recoverable interface.
 func (n *DeleteTableList) Restore(sb *strings.Builder) error {
-	panic("Not implemented")
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.

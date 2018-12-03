@@ -14,6 +14,8 @@
 package ast
 
 import (
+	"strings"
+
 	. "github.com/pingcap/check"
 )
 
@@ -41,4 +43,19 @@ func (s *testCacheableSuite) TestCacheable(c *C) {
 
 	stmt = &DoStmt{}
 	c.Assert(IsReadOnly(stmt), IsTrue)
+}
+
+func (s *testCacheableSuite) TestWriteName(c *C) {
+	var sb strings.Builder
+	WriteName(&sb, "")
+	sb.WriteString(";")
+	WriteName(&sb, "abc")
+	sb.WriteString(";")
+	WriteName(&sb, "ab`c")
+	sb.WriteString(";")
+	WriteName(&sb, "ab``c")
+	sb.WriteString(";")
+	WriteName(&sb, "ab` `c")
+	sb.WriteString(";")
+	c.Assert(sb.String(), Equals, "``;`abc`;`ab``c`;`ab````c`;`ab`` ``c`;")
 }
