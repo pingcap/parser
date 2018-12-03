@@ -252,9 +252,7 @@ type testErrMsgCase struct {
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := New()
-	if s.enableWindowFunc {
-		parser.EnableWindowFunc()
-	}
+	parser.SetWindowFunc(s.enableWindowFunc)
 	for _, t := range table {
 		_, err := parser.Parse(t.src, "", "")
 		comment := Commentf("source %v", t.src)
@@ -2042,9 +2040,7 @@ func (s *testParserSuite) TestUnion(c *C) {
 
 func (s *testParserSuite) TestUnionOrderBy(c *C) {
 	parser := New()
-	if s.enableWindowFunc {
-		parser.EnableWindowFunc()
-	}
+	parser.SetWindowFunc(s.enableWindowFunc)
 
 	tests := []struct {
 		src        string
@@ -2606,7 +2602,7 @@ func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bo
 // See https://github.com/pingcap/parser/pull/51 for details
 func (s *testParserSuite) TestVisitFrameBound(c *C) {
 	parser := New()
-	parser.EnableWindowFunc()
+	parser.SetWindowFunc(true)
 	table := []struct {
 		s          string
 		exprRc     int
