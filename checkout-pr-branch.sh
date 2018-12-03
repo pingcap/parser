@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script is used to checkout a TiDB PR branch in a forked repo.
+# This script is used to checkout a Parser PR branch in a forked repo.
 if test -z $1; then
 	echo -e "Usage:\n"
 	echo -e "\tcheckout-pr-branch.sh [github-username]:[pr-branch]\n"
