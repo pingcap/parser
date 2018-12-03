@@ -741,6 +741,7 @@ const (
 	AlterTableRenameIndex
 	AlterTableForce
 	AlterTableAddPartitions
+	AlterTableCoalescePartitions
 	AlterTableDropPartition
 
 // TODO: Add more actions
@@ -775,6 +776,7 @@ type AlterTableSpec struct {
 	FromKey         model.CIStr
 	ToKey           model.CIStr
 	PartDefinitions []*PartitionDefinition
+	Num             uint64
 }
 
 // Accept implements Node Accept interface.
@@ -890,4 +892,5 @@ type PartitionOptions struct {
 	Expr        ExprNode
 	ColumnNames []*ColumnName
 	Definitions []*PartitionDefinition
+	Num         uint64
 }
