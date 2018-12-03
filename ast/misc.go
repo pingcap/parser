@@ -16,9 +16,9 @@ package ast
 import (
 	"bytes"
 	"fmt"
-	"github.com/pingcap/errors"
 	"strings"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"

@@ -14,11 +14,12 @@
 package ast_test
 
 import (
+	"strings"
+
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
-	"strings"
 )
 
 var _ = Suite(&testExpressionsSuite{})

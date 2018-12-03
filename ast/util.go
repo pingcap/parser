@@ -68,6 +68,7 @@ func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
 	return in, checker.readOnly
 }
 
+// nodeTextCleaner clean the text of a node and it's child node
 type nodeTextCleaner struct {
 }
 

@@ -15,11 +15,11 @@ package ast
 
 import (
 	"fmt"
-	"github.com/pingcap/errors"
 	"io"
 	"regexp"
 	"strings"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/opcode"
 )
