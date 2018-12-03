@@ -13,9 +13,7 @@
 
 package ast
 
-import (
-	"strings"
-)
+import "strings"
 
 // IsReadOnly checks whether the input ast is readOnly.
 func IsReadOnly(node Node) bool {
