@@ -37,6 +37,7 @@ func IsReadOnly(node Node) bool {
 }
 
 // CleanNodeText set the text of node and all child node empty.
+// For test only.
 func CleanNodeText(node Node) {
 	var cleaner nodeTextCleaner
 	node.Accept(&cleaner)
@@ -68,7 +69,8 @@ func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
 	return in, checker.readOnly
 }
 
-// nodeTextCleaner clean the text of a node and it's child node
+// nodeTextCleaner clean the text of a node and it's child node.
+// For test only.
 type nodeTextCleaner struct {
 }
 
