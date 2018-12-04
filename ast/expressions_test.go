@@ -119,6 +119,14 @@ func (tc *testExpressionsSuite) createTestCase4UnaryOperationExpr() []exprTestCa
 	}
 }
 
+func (tc *testExpressionsSuite) createTestCase4ColumnNameExpr() []exprTestCase {
+	return []exprTestCase{
+		{"select abc", "SELECT `abc`"},
+		{"select `abc`", "SELECT `abc`"},
+		{"select `ab``c`", "SELECT `ab``c`"},
+	}
+}
+
 func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 	parser := parser.New()
 	var testNodes []exprTestCase

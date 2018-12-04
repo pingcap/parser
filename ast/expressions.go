@@ -371,7 +371,16 @@ type ColumnName struct {
 
 // Restore implements Recoverable interface.
 func (n *ColumnName) Restore(sb *strings.Builder) error {
-	return errors.New("Not implemented")
+	if n.Schema.L != "" {
+		WriteName(sb, n.Schema.L)
+		sb.WriteString(".")
+	}
+	if n.Table.L != "" {
+		WriteName(sb, n.Table.L)
+		sb.WriteString(".")
+	}
+	WriteName(sb, n.Name.L)
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -424,7 +433,11 @@ type ColumnNameExpr struct {
 
 // Restore implements Recoverable interface.
 func (n *ColumnNameExpr) Restore(sb *strings.Builder) error {
-	return errors.New("Not implemented")
+	err := n.Name.Restore(sb)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 // Format the ExprNode into a Writer.
