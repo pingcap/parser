@@ -124,6 +124,10 @@ func (tc *testExpressionsSuite) createTestCase4ColumnNameExpr() []exprTestCase {
 		{"select abc", "SELECT `abc`"},
 		{"select `abc`", "SELECT `abc`"},
 		{"select `ab``c`", "SELECT `ab``c`"},
+		{"select sabc.tabc", "SELECT `sabc`.`tabc`"},
+		{"select dabc.sabc.tabc", "SELECT `dabc`.`sabc`.`tabc`"},
+		{"select dabc.`sabc`.tabc", "SELECT `dabc`.`sabc`.`tabc`"},
+		{"select `dabc`.`sabc`.tabc", "SELECT `dabc`.`sabc`.`tabc`"},
 	}
 }
 
