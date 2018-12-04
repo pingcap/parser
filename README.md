@@ -31,6 +31,7 @@ Suppose the forked repository is `https://github.com/your-repo/parser`.
 
     ```
     GO111MODULE=on go mod edit -replace github.com/pingcap/parser=github.com/your-repo/parser@your-branch
+    GO111MODULE=on go mode tidy
     ```
 
 2. You can get correct version information by running this command in your TiDB directory:
