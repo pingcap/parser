@@ -131,6 +131,7 @@ func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 	parser := parser.New()
 	var testNodes []exprTestCase
 	testNodes = append(testNodes, tc.createTestCase4UnaryOperationExpr()...)
+	testNodes = append(testNodes, tc.createTestCase4ColumnNameExpr()...)
 
 	for _, node := range testNodes {
 		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
