@@ -14,6 +14,9 @@
 package ast
 
 import (
+	"strings"
+
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
@@ -43,6 +46,10 @@ var (
 	_ Node = &TableSource{}
 	_ Node = &UnionSelectList{}
 	_ Node = &WildCardField{}
+	_ Node = &WindowSpec{}
+	_ Node = &PartitionByClause{}
+	_ Node = &FrameClause{}
+	_ Node = &FrameBound{}
 )
 
 // JoinType is join type, including cross/left/right/full.
@@ -76,6 +83,11 @@ type Join struct {
 	NaturalJoin bool
 	// StraightJoin represents a straight join.
 	StraightJoin bool
+}
+
+// Restore implements Recoverable interface.
+func (n *Join) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -119,6 +131,11 @@ type TableName struct {
 	TableInfo *model.TableInfo
 
 	IndexHints []*IndexHint
+}
+
+// Restore implements Recoverable interface.
+func (n *TableName) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -165,6 +182,11 @@ type DeleteTableList struct {
 	Tables []*TableName
 }
 
+// Restore implements Recoverable interface.
+func (n *DeleteTableList) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *DeleteTableList) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -189,6 +211,11 @@ type OnCondition struct {
 	node
 
 	Expr ExprNode
+}
+
+// Restore implements Recoverable interface.
+func (n *OnCondition) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -216,6 +243,11 @@ type TableSource struct {
 
 	// AsName is the alias name of the table source.
 	AsName model.CIStr
+}
+
+// Restore implements Recoverable interface.
+func (n *TableSource) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -264,6 +296,11 @@ type WildCardField struct {
 	Schema model.CIStr
 }
 
+// Restore implements Recoverable interface.
+func (n *WildCardField) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *WildCardField) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -294,6 +331,11 @@ type SelectField struct {
 	Auxiliary bool
 }
 
+// Restore implements Recoverable interface.
+func (n *SelectField) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *SelectField) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -316,6 +358,11 @@ type FieldList struct {
 	node
 
 	Fields []*SelectField
+}
+
+// Restore implements Recoverable interface.
+func (n *FieldList) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -342,6 +389,11 @@ type TableRefsClause struct {
 	TableRefs *Join
 }
 
+// Restore implements Recoverable interface.
+func (n *TableRefsClause) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *TableRefsClause) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -365,6 +417,11 @@ type ByItem struct {
 	Desc bool
 }
 
+// Restore implements Recoverable interface.
+func (n *ByItem) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *ByItem) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -384,6 +441,11 @@ func (n *ByItem) Accept(v Visitor) (Node, bool) {
 type GroupByClause struct {
 	node
 	Items []*ByItem
+}
+
+// Restore implements Recoverable interface.
+func (n *GroupByClause) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -409,6 +471,11 @@ type HavingClause struct {
 	Expr ExprNode
 }
 
+// Restore implements Recoverable interface.
+func (n *HavingClause) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *HavingClause) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -429,6 +496,11 @@ type OrderByClause struct {
 	node
 	Items    []*ByItem
 	ForUnion bool
+}
+
+// Restore implements Recoverable interface.
+func (n *OrderByClause) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -468,6 +540,8 @@ type SelectStmt struct {
 	GroupBy *GroupByClause
 	// Having is the having condition.
 	Having *HavingClause
+	// WindowSpecs is the window specification list.
+	WindowSpecs []WindowSpec
 	// OrderBy is the ordering expression list.
 	OrderBy *OrderByClause
 	// Limit is the limit clause.
@@ -480,6 +554,11 @@ type SelectStmt struct {
 	IsAfterUnionDistinct bool
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
+}
+
+// Restore implements Recoverable interface.
+func (n *SelectStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -542,6 +621,14 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 		n.Having = node.(*HavingClause)
 	}
 
+	for i, spec := range n.WindowSpecs {
+		node, ok := spec.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.WindowSpecs[i] = *node.(*WindowSpec)
+	}
+
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
 		if !ok {
@@ -566,6 +653,11 @@ type UnionSelectList struct {
 	node
 
 	Selects []*SelectStmt
+}
+
+// Restore implements Recoverable interface.
+func (n *UnionSelectList) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -594,6 +686,11 @@ type UnionStmt struct {
 	SelectList *UnionSelectList
 	OrderBy    *OrderByClause
 	Limit      *Limit
+}
+
+// Restore implements Recoverable interface.
+func (n *UnionStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -636,6 +733,11 @@ type Assignment struct {
 	Expr ExprNode
 }
 
+// Restore implements Recoverable interface.
+func (n *Assignment) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *Assignment) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -668,6 +770,11 @@ type LoadDataStmt struct {
 	FieldsInfo  *FieldsClause
 	LinesInfo   *LinesClause
 	IgnoreLines uint64
+}
+
+// Restore implements Recoverable interface.
+func (n *LoadDataStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -722,6 +829,11 @@ type InsertStmt struct {
 	OnDuplicate []*Assignment
 	Select      ResultSetNode
 	PartitionNames	[]model.CIStr
+}
+
+// Restore implements Recoverable interface.
+func (n *InsertStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -800,6 +912,11 @@ type DeleteStmt struct {
 	TableHints []*TableOptimizerHint
 }
 
+// Restore implements Recoverable interface.
+func (n *DeleteStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *DeleteStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -860,6 +977,11 @@ type UpdateStmt struct {
 	TableHints    []*TableOptimizerHint
 }
 
+// Restore implements Recoverable interface.
+func (n *UpdateStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *UpdateStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -909,6 +1031,11 @@ type Limit struct {
 
 	Count  ExprNode
 	Offset ExprNode
+}
+
+// Restore implements Recoverable interface.
+func (n *Limit) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Accept implements Node Accept interface.
@@ -991,6 +1118,11 @@ type ShowStmt struct {
 	Where       ExprNode
 }
 
+// Restore implements Recoverable interface.
+func (n *ShowStmt) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Accept implements Node Accept interface.
 func (n *ShowStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -1033,6 +1165,186 @@ func (n *ShowStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Where = node.(ExprNode)
+	}
+	return v.Leave(n)
+}
+
+// WindowSpec is the specification of a window.
+type WindowSpec struct {
+	node
+
+	Name model.CIStr
+	// Ref is the reference window of this specification. For example, in `w2 as (w1 order by a)`,
+	// the definition of `w2` references `w1`.
+	Ref model.CIStr
+
+	PartitionBy *PartitionByClause
+	OrderBy     *OrderByClause
+	Frame       *FrameClause
+}
+
+// Restore implements Recoverable interface.
+func (n *WindowSpec) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
+// Accept implements Node Accept interface.
+func (n *WindowSpec) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*WindowSpec)
+	if n.PartitionBy != nil {
+		node, ok := n.PartitionBy.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.PartitionBy = node.(*PartitionByClause)
+	}
+	if n.OrderBy != nil {
+		node, ok := n.OrderBy.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.OrderBy = node.(*OrderByClause)
+	}
+	if n.Frame != nil {
+		node, ok := n.Frame.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Frame = node.(*FrameClause)
+	}
+	return v.Leave(n)
+}
+
+// PartitionByClause represents partition by clause.
+type PartitionByClause struct {
+	node
+
+	Items []*ByItem
+}
+
+// Restore implements Recoverable interface.
+func (n *PartitionByClause) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
+// Accept implements Node Accept interface.
+func (n *PartitionByClause) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*PartitionByClause)
+	for i, val := range n.Items {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Items[i] = node.(*ByItem)
+	}
+	return v.Leave(n)
+}
+
+// FrameType is the type of window function frame.
+type FrameType int
+
+// Window function frame types.
+// MySQL only supports `ROWS` and `RANGES`.
+const (
+	Rows = iota
+	Ranges
+	Groups
+)
+
+// FrameClause represents frame clause.
+type FrameClause struct {
+	node
+
+	Type   FrameType
+	Extent FrameExtent
+}
+
+// Restore implements Recoverable interface.
+func (n *FrameClause) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
+// Accept implements Node Accept interface.
+func (n *FrameClause) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*FrameClause)
+	node, ok := n.Extent.Start.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Extent.Start = *node.(*FrameBound)
+	node, ok = n.Extent.End.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Extent.End = *node.(*FrameBound)
+	return v.Leave(n)
+}
+
+// FrameExtent represents frame extent.
+type FrameExtent struct {
+	Start FrameBound
+	End   FrameBound
+}
+
+// FrameType is the type of window function frame bound.
+type BoundType int
+
+// Frame bound types.
+const (
+	Following = iota
+	Preceding
+	CurrentRow
+)
+
+// FrameBound represents frame bound.
+type FrameBound struct {
+	node
+
+	Type      BoundType
+	UnBounded bool
+	Expr      ExprNode
+	// `Unit` is used to indicate the units in which the `Expr` should be interpreted.
+	// For example: '2:30' MINUTE_SECOND.
+	Unit ExprNode
+}
+
+// Restore implements Recoverable interface.
+func (n *FrameBound) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
+// Accept implements Node Accept interface.
+func (n *FrameBound) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*FrameBound)
+	if n.Expr != nil {
+		node, ok := n.Expr.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Expr = node.(ExprNode)
+	}
+	if n.Unit != nil {
+		node, ok := n.Unit.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Unit = node.(ExprNode)
 	}
 	return v.Leave(n)
 }

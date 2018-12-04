@@ -16,7 +16,9 @@ package ast
 import (
 	"fmt"
 	"io"
+	"strings"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
 )
@@ -25,6 +27,7 @@ var (
 	_ FuncNode = &AggregateFuncExpr{}
 	_ FuncNode = &FuncCallExpr{}
 	_ FuncNode = &FuncCastExpr{}
+	_ FuncNode = &WindowFuncExpr{}
 )
 
 // List scalar function names.
@@ -170,6 +173,7 @@ const (
 	Year             = "year"
 	YearWeek         = "yearweek"
 	LastDay          = "last_day"
+	TiDBParseTso     = "tidb_parse_tso"
 
 	// string functions
 	ASCII           = "ascii"
@@ -325,6 +329,11 @@ type FuncCallExpr struct {
 	Args []ExprNode
 }
 
+// Restore implements Recoverable interface.
+func (n *FuncCallExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
 // Format the ExprNode into a Writer.
 func (n *FuncCallExpr) Format(w io.Writer) {
 	fmt.Fprintf(w, "%s(", n.FnName.L)
@@ -395,6 +404,11 @@ type FuncCastExpr struct {
 	Tp *types.FieldType
 	// FunctionType is either Cast, Convert or Binary.
 	FunctionType CastFunctionType
+}
+
+// Restore implements Recoverable interface.
+func (n *FuncCastExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Format the ExprNode into a Writer.
@@ -482,6 +496,10 @@ const (
 	AggFuncBitXor = "bit_xor"
 	// AggFuncBitAnd is the name of bit_and function.
 	AggFuncBitAnd = "bit_and"
+	// AggFuncVarPop is the name of var_pop function
+	AggFuncVarPop = "var_pop"
+	// AggFuncVarSamp is the name of var_samp function
+	AggFuncVarSamp = "var_samp"
 	// AggFuncStddevPop is the name of stddev_pop function
 	AggFuncStddevPop = "stddev_pop"
 	// AggFuncStddevSamp is the name of stddev_samp function
@@ -499,6 +517,11 @@ type AggregateFuncExpr struct {
 	// For example, column c1 values are "1", "2", "2",  "sum(c1)" is "5",
 	// but "sum(distinct c1)" is "3".
 	Distinct bool
+}
+
+// Restore implements Recoverable interface.
+func (n *AggregateFuncExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
 }
 
 // Format the ExprNode into a Writer.
@@ -520,5 +543,83 @@ func (n *AggregateFuncExpr) Accept(v Visitor) (Node, bool) {
 		}
 		n.Args[i] = node.(ExprNode)
 	}
+	return v.Leave(n)
+}
+
+const (
+	// WindowFuncRowNumber is the name of row_number function.
+	WindowFuncRowNumber = "row_number"
+	// WindowFuncRank is the name of rank function.
+	WindowFuncRank = "rank"
+	// WindowFuncDenseRank is the name of dense_rank function.
+	WindowFuncDenseRank = "dense_rank"
+	// WindowFuncCumeDist is the name of cume_dist function.
+	WindowFuncCumeDist = "cume_dist"
+	// WindowFuncPercentRank is the name of percent_rank function.
+	WindowFuncPercentRank = "percent_rank"
+	// WindowFuncNtile is the name of ntile function.
+	WindowFuncNtile = "ntile"
+	// WindowFuncLead is the name of lead function.
+	WindowFuncLead = "lead"
+	// WindowFuncLag is the name of lag function.
+	WindowFuncLag = "lag"
+	// WindowFuncFirstValue is the name of first_value function.
+	WindowFuncFirstValue = "first_value"
+	// WindowFuncLastValue is the name of last_value function.
+	WindowFuncLastValue = "last_value"
+	// WindowFuncNthValue is the name of nth_value function.
+	WindowFuncNthValue = "nth_value"
+)
+
+// WindowFuncExpr represents window function expression.
+type WindowFuncExpr struct {
+	funcNode
+
+	// F is the function name.
+	F string
+	// Args is the function args.
+	Args []ExprNode
+	// Distinct cannot be true for most window functions, except `max` and `min`.
+	// We need to raise error if it is not allowed to be true.
+	Distinct bool
+	// IgnoreNull indicates how to handle null value.
+	// MySQL only supports `RESPECT NULLS`, so we need to raise error if it is true.
+	IgnoreNull bool
+	// FromLast indicates the calculation direction of this window function.
+	// MySQL only supports calculation from first, so we need to raise error if it is true.
+	FromLast bool
+	// Spec is the specification of this window.
+	Spec WindowSpec
+}
+
+// Restore implements Recoverable interface.
+func (n *WindowFuncExpr) Restore(sb *strings.Builder) error {
+	return errors.New("Not implemented")
+}
+
+// Format formats the window function expression into a Writer.
+func (n *WindowFuncExpr) Format(w io.Writer) {
+	panic("Not implemented")
+}
+
+// Accept implements Node Accept interface.
+func (n *WindowFuncExpr) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*WindowFuncExpr)
+	for i, val := range n.Args {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Args[i] = node.(ExprNode)
+	}
+	node, ok := n.Spec.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Spec = *node.(*WindowSpec)
 	return v.Leave(n)
 }

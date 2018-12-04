@@ -1,5 +1,7 @@
 # Parser
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/pingcap/parser)](https://goreportcard.com/report/github.com/pingcap/parser) [![CircleCI Status](https://circleci.com/gh/pingcap/parser.svg?style=shield)](https://circleci.com/gh/pingcap/parser) [![GoDoc](https://godoc.org/github.com/pingcap/parser?status.svg)](https://godoc.org/github.com/pingcap/parser)
+
 TiDB SQL Parser
 
 ## How to update parser for TiDB
@@ -25,7 +27,11 @@ Suppose the forked repository is `https://github.com/your-repo/parser`.
     replace github.com/pingcap/parser => github.com/your-repo/parser v0.0.0-20181102150703-4acd198f5092
     ```
 
-    This change tells TiDB to use the modified parser from your repository.
+    This change tells TiDB to use the modified parser from your repository. You can just use below command to replace the dependent parser version:
+
+    ```
+    GO111MODULE=on go mod edit -replace github.com/pingcap/parser=github.com/your-repo/parser@your-branch
+    ```
 
 2. You can get correct version information by running this command in your TiDB directory:
 
