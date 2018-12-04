@@ -371,15 +371,15 @@ type ColumnName struct {
 
 // Restore implements Recoverable interface.
 func (n *ColumnName) Restore(sb *strings.Builder) error {
-	if n.Schema.L != "" {
-		WriteName(sb, n.Schema.L)
+	if n.Schema.O != "" {
+		WriteName(sb, n.Schema.O)
 		sb.WriteString(".")
 	}
-	if n.Table.L != "" {
-		WriteName(sb, n.Table.L)
+	if n.Table.O != "" {
+		WriteName(sb, n.Table.O)
 		sb.WriteString(".")
 	}
-	WriteName(sb, n.Name.L)
+	WriteName(sb, n.Name.O)
 	return nil
 }
 
