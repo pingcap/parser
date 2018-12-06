@@ -14,7 +14,10 @@
 package ast_test
 
 import (
+	"strings"
+
 	. "github.com/pingcap/check"
+	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
@@ -99,5 +102,56 @@ func (tc *testExpressionsSuite) TestExpresionsVisitorCover(c *C) {
 		c.Check(ce.enterCnt, Equals, v.expectedEnterCnt)
 		c.Check(ce.leaveCnt, Equals, v.expectedLeaveCnt)
 		v.node.Accept(visitor1{})
+	}
+}
+
+type exprTestCase struct {
+	sourceSQL string
+	expectSQL string
+}
+
+func (tc *testExpressionsSuite) createTestCase4UnaryOperationExpr() []exprTestCase {
+	return []exprTestCase{
+		{"select ++1", "SELECT ++1"},
+		{"select --1", "SELECT --1"},
+		{"select -+1", "SELECT -+1"},
+		{"select -1", "SELECT -1"},
+	}
+}
+
+func (tc *testExpressionsSuite) createTestCase4ColumnNameExpr() []exprTestCase {
+	return []exprTestCase{
+		{"select abc", "SELECT `abc`"},
+		{"select `abc`", "SELECT `abc`"},
+		{"select `ab``c`", "SELECT `ab``c`"},
+		{"select sabc.tABC", "SELECT `sabc`.`tABC`"},
+		{"select dabc.sabc.tabc", "SELECT `dabc`.`sabc`.`tabc`"},
+		{"select dabc.`sabc`.tabc", "SELECT `dabc`.`sabc`.`tabc`"},
+		{"select `dABC`.`sabc`.tabc", "SELECT `dABC`.`sabc`.`tabc`"},
+	}
+}
+
+func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
+	parser := parser.New()
+	var testNodes []exprTestCase
+	testNodes = append(testNodes, tc.createTestCase4UnaryOperationExpr()...)
+	testNodes = append(testNodes, tc.createTestCase4ColumnNameExpr()...)
+
+	for _, node := range testNodes {
+		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
+		comment := Commentf("source %#v", node)
+		c.Assert(err, IsNil, comment)
+		var sb strings.Builder
+		sb.WriteString("SELECT ")
+		err = stmt.(*SelectStmt).Fields.Fields[0].Expr.Restore(&sb)
+		c.Assert(err, IsNil, comment)
+		restoreSql := sb.String()
+		comment = Commentf("source %#v; restore %v", node, restoreSql)
+		c.Assert(restoreSql, Equals, node.expectSQL, comment)
+		stmt2, err := parser.ParseOneStmt(restoreSql, "", "")
+		c.Assert(err, IsNil, comment)
+		CleanNodeText(stmt)
+		CleanNodeText(stmt2)
+		c.Assert(stmt2, DeepEquals, stmt, comment)
 	}
 }
