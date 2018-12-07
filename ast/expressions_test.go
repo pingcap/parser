@@ -135,6 +135,9 @@ func (tc *testExpressionsSuite) createTestCase4BetweenExpr() []exprTestCase {
 	return []exprTestCase{
 		{"select b between 1 and 2", "SELECT `b` BETWEEN 1 AND 2"},
 		{"select b not between 1 and 2", "SELECT `b` NOT BETWEEN 1 AND 2"},
+		{"select b between a and b", "SELECT `b` BETWEEN `a` AND `b`"},
+		{"select b between '' and 'b'", "SELECT `b` BETWEEN \"\" AND \"b\""},
+		{"select b between '2018-11-01' and '2018-11-02'", "SELECT `b` BETWEEN \"2018-11-01\" AND \"2018-11-02\""},
 	}
 }
 
