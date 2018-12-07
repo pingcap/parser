@@ -131,11 +131,19 @@ func (tc *testExpressionsSuite) createTestCase4ColumnNameExpr() []exprTestCase {
 	}
 }
 
+func (tc *testExpressionsSuite) createTestCase4BetweenExpr() []exprTestCase {
+	return []exprTestCase{
+		{"select b between 1 and 2", "SELECT `b` BETWEEN 1 AND 2"},
+		{"select b not between 1 and 2", "SELECT `b` NOT BETWEEN 1 AND 2"},
+	}
+}
+
 func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 	parser := parser.New()
 	var testNodes []exprTestCase
 	testNodes = append(testNodes, tc.createTestCase4UnaryOperationExpr()...)
 	testNodes = append(testNodes, tc.createTestCase4ColumnNameExpr()...)
+	testNodes = append(testNodes, tc.createTestCase4BetweenExpr()...)
 
 	for _, node := range testNodes {
 		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")

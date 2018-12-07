@@ -81,7 +81,8 @@ type BetweenExpr struct {
 
 // Restore implements Recoverable interface.
 func (n *BetweenExpr) Restore(sb *strings.Builder) error {
-	return errors.New("Not implemented")
+	n.Format(sb)
+	return nil
 }
 
 // Format the ExprNode into a Writer.
