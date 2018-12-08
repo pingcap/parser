@@ -134,25 +134,36 @@ func (tc *testDMLSuite) TestTableNameRestore(c *C) {
 func (tc *testDMLSuite) createTestCase4TableNameIndexHints() []tableNameTestCase {
 
 	return []tableNameTestCase{
-		{"select * from t use index (hello)", "SELECT * FROM `t` USE INDEX (hello)"},
-		{"select * from t use index (hello, world)", "SELECT * FROM `t` USE INDEX (hello,world)"},
+		{"select * from t use index (hello)", "SELECT * FROM `t` USE INDEX (`hello`)"},
+		{"select * from t use index (hello, world)", "SELECT * FROM `t` USE INDEX (`hello`, `world`)"},
 		{"select * from t use index ()", "SELECT * FROM `t` USE INDEX ()"},
 		{"select * from t use key ()", "SELECT * FROM `t` USE INDEX ()"},
 		{"select * from t ignore key ()", "SELECT * FROM `t` IGNORE INDEX ()"},
 		{"select * from t force key ()", "SELECT * FROM `t` FORCE INDEX ()"},
-		{"select * from t use index for order by (idx1)", "SELECT * FROM `t` USE INDEX FOR ORDER BY (idx1)"},
+		{"select * from t use index for order by (idx1)", "SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`)"},
 
-		{"select * from t use index (hello, world, yes) force key (good)", "SELECT * FROM `t` USE INDEX (hello,world,yes) FORCE INDEX (good)"},
-		{"select * from t use index (hello, world, yes) use index for order by (good)", "SELECT * FROM `t` USE INDEX (hello,world,yes) USE INDEX FOR ORDER BY (good)"},
-		{"select * from t ignore key (hello, world, yes) force key (good)", "SELECT * FROM `t` IGNORE INDEX (hello,world,yes) FORCE INDEX (good)"},
+		{"select * from t use index (hello, world, yes) force key (good)", "SELECT * FROM `t` USE INDEX (`hello`, `world`, `yes`) FORCE INDEX (`good`)"},
+		{"select * from t use index (hello, world, yes) use index for order by (good)", "SELECT * FROM `t` USE INDEX (`hello`, `world`, `yes`) USE INDEX FOR ORDER BY (`good`)"},
+		{"select * from t ignore key (hello, world, yes) force key (good)", "SELECT * FROM `t` IGNORE INDEX (`hello`, `world`, `yes`) FORCE INDEX (`good`)"},
 
-		{"select * from t use index for group by (idx1) use index for order by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (idx1) USE INDEX FOR ORDER BY (idx2)"},
-		{"select * from t use index for group by (idx1) ignore key for order by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (idx1) IGNORE INDEX FOR ORDER BY (idx2)"},
-		{"select * from t use index for group by (idx1) ignore key for group by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (idx1) IGNORE INDEX FOR GROUP BY (idx2)"},
-		{"select * from t use index for order by (idx1) ignore key for group by (idx2)","SELECT * FROM `t` USE INDEX FOR ORDER BY (idx1) IGNORE INDEX FOR GROUP BY (idx2)"},
+		{"select * from t use index for group by (idx1) use index for order by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`idx1`) USE INDEX FOR ORDER BY (`idx2`)"},
+		{"select * from t use index for group by (idx1) ignore key for order by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`idx1`) IGNORE INDEX FOR ORDER BY (`idx2`)"},
+		{"select * from t use index for group by (idx1) ignore key for group by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`)"},
+		{"select * from t use index for order by (idx1) ignore key for group by (idx2)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`)"},
 
-		{"select * from t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)","SELECT * FROM `t` USE INDEX FOR ORDER BY (idx1) IGNORE INDEX FOR GROUP BY (idx2) USE INDEX (idx3)"},
-		{"select * from t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)","SELECT * FROM `t` USE INDEX FOR ORDER BY (idx1) IGNORE INDEX FOR GROUP BY (idx2) USE INDEX (idx3)"},
+		{"select * from t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`) USE INDEX (`idx3`)"},
+		{"select * from t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`) USE INDEX (`idx3`)"},
+
+		{"select * from t use index (`foo``bar`) force index (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX (`foo``bar`) FORCE INDEX (`baz``1`, `xyz`)"},
+		{"select * from t force index (`foo``bar`) ignore index (`baz``1`, xyz)","SELECT * FROM `t` FORCE INDEX (`foo``bar`) IGNORE INDEX (`baz``1`, `xyz`)"},
+		{"select * from t ignore index (`foo``bar`) force key (`baz``1`, xyz)","SELECT * FROM `t` IGNORE INDEX (`foo``bar`) FORCE INDEX (`baz``1`, `xyz`)"},
+		{"select * from t ignore index (`foo``bar`) ignore key for group by (`baz``1`, xyz)","SELECT * FROM `t` IGNORE INDEX (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
+		{"select * from t ignore index (`foo``bar`) ignore key for order by (`baz``1`, xyz)","SELECT * FROM `t` IGNORE INDEX (`foo``bar`) IGNORE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
+
+		{"select * from t use index for group by (`foo``bar`) use index for order by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`foo``bar`) USE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
+		{"select * from t use index for group by (`foo``bar`) ignore key for order by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
+		{"select * from t use index for group by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
+		{"select * from t use index for order by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
 	}
 
 }

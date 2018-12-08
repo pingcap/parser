@@ -50,35 +50,7 @@ var (
 	_ Node = &PartitionByClause{}
 	_ Node = &FrameClause{}
 	_ Node = &FrameBound{}
-
-	indexHintTypeMap  = map[int]string{}
-	indexHintScopeMap = map[int]string{}
 )
-
-func init() {
-
-	//IndexHintType map init
-	if indexHintTypeMap == nil {
-		indexHintTypeMap = make(map[int]string)
-	}
-	indexHintTypeMap = map[int]string{
-		1: "USE INDEX",
-		2: "IGNORE INDEX",
-		3: "FORCE INDEX",
-	}
-
-	//IndexHintScope map init
-	if indexHintScopeMap == nil {
-		indexHintScopeMap = make(map[int]string)
-	}
-	indexHintScopeMap = map[int]string{
-		1: "", //HintForScan    IndexHintScope = 1
-		2: "FOR JOIN",
-		3: "FOR ORDER BY",
-		4: "FOR GROUP BY",
-	}
-
-}
 
 // JoinType is join type, including cross/left/right/full.
 type JoinType int
@@ -165,17 +137,20 @@ type TableName struct {
 func (n *TableName) Restore(sb *strings.Builder) error {
 
 	//Joining indexHints.
-	indexHints := func() string {
+	indexHints := func(sb *strings.Builder) error {
 
-		tempIndexHints := []string{}
-		for _, value := range n.IndexHints {
-			var temp strings.Builder
-			if err := value.Restore(&temp); err == nil {
-				tempIndexHints = append(tempIndexHints, temp.String())
+		for i, value := range n.IndexHints {
+
+			if i > 0 {
+				sb.WriteString(" ")
 			}
+			if err := value.Restore(sb); err != nil {
+				return errors.New("An error occurred while splicing IndexHints")
+			}
+
 		}
 
-		return strings.Join(ListFilterTrim(tempIndexHints), " ")
+		return nil
 
 	}
 
@@ -190,10 +165,18 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 			WriteName(sb, n.Schema.String())
 			sb.WriteString(".")
 			WriteName(sb, n.Name.String())
-			sb.WriteString(" " + indexHints())
+
+			sb.WriteString(" ")
+			if err := indexHints(sb); err != nil {
+				return errors.New("An error occurred while splicing TableName")
+			}
 		} else {
 			WriteName(sb, n.Name.String())
-			sb.WriteString(" " + indexHints())
+
+			sb.WriteString(" ")
+			if err := indexHints(sb); err != nil {
+				return errors.New("An error occurred while splicing TableName")
+			}
 		}
 	}
 
@@ -231,22 +214,41 @@ type IndexHint struct {
 
 func (n *IndexHint) Restore(sb *strings.Builder) error {
 
-	indexHintType := indexHintTypeMap[int(n.HintType)]
-
-	indexHintScope := indexHintScopeMap[int(n.HintScope)]
-
-	tempIndexNames := []string{}
-	for _, value := range n.IndexNames {
-		tempIndexNames = append(tempIndexNames, value.String())
+	indexHintType := ""
+	switch n.HintType {
+	case 1:
+		indexHintType = "USE INDEX"
+	case 2:
+		indexHintType = "IGNORE INDEX"
+	case 3:
+		indexHintType = "FORCE INDEX"
 	}
-	indexNames := "(" + strings.Join(tempIndexNames, ",") + ")"
 
-	result := []string{
-		indexHintType,
-		indexHintScope,
-		indexNames,
+	indexHintScope := ""
+	switch n.HintScope {
+	case 1:
+		indexHintScope = ""
+	case 2:
+		indexHintScope = "FOR JOIN"
+	case 3:
+		indexHintScope = "FOR ORDER BY"
+	case 4:
+		indexHintScope = "FOR GROUP BY"
 	}
-	sb.WriteString(strings.Join(ListFilterTrim(result), " "))
+
+	sb.WriteString(indexHintType)
+	if len(indexHintScope) > 0 {
+		sb.WriteString(" ")
+		sb.WriteString(indexHintScope)
+	}
+	sb.WriteString(" (")
+	for i, value := range n.IndexNames {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		WriteName(sb, value.O)
+	}
+	sb.WriteString(")")
 
 	return nil
 
