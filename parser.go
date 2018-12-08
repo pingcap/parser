@@ -8104,7 +8104,7 @@ yynewstate:
 		}
 	case 231:
 		{
-			parser.yyVAL.statement = &ast.DropTableStmt{IfExists: true, Tables: yyS[yypt-1].item.([]*ast.TableName), IsView: true}
+			parser.yyVAL.statement = &ast.DoStmt{}
 		}
 	case 232:
 		{
