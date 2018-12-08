@@ -50,7 +50,35 @@ var (
 	_ Node = &PartitionByClause{}
 	_ Node = &FrameClause{}
 	_ Node = &FrameBound{}
+
+	indexHintTypeMap  = map[int]string{}
+	indexHintScopeMap = map[int]string{}
 )
+
+func init() {
+
+	//IndexHintType map init
+	if indexHintTypeMap == nil {
+		indexHintTypeMap = make(map[int]string)
+	}
+	indexHintTypeMap = map[int]string{
+		1: "USE INDEX",
+		2: "IGNORE INDEX",
+		3: "FORCE INDEX",
+	}
+
+	//IndexHintScope map init
+	if indexHintScopeMap == nil {
+		indexHintScopeMap = make(map[int]string)
+	}
+	indexHintScopeMap = map[int]string{
+		1: "", //HintForScan    IndexHintScope = 1
+		2: "FOR JOIN",
+		3: "FOR ORDER BY",
+		4: "FOR GROUP BY",
+	}
+
+}
 
 // JoinType is join type, including cross/left/right/full.
 type JoinType int
@@ -135,7 +163,42 @@ type TableName struct {
 
 // Restore implements Recoverable interface.
 func (n *TableName) Restore(sb *strings.Builder) error {
-	return errors.New("Not implemented")
+
+	//Joining indexHints.
+	indexHints := func() string {
+
+		tempIndexHints := []string{}
+		for _, value := range n.IndexHints {
+			var temp strings.Builder
+			if err := value.Restore(&temp); err == nil {
+				tempIndexHints = append(tempIndexHints, temp.String())
+			}
+		}
+
+		return strings.Join(ListFilterTrim(tempIndexHints), " ")
+
+	}
+
+	//Other logic may be empty, so you need to judge here.
+	switch {
+	case n == nil:
+		sb.WriteString("")
+	case n != nil && n.text != "":
+		WriteName(sb, n.text)
+	default:
+		if n.Schema.String() != "" {
+			WriteName(sb, n.Schema.String())
+			sb.WriteString(".")
+			WriteName(sb, n.Name.String())
+			sb.WriteString(" " + indexHints())
+		} else {
+			WriteName(sb, n.Name.String())
+			sb.WriteString(" " + indexHints())
+		}
+	}
+
+	return nil
+
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -164,6 +227,29 @@ type IndexHint struct {
 	IndexNames []model.CIStr
 	HintType   IndexHintType
 	HintScope  IndexHintScope
+}
+
+func (n *IndexHint) Restore(sb *strings.Builder) error {
+
+	indexHintType := indexHintTypeMap[int(n.HintType)]
+
+	indexHintScope := indexHintScopeMap[int(n.HintScope)]
+
+	tempIndexNames := []string{}
+	for _, value := range n.IndexNames {
+		tempIndexNames = append(tempIndexNames, value.String())
+	}
+	indexNames := "(" + strings.Join(tempIndexNames, ",") + ")"
+
+	result := []string{
+		indexHintType,
+		indexHintScope,
+		indexNames,
+	}
+	sb.WriteString(strings.Join(ListFilterTrim(result), " "))
+
+	return nil
+
 }
 
 // Accept implements Node Accept interface.

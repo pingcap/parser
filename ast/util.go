@@ -73,3 +73,16 @@ func WriteName(sb *strings.Builder, name string) {
 func EscapeName(name string) string {
 	return strings.Replace(name, "`", "``", -1)
 }
+
+// Restore format filter space
+func ListFilterTrim(list []string) (result []string) {
+
+	for _, value := range list {
+		if value != "" {
+			result = append(result, value)
+		}
+	}
+
+	return
+
+}
