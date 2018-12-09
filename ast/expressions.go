@@ -606,7 +606,8 @@ type IsNullExpr struct {
 
 // Restore implements Recoverable interface.
 func (n *IsNullExpr) Restore(sb *strings.Builder) error {
-	return errors.New("Not implemented")
+	n.Format(sb)
+	return nil
 }
 
 // Format the ExprNode into a Writer.

@@ -141,12 +141,20 @@ func (tc *testExpressionsSuite) createTestCase4BetweenExpr() []exprTestCase {
 	}
 }
 
+func (tc *testExpressionsSuite) createTestCase4IsNullExpr() []exprTestCase {
+	return []exprTestCase{
+		{"select a is null", "SELECT `a` IS NULL"},
+		{"select a is not null", "SELECT `a` IS NOT NULL"},
+	}
+}
+
 func (tc *testExpressionsSuite) TestExpresionsRestore(c *C) {
 	parser := parser.New()
 	var testNodes []exprTestCase
 	testNodes = append(testNodes, tc.createTestCase4UnaryOperationExpr()...)
 	testNodes = append(testNodes, tc.createTestCase4ColumnNameExpr()...)
 	testNodes = append(testNodes, tc.createTestCase4BetweenExpr()...)
+	testNodes = append(testNodes, tc.createTestCase4IsNullExpr()...)
 
 	for _, node := range testNodes {
 		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
