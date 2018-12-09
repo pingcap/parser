@@ -145,7 +145,7 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 				sb.WriteString(" ")
 			}
 			if err := value.Restore(sb); err != nil {
-				return errors.New("An error occurred while splicing IndexHints")
+				return errors.Annotate(err, "An error occurred while splicing IndexHints")
 			}
 
 		}
@@ -168,14 +168,14 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 
 			sb.WriteString(" ")
 			if err := indexHints(sb); err != nil {
-				return errors.New("An error occurred while splicing TableName")
+				return errors.Annotate(err, "An error occurred while splicing TableName")
 			}
 		} else {
 			WriteName(sb, n.Name.String())
 
 			sb.WriteString(" ")
 			if err := indexHints(sb); err != nil {
-				return errors.New("An error occurred while splicing TableName")
+				return errors.Annotate(err, "An error occurred while splicing TableName")
 			}
 		}
 	}

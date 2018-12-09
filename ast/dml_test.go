@@ -167,7 +167,7 @@ func (tc *testDMLSuite) createTestCase4TableNameIndexHints() []tableNameTestCase
 	}
 
 }
-func (tc *testDMLSuite) TestTableNameIndexHintsResotre(c *C) {
+func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 
 	parser := parser.New()
 	var testNodes []tableNameTestCase
