@@ -2371,7 +2371,7 @@ DropViewStmt:
 |
 	"DROP" "VIEW" "IF" "EXISTS" TableNameList RestrictOrCascadeOpt
 	{
-		$$ = &ast.DoStmt{}
+		$$ = &ast.DropTableStmt{IfExists: true, Tables: $5.([]*ast.TableName), IsView: true}
 	}
 
 DropUserStmt:
