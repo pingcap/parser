@@ -141,7 +141,7 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 
 		for i, value := range n.IndexHints {
 
-			if i > 0 {
+			if i >= 0 {
 				sb.WriteString(" ")
 			}
 			if err := value.Restore(sb); err != nil {
@@ -166,14 +166,12 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 			sb.WriteString(".")
 			WriteName(sb, n.Name.String())
 
-			sb.WriteString(" ")
 			if err := indexHints(sb); err != nil {
 				return errors.Annotate(err, "An error occurred while splicing TableName")
 			}
 		} else {
 			WriteName(sb, n.Name.String())
 
-			sb.WriteString(" ")
 			if err := indexHints(sb); err != nil {
 				return errors.Annotate(err, "An error occurred while splicing TableName")
 			}
@@ -212,6 +210,7 @@ type IndexHint struct {
 	HintScope  IndexHintScope
 }
 
+// IndexHint Restore (The const field uses switch to facilitate understanding)
 func (n *IndexHint) Restore(sb *strings.Builder) error {
 
 	indexHintType := ""
@@ -236,11 +235,15 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 		indexHintScope = "FOR GROUP BY"
 	}
 
-	sb.WriteString(indexHintType)
+	if len(indexHintType) > 0 {
+		sb.WriteString(indexHintType)
+	}
+
 	if len(indexHintScope) > 0 {
 		sb.WriteString(" ")
 		sb.WriteString(indexHintScope)
 	}
+
 	sb.WriteString(" (")
 	for i, value := range n.IndexNames {
 		if i > 0 {

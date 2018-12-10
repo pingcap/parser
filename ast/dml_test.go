@@ -15,9 +15,7 @@ package ast_test
 
 import (
 	. "github.com/pingcap/check"
-	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
-	"strings"
 )
 
 var _ = Suite(&testDMLSuite{})
@@ -84,118 +82,65 @@ type tableNameTestCase struct {
  * TableName Stmt Test Case
  */
 // only TableName test data
-func (tc *testDMLSuite) createTestCase4TableName() []tableNameTestCase {
-
-	return []tableNameTestCase{
-		{"CREATE TABLE dbb.`tbb1` (id VARCHAR(128) NOT NULL);", "CREATE TABLE `dbb`.`tbb1` (id VARCHAR(128) NOT NULL);"},
-		{"CREATE TABLE `tbb2` (id VARCHAR(128) NOT NULL);", "CREATE TABLE `tbb2` (id VARCHAR(128) NOT NULL);"},
-		{"CREATE TABLE tbb3 (id VARCHAR(128) NOT NULL);", "CREATE TABLE `tbb3` (id VARCHAR(128) NOT NULL);"},
-		{"CREATE TABLE dbb.`hello-world` (id VARCHAR(128) NOT NULL);", "CREATE TABLE `dbb`.`hello-world` (id VARCHAR(128) NOT NULL);"},
-		{"CREATE TABLE `dbb`.`hello-world` (id VARCHAR(128) NOT NULL);", "CREATE TABLE `dbb`.`hello-world` (id VARCHAR(128) NOT NULL);"},
-		{"CREATE TABLE `dbb.HelloWorld` (id VARCHAR(128) NOT NULL);", "CREATE TABLE `dbb.HelloWorld` (id VARCHAR(128) NOT NULL);"},
-	}
-
-}
 func (tc *testDMLSuite) TestTableNameRestore(c *C) {
 
-	parser := parser.New()
-	var testNodes []tableNameTestCase
-	testNodes = append(testNodes, tc.createTestCase4TableName()...)
-
-	for _, node := range testNodes {
-
-		// String comparison
-		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
-		comment := Commentf("source %#v", node)
-		c.Assert(err, IsNil, comment)
-
-		var sb strings.Builder
-		sb.WriteString("CREATE TABLE" + " ")
-		err = stmt.(*CreateTableStmt).Table.Restore(&sb)
-		sb.WriteString("(id VARCHAR(128) NOT NULL);")
-		c.Assert(err, IsNil, comment)
-		restoreSql := sb.String()
-		comment = Commentf("\n source %#v; \n restore %v", node, restoreSql)
-
-		c.Assert(restoreSql, Equals, node.expectSQL, comment)
-
-		// Ast comparison
-		stmt2, err := parser.ParseOneStmt(restoreSql, "", "")
-		c.Assert(err, IsNil, comment)
-		CleanNodeText(stmt)
-		CleanNodeText(stmt2)
-		c.Assert(stmt2, DeepEquals, stmt, comment)
-
+	testCases := []NodeRestoreTestCase{
+		{"dbb.`tbb1`", "`dbb`.`tbb1`"},
+		{"`tbb2`", "`tbb2`"},
+		{"tbb3", "`tbb3`"},
+		{"dbb.`hello-world`", "`dbb`.`hello-world`"},
+		{"`dbb`.`hello-world`", "`dbb`.`hello-world`"},
+		{"`dbb.HelloWorld`", "`dbb.HelloWorld`"},
 	}
+
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Table
+	}
+
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE %s (id VARCHAR(128) NOT NULL);", extractNodeFunc)
 
 }
 
 // add index hints test data
-func (tc *testDMLSuite) createTestCase4TableNameIndexHints() []tableNameTestCase {
-
-	return []tableNameTestCase{
-		{"select * from t use index (hello)", "SELECT * FROM `t` USE INDEX (`hello`)"},
-		{"select * from t use index (hello, world)", "SELECT * FROM `t` USE INDEX (`hello`, `world`)"},
-		{"select * from t use index ()", "SELECT * FROM `t` USE INDEX ()"},
-		{"select * from t use key ()", "SELECT * FROM `t` USE INDEX ()"},
-		{"select * from t ignore key ()", "SELECT * FROM `t` IGNORE INDEX ()"},
-		{"select * from t force key ()", "SELECT * FROM `t` FORCE INDEX ()"},
-		{"select * from t use index for order by (idx1)", "SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`)"},
-
-		{"select * from t use index (hello, world, yes) force key (good)", "SELECT * FROM `t` USE INDEX (`hello`, `world`, `yes`) FORCE INDEX (`good`)"},
-		{"select * from t use index (hello, world, yes) use index for order by (good)", "SELECT * FROM `t` USE INDEX (`hello`, `world`, `yes`) USE INDEX FOR ORDER BY (`good`)"},
-		{"select * from t ignore key (hello, world, yes) force key (good)", "SELECT * FROM `t` IGNORE INDEX (`hello`, `world`, `yes`) FORCE INDEX (`good`)"},
-
-		{"select * from t use index for group by (idx1) use index for order by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`idx1`) USE INDEX FOR ORDER BY (`idx2`)"},
-		{"select * from t use index for group by (idx1) ignore key for order by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`idx1`) IGNORE INDEX FOR ORDER BY (`idx2`)"},
-		{"select * from t use index for group by (idx1) ignore key for group by (idx2)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`)"},
-		{"select * from t use index for order by (idx1) ignore key for group by (idx2)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`)"},
-
-		{"select * from t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`) USE INDEX (`idx3`)"},
-		{"select * from t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`) USE INDEX (`idx3`)"},
-
-		{"select * from t use index (`foo``bar`) force index (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX (`foo``bar`) FORCE INDEX (`baz``1`, `xyz`)"},
-		{"select * from t force index (`foo``bar`) ignore index (`baz``1`, xyz)","SELECT * FROM `t` FORCE INDEX (`foo``bar`) IGNORE INDEX (`baz``1`, `xyz`)"},
-		{"select * from t ignore index (`foo``bar`) force key (`baz``1`, xyz)","SELECT * FROM `t` IGNORE INDEX (`foo``bar`) FORCE INDEX (`baz``1`, `xyz`)"},
-		{"select * from t ignore index (`foo``bar`) ignore key for group by (`baz``1`, xyz)","SELECT * FROM `t` IGNORE INDEX (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
-		{"select * from t ignore index (`foo``bar`) ignore key for order by (`baz``1`, xyz)","SELECT * FROM `t` IGNORE INDEX (`foo``bar`) IGNORE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
-
-		{"select * from t use index for group by (`foo``bar`) use index for order by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`foo``bar`) USE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
-		{"select * from t use index for group by (`foo``bar`) ignore key for order by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
-		{"select * from t use index for group by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
-		{"select * from t use index for order by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)","SELECT * FROM `t` USE INDEX FOR ORDER BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
-	}
-
-}
 func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 
-	parser := parser.New()
-	var testNodes []tableNameTestCase
-	testNodes = append(testNodes, tc.createTestCase4TableNameIndexHints()...)
+	testCases := []NodeRestoreTestCase{
+		{"t use index (hello)", "`t` USE INDEX (`hello`)"},
+		{"t use index (hello, world)", "`t` USE INDEX (`hello`, `world`)"},
+		{"t use index ()", "`t` USE INDEX ()"},
+		{"t use key ()", "`t` USE INDEX ()"},
+		{"t ignore key ()", "`t` IGNORE INDEX ()"},
+		{"t force key ()", "`t` FORCE INDEX ()"},
+		{"t use index for order by (idx1)", "`t` USE INDEX FOR ORDER BY (`idx1`)"},
 
-	for _, node := range testNodes {
+		{"t use index (hello, world, yes) force key (good)", "`t` USE INDEX (`hello`, `world`, `yes`) FORCE INDEX (`good`)"},
+		{"t use index (hello, world, yes) use index for order by (good)", "`t` USE INDEX (`hello`, `world`, `yes`) USE INDEX FOR ORDER BY (`good`)"},
+		{"t ignore key (hello, world, yes) force key (good)", "`t` IGNORE INDEX (`hello`, `world`, `yes`) FORCE INDEX (`good`)"},
 
-		// String comparison
-		stmt, err := parser.ParseOneStmt(node.sourceSQL, "", "")
-		comment := Commentf("source %#v", node)
-		c.Assert(err, IsNil, comment)
+		{"t use index for group by (idx1) use index for order by (idx2)", "`t` USE INDEX FOR GROUP BY (`idx1`) USE INDEX FOR ORDER BY (`idx2`)"},
+		{"t use index for group by (idx1) ignore key for order by (idx2)", "`t` USE INDEX FOR GROUP BY (`idx1`) IGNORE INDEX FOR ORDER BY (`idx2`)"},
+		{"t use index for group by (idx1) ignore key for group by (idx2)", "`t` USE INDEX FOR GROUP BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`)"},
+		{"t use index for order by (idx1) ignore key for group by (idx2)", "`t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`)"},
 
-		var sb strings.Builder
-		sb.WriteString("SELECT * FROM" + " ")
-		err = stmt.(*SelectStmt).From.TableRefs.Left.(*TableSource).Source.(*TableName).Restore(&sb)
-		c.Assert(err, IsNil, comment)
-		restoreSql := sb.String()
-		comment = Commentf("\n source %#v; \n restore %v", node, restoreSql)
+		{"t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)", "`t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`) USE INDEX (`idx3`)"},
+		{"t use index for order by (idx1) ignore key for group by (idx2) use index (idx3)", "`t` USE INDEX FOR ORDER BY (`idx1`) IGNORE INDEX FOR GROUP BY (`idx2`) USE INDEX (`idx3`)"},
 
-		c.Assert(restoreSql, Equals, node.expectSQL, comment)
+		{"t use index (`foo``bar`) force index (`baz``1`, `xyz`)", "`t` USE INDEX (`foo``bar`) FORCE INDEX (`baz``1`, `xyz`)"},
+		{"t force index (`foo``bar`) ignore index (`baz``1`, xyz)", "`t` FORCE INDEX (`foo``bar`) IGNORE INDEX (`baz``1`, `xyz`)"},
+		{"t ignore index (`foo``bar`) force key (`baz``1`, xyz)", "`t` IGNORE INDEX (`foo``bar`) FORCE INDEX (`baz``1`, `xyz`)"},
+		{"t ignore index (`foo``bar`) ignore key for group by (`baz``1`, xyz)", "`t` IGNORE INDEX (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
+		{"t ignore index (`foo``bar`) ignore key for order by (`baz``1`, xyz)", "`t` IGNORE INDEX (`foo``bar`) IGNORE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
 
-		// Ast comparison
-		stmt2, err := parser.ParseOneStmt(restoreSql, "", "")
-		c.Assert(err, IsNil, comment)
-		CleanNodeText(stmt)
-		CleanNodeText(stmt2)
-		c.Assert(stmt2, DeepEquals, stmt, comment)
-
+		{"t use index for group by (`foo``bar`) use index for order by (`baz``1`, `xyz`)", "`t` USE INDEX FOR GROUP BY (`foo``bar`) USE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
+		{"t use index for group by (`foo``bar`) ignore key for order by (`baz``1`, `xyz`)", "`t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR ORDER BY (`baz``1`, `xyz`)"},
+		{"t use index for group by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)", "`t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
+		{"t use index for order by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)", "`t` USE INDEX FOR ORDER BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
 	}
+
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From.TableRefs.Left.(*TableSource).Source.(*TableName)
+	}
+
+	RunNodeRestoreTest(c, testCases, "SELECT * FROM %s", extractNodeFunc)
 
 }
