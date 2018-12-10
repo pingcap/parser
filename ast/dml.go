@@ -154,27 +154,19 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 
 	}
 
-	//Other logic may be empty, so you need to judge here.
-	switch {
-	case n == nil:
-		sb.WriteString("")
-	case n != nil && n.text != "":
-		WriteName(sb, n.text)
-	default:
-		if n.Schema.String() != "" {
-			WriteName(sb, n.Schema.String())
-			sb.WriteString(".")
-			WriteName(sb, n.Name.String())
+	if n.Schema.String() != "" {
+		WriteName(sb, n.Schema.String())
+		sb.WriteString(".")
+		WriteName(sb, n.Name.String())
 
-			if err := indexHints(sb); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing TableName")
-			}
-		} else {
-			WriteName(sb, n.Name.String())
+		if err := indexHints(sb); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing TableName")
+		}
+	} else {
+		WriteName(sb, n.Name.String())
 
-			if err := indexHints(sb); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing TableName")
-			}
+		if err := indexHints(sb); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing TableName")
 		}
 	}
 
@@ -221,6 +213,8 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 		indexHintType = "IGNORE INDEX"
 	case 3:
 		indexHintType = "FORCE INDEX"
+	default: // Prevent accidents
+		indexHintType = ""
 	}
 
 	indexHintScope := ""
@@ -233,6 +227,8 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 		indexHintScope = "FOR ORDER BY"
 	case 4:
 		indexHintScope = "FOR GROUP BY"
+	default: // Prevent accidents
+		indexHintType = ""
 	}
 
 	if len(indexHintType) > 0 {
