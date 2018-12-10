@@ -151,17 +151,10 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 	if n.Schema.String() != "" {
 		WriteName(sb, n.Schema.String())
 		sb.WriteString(".")
-		WriteName(sb, n.Name.String())
-
-		if err := indexHints(sb); err != nil {
-			return errors.Annotate(err, "An error occurred while splicing TableName")
-		}
-	} else {
-		WriteName(sb, n.Name.String())
-
-		if err := indexHints(sb); err != nil {
-			return errors.Annotate(err, "An error occurred while splicing TableName")
-		}
+	}
+	WriteName(sb, n.Name.String())
+	if err := indexHints(sb); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing TableName")
 	}
 
 	return nil
@@ -206,7 +199,7 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 	case 3:
 		indexHintType = "FORCE INDEX"
 	default: // Prevent accidents
-		indexHintType = ""
+		return errors.New("IndexHintType has an error while matching")
 	}
 
 	indexHintScope := ""
@@ -214,21 +207,17 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 	case 1:
 		indexHintScope = ""
 	case 2:
-		indexHintScope = "FOR JOIN"
+		indexHintScope = " FOR JOIN"
 	case 3:
-		indexHintScope = "FOR ORDER BY"
+		indexHintScope = " FOR ORDER BY"
 	case 4:
-		indexHintScope = "FOR GROUP BY"
+		indexHintScope = " FOR GROUP BY"
 	default: // Prevent accidents
-		indexHintType = ""
+		return errors.New("IndexHintScope has an error while matching")
 	}
 
-	if len(indexHintType) > 0 {
-		sb.WriteString(indexHintType)
-	}
-
+	sb.WriteString(indexHintType)
 	if len(indexHintScope) > 0 {
-		sb.WriteString(" ")
 		sb.WriteString(indexHintScope)
 	}
 
