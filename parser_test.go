@@ -1403,8 +1403,9 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		// reserved keyword can't be used as identifier directly, but A.B pattern is an exception
 		{`select COUNT from DESC`, false, ""},
 		{`select COUNT from SELECT.DESC`, true, ""},
-		{"use `select`", true, ""},
-		{"use select", false, ""},
+		{"use `select`", true, "USE `select`"},
+		{"use `sel``ect`", true, "USE `sel``ect`"},
+		{"use select", false, "USE `select`"},
 		{`select * from t as a`, true, ""},
 		{"select 1 full, 1 row, 1 abs", false, ""},
 		{"select 1 full, 1 `row`, 1 abs", true, ""},
@@ -1535,7 +1536,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create schema xxx", true, ""},
 		{"create schema if exists xxx", false, ""},
 		{"create schema if not exists xxx", true, ""},
-		// for drop database/schema/table/stats
+		// for drop database/schema/table/view/stats
 		{"drop database xxx", true, "DROP DATABASE `xxx`"},
 		{"drop database if exists xxx", true, "DROP DATABASE IF EXISTS `xxx`"},
 		{"drop database if not exists xxx", false, ""},
@@ -1552,7 +1553,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop table xxx restrict", true, ""},
 		{"drop table xxx, yyy cascade", true, ""},
 		{"drop table if exists xxx restrict", true, ""},
+		{"drop view", false, ""},
+		{"drop view xxx", true, ""},
+		{"drop view xxx, yyy", true, ""},
 		{"drop view if exists xxx", true, ""},
+		{"drop view if exists xxx, yyy", true, ""},
 		{"drop stats t", true, ""},
 		// for issue 974
 		{`CREATE TABLE address (
