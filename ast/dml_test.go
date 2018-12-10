@@ -83,7 +83,6 @@ type tableNameTestCase struct {
  */
 // only TableName test data
 func (tc *testDMLSuite) TestTableNameRestore(c *C) {
-
 	testCases := []NodeRestoreTestCase{
 		{"dbb.`tbb1`", "`dbb`.`tbb1`"},
 		{"`tbb2`", "`tbb2`"},
@@ -92,18 +91,14 @@ func (tc *testDMLSuite) TestTableNameRestore(c *C) {
 		{"`dbb`.`hello-world`", "`dbb`.`hello-world`"},
 		{"`dbb.HelloWorld`", "`dbb.HelloWorld`"},
 	}
-
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Table
 	}
-
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE %s (id VARCHAR(128) NOT NULL);", extractNodeFunc)
-
 }
 
 // add index hints test data
 func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
-
 	testCases := []NodeRestoreTestCase{
 		{"t use index (hello)", "`t` USE INDEX (`hello`)"},
 		{"t use index (hello, world)", "`t` USE INDEX (`hello`, `world`)"},
@@ -136,11 +131,8 @@ func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 		{"t use index for group by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)", "`t` USE INDEX FOR GROUP BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
 		{"t use index for order by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)", "`t` USE INDEX FOR ORDER BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
 	}
-
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From.TableRefs.Left.(*TableSource).Source.(*TableName)
 	}
-
 	RunNodeRestoreTest(c, testCases, "SELECT * FROM %s", extractNodeFunc)
-
 }

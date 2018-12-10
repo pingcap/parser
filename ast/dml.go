@@ -135,23 +135,17 @@ type TableName struct {
 
 // Restore implements Recoverable interface.
 func (n *TableName) Restore(sb *strings.Builder) error {
-
 	//Joining indexHints.
 	indexHints := func(sb *strings.Builder) error {
-
 		for i, value := range n.IndexHints {
-
 			if i >= 0 {
 				sb.WriteString(" ")
 			}
 			if err := value.Restore(sb); err != nil {
 				return errors.Annotate(err, "An error occurred while splicing IndexHints")
 			}
-
 		}
-
 		return nil
-
 	}
 
 	if n.Schema.String() != "" {
@@ -171,7 +165,6 @@ func (n *TableName) Restore(sb *strings.Builder) error {
 	}
 
 	return nil
-
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -204,7 +197,6 @@ type IndexHint struct {
 
 // IndexHint Restore (The const field uses switch to facilitate understanding)
 func (n *IndexHint) Restore(sb *strings.Builder) error {
-
 	indexHintType := ""
 	switch n.HintType {
 	case 1:
@@ -250,7 +242,6 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 	sb.WriteString(")")
 
 	return nil
-
 }
 
 // Accept implements Node Accept interface.
