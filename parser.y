@@ -1067,6 +1067,13 @@ AlterTableSpec:
 			Name: $3,
 		}
 	}	
+|	"TRUNCATE" "PARTITION" Identifier
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableTruncatePartition,
+			Name: $3,
+		}
+	}
 |	"DROP" KeyOrIndex Identifier
 	{
 		$$ = &ast.AlterTableSpec{
