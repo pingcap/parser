@@ -78,10 +78,10 @@ var actionMap = map[ActionType]string{
 	ActionModifyTableComment:           "modify table comment",
 	ActionRenameIndex:                  "rename index",
 	ActionAddTablePartition:            "add partition",
-	ActionDropTablePartition:           "drop table partition",
+	ActionDropTablePartition:           "drop partition",
 	ActionCreateView:                   "create view",
 	ActionModifyTableCharsetAndCollate: "modify table charset and collate",
-	ActionTruncateTablePartition:       "truncate table partition",
+	ActionTruncateTablePartition:       "truncate partition",
 }
 
 // String return current ddl action in string
