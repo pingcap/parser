@@ -73,15 +73,6 @@ func (ts *testDMLSuite) TestDMLVisitorCover(c *C) {
 	}
 }
 
-type tableNameTestCase struct {
-	sourceSQL string
-	expectSQL string
-}
-
-/* ***********************************************************************************************************
- * TableName Stmt Test Case
- */
-// only TableName test data
 func (tc *testDMLSuite) TestTableNameRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"dbb.`tbb1`", "`dbb`.`tbb1`"},
@@ -97,7 +88,6 @@ func (tc *testDMLSuite) TestTableNameRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE %s (id VARCHAR(128) NOT NULL);", extractNodeFunc)
 }
 
-// add index hints test data
 func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"t use index (hello)", "`t` USE INDEX (`hello`)"},

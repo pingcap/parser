@@ -217,10 +217,7 @@ func (n *IndexHint) Restore(sb *strings.Builder) error {
 	}
 
 	sb.WriteString(indexHintType)
-	if len(indexHintScope) > 0 {
-		sb.WriteString(indexHintScope)
-	}
-
+	sb.WriteString(indexHintScope)
 	sb.WriteString(" (")
 	for i, value := range n.IndexNames {
 		if i > 0 {
