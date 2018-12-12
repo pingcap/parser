@@ -2528,6 +2528,10 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 		    partition by range (id)
 		    subpartition by hash (id)
 		    (partition p0 values less than (42))`, true, ""},
+		{`INSERT INTO employees PARTITION(p1,p2) (id, fname, lname, hired, job_code, store_id)
+						VALUES(72, 'Mitchell', 'Wilson', '1998-06-25', 44, 13)`, true, ""},
+		{`REPLACE INTO employees PARTITION(p1) (id, fname, lname, hired, job_code, store_id) 
+						VALUES(72, 'Mitchell', 'Wilson', '1998-06-25', 44, 13)`, true, ""},
 	}
 	s.RunTest(c, table)
 
