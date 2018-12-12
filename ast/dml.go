@@ -135,28 +135,17 @@ type TableName struct {
 
 // Restore implements Recoverable interface.
 func (n *TableName) Restore(sb *strings.Builder) error {
-	//Joining indexHints.
-	indexHints := func(sb *strings.Builder) error {
-		for i, value := range n.IndexHints {
-			if i >= 0 {
-				sb.WriteString(" ")
-			}
-			if err := value.Restore(sb); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing IndexHints")
-			}
-		}
-		return nil
-	}
-
 	if n.Schema.String() != "" {
 		WriteName(sb, n.Schema.String())
 		sb.WriteString(".")
 	}
 	WriteName(sb, n.Name.String())
-	if err := indexHints(sb); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing TableName")
+	for _, value := range n.IndexHints {
+		sb.WriteString(" ")
+		if err := value.Restore(sb); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing IndexHints")
+		}
 	}
-
 	return nil
 }
 
