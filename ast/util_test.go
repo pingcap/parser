@@ -71,6 +71,35 @@ func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
 	return in, true
 }
 
+type testRestoreCtxSuite struct {
+}
+
+func (s *testRestoreCtxSuite) TestRestoreCtx(c *C) {
+	var sb strings.Builder
+	ctx := NewRestoreCtx(DefaultRestoreFlags, &sb)
+	ctx.WriteKeyWord("SELECT")
+	ctx.WritePlain(" * ")
+	ctx.WriteKeyWord("FROM ")
+	ctx.WriteName("tabl`e1")
+	ctx.WriteKeyWord(" WHERE ")
+	ctx.WriteName("col1")
+	ctx.WritePlain(" = ")
+	ctx.WriteString("abc")
+	c.Assert(sb.String(), Equals, "SELECT * FROM `tabl``e1` WHERE `col1` = 'abc'")
+	sb.Reset()
+	ctx = NewRestoreCtx(RestoreStringDoubleQuotes|RestoreKeyWordLowercase|RestoreNameUppercase|
+		RestoreStringEscapeBackslash, &sb)
+	ctx.WriteKeyWord("SELECT")
+	ctx.WritePlain(" * ")
+	ctx.WriteKeyWord("FROM ")
+	ctx.WriteName("table1")
+	ctx.WriteKeyWord(" WHERE ")
+	ctx.WriteName("col1")
+	ctx.WritePlain(" = ")
+	ctx.WriteString(`ab\c`)
+	c.Assert(sb.String(), Equals, `select * from TABLE1 where COL1 = "ab\\c"`)
+}
+
 type NodeRestoreTestCase struct {
 	sourceSQL string
 	expectSQL string
