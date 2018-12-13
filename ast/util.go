@@ -115,7 +115,7 @@ func (ctx *RestoreCtx) WriteKeyWord(keyWord string) {
 	case ctx.Flags.Has(RestoreKeyWordLowercase):
 		keyWord = strings.ToLower(keyWord)
 	}
-	_, _ = fmt.Fprint(ctx.In, keyWord)
+	fmt.Fprint(ctx.In, keyWord)
 }
 
 // WriteKeyWord write the string into writer
@@ -130,7 +130,7 @@ func (ctx *RestoreCtx) WriteString(str string) {
 	case ctx.Flags.Has(RestoreStringDoubleQuotes):
 		quotes = "\""
 	}
-	_, _ = fmt.Fprint(ctx.In, quotes, str, quotes)
+	fmt.Fprint(ctx.In, quotes, str, quotes)
 }
 
 // WriteName write the name into writer
@@ -153,10 +153,10 @@ func (ctx *RestoreCtx) WriteName(name string) {
 	case ctx.Flags.Has(RestoreNameBackQuote):
 		quotes = "`"
 	}
-	_, _ = fmt.Fprint(ctx.In, quotes, name, quotes)
+	fmt.Fprint(ctx.In, quotes, name, quotes)
 }
 
 // WriteName write the plain text into writer without any handling
 func (ctx *RestoreCtx) WritePlain(plainText string) {
-	_, _ = fmt.Fprint(ctx.In, plainText)
+	fmt.Fprint(ctx.In, plainText)
 }

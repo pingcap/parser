@@ -142,7 +142,7 @@ func (o Op) Format(w io.Writer) {
 // Restore the Op into a Writer
 func (o Op) Restore(w io.Writer) error {
 	if v, ok := opsLiteral[o]; ok {
-		_, _ = fmt.Fprint(w, v)
+		fmt.Fprint(w, v)
 		return nil
 	}
 	return errors.Errorf("Invalid opcode type: %d", o)
