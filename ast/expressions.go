@@ -433,8 +433,7 @@ type ColumnNameExpr struct {
 
 // Restore implements Node interface.
 func (n *ColumnNameExpr) Restore(ctx *RestoreCtx) error {
-	err := n.Name.Restore(ctx)
-	if err != nil {
+	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -605,7 +604,14 @@ type IsNullExpr struct {
 
 // Restore implements Node interface.
 func (n *IsNullExpr) Restore(ctx *RestoreCtx) error {
-	n.Format(ctx.In)
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.Not {
+		ctx.WriteKeyWord(" IS NOT NULL")
+	} else {
+		ctx.WriteKeyWord(" IS NULL")
+	}
 	return nil
 }
 
@@ -921,7 +927,12 @@ type UnaryOperationExpr struct {
 
 // Restore implements Node interface.
 func (n *UnaryOperationExpr) Restore(ctx *RestoreCtx) error {
-	n.Format(ctx.In)
+	if err := n.Op.Restore(ctx.In); err != nil {
+		return errors.Trace(err)
+	}
+	if err := n.V.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
 	return nil
 }
 
