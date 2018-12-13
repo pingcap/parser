@@ -23,6 +23,7 @@ import (
 )
 
 var _ = Suite(&testCacheableSuite{})
+var _ = Suite(&testRestoreCtxSuite{})
 
 type testCacheableSuite struct {
 }

@@ -127,7 +127,7 @@ func (ctx *RestoreCtx) WriteString(str string) {
 	switch {
 	case ctx.Flags.Has(RestoreStringSingleQuotes):
 		str = strings.Replace(str, `'`, `''`, -1)
-		quotes = `''`
+		quotes = `'`
 	case ctx.Flags.Has(RestoreStringDoubleQuotes):
 		str = strings.Replace(str, `"`, `""`, -1)
 		quotes = `"`
