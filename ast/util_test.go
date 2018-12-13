@@ -48,21 +48,6 @@ func (s *testCacheableSuite) TestCacheable(c *C) {
 	c.Assert(IsReadOnly(stmt), IsTrue)
 }
 
-func (s *testCacheableSuite) TestWriteName(c *C) {
-	var sb strings.Builder
-	WriteName(&sb, "")
-	sb.WriteString(";")
-	WriteName(&sb, "abc")
-	sb.WriteString(";")
-	WriteName(&sb, "ab`c")
-	sb.WriteString(";")
-	WriteName(&sb, "ab``c")
-	sb.WriteString(";")
-	WriteName(&sb, "ab` `c")
-	sb.WriteString(";")
-	c.Assert(sb.String(), Equals, "``;`abc`;`ab``c`;`ab````c`;`ab`` ``c`;")
-}
-
 // CleanNodeText set the text of node and all child node empty.
 // For test only.
 func CleanNodeText(node Node) {
@@ -100,7 +85,7 @@ func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template stri
 		comment := Commentf("source %#v", testCase)
 		c.Assert(err, IsNil, comment)
 		var sb strings.Builder
-		err = extractNodeFunc(stmt).Restore(&sb)
+		err = extractNodeFunc(stmt).Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSql := fmt.Sprintf(template, sb.String())
 		comment = Commentf("source %#v; restore %v", testCase, restoreSql)

@@ -13,7 +13,11 @@
 
 package ast
 
-import "strings"
+import (
+	"fmt"
+	"io"
+	"strings"
+)
 
 // IsReadOnly checks whether the input ast is readOnly.
 func IsReadOnly(node Node) bool {
@@ -62,14 +66,97 @@ func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
 	return in, checker.readOnly
 }
 
-// WriteName append escaped `name` with back quote to `sb`.
-func WriteName(sb *strings.Builder, name string) {
-	sb.WriteString("`")
-	sb.WriteString(EscapeName(name))
-	sb.WriteString("`")
+//RestoreFlag mark the Restore format
+type RestoreFlags uint64
+
+const (
+	RestoreStringSingleQuotes RestoreFlags = 1 << iota
+	RestoreStringDoubleQuotes
+	RestoreStringEscapeBackslash
+
+	RestoreKeyWordUppercase
+	RestoreKeyWordLowercase
+
+	RestoreNameUppercase
+	RestoreNameLowercase
+	RestoreNameOriginal
+	RestoreNameSingleQuotes
+	RestoreNameDoubleQuotes
+	RestoreNameBackQuote
+	RestoreNameEscapeBackQuote
+)
+
+const (
+	DefaultRestoreFlags = RestoreStringSingleQuotes | RestoreKeyWordUppercase | RestoreNameOriginal |
+		RestoreNameBackQuote | RestoreNameEscapeBackQuote
+)
+
+// Has return weather `rf` has this flag
+func (rf RestoreFlags) Has(flag RestoreFlags) bool {
+	return rf&flag != 0
 }
 
-// EscapeName escape the `name`
-func EscapeName(name string) string {
-	return strings.Replace(name, "`", "``", -1)
+// RestoreCtx is Restore context to hold flags and writer
+type RestoreCtx struct {
+	Flags RestoreFlags
+	In    io.Writer
+}
+
+// NewRestoreCtx return a new RestoreCtx
+func NewRestoreCtx(flags RestoreFlags, in io.Writer) *RestoreCtx {
+	return &RestoreCtx{flags, in}
+}
+
+// WriteKeyWord write the keyword into writer
+func (ctx *RestoreCtx) WriteKeyWord(keyWord string) {
+	switch {
+	case ctx.Flags.Has(RestoreKeyWordUppercase):
+		keyWord = strings.ToUpper(keyWord)
+	case ctx.Flags.Has(RestoreKeyWordLowercase):
+		keyWord = strings.ToLower(keyWord)
+	}
+	_, _ = fmt.Fprint(ctx.In, keyWord)
+}
+
+// WriteKeyWord write the string into writer
+func (ctx *RestoreCtx) WriteString(str string) {
+	if ctx.Flags.Has(RestoreStringEscapeBackslash) {
+		str = strings.Replace(str, "\\", "\\\\", -1)
+	}
+	quotes := ""
+	switch {
+	case ctx.Flags.Has(RestoreStringSingleQuotes):
+		quotes = "'"
+	case ctx.Flags.Has(RestoreStringDoubleQuotes):
+		quotes = "\""
+	}
+	_, _ = fmt.Fprint(ctx.In, quotes, str, quotes)
+}
+
+// WriteName write the name into writer
+func (ctx *RestoreCtx) WriteName(name string) {
+	if ctx.Flags.Has(RestoreNameEscapeBackQuote) {
+		name = strings.Replace(name, "`", "``", -1)
+	}
+	switch {
+	case ctx.Flags.Has(RestoreNameUppercase):
+		name = strings.ToUpper(name)
+	case ctx.Flags.Has(RestoreNameLowercase):
+		name = strings.ToLower(name)
+	}
+	quotes := ""
+	switch {
+	case ctx.Flags.Has(RestoreNameSingleQuotes):
+		quotes = "'"
+	case ctx.Flags.Has(RestoreNameDoubleQuotes):
+		quotes = "\""
+	case ctx.Flags.Has(RestoreNameBackQuote):
+		quotes = "`"
+	}
+	_, _ = fmt.Fprint(ctx.In, quotes, name, quotes)
+}
+
+// WriteName write the plain text into writer without any handling
+func (ctx *RestoreCtx) WritePlain(plainText string) {
+	_, _ = fmt.Fprint(ctx.In, plainText)
 }
