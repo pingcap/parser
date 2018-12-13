@@ -1819,6 +1819,11 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	stmt, err = parser.Parse("select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
+	c.Assert(err, IsNil)
+	stmt, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, NotNil)
+	stmt, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, NotNil)
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
