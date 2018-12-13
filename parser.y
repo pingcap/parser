@@ -5190,6 +5190,10 @@ TableOptimizerHints:
 	{
 		$$ = $2
 	}
+|   hintBegin error hintEnd
+    {
+        yyerrok()
+    }
 
 HintTableList:
 	Identifier
