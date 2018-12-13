@@ -67,10 +67,12 @@ type DatabaseOption struct {
 func (n *DatabaseOption) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
 	case DatabaseOptionCharset:
-		ctx.WriteKeyWord("CHARACTER SET = ")
+		ctx.WriteKeyWord("CHARACTER SET")
+		ctx.WritePlain(" = ")
 		ctx.WritePlain(n.Value)
 	case DatabaseOptionCollate:
-		ctx.WriteKeyWord("COLLATE = ")
+		ctx.WriteKeyWord("COLLATE")
+		ctx.WritePlain(" = ")
 		ctx.WritePlain(n.Value)
 	default:
 		return errors.Errorf("invalid DatabaseOptionType: %d", n.Tp)

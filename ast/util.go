@@ -80,15 +80,13 @@ const (
 	RestoreNameUppercase
 	RestoreNameLowercase
 	RestoreNameOriginal
-	RestoreNameSingleQuotes
 	RestoreNameDoubleQuotes
 	RestoreNameBackQuote
-	RestoreNameEscapeBackQuote
 )
 
 const (
 	DefaultRestoreFlags = RestoreStringSingleQuotes | RestoreKeyWordUppercase | RestoreNameOriginal |
-		RestoreNameBackQuote | RestoreNameEscapeBackQuote
+		RestoreNameBackQuote
 )
 
 // Has return weather `rf` has this flag
@@ -108,6 +106,7 @@ func NewRestoreCtx(flags RestoreFlags, in io.Writer) *RestoreCtx {
 }
 
 // WriteKeyWord write the keyword into writer
+// keyWord will be converted format(uppercase and lowercase for now) according to RestoreFlags
 func (ctx *RestoreCtx) WriteKeyWord(keyWord string) {
 	switch {
 	case ctx.Flags.Has(RestoreKeyWordUppercase):
@@ -118,26 +117,27 @@ func (ctx *RestoreCtx) WriteKeyWord(keyWord string) {
 	fmt.Fprint(ctx.In, keyWord)
 }
 
-// WriteKeyWord write the string into writer
+// WriteString write the string into writer
+// str maybe wrapped in quotes and escape according to RestoreFlags
 func (ctx *RestoreCtx) WriteString(str string) {
 	if ctx.Flags.Has(RestoreStringEscapeBackslash) {
-		str = strings.Replace(str, "\\", "\\\\", -1)
+		str = strings.Replace(str, `\`, `\\`, -1)
 	}
 	quotes := ""
 	switch {
 	case ctx.Flags.Has(RestoreStringSingleQuotes):
-		quotes = "'"
+		str = strings.Replace(str, `'`, `''`, -1)
+		quotes = `''`
 	case ctx.Flags.Has(RestoreStringDoubleQuotes):
-		quotes = "\""
+		str = strings.Replace(str, `"`, `""`, -1)
+		quotes = `"`
 	}
 	fmt.Fprint(ctx.In, quotes, str, quotes)
 }
 
 // WriteName write the name into writer
+// name maybe wrapped in quotes and escape according to RestoreFlags
 func (ctx *RestoreCtx) WriteName(name string) {
-	if ctx.Flags.Has(RestoreNameEscapeBackQuote) {
-		name = strings.Replace(name, "`", "``", -1)
-	}
 	switch {
 	case ctx.Flags.Has(RestoreNameUppercase):
 		name = strings.ToUpper(name)
@@ -146,11 +146,11 @@ func (ctx *RestoreCtx) WriteName(name string) {
 	}
 	quotes := ""
 	switch {
-	case ctx.Flags.Has(RestoreNameSingleQuotes):
-		quotes = "'"
 	case ctx.Flags.Has(RestoreNameDoubleQuotes):
-		quotes = "\""
+		name = strings.Replace(name, `"`, `""`, -1)
+		quotes = `"`
 	case ctx.Flags.Has(RestoreNameBackQuote):
+		name = strings.Replace(name, "`", "``", -1)
 		quotes = "`"
 	}
 	fmt.Fprint(ctx.In, quotes, name, quotes)
