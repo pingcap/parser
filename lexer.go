@@ -120,6 +120,10 @@ func (s *Scanner) stmtText() string {
 // Errorf tells scanner something is wrong.
 // Scanner satisfies yyLexer interface which need this function.
 func (s *Scanner) Errorf(format string, a ...interface{}) {
+	if s.specialComment != nil {
+		// ignore comment hint parser error
+		return
+	}
 	str := fmt.Sprintf(format, a...)
 	val := s.r.s[s.r.pos().Offset:]
 	if len(val) > 2048 {

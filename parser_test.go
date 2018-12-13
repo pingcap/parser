@@ -1820,6 +1820,15 @@ func (s *testParserSuite) TestDDL(c *C) {
 	s.RunTest(c, table)
 }
 
+func (s *testParserSuite) TestHintError(c *C) {
+	parser := New()
+	stmt, err := parser.Parse("select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
+	stmt, err = parser.Parse("select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
+}
+
 func (s *testParserSuite) TestOptimizerHints(c *C) {
 	parser := New()
 	stmt, err := parser.Parse("select /*+ tidb_SMJ(T1,t2) tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
