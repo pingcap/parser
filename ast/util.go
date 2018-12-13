@@ -156,7 +156,12 @@ func (ctx *RestoreCtx) WriteName(name string) {
 	fmt.Fprint(ctx.In, quotes, name, quotes)
 }
 
-// WriteName write the plain text into writer without any handling
+// WritePlain write the plain text into writer without any handling
 func (ctx *RestoreCtx) WritePlain(plainText string) {
 	fmt.Fprint(ctx.In, plainText)
+}
+
+// WritePlainf write the plain text into writer without any handling
+func (ctx *RestoreCtx) WritePlainf(format string, a ...interface{}) {
+	fmt.Fprintf(ctx.In, format, a...)
 }
