@@ -69,6 +69,12 @@ func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
 //RestoreFlag mark the Restore format
 type RestoreFlags uint64
 
+// Mutually exclusive group of `RestoreFlags`:
+// [RestoreStringSingleQuotes, RestoreStringDoubleQuotes]
+// [RestoreKeyWordUppercase, RestoreKeyWordLowercase]
+// [RestoreNameUppercase, RestoreNameLowercase]
+// [RestoreNameDoubleQuotes, RestoreNameBackQuotes]
+// The flag with the left position in each group has a higher priority.
 const (
 	RestoreStringSingleQuotes RestoreFlags = 1 << iota
 	RestoreStringDoubleQuotes
@@ -79,89 +85,132 @@ const (
 
 	RestoreNameUppercase
 	RestoreNameLowercase
-	RestoreNameOriginal
 	RestoreNameDoubleQuotes
-	RestoreNameBackQuote
+	RestoreNameBackQuotes
 )
 
 const (
-	DefaultRestoreFlags = RestoreStringSingleQuotes | RestoreKeyWordUppercase | RestoreNameOriginal |
-		RestoreNameBackQuote
+	DefaultRestoreFlags = RestoreStringSingleQuotes | RestoreKeyWordUppercase | RestoreNameBackQuotes
 )
 
-// Has return weather `rf` has this flag
+// Has returns weather `rf` has this `flag`.
 func (rf RestoreFlags) Has(flag RestoreFlags) bool {
 	return rf&flag != 0
 }
 
-// RestoreCtx is Restore context to hold flags and writer
+// HasStringSingleQuotesFlag returns weather `rf` has `RestoreStringSingleQuotes` flag.
+func (rf RestoreFlags) HasStringSingleQuotesFlag() bool {
+	return rf.Has(RestoreStringSingleQuotes)
+}
+
+// HasStringDoubleQuotesFlag returns weather `rf` has `RestoreStringDoubleQuotes` flag.
+func (rf RestoreFlags) HasStringDoubleQuotesFlag() bool {
+	return rf.Has(RestoreStringDoubleQuotes)
+}
+
+// HasStringEscapeBackslashFlag returns weather `rf` has `RestoreStringEscapeBackslash` flag.
+func (rf RestoreFlags) HasStringEscapeBackslashFlag() bool {
+	return rf.Has(RestoreStringEscapeBackslash)
+}
+
+// HasKeyWordUppercaseFlag returns weather `rf` has `RestoreKeyWordUppercase` flag.
+func (rf RestoreFlags) HasKeyWordUppercaseFlag() bool {
+	return rf.Has(RestoreKeyWordUppercase)
+}
+
+// HasKeyWordLowercaseFlag returns weather `rf` has `RestoreKeyWordLowercase` flag.
+func (rf RestoreFlags) HasKeyWordLowercaseFlag() bool {
+	return rf.Has(RestoreKeyWordLowercase)
+}
+
+// HasNameUppercaseFlag returns weather `rf` has `RestoreNameUppercase` flag.
+func (rf RestoreFlags) HasNameUppercaseFlag() bool {
+	return rf.Has(RestoreNameUppercase)
+}
+
+// HasNameLowercaseFlag returns weather `rf` has `RestoreNameLowercase` flag.
+func (rf RestoreFlags) HasNameLowercaseFlag() bool {
+	return rf.Has(RestoreNameLowercase)
+}
+
+// HasNameDoubleQuotesFlag returns weather `rf` has `RestoreNameDoubleQuotes` flag.
+func (rf RestoreFlags) HasNameDoubleQuotesFlag() bool {
+	return rf.Has(RestoreNameDoubleQuotes)
+}
+
+// HasNameBackQuotesFlag returns weather `rf` has `RestoreNameBackQuotes` flag.
+func (rf RestoreFlags) HasNameBackQuotesFlag() bool {
+	return rf.Has(RestoreNameBackQuotes)
+}
+
+// RestoreCtx is `Restore` context to hold flags and writer.
 type RestoreCtx struct {
 	Flags RestoreFlags
 	In    io.Writer
 }
 
-// NewRestoreCtx return a new RestoreCtx
+// NewRestoreCtx returns a new `RestoreCtx`.
 func NewRestoreCtx(flags RestoreFlags, in io.Writer) *RestoreCtx {
 	return &RestoreCtx{flags, in}
 }
 
-// WriteKeyWord write the keyword into writer
-// keyWord will be converted format(uppercase and lowercase for now) according to RestoreFlags
+// WriteKeyWord writes the `keyWord` into writer.
+// `keyWord` will be converted format(uppercase and lowercase for now) according to `RestoreFlags`.
 func (ctx *RestoreCtx) WriteKeyWord(keyWord string) {
 	switch {
-	case ctx.Flags.Has(RestoreKeyWordUppercase):
+	case ctx.Flags.HasKeyWordUppercaseFlag():
 		keyWord = strings.ToUpper(keyWord)
-	case ctx.Flags.Has(RestoreKeyWordLowercase):
+	case ctx.Flags.HasKeyWordLowercaseFlag():
 		keyWord = strings.ToLower(keyWord)
 	}
 	fmt.Fprint(ctx.In, keyWord)
 }
 
-// WriteString write the string into writer
-// str maybe wrapped in quotes and escape according to RestoreFlags
+// WriteString writes the string into writer
+// `str` may be wrapped in quotes and escaped according to RestoreFlags.
 func (ctx *RestoreCtx) WriteString(str string) {
-	if ctx.Flags.Has(RestoreStringEscapeBackslash) {
+	if ctx.Flags.HasStringEscapeBackslashFlag() {
 		str = strings.Replace(str, `\`, `\\`, -1)
 	}
 	quotes := ""
 	switch {
-	case ctx.Flags.Has(RestoreStringSingleQuotes):
+	case ctx.Flags.HasStringSingleQuotesFlag():
 		str = strings.Replace(str, `'`, `''`, -1)
 		quotes = `'`
-	case ctx.Flags.Has(RestoreStringDoubleQuotes):
+	case ctx.Flags.HasStringDoubleQuotesFlag():
 		str = strings.Replace(str, `"`, `""`, -1)
 		quotes = `"`
 	}
 	fmt.Fprint(ctx.In, quotes, str, quotes)
 }
 
-// WriteName write the name into writer
-// name maybe wrapped in quotes and escape according to RestoreFlags
+// WriteName writes the name into writer
+// `name` maybe wrapped in quotes and escaped according to RestoreFlags.
 func (ctx *RestoreCtx) WriteName(name string) {
 	switch {
-	case ctx.Flags.Has(RestoreNameUppercase):
+	case ctx.Flags.HasNameUppercaseFlag():
 		name = strings.ToUpper(name)
-	case ctx.Flags.Has(RestoreNameLowercase):
+	case ctx.Flags.HasNameLowercaseFlag():
 		name = strings.ToLower(name)
 	}
 	quotes := ""
 	switch {
-	case ctx.Flags.Has(RestoreNameDoubleQuotes):
+	case ctx.Flags.HasNameDoubleQuotesFlag():
 		name = strings.Replace(name, `"`, `""`, -1)
 		quotes = `"`
-	case ctx.Flags.Has(RestoreNameBackQuote):
+	case ctx.Flags.HasNameBackQuotesFlag():
 		name = strings.Replace(name, "`", "``", -1)
 		quotes = "`"
 	}
 	fmt.Fprint(ctx.In, quotes, name, quotes)
 }
 
-// WritePlain write the plain text into writer without any handling
+// WritePlain writes the plain text into writer without any handling.
 func (ctx *RestoreCtx) WritePlain(plainText string) {
 	fmt.Fprint(ctx.In, plainText)
 }
 
-// WritePlainf write the plain text into writer without any handling
+// WritePlainf write the plain text into writer without any handling.
 func (ctx *RestoreCtx) WritePlainf(format string, a ...interface{}) {
 	fmt.Fprintf(ctx.In, format, a...)
 }
