@@ -102,42 +102,42 @@ func (rf RestoreFlags) HasStringSingleQuotesFlag() bool {
 	return rf.has(RestoreStringSingleQuotes)
 }
 
-// HasStringDoubleQuotesFlag returns a boolean indicating weather `rf` has `RestoreStringDoubleQuotes` flag.
+// HasStringDoubleQuotesFlag returns a boolean indicating whether `rf` has `RestoreStringDoubleQuotes` flag.
 func (rf RestoreFlags) HasStringDoubleQuotesFlag() bool {
 	return rf.has(RestoreStringDoubleQuotes)
 }
 
-// HasStringEscapeBackslashFlag returns a boolean indicating weather `rf` has `RestoreStringEscapeBackslash` flag.
+// HasStringEscapeBackslashFlag returns a boolean indicating whether `rf` has `RestoreStringEscapeBackslash` flag.
 func (rf RestoreFlags) HasStringEscapeBackslashFlag() bool {
 	return rf.has(RestoreStringEscapeBackslash)
 }
 
-// HasKeyWordUppercaseFlag returns a boolean indicating weather `rf` has `RestoreKeyWordUppercase` flag.
+// HasKeyWordUppercaseFlag returns a boolean indicating whether `rf` has `RestoreKeyWordUppercase` flag.
 func (rf RestoreFlags) HasKeyWordUppercaseFlag() bool {
 	return rf.has(RestoreKeyWordUppercase)
 }
 
-// HasKeyWordLowercaseFlag returns a boolean indicating weather `rf` has `RestoreKeyWordLowercase` flag.
+// HasKeyWordLowercaseFlag returns a boolean indicating whether `rf` has `RestoreKeyWordLowercase` flag.
 func (rf RestoreFlags) HasKeyWordLowercaseFlag() bool {
 	return rf.has(RestoreKeyWordLowercase)
 }
 
-// HasNameUppercaseFlag returns a boolean indicating weather `rf` has `RestoreNameUppercase` flag.
+// HasNameUppercaseFlag returns a boolean indicating whether `rf` has `RestoreNameUppercase` flag.
 func (rf RestoreFlags) HasNameUppercaseFlag() bool {
 	return rf.has(RestoreNameUppercase)
 }
 
-// HasNameLowercaseFlag returns a boolean indicating weather `rf` has `RestoreNameLowercase` flag.
+// HasNameLowercaseFlag returns a boolean indicating whether `rf` has `RestoreNameLowercase` flag.
 func (rf RestoreFlags) HasNameLowercaseFlag() bool {
 	return rf.has(RestoreNameLowercase)
 }
 
-// HasNameDoubleQuotesFlag returns a boolean indicating weather `rf` has `RestoreNameDoubleQuotes` flag.
+// HasNameDoubleQuotesFlag returns a boolean indicating whether `rf` has `RestoreNameDoubleQuotes` flag.
 func (rf RestoreFlags) HasNameDoubleQuotesFlag() bool {
 	return rf.has(RestoreNameDoubleQuotes)
 }
 
-// HasNameBackQuotesFlag returns a boolean indicating weather `rf` has `RestoreNameBackQuotes` flag.
+// HasNameBackQuotesFlag returns a boolean indicating whether `rf` has `RestoreNameBackQuotes` flag.
 func (rf RestoreFlags) HasNameBackQuotesFlag() bool {
 	return rf.has(RestoreNameBackQuotes)
 }
