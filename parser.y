@@ -5190,9 +5190,10 @@ TableOptimizerHints:
 	{
 		$$ = $2
 	}
-|   hintBegin error hintEnd
+|	hintBegin error hintEnd
     {
         yyerrok()
+        parser.lastErrorAsWarn()
     }
 
 HintTableList:

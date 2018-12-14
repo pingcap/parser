@@ -6781,7 +6781,7 @@ var yyDebug = 0
 type yyLexer interface {
 	Lex(lval *yySymType) int
 	Errorf(format string, a ...interface{})
-	Errors() []error
+	Errors() (warns []error, errs []error)
 }
 
 type yyLexerEx interface {
@@ -10478,6 +10478,7 @@ yynewstate:
 	case 978:
 		{
 			yyerrok()
+			parser.lastErrorAsWarn()
 		}
 	case 979:
 		{
