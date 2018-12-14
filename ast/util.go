@@ -93,54 +93,53 @@ const (
 	DefaultRestoreFlags = RestoreStringSingleQuotes | RestoreKeyWordUppercase | RestoreNameBackQuotes
 )
 
-// Has returns weather `rf` has this `flag`.
-func (rf RestoreFlags) Has(flag RestoreFlags) bool {
+func (rf RestoreFlags) has(flag RestoreFlags) bool {
 	return rf&flag != 0
 }
 
-// HasStringSingleQuotesFlag returns weather `rf` has `RestoreStringSingleQuotes` flag.
+// HasStringSingleQuotesFlag returns a boolean indicating when `rf` has `RestoreStringSingleQuotes` flag.
 func (rf RestoreFlags) HasStringSingleQuotesFlag() bool {
-	return rf.Has(RestoreStringSingleQuotes)
+	return rf.has(RestoreStringSingleQuotes)
 }
 
-// HasStringDoubleQuotesFlag returns weather `rf` has `RestoreStringDoubleQuotes` flag.
+// HasStringDoubleQuotesFlag returns a boolean indicating weather `rf` has `RestoreStringDoubleQuotes` flag.
 func (rf RestoreFlags) HasStringDoubleQuotesFlag() bool {
-	return rf.Has(RestoreStringDoubleQuotes)
+	return rf.has(RestoreStringDoubleQuotes)
 }
 
-// HasStringEscapeBackslashFlag returns weather `rf` has `RestoreStringEscapeBackslash` flag.
+// HasStringEscapeBackslashFlag returns a boolean indicating weather `rf` has `RestoreStringEscapeBackslash` flag.
 func (rf RestoreFlags) HasStringEscapeBackslashFlag() bool {
-	return rf.Has(RestoreStringEscapeBackslash)
+	return rf.has(RestoreStringEscapeBackslash)
 }
 
-// HasKeyWordUppercaseFlag returns weather `rf` has `RestoreKeyWordUppercase` flag.
+// HasKeyWordUppercaseFlag returns a boolean indicating weather `rf` has `RestoreKeyWordUppercase` flag.
 func (rf RestoreFlags) HasKeyWordUppercaseFlag() bool {
-	return rf.Has(RestoreKeyWordUppercase)
+	return rf.has(RestoreKeyWordUppercase)
 }
 
-// HasKeyWordLowercaseFlag returns weather `rf` has `RestoreKeyWordLowercase` flag.
+// HasKeyWordLowercaseFlag returns a boolean indicating weather `rf` has `RestoreKeyWordLowercase` flag.
 func (rf RestoreFlags) HasKeyWordLowercaseFlag() bool {
-	return rf.Has(RestoreKeyWordLowercase)
+	return rf.has(RestoreKeyWordLowercase)
 }
 
-// HasNameUppercaseFlag returns weather `rf` has `RestoreNameUppercase` flag.
+// HasNameUppercaseFlag returns a boolean indicating weather `rf` has `RestoreNameUppercase` flag.
 func (rf RestoreFlags) HasNameUppercaseFlag() bool {
-	return rf.Has(RestoreNameUppercase)
+	return rf.has(RestoreNameUppercase)
 }
 
-// HasNameLowercaseFlag returns weather `rf` has `RestoreNameLowercase` flag.
+// HasNameLowercaseFlag returns a boolean indicating weather `rf` has `RestoreNameLowercase` flag.
 func (rf RestoreFlags) HasNameLowercaseFlag() bool {
-	return rf.Has(RestoreNameLowercase)
+	return rf.has(RestoreNameLowercase)
 }
 
-// HasNameDoubleQuotesFlag returns weather `rf` has `RestoreNameDoubleQuotes` flag.
+// HasNameDoubleQuotesFlag returns a boolean indicating weather `rf` has `RestoreNameDoubleQuotes` flag.
 func (rf RestoreFlags) HasNameDoubleQuotesFlag() bool {
-	return rf.Has(RestoreNameDoubleQuotes)
+	return rf.has(RestoreNameDoubleQuotes)
 }
 
-// HasNameBackQuotesFlag returns weather `rf` has `RestoreNameBackQuotes` flag.
+// HasNameBackQuotesFlag returns a boolean indicating weather `rf` has `RestoreNameBackQuotes` flag.
 func (rf RestoreFlags) HasNameBackQuotesFlag() bool {
-	return rf.Has(RestoreNameBackQuotes)
+	return rf.has(RestoreNameBackQuotes)
 }
 
 // RestoreCtx is `Restore` context to hold flags and writer.

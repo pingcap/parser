@@ -145,5 +145,5 @@ func (o Op) Restore(w io.Writer) error {
 		fmt.Fprint(w, v)
 		return nil
 	}
-	return errors.Errorf("Invalid opcode type: %d", o)
+	return errors.Errorf("Invalid opcode type %d during restoring AST to SQL text", o)
 }
