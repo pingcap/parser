@@ -5191,10 +5191,10 @@ TableOptimizerHints:
 		$$ = $2
 	}
 |	hintBegin error hintEnd
-    {
-        yyerrok()
-        parser.lastErrorAsWarn()
-    }
+	{
+		yyerrok()
+		parser.lastErrorAsWarn()
+	}
 
 HintTableList:
 	Identifier
