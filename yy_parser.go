@@ -108,6 +108,11 @@ func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode
 	yyParse(l, parser)
 
 	warns, errs := l.Errors()
+	if len(warns) > 0 {
+		warns = append([]error(nil), warns...)
+	} else {
+		warns = nil
+	}
 	if len(errs) != 0 {
 		return nil, warns, errors.Trace(errs[0])
 	}
