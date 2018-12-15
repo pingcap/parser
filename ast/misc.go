@@ -727,6 +727,7 @@ const (
 	AdminChecksumTable
 	AdminShowSlow
 	AdminShowNextRowID
+	AdminRestoreTable
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
