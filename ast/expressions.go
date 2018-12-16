@@ -81,7 +81,16 @@ type BetweenExpr struct {
 
 // Restore implements Node interface.
 func (n *BetweenExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	n.Expr.Restore(ctx)
+	if n.Not {
+		ctx.WriteKeyWord(" NOT BETWEEN ")
+	} else {
+		ctx.WriteKeyWord(" BETWEEN ")
+	}
+	n.Left.Restore(ctx)
+	ctx.WriteKeyWord(" AND ")
+	n.Right.Restore(ctx)
+	return nil
 }
 
 // Format the ExprNode into a Writer.
