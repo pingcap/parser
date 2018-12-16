@@ -278,7 +278,7 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	c.Assert(err, IsNil, comment)
 	restoreSQLs := ""
 	for _, stmt := range stmts {
-		err = stmt.Restore(&sb)
+		err = stmt.Restore(ast.NewRestoreCtx(ast.DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSQL := sb.String()
 		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
@@ -2501,6 +2501,7 @@ func (s *testParserSuite) TestSideEffect(c *C) {
 
 func (s *testParserSuite) TestTablePartition(c *C) {
 	table := []testCase{
+		{"ALTER TABLE t1 TRUNCATE PARTITION p0", true, ""},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT 'APSTART \\' APEND')", true, ""},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')", true, ""},
 		{`CREATE TABLE t1 (a int not null,b int not null,c int not null,primary key(a,b))
