@@ -184,3 +184,15 @@ func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }
+
+func (tc *testExpressionsSuite) TestWhenClause(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"when 1 then 2", "WHEN 1 THEN 2"},
+		{"when 1 then 'a'", "WHEN 1 THEN 'a'"},
+		{"when 'a'!=1 then true", "WHEN 'a'!=1 THEN TRUE"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr.(*CaseExpr).WhenClauses[0]
+	}
+	RunNodeRestoreTest(c, testCases, "select case %s end", extractNodeFunc)
+}
