@@ -171,13 +171,25 @@ func (tc *testExpressionsSuite) TestCaseExpr(c *C) {
 }
 
 func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
-	testCases := [] NodeRestoreTestCase{
+	testCases := []NodeRestoreTestCase{
 		{"'a'!=1", "'a'!=1"},
 		{"a!=1", "`a`!=1"},
 		{"3<5", "3<5"},
 		{"10>5", "10>5"},
 		{"3+5", "3+5"},
 		{"3-5", "3-5"},
+		{"a<>5", "`a`!=5"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestParenthesesExpr(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"(1+2)*3", "(1+2)*3"},
+		{"1+2*3", "1+2*3"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
@@ -187,9 +199,9 @@ func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
 
 func (tc *testExpressionsSuite) TestWhenClause(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"when 1 then 2", "WHEN 1 THEN 2"},
-		{"when 1 then 'a'", "WHEN 1 THEN 'a'"},
-		{"when 'a'!=1 then true", "WHEN 'a'!=1 THEN TRUE"},
+		{"when 1 then 2", " WHEN 1 THEN 2"},
+		{"when 1 then 'a'", " WHEN 1 THEN 'a'"},
+		{"when 'a'!=1 then true", " WHEN 'a'!=1 THEN TRUE"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr.(*CaseExpr).WhenClauses[0]
