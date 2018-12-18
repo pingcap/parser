@@ -1830,6 +1830,7 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
+	c.Assert(warns[0].Error(), Equals, "line 1 column 53 near \" c1, c2 from t1, t2 where t1.c1 = t2.c1\" (total length 92)")
 	stmt, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
 	stmt, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
