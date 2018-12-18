@@ -54,7 +54,6 @@ const (
 	ActionModifyTableCharsetAndCollate ActionType = 22
 	ActionTruncateTablePartition       ActionType = 23
 	ActionRestoreTable                 ActionType = 24
-
 )
 
 // AddIndexStr is a string related to the operation of "add index".
