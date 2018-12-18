@@ -756,7 +756,10 @@ func (n *DropIndexStmt) Restore(ctx *RestoreCtx) error {
 	if n.IfExists {
 		ctx.WriteKeyWord("IF EXISTS ")
 	}
-	ctx.WriteName(n.Table.Name.String())
+
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing IndexHints")
+	}
 	ctx.WritePlain(" on ")
 	ctx.WriteName(n.IndexName)
 	return nil
