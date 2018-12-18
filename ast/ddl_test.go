@@ -62,3 +62,17 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		v.node.Accept(visitor1{})
 	}
 }
+
+func (ts *testDDLSuite) TestDropIndex(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1", "`t1`"},
+		{"db.`tb`", "`db`.`tb`"},
+		{"db.`tb-ttb`", "`db`.`tb-ttb`"},
+		{"`db`.`tb-ttb`", "`db`.`tb-ttb`"},
+		{"`db.TableName`", "`db.TableName`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DropIndexStmt).Table
+	}
+	RunNodeRestoreTest(c, testCases, "DROP INDEX a ON %s", extractNodeFunc)
+}

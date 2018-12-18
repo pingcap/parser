@@ -752,7 +752,14 @@ type DropIndexStmt struct {
 
 // Restore implements Node interface.
 func (n *DropIndexStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DROP INDEX ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.Table.Name.String())
+	ctx.WritePlain(" on ")
+	ctx.WriteName(n.IndexName)
+	return nil
 }
 
 // Accept implements Node Accept interface.
