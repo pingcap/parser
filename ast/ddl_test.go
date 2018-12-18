@@ -62,18 +62,3 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		v.node.Accept(visitor1{})
 	}
 }
-
-func (ts *testDDLSuite) TestDropIndex(c *C) {
-	testCases := []NodeRestoreTestCase{
-		{"drop index a on t", "DROP INDEX `a` ON `t`"},
-		{"drop index a on db.t", "DROP INDEX `a` ON `db`.`t`"},
-		{"drop index a on db.`tb-ttb`", "DROP INDEX `a` ON `db`.`tb-ttb`"},
-		{"drop index if exists a on t", "DROP INDEX IF EXISTS `a` ON `t`"},
-		{"drop index if exists a on db.t", "DROP INDEX IF EXISTS `a` ON `db`.`t`"},
-		{"drop index if exists a on db.`tb-ttb`", "DROP INDEX IF EXISTS `a` ON `db`.`tb-ttb`"},
-	}
-	extractNodeFunc := func(node Node) Node {
-		return node.(*DropIndexStmt)
-	}
-	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
-}
