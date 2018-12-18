@@ -210,7 +210,7 @@ type WhenClause struct {
 
 // Restore implements Node interface.
 func (n *WhenClause) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord(" WHEN ")
+	ctx.WriteKeyWord("WHEN ")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore WhenClauses.Expr")
 	}
@@ -264,6 +264,7 @@ func (n *CaseExpr) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	for _, clause := range n.WhenClauses {
+		ctx.WritePlain(" ")
 		if err := clause.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CaseExpr.WhenClauses")
 		}
