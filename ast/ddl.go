@@ -754,14 +754,16 @@ type DropIndexStmt struct {
 func (n *DropIndexStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("DROP INDEX ")
 	if n.IfExists {
-		ctx.WriteKeyWord("IF EXISTS ")
+		ctx.WriteKeyWord(" IF EXISTS")
 	}
+	ctx.WriteName(n.IndexName)
+
+	ctx.WriteKeyWord(" ON")
 
 	if err := n.Table.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing IndexHints")
+		return errors.Annotate(err, "An error occurred while add index")
 	}
-	ctx.WritePlain(" on ")
-	ctx.WriteName(n.IndexName)
+
 	return nil
 }
 
