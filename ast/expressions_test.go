@@ -179,6 +179,7 @@ func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
 		{"3+5", "3+5"},
 		{"3-5", "3-5"},
 		{"a<>5", "`a`!=5"},
+		{"a=1", "`a`=1"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
@@ -218,4 +219,19 @@ func (tc *testExpressionsSuite) TestDefaultExpr(c *C) {
 		return node.(*InsertStmt).Lists[0][0]
 	}
 	RunNodeRestoreTest(c, testCases, "insert into t values(%s)", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"@a+1", "@a+1"},
+		{"@a:=1", "@a:=1"},
+		{"@@var", "@@var"},
+		{"@@global.b='foo'", "@@GLOBAL.b='foo'"},
+		{"@@session.C", "@@SESSION.c"},
+		{"@@local.aBc", "@@SESSION.abc"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }
