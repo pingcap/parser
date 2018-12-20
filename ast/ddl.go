@@ -363,28 +363,29 @@ type IndexOption struct {
 
 // Restore implements Node interface.
 func (n *IndexOption) Restore(ctx *RestoreCtx) error {
+	hasPrevOption := false
 	if n.KeyBlockSize > 0 {
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE")
-		ctx.WritePlain("=")
-		ctx.WritePlainf("%d", n.KeyBlockSize)
-	}
-
-	if n.KeyBlockSize > 0 && n.Tp != model.IndexTypeInvalid {
-		ctx.WritePlain(" ")
+		ctx.WritePlainf("=%d", n.KeyBlockSize)
+		hasPrevOption = true
 	}
 
 	if n.Tp != model.IndexTypeInvalid {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
 		ctx.WriteKeyWord("USING ")
 		ctx.WritePlain(n.Tp.String())
-	}
-
-	if n.Tp != model.IndexTypeInvalid && n.Comment != "" {
-		ctx.WritePlain(" ")
+		hasPrevOption = true
 	}
 
 	if n.Comment != "" {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
+		hasPrevOption = true
 	}
 	return nil
 }
