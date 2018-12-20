@@ -62,3 +62,26 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		v.node.Accept(visitor1{})
 	}
 }
+
+type stmtStruct struct {
+	stmt            string
+	extractNodeFunc func(node Node) Node
+}
+
+func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
+	stmtTestCase := []stmtStruct{
+		{"CREATE TABLE hello2 (world VARCHAR(20), PRIMARY KEY idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
+		{"CREATE TABLE hello2 (world VARCHAR(20), FULLTEXT KEY idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
+		{"CREATE TABLE hello1 (world VARCHAR(20), INDEX idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
+		{"CREATE TABLE hello1 (world VARCHAR(20), UNIQUE INDEX idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
+		{"CREATE INDEX idx ON t (%s) USING HASH",func(node Node) Node { return node.(*CreateIndexStmt).IndexColNames[0] }},
+	}
+
+	for _, s := range stmtTestCase {
+		testCases := []NodeRestoreTestCase{
+			{"world", "`world`"},
+			{"world(2)", "`world`(2)"},
+		}
+		RunNodeRestoreTest(c, testCases, s.stmt, s.extractNodeFunc)
+	}
+}
