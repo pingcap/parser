@@ -903,6 +903,35 @@ const (
 	LockTypeExclusive
 )
 
+// AlterAlgorithm is the algorithm of the ddl operations.
+// See https://dev.mysql.com/doc/refman/8.0/en/alter-table.html#alter-table-performance.
+type AlterAlgorithm byte
+
+// DDL alter algorithms.
+// For now, TiDB only supported inplace and instance algorithms. If the user specify `copy`,
+// will get an error.
+const (
+	AlterAlgorithmDefault AlterAlgorithm = iota + 1
+	AlterAlgorithmCopy
+	AlterAlgorithmInplace
+	AlterAlgorithmInstant
+)
+
+func (a AlterAlgorithm) String() string {
+	switch a {
+	case AlterAlgorithmDefault:
+		return "DEFAULT"
+	case AlterAlgorithmCopy:
+		return "COPY"
+	case AlterAlgorithmInplace:
+		return "INPLACE"
+	case AlterAlgorithmInstant:
+		return "INSTANT"
+	default:
+		return "DEFAULT"
+	}
+}
+
 // AlterTableSpec represents alter table specification.
 type AlterTableSpec struct {
 	node
@@ -916,6 +945,7 @@ type AlterTableSpec struct {
 	OldColumnName   *ColumnName
 	Position        *ColumnPosition
 	LockType        LockType
+	Algorithm       AlterAlgorithm
 	Comment         string
 	FromKey         model.CIStr
 	ToKey           model.CIStr
