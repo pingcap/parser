@@ -14,8 +14,6 @@
 package ast
 
 import (
-	"strings"
-
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
@@ -85,8 +83,8 @@ type Join struct {
 	StraightJoin bool
 }
 
-// Restore implements Recoverable interface.
-func (n *Join) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *Join) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -133,9 +131,20 @@ type TableName struct {
 	IndexHints []*IndexHint
 }
 
-// Restore implements Recoverable interface.
-func (n *TableName) Restore(sb *strings.Builder) error {
-	return errors.New("Not implemented")
+// Restore implements Node interface.
+func (n *TableName) Restore(ctx *RestoreCtx) error {
+	if n.Schema.String() != "" {
+		ctx.WriteName(n.Schema.String())
+		ctx.WritePlain(".")
+	}
+	ctx.WriteName(n.Name.String())
+	for _, value := range n.IndexHints {
+		ctx.WritePlain(" ")
+		if err := value.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing IndexHints")
+		}
+	}
+	return nil
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -166,6 +175,47 @@ type IndexHint struct {
 	HintScope  IndexHintScope
 }
 
+// IndexHint Restore (The const field uses switch to facilitate understanding)
+func (n *IndexHint) Restore(ctx *RestoreCtx) error {
+	indexHintType := ""
+	switch n.HintType {
+	case 1:
+		indexHintType = "USE INDEX"
+	case 2:
+		indexHintType = "IGNORE INDEX"
+	case 3:
+		indexHintType = "FORCE INDEX"
+	default: // Prevent accidents
+		return errors.New("IndexHintType has an error while matching")
+	}
+
+	indexHintScope := ""
+	switch n.HintScope {
+	case 1:
+		indexHintScope = ""
+	case 2:
+		indexHintScope = " FOR JOIN"
+	case 3:
+		indexHintScope = " FOR ORDER BY"
+	case 4:
+		indexHintScope = " FOR GROUP BY"
+	default: // Prevent accidents
+		return errors.New("IndexHintScope has an error while matching")
+	}
+	ctx.WriteKeyWord(indexHintType)
+	ctx.WriteKeyWord(indexHintScope)
+	ctx.WritePlain(" (")
+	for i, value := range n.IndexNames {
+		if i > 0 {
+			ctx.WritePlain(", ")
+		}
+		ctx.WriteName(value.O)
+	}
+	ctx.WritePlain(")")
+
+	return nil
+}
+
 // Accept implements Node Accept interface.
 func (n *TableName) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
@@ -182,8 +232,8 @@ type DeleteTableList struct {
 	Tables []*TableName
 }
 
-// Restore implements Recoverable interface.
-func (n *DeleteTableList) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *DeleteTableList) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -213,8 +263,8 @@ type OnCondition struct {
 	Expr ExprNode
 }
 
-// Restore implements Recoverable interface.
-func (n *OnCondition) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *OnCondition) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -245,8 +295,8 @@ type TableSource struct {
 	AsName model.CIStr
 }
 
-// Restore implements Recoverable interface.
-func (n *TableSource) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *TableSource) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -296,8 +346,8 @@ type WildCardField struct {
 	Schema model.CIStr
 }
 
-// Restore implements Recoverable interface.
-func (n *WildCardField) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *WildCardField) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -331,8 +381,8 @@ type SelectField struct {
 	Auxiliary bool
 }
 
-// Restore implements Recoverable interface.
-func (n *SelectField) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *SelectField) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -360,8 +410,8 @@ type FieldList struct {
 	Fields []*SelectField
 }
 
-// Restore implements Recoverable interface.
-func (n *FieldList) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *FieldList) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -389,8 +439,8 @@ type TableRefsClause struct {
 	TableRefs *Join
 }
 
-// Restore implements Recoverable interface.
-func (n *TableRefsClause) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *TableRefsClause) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -417,8 +467,8 @@ type ByItem struct {
 	Desc bool
 }
 
-// Restore implements Recoverable interface.
-func (n *ByItem) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *ByItem) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -443,8 +493,8 @@ type GroupByClause struct {
 	Items []*ByItem
 }
 
-// Restore implements Recoverable interface.
-func (n *GroupByClause) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *GroupByClause) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -471,8 +521,8 @@ type HavingClause struct {
 	Expr ExprNode
 }
 
-// Restore implements Recoverable interface.
-func (n *HavingClause) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *HavingClause) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -498,8 +548,8 @@ type OrderByClause struct {
 	ForUnion bool
 }
 
-// Restore implements Recoverable interface.
-func (n *OrderByClause) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *OrderByClause) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -556,8 +606,8 @@ type SelectStmt struct {
 	IsInBraces bool
 }
 
-// Restore implements Recoverable interface.
-func (n *SelectStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -655,8 +705,8 @@ type UnionSelectList struct {
 	Selects []*SelectStmt
 }
 
-// Restore implements Recoverable interface.
-func (n *UnionSelectList) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *UnionSelectList) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -688,8 +738,8 @@ type UnionStmt struct {
 	Limit      *Limit
 }
 
-// Restore implements Recoverable interface.
-func (n *UnionStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *UnionStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -733,8 +783,8 @@ type Assignment struct {
 	Expr ExprNode
 }
 
-// Restore implements Recoverable interface.
-func (n *Assignment) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *Assignment) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -772,8 +822,8 @@ type LoadDataStmt struct {
 	IgnoreLines uint64
 }
 
-// Restore implements Recoverable interface.
-func (n *LoadDataStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -830,8 +880,8 @@ type InsertStmt struct {
 	Select      ResultSetNode
 }
 
-// Restore implements Recoverable interface.
-func (n *InsertStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *InsertStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -911,8 +961,8 @@ type DeleteStmt struct {
 	TableHints []*TableOptimizerHint
 }
 
-// Restore implements Recoverable interface.
-func (n *DeleteStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -976,8 +1026,8 @@ type UpdateStmt struct {
 	TableHints    []*TableOptimizerHint
 }
 
-// Restore implements Recoverable interface.
-func (n *UpdateStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1032,8 +1082,8 @@ type Limit struct {
 	Offset ExprNode
 }
 
-// Restore implements Recoverable interface.
-func (n *Limit) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *Limit) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1117,8 +1167,8 @@ type ShowStmt struct {
 	Where       ExprNode
 }
 
-// Restore implements Recoverable interface.
-func (n *ShowStmt) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1182,8 +1232,8 @@ type WindowSpec struct {
 	Frame       *FrameClause
 }
 
-// Restore implements Recoverable interface.
-func (n *WindowSpec) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *WindowSpec) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1225,8 +1275,8 @@ type PartitionByClause struct {
 	Items []*ByItem
 }
 
-// Restore implements Recoverable interface.
-func (n *PartitionByClause) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *PartitionByClause) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1266,8 +1316,8 @@ type FrameClause struct {
 	Extent FrameExtent
 }
 
-// Restore implements Recoverable interface.
-func (n *FrameClause) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *FrameClause) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1319,8 +1369,8 @@ type FrameBound struct {
 	Unit ExprNode
 }
 
-// Restore implements Recoverable interface.
-func (n *FrameBound) Restore(sb *strings.Builder) error {
+// Restore implements Node interface.
+func (n *FrameBound) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 

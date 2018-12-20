@@ -278,7 +278,7 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	c.Assert(err, IsNil, comment)
 	restoreSQLs := ""
 	for _, stmt := range stmts {
-		err = stmt.Restore(&sb)
+		err = stmt.Restore(ast.NewRestoreCtx(ast.DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSQL := sb.String()
 		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
@@ -1403,8 +1403,9 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		// reserved keyword can't be used as identifier directly, but A.B pattern is an exception
 		{`select COUNT from DESC`, false, ""},
 		{`select COUNT from SELECT.DESC`, true, ""},
-		{"use `select`", true, ""},
-		{"use select", false, ""},
+		{"use `select`", true, "USE `select`"},
+		{"use `sel``ect`", true, "USE `sel``ect`"},
+		{"use select", false, "USE `select`"},
 		{`select * from t as a`, true, ""},
 		{"select 1 full, 1 row, 1 abs", false, ""},
 		{"select 1 full, 1 `row`, 1 abs", true, ""},
@@ -1535,7 +1536,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create schema xxx", true, ""},
 		{"create schema if exists xxx", false, ""},
 		{"create schema if not exists xxx", true, ""},
-		// for drop database/schema/table/stats
+		// for drop database/schema/table/view/stats
 		{"drop database xxx", true, "DROP DATABASE `xxx`"},
 		{"drop database if exists xxx", true, "DROP DATABASE IF EXISTS `xxx`"},
 		{"drop database if not exists xxx", false, ""},
@@ -1552,7 +1553,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop table xxx restrict", true, ""},
 		{"drop table xxx, yyy cascade", true, ""},
 		{"drop table if exists xxx restrict", true, ""},
+		{"drop view", false, ""},
+		{"drop view xxx", true, ""},
+		{"drop view xxx, yyy", true, ""},
 		{"drop view if exists xxx", true, ""},
+		{"drop view if exists xxx, yyy", true, ""},
 		{"drop stats t", true, ""},
 		// for issue 974
 		{`CREATE TABLE address (
@@ -1779,6 +1784,14 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, ""},
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true, ""},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true, ""},
+
+		//For dorp index statement
+		{"drop index a on t", true, "DROP INDEX `a` ON `t`"},
+		{"drop index a on db.t", true, "DROP INDEX `a` ON `db`.`t`"},
+		{"drop index a on db.`tb-ttb`", true, "DROP INDEX `a` ON `db`.`tb-ttb`"},
+		{"drop index if exists a on t", true, "DROP INDEX IF EXISTS `a` ON `t`"},
+		{"drop index if exists a on db.t", true, "DROP INDEX IF EXISTS `a` ON `db`.`t`"},
+		{"drop index if exists a on db.`tb-ttb`", true, "DROP INDEX IF EXISTS `a` ON `db`.`tb-ttb`"},
 
 		// for rename table statement
 		{"RENAME TABLE t TO t1", true, ""},
@@ -2497,6 +2510,7 @@ func (s *testParserSuite) TestSideEffect(c *C) {
 
 func (s *testParserSuite) TestTablePartition(c *C) {
 	table := []testCase{
+		{"ALTER TABLE t1 TRUNCATE PARTITION p0", true, ""},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT 'APSTART \\' APEND')", true, ""},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')", true, ""},
 		{`CREATE TABLE t1 (a int not null,b int not null,c int not null,primary key(a,b))
