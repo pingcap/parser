@@ -385,7 +385,6 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
-		hasPrevOption = true
 	}
 	return nil
 }
