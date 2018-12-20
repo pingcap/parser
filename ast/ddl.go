@@ -18,7 +18,6 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
-	"strconv"
 )
 
 var (
@@ -365,15 +364,26 @@ type IndexOption struct {
 // Restore implements Node interface.
 func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 	if n.KeyBlockSize > 0 {
-		ctx.WriteKeyWord(" KEY_BLOCK_SIZE = ")
-		ctx.WritePlain(strconv.FormatUint(n.KeyBlockSize, 10))
+		ctx.WriteKeyWord("KEY_BLOCK_SIZE")
+		ctx.WritePlain("=")
+		ctx.WritePlainf("%d", n.KeyBlockSize)
 	}
-	if n.Tp == model.IndexTypeBtree || n.Tp == model.IndexTypeHash {
-		ctx.WriteKeyWord(" USING ")
+
+	if n.KeyBlockSize > 0 && n.Tp != model.IndexTypeInvalid {
+		ctx.WritePlain(" ")
+	}
+
+	if n.Tp != model.IndexTypeInvalid {
+		ctx.WriteKeyWord("USING ")
 		ctx.WritePlain(n.Tp.String())
 	}
+
+	if n.Tp != model.IndexTypeInvalid && n.Comment != "" {
+		ctx.WritePlain(" ")
+	}
+
 	if n.Comment != "" {
-		ctx.WriteKeyWord(" COMMENT ")
+		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
 	}
 	return nil
