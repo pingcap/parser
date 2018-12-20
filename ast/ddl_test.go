@@ -74,7 +74,10 @@ func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 		{"CREATE TABLE hello2 (world VARCHAR(20), FULLTEXT KEY idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
 		{"CREATE TABLE hello1 (world VARCHAR(20), INDEX idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
 		{"CREATE TABLE hello1 (world VARCHAR(20), UNIQUE INDEX idx_1 (%s))", func(node Node) Node { return node.(*CreateTableStmt).Constraints[0].Keys[0] }},
-		{"CREATE INDEX idx ON t (%s) USING HASH",func(node Node) Node { return node.(*CreateIndexStmt).IndexColNames[0] }},
+		{"CREATE INDEX idx ON t (%s) USING HASH", func(node Node) Node { return node.(*CreateIndexStmt).IndexColNames[0] }},
+		{"CREATE INDEX idx ON t (a) KEY_BLOCK_SIZE = 1232", func(node Node) Node { return node.(*CreateIndexStmt).IndexColNames[0] }},
+		{"CREATE INDEX idx ON t (a) USING BTREE", func(node Node) Node { return node.(*CreateIndexStmt).IndexColNames[0] }},
+		{"CREATE INDEX idx ON t (a) COMMENT 'foo'", func(node Node) Node { return node.(*CreateIndexStmt).IndexColNames[0] }},
 	}
 
 	for _, s := range stmtTestCase {
