@@ -1088,7 +1088,7 @@ func (n *VariableExpr) Restore(ctx *RestoreCtx) error {
 	} else {
 		ctx.WritePlain("@")
 	}
-	ctx.WritePlain(n.Name)
+	ctx.WriteName(n.Name)
 
 	if n.Value != nil {
 		ctx.WritePlain(":=")

@@ -223,12 +223,13 @@ func (tc *testExpressionsSuite) TestDefaultExpr(c *C) {
 
 func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"@a+1", "@a+1"},
-		{"@a:=1", "@a:=1"},
-		{"@@var", "@@var"},
-		{"@@global.b='foo'", "@@GLOBAL.b='foo'"},
-		{"@@session.C", "@@SESSION.c"},
-		{"@@local.aBc", "@@SESSION.abc"},
+		{"@`a`+1", "@`a`+1"},
+		// {"@`a`:=1", "@`a`:=1"},
+		// {"@`a``b`=4", "@`a``b`=4"},
+		// {"@@var", "@@`var`"},
+		// {"@@global.b='foo'", "@@GLOBAL.`b`='foo'"},
+		{"@@session.c", "@@SESSION.`c`"},
+		// {"@@local.`aBc`", "@@SESSION.`abc`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
