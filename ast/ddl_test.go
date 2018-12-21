@@ -63,11 +63,6 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	}
 }
 
-type stmtStruct struct {
-	stmt            string
-	extractNodeFunc func(node Node) Node
-}
-
 func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"world", "`world`"},
