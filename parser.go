@@ -8566,6 +8566,8 @@ yynewstate:
 					opt1.Comment = opt2.Comment
 				} else if opt2.Tp != 0 {
 					opt1.Tp = opt2.Tp
+				} else if opt2.KeyBlockSize > 0 {
+					opt1.KeyBlockSize = opt2.KeyBlockSize
 				}
 				parser.yyVAL.item = opt1
 			}
@@ -8574,7 +8576,7 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.IndexOption{
 				// TODO bug should be fix here!
-				// KeyBlockSize: $1.(uint64),
+				KeyBlockSize: yyS[yypt-0].item.(uint64),
 			}
 		}
 	case 342:
