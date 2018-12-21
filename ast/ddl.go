@@ -18,7 +18,6 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
-	"strconv"
 )
 
 var (
@@ -161,7 +160,7 @@ func (n *IndexColName) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while splicing IndexColName")
 	}
 	if n.Length > 0 {
-		ctx.WritePlain("(" + strconv.Itoa(n.Length) + ")")
+		ctx.WritePlainf("(%d)",n.Length)
 	}
 	return nil
 }
