@@ -63,10 +63,6 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	}
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> c1417b374e4f7b9a4181c1b0c59c52421d93d939
 func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"world", "`world`"},
@@ -80,23 +76,18 @@ func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 
 func (ts *testDDLSuite) TestDDLIndexOption(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"key_block_size=16","KEY_BLOCK_SIZE=16"},
-		{"USING HASH","USING HASH"},
-		{"comment 'hello'","COMMENT 'hello'"},
-		{"key_block_size=16 USING HASH","KEY_BLOCK_SIZE=16 USING HASH"},
-		{"USING HASH KEY_BLOCK_SIZE=16","KEY_BLOCK_SIZE=16 USING HASH"},
-		{"USING HASH COMMENT 'foo'","USING HASH COMMENT 'foo'"},
-		{"COMMENT 'foo'","COMMENT 'foo'"},
-		{"key_block_size = 32 using hash comment 'hello'","KEY_BLOCK_SIZE=32 USING HASH COMMENT 'hello'"},
-		{"key_block_size=32 using btree comment 'hello'","KEY_BLOCK_SIZE=32 USING BTREE COMMENT 'hello'"},
+		{"key_block_size=16", "KEY_BLOCK_SIZE=16"},
+		{"USING HASH", "USING HASH"},
+		{"comment 'hello'", "COMMENT 'hello'"},
+		{"key_block_size=16 USING HASH", "KEY_BLOCK_SIZE=16 USING HASH"},
+		{"USING HASH KEY_BLOCK_SIZE=16", "KEY_BLOCK_SIZE=16 USING HASH"},
+		{"USING HASH COMMENT 'foo'", "USING HASH COMMENT 'foo'"},
+		{"COMMENT 'foo'", "COMMENT 'foo'"},
+		{"key_block_size = 32 using hash comment 'hello'", "KEY_BLOCK_SIZE=32 USING HASH COMMENT 'hello'"},
+		{"key_block_size=32 using btree comment 'hello'", "KEY_BLOCK_SIZE=32 USING BTREE COMMENT 'hello'"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateIndexStmt).IndexOption
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (a) %s", extractNodeFunc)
-<<<<<<< HEAD
 }
-=======
-}
-
->>>>>>> c1417b374e4f7b9a4181c1b0c59c52421d93d939
