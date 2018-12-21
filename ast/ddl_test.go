@@ -62,3 +62,29 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		v.node.Accept(visitor1{})
 	}
 }
+
+func (ts *testDDLSuite) TestDDLOnDeleteRestore(c *C)  {
+	testCases := []NodeRestoreTestCase{
+		{"on delete restrict","ON DELETE RESTRICT"},
+		{"on delete CASCADE","ON DELETE CASCADE"},
+		{"on delete SET NULL","ON DELETE SET NULL"},
+		{"on delete no action","ON DELETE NO ACTION"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Constraints[1].Refer.OnDelete
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s)", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C)  {
+	testCases := []NodeRestoreTestCase{
+		{"on update restrict","ON UPDATE RESTRICT"},
+		{"on update CASCADE","ON UPDATE CASCADE"},
+		{"on update SET NULL","ON UPDATE SET NULL"},
+		{"on update no action","ON UPDATE NO ACTION"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Constraints[1].Refer.OnUpdate
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE `ibtest11c` (`A` int(11) NOT NULL auto_increment, `D` int(11) NOT NULL default '0', PRIMARY KEY (`A`, `D`), CONSTRAINT `0_38775` FOREIGN KEY (`A`, `D`) REFERENCES `ibtest11a` (`A`, `D`) ON DELETE CASCADE %s)", extractNodeFunc)
+}
