@@ -1084,7 +1084,7 @@ type Limit struct {
 
 // Restore implements Node interface.
 func (n *Limit) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord(" LIMIT ")
+	ctx.WriteKeyWord("LIMIT ")
 	if n.Offset != nil {
 		if err := n.Offset.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore Limit.Offset")
