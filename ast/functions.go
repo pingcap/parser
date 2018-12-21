@@ -330,7 +330,32 @@ type FuncCallExpr struct {
 
 // Restore implements Node interface.
 func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.FnName.O {
+	case "CONVERT":
+		ctx.WriteKeyWord("CONVERT")
+		ctx.WritePlain("(")
+		if err := n.Args[0].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord("USING")
+		ctx.WritePlain(" ")
+		ctx.WritePlain(n.Args[1].GetType().Charset)
+		ctx.WritePlain(")")
+	default:
+		ctx.WriteKeyWord(n.FnName.O)
+		ctx.WritePlain("(")
+		for i, argv := range n.Args {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := argv.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args %d", i)
+			}
+		}
+		ctx.WritePlain(")")
+	}
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -390,6 +415,7 @@ type CastFunctionType int
 const (
 	CastFunction CastFunctionType = iota + 1
 	CastConvertFunction
+	CastConvertUsingFunction
 	CastBinaryOperator
 )
 
@@ -407,7 +433,46 @@ type FuncCastExpr struct {
 
 // Restore implements Node interface.
 func (n *FuncCastExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.FunctionType {
+	case CastFunction:
+		ctx.WriteKeyWord("CAST")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord("AS")
+		ctx.WritePlain(" ")
+		n.Tp.FormatAsCastType(ctx.In)
+		ctx.WritePlain(")")
+	case CastConvertFunction:
+		ctx.WriteKeyWord("CONVERT")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+		ctx.WritePlain(", ")
+		n.Tp.FormatAsCastType(ctx.In)
+		ctx.WritePlain(")")
+	case CastConvertUsingFunction:
+		ctx.WriteKeyWord("CONVERT")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord("USING")
+		ctx.WritePlain(" ")
+		ctx.WritePlain(n.Tp.Charset)
+		ctx.WritePlain(")")
+	case CastBinaryOperator:
+		ctx.WriteKeyWord("BINARY")
+		ctx.WritePlain(" ")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+	}
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -520,7 +585,22 @@ type AggregateFuncExpr struct {
 
 // Restore implements Node interface.
 func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord(n.F)
+	ctx.WritePlain("(")
+	if n.Distinct {
+		ctx.WriteKeyWord("DISTINCT")
+		ctx.WritePlain(" ")
+	}
+	for i, argv := range n.Args {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := argv.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args %d", i)
+		}
+	}
+	ctx.WritePlain(")")
+	return nil
 }
 
 // Format the ExprNode into a Writer.
