@@ -947,7 +947,7 @@ type AlterAlgorithm byte
 // For now, TiDB only supported inplace and instance algorithms. If the user specify `copy`,
 // will get an error.
 const (
-	AlterAlgorithmDefault AlterAlgorithm = iota + 1
+	AlterAlgorithmDefault AlterAlgorithm = iota
 	AlterAlgorithmCopy
 	AlterAlgorithmInplace
 	AlterAlgorithmInstant
