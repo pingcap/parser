@@ -261,35 +261,10 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 		if t.ok {
 			c.Assert(err, IsNil, comment)
 		} else {
-			c.Assert(err, NotNil, comment)
+			c.Assert(err, NotNil,
+				comment)
 		}
 	}
-}
-
-func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
-	var sb strings.Builder
-	parser := New()
-	comment := Commentf("source %v", sourceSQLs)
-	stmts, _, err := parser.Parse(sourceSQLs, "", "")
-	c.Assert(err, IsNil, comment)
-	restoreSQLs := ""
-	for _, stmt := range stmts {
-		err = stmt.Restore(ast.NewRestoreCtx(ast.DefaultRestoreFlags, &sb))
-		c.Assert(err, IsNil, comment)
-		restoreSQL := sb.String()
-		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
-		restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
-		c.Assert(err, IsNil, comment)
-		CleanNodeText(stmt)
-		CleanNodeText(restoreStmt)
-		c.Assert(restoreStmt, DeepEquals, stmt, comment)
-		if restoreSQLs != "" {
-			restoreSQLs += "; "
-		}
-		restoreSQLs += restoreSQL
-	}
-	comment = Commentf("restore %v; expect %v", restoreSQLs, expectSQLs)
-	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
 }
 
 func (s *testParserSuite) RunErrMsgTest(c *C, table []testErrMsgCase) {
@@ -2512,23 +2487,6 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 	c.Assert(err, IsNil)
 	createTable := stmt.(*ast.CreateTableStmt)
 	c.Assert(createTable.Partition.Definitions[0].Comment, Equals, "check")
-}
-
-func (s *testParserSuite) TestNotExistsSubquery(c *C) {
-	table := []testCase{
-		{`select * from t1 where not exists (select * from t2 where t1.a = t2.a)`, true, ""},
-	}
-
-	parser := New()
-	for _, tt := range table {
-		stmt, _, err := parser.Parse(tt.src, "", "")
-		c.Assert(err, IsNil)
-
-		sel := stmt[0].(*ast.SelectStmt)
-		exists, ok := sel.Where.(*ast.ExistsSubqueryExpr)
-		c.Assert(ok, IsTrue)
-		c.Assert(exists.Not, Equals, tt.ok)
-	}
 }
 
 func (s *testParserSuite) TestWindowFunctionIdentifier(c *C) {
