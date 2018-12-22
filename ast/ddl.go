@@ -955,7 +955,16 @@ type ColumnPosition struct {
 
 // Restore implements Node interface.
 func (n *ColumnPosition) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.Tp {
+	case ColumnPositionFirst:
+		ctx.WriteKeyWord("FIRST")
+	case ColumnPositionAfter:
+		ctx.WriteKeyWord("AFTER ")
+		if err := n.RelativeColumn.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore ColumnPosition.RelativeColumn")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
