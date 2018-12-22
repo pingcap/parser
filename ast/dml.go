@@ -88,13 +88,14 @@ func (n *Join) Restore(ctx *RestoreCtx) error {
 	if err := n.Left.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore Join.Left")
 	}
+	if n.Right == nil {
+		return nil
+	}
 	ctx.WritePlain(" ")
 	if n.NaturalJoin {
 		ctx.WriteKeyWord("NATURAL ")
 	}
 	switch n.Tp {
-	case CrossJoin:
-		break
 	case LeftJoin:
 		ctx.WriteKeyWord("LEFT ")
 	case RightJoin:

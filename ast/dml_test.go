@@ -162,6 +162,8 @@ func (tc *testDMLSuite) TestJoinRestore(c *C) {
 		{"t1 join t2 using (b)", "`t1` JOIN `t2` USING (`b`)"},
 		{"t1 join t2 using (b,c) left join t3 on t1.a=t3.a", "`t1` JOIN `t2` USING (`b`,`c`) LEFT JOIN `t3` ON `t1`.`a`=`t3`.`a`"},
 		{"t1 natural join t2 right join t3 using (b,c)", "`t1` NATURAL JOIN `t2` RIGHT JOIN `t3` USING (`b`,`c`)"},
+		// {"t1, t2", "`t1` JOIN `t2`"},
+		// {"t1, t2, t3", "`t1` JOIN `t2` JOIN `t3`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From.TableRefs
