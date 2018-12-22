@@ -85,12 +85,16 @@ type Join struct {
 
 // Restore implements Node interface.
 func (n *Join) Restore(ctx *RestoreCtx) error {
-	n.Left.Restore(ctx)
+	if err := n.Left.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Join.Left")
+	}
 	ctx.WritePlain(" ")
 	if n.NaturalJoin {
 		ctx.WriteKeyWord("NATURAL ")
 	}
 	switch n.Tp {
+	case CrossJoin:
+		break
 	case LeftJoin:
 		ctx.WriteKeyWord("LEFT ")
 	case RightJoin:
@@ -101,7 +105,9 @@ func (n *Join) Restore(ctx *RestoreCtx) error {
 	} else {
 		ctx.WriteKeyWord("JOIN ")
 	}
-	n.Right.Restore(ctx)
+	if err := n.Right.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Join.Right")
+	}
 
 	if n.On != nil {
 		ctx.WriteKeyWord(" ON ")
@@ -109,7 +115,7 @@ func (n *Join) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while restore Join.On")
 		}
 	}
-	if n.Using != nil {
+	if len(n.Using) != 0 {
 		ctx.WriteKeyWord(" USING ")
 		ctx.WritePlain("(")
 		for i, v := range n.Using {
