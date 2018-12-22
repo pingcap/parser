@@ -85,7 +85,45 @@ type Join struct {
 
 // Restore implements Node interface.
 func (n *Join) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	n.Left.Restore(ctx)
+	ctx.WritePlain(" ")
+	if n.NaturalJoin {
+		ctx.WriteKeyWord("NATURAL ")
+	}
+	switch n.Tp {
+	case LeftJoin:
+		ctx.WriteKeyWord("LEFT ")
+	case RightJoin:
+		ctx.WriteKeyWord("RIGHT ")
+	}
+	if n.StraightJoin {
+		ctx.WriteKeyWord("STRAIGHT_JOIN ")
+	} else {
+		ctx.WriteKeyWord("JOIN ")
+	}
+	n.Right.Restore(ctx)
+
+	if n.On != nil {
+		ctx.WriteKeyWord(" ON ")
+		if err := n.On.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore Join.On")
+		}
+	}
+	if n.Using != nil {
+		ctx.WriteKeyWord(" USING ")
+		ctx.WritePlain("(")
+		for i, v := range n.Using {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore Join.Using")
+			}
+		}
+		ctx.WritePlain(")")
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -297,7 +335,26 @@ type TableSource struct {
 
 // Restore implements Node interface.
 func (n *TableSource) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	needParen := false
+	switch n.Source.(type) {
+	case *SelectStmt, *UnionStmt:
+		needParen = true
+	}
+	if needParen {
+		ctx.WritePlain("(")
+	}
+	if err := n.Source.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableSource.Source")
+	}
+	if needParen {
+		ctx.WritePlain(")")
+	}
+	if asName := n.AsName.String(); asName != "" {
+		ctx.WriteKeyWord(" AS ")
+		ctx.WriteName(asName)
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
