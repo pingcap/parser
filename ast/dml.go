@@ -87,6 +87,7 @@ type Join struct {
 func (n *Join) Restore(ctx *RestoreCtx) error {
 	if ctx.JoinLevel != 0 {
 		ctx.WritePlain("(")
+		defer ctx.WritePlain(")")
 	}
 	ctx.JoinLevel++
 	if err := n.Left.Restore(ctx); err != nil {
@@ -94,9 +95,6 @@ func (n *Join) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.JoinLevel--
 	if n.Right == nil {
-		if ctx.JoinLevel != 0 {
-			ctx.WritePlain(")")
-		}
 		return nil
 	}
 	if n.NaturalJoin {
@@ -136,9 +134,6 @@ func (n *Join) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore Join.Using")
 			}
 		}
-		ctx.WritePlain(")")
-	}
-	if ctx.JoinLevel != 0 {
 		ctx.WritePlain(")")
 	}
 
