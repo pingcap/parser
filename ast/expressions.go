@@ -999,12 +999,30 @@ type RowExpr struct {
 
 // Restore implements Node interface.
 func (n *RowExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ROW")
+	ctx.WritePlain("(")
+	for i, v := range n.Values {
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotate(err, fmt.Sprintf("An error occurred when restore RowExpr.Values[%v]", i))
+		}
+		if i < len(n.Values)-1 {
+			ctx.WritePlain(",")
+		}
+	}
+	ctx.WritePlain(")")
+	return nil
 }
 
 // Format the ExprNode into a Writer.
 func (n *RowExpr) Format(w io.Writer) {
-	panic("Not implemented")
+	fmt.Fprint(w, "ROW(")
+	for i, v := range n.Values {
+		v.Format(w)
+		if i < len(n.Values)-1 {
+			fmt.Fprint(w, ",")
+		}
+	}
+	fmt.Fprint(w, ")")
 }
 
 // Accept implements Node Accept interface.
