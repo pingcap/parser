@@ -139,3 +139,13 @@ func (tc *testDMLSuite) TestLimitRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "SELECT 1 %s", extractNodeFunc)
 }
 
+func (tc *testDMLSuite) TestDeleteTableListRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1,t2", "`t1`,`t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DeleteStmt).Tables
+	}
+	RunNodeRestoreTest(c, testCases, "DELETE %s FROM t1, t2;", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "DELETE FROM %s USING t1, t2;", extractNodeFunc)
+}
