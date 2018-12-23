@@ -578,7 +578,24 @@ type DropTableStmt struct {
 
 // Restore implements Node interface.
 func (n *DropTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DROP ")
+	if n.IsView {
+		ctx.WriteKeyWord("VIEW ")
+	} else {
+		ctx.WriteKeyWord("TABLE ")
+	}
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	for i, tableName := range n.Tables {
+		if err := tableName.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DropTableStmt.Tables")
+		}
+		if i < len(n.Tables)-1 {
+			ctx.WritePlain(",")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.

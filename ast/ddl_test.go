@@ -80,3 +80,20 @@ func (ts *testDDLSuite) TestDDLIndexOption(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (a) %s", extractNodeFunc)
 }
+
+func (ts *testDDLSuite) TestDropTableRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"drop table t1", "DROP TABLE `t1`"},
+		{"drop table if exists t1", "DROP TABLE IF EXISTS `t1`"},
+		{"drop table t1,t2", "DROP TABLE `t1`,`t2`"},
+		{"drop table if exists t1,t2", "DROP TABLE IF EXISTS `t1`,`t2`"},
+		{"drop view t1", "DROP VIEW `t1`"},
+		{"drop view if exists t1", "DROP VIEW IF EXISTS `t1`"},
+		{"drop view t1,t2", "DROP VIEW `t1`,`t2`"},
+		{"drop view if exists t1,t2", "DROP VIEW IF EXISTS `t1`,`t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DropTableStmt)
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
+}
