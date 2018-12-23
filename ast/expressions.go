@@ -1002,11 +1002,11 @@ func (n *RowExpr) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("ROW")
 	ctx.WritePlain("(")
 	for i, v := range n.Values {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotate(err, fmt.Sprintf("An error occurred when restore RowExpr.Values[%v]", i))
-		}
-		if i < len(n.Values)-1 {
-			ctx.WritePlain(",")
 		}
 	}
 	ctx.WritePlain(")")
@@ -1017,10 +1017,10 @@ func (n *RowExpr) Restore(ctx *RestoreCtx) error {
 func (n *RowExpr) Format(w io.Writer) {
 	fmt.Fprint(w, "ROW(")
 	for i, v := range n.Values {
-		v.Format(w)
-		if i < len(n.Values)-1 {
+		if i != 0 {
 			fmt.Fprint(w, ",")
 		}
+		v.Format(w)
 	}
 	fmt.Fprint(w, ")")
 }
