@@ -157,6 +157,7 @@ func (tc *testDMLSuite) TestSelectFieldRestore(c *C) {
 		{"t.*", "`t`.*"},
 		{"testdb.t.*", "`testdb`.`t`.*"},
 		{"col as a", "`col` AS `a`"},
+		{"col + 1 a", "`col`+1 AS `a`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0]
