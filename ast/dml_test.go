@@ -143,6 +143,9 @@ func (tc *testDMLSuite) TestTableSourceRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"tbl", "`tbl`"},
 		{"tbl as t", "`tbl` AS `t`"},
+		// TODO: Once `Restore` of SelectStmt or UnionStmt is implemented, add the following test cases
+		// {"(select * from tbl) as t", "(SELECT * FROM `tbl`) AS `t`"},
+		// {"(select * from a union select * from b) as t", "(SELECT * FROM `a` UNION SELECT * FROM `b`) AS `t`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From.TableRefs.Left
