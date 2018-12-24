@@ -201,6 +201,9 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WritePlain("(")
 	for i, indexColNames := range n.IndexColNames {
+		if i > 0 {
+			ctx.WritePlain(", ")
+		}
 		if err := indexColNames.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
 		}
