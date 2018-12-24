@@ -156,7 +156,13 @@ type IndexColName struct {
 
 // Restore implements Node interface.
 func (n *IndexColName) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Column.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing IndexColName")
+	}
+	if n.Length > 0 {
+		ctx.WritePlainf("(%d)", n.Length)
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -257,7 +263,11 @@ type OnDeleteOpt struct {
 
 // Restore implements Node interface.
 func (n *OnDeleteOpt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.ReferOpt != ReferOptionNoOption {
+		ctx.WriteKeyWord("ON DELETE ")
+		ctx.WriteKeyWord(n.ReferOpt.String())
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -278,7 +288,11 @@ type OnUpdateOpt struct {
 
 // Restore implements Node interface.
 func (n *OnUpdateOpt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.ReferOpt != ReferOptionNoOption {
+		ctx.WriteKeyWord("ON UPDATE ")
+		ctx.WriteKeyWord(n.ReferOpt.String())
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
