@@ -63,7 +63,6 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	}
 }
 
-
 func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"world", "`world`"},
@@ -73,6 +72,7 @@ func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 		return node.(*CreateIndexStmt).IndexColNames[0]
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
+}
 
 func (ts *testDDLSuite) TestDDLOnDeleteRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
