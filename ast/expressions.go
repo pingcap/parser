@@ -1006,7 +1006,7 @@ func (n *RowExpr) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(",")
 		}
 		if err := v.Restore(ctx); err != nil {
-			return errors.Annotate(err, fmt.Sprintf("An error occurred when restore RowExpr.Values[%v]", i))
+			return errors.Annotatef(err, "An error occurred when restore RowExpr.Values[%v]", i)
 		}
 	}
 	ctx.WritePlain(")")
@@ -1015,14 +1015,7 @@ func (n *RowExpr) Restore(ctx *RestoreCtx) error {
 
 // Format the ExprNode into a Writer.
 func (n *RowExpr) Format(w io.Writer) {
-	fmt.Fprint(w, "ROW(")
-	for i, v := range n.Values {
-		if i != 0 {
-			fmt.Fprint(w, ",")
-		}
-		v.Format(w)
-	}
-	fmt.Fprint(w, ")")
+	panic("Not implemented")
 }
 
 // Accept implements Node Accept interface.
