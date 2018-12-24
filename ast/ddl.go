@@ -257,7 +257,11 @@ type OnDeleteOpt struct {
 
 // Restore implements Node interface.
 func (n *OnDeleteOpt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.ReferOpt != ReferOptionNoOption {
+		ctx.WriteKeyWord("ON DELETE ")
+		ctx.WriteKeyWord(n.ReferOpt.String())
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -278,7 +282,11 @@ type OnUpdateOpt struct {
 
 // Restore implements Node interface.
 func (n *OnUpdateOpt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.ReferOpt != ReferOptionNoOption {
+		ctx.WriteKeyWord("ON UPDATE ")
+		ctx.WriteKeyWord(n.ReferOpt.String())
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -363,7 +371,30 @@ type IndexOption struct {
 
 // Restore implements Node interface.
 func (n *IndexOption) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	hasPrevOption := false
+	if n.KeyBlockSize > 0 {
+		ctx.WriteKeyWord("KEY_BLOCK_SIZE")
+		ctx.WritePlainf("=%d", n.KeyBlockSize)
+		hasPrevOption = true
+	}
+
+	if n.Tp != model.IndexTypeInvalid {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("USING ")
+		ctx.WritePlain(n.Tp.String())
+		hasPrevOption = true
+	}
+
+	if n.Comment != "" {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("COMMENT ")
+		ctx.WriteString(n.Comment)
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -555,7 +586,25 @@ type DropTableStmt struct {
 
 // Restore implements Node interface.
 func (n *DropTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.IsView {
+		ctx.WriteKeyWord("DROP VIEW ")
+	} else {
+		ctx.WriteKeyWord("DROP TABLE ")
+	}
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+
+	for index, table := range n.Tables {
+		if index != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DropTableStmt.Tables "+string(index))
+		}
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -752,7 +801,18 @@ type DropIndexStmt struct {
 
 // Restore implements Node interface.
 func (n *DropIndexStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DROP INDEX ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.IndexName)
+	ctx.WriteKeyWord(" ON ")
+
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while add index")
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.

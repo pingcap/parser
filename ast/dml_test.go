@@ -126,3 +126,55 @@ func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "SELECT * FROM %s", extractNodeFunc)
 }
+
+func (tc *testDMLSuite) TestLimitRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"limit 10", "LIMIT 10"},
+		{"limit 10,20", "LIMIT 10,20"},
+		{"limit 20 offset 10", "LIMIT 10,20"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Limit
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT 1 %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestWildCardFieldRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"*", "*"},
+		{"t.*", "`t`.*"},
+		{"testdb.t.*", "`testdb`.`t`.*"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].WildCard
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestSelectFieldRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"*", "*"},
+		{"t.*", "`t`.*"},
+		{"testdb.t.*", "`testdb`.`t`.*"},
+		{"col as a", "`col` AS `a`"},
+		{"col + 1 a", "`col`+1 AS `a`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0]
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestFieldListRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"*", "*"},
+		{"t.*", "`t`.*"},
+		{"testdb.t.*", "`testdb`.`t`.*"},
+		{"col as a", "`col` AS `a`"},
+		{"`t`.*, s.col as a", "`t`.*, `s`.`col` AS `a`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
+}

@@ -523,7 +523,15 @@ type DefaultExpr struct {
 
 // Restore implements Node interface.
 func (n *DefaultExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DEFAULT")
+	if n.Name != nil {
+		ctx.WritePlain("(")
+		if err := n.Name.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DefaultExpr.Name")
+		}
+		ctx.WritePlain(")")
+	}
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -707,7 +715,20 @@ type IsTruthExpr struct {
 
 // Restore implements Node interface.
 func (n *IsTruthExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.Not {
+		ctx.WriteKeyWord(" IS NOT")
+	} else {
+		ctx.WriteKeyWord(" IS")
+	}
+	if n.True > 0 {
+		ctx.WriteKeyWord(" TRUE")
+	} else {
+		ctx.WriteKeyWord(" FALSE")
+	}
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -758,7 +779,21 @@ type PatternLikeExpr struct {
 
 // Restore implements Node interface.
 func (n *PatternLikeExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore PatternLikeExpr.Expr")
+	}
+
+	if n.Not {
+		ctx.WriteKeyWord(" NOT LIKE ")
+	} else {
+		ctx.WriteKeyWord(" LIKE ")
+	}
+
+	if err := n.Pattern.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore PatternLikeExpr.Pattern")
+	}
+
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -906,7 +941,21 @@ type PatternRegexpExpr struct {
 
 // Restore implements Node interface.
 func (n *PatternRegexpExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore PatternRegexpExpr.Expr")
+	}
+
+	if n.Not {
+		ctx.WriteKeyWord(" NOT REGEXP ")
+	} else {
+		ctx.WriteKeyWord(" REGEXP ")
+	}
+
+	if err := n.Pattern.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore PatternRegexpExpr.Pattern")
+	}
+
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -950,7 +999,18 @@ type RowExpr struct {
 
 // Restore implements Node interface.
 func (n *RowExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ROW")
+	ctx.WritePlain("(")
+	for i, v := range n.Values {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred when restore RowExpr.Values[%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -1025,7 +1085,14 @@ type ValuesExpr struct {
 
 // Restore implements Node interface.
 func (n *ValuesExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("VALUES")
+	ctx.WritePlain("(")
+	if err := n.Column.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore ValuesExpr.Column")
+	}
+	ctx.WritePlain(")")
+
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -1101,7 +1168,8 @@ type MaxValueExpr struct {
 
 // Restore implements Node interface.
 func (n *MaxValueExpr) Restore(ctx *RestoreCtx) error {
-	panic("Not implemented")
+	ctx.WriteKeyWord("MAXVALUE")
+	return nil
 }
 
 // Format the ExprNode into a Writer.
