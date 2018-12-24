@@ -239,7 +239,7 @@ func (n *DeleteTableList) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(",")
 		}
     	if err := t.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore DeleteTableList.Tablename")
+			return errors.Annotatef(err, "An error occurred while restore DeleteTableList.Tables[%v]", i)
 		}
 	}
 	return nil
