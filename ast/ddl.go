@@ -160,7 +160,7 @@ func (n *IndexColName) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while splicing IndexColName")
 	}
 	if n.Length > 0 {
-		ctx.WritePlainf("(%d)",n.Length)
+		ctx.WritePlainf("(%d)", n.Length)
 	}
 	return nil
 }
@@ -317,7 +317,7 @@ const (
 	ColumnOptionDefaultValue
 	ColumnOptionUniqKey
 	ColumnOptionNull
-	ColumnOptionOnUpdate // For Timestamp and Datetime only.
+	ColumnOptionOnUpdate  // For Timestamp and Datetime only.
 	ColumnOptionFulltext
 	ColumnOptionComment
 	ColumnOptionGenerated
