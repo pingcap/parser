@@ -126,3 +126,102 @@ func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "SELECT * FROM %s", extractNodeFunc)
 }
+
+func (tc *testDMLSuite) TestLimitRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"limit 10", "LIMIT 10"},
+		{"limit 10,20", "LIMIT 10,20"},
+		{"limit 20 offset 10", "LIMIT 10,20"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Limit
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT 1 %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestWildCardFieldRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"*", "*"},
+		{"t.*", "`t`.*"},
+		{"testdb.t.*", "`testdb`.`t`.*"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].WildCard
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestSelectFieldRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"*", "*"},
+		{"t.*", "`t`.*"},
+		{"testdb.t.*", "`testdb`.`t`.*"},
+		{"col as a", "`col` AS `a`"},
+		{"col + 1 a", "`col`+1 AS `a`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0]
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestFieldListRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"*", "*"},
+		{"t.*", "`t`.*"},
+		{"testdb.t.*", "`testdb`.`t`.*"},
+		{"col as a", "`col` AS `a`"},
+		{"`t`.*, s.col as a", "`t`.*, `s`.`col` AS `a`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestTableSourceRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"tbl", "`tbl`"},
+		{"tbl as t", "`tbl` AS `t`"},
+		// TODO: Once `Restore` of SelectStmt or UnionStmt is implemented, add the following test cases
+		// {"(select * from tbl) as t", "(SELECT * FROM `tbl`) AS `t`"},
+		// {"(select * from a union select * from b) as t", "(SELECT * FROM `a` UNION SELECT * FROM `b`) AS `t`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From.TableRefs.Left
+	}
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestJoinRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1 natural join t2", "`t1` NATURAL JOIN `t2`"},
+		{"t1 natural left join t2", "`t1` NATURAL LEFT JOIN `t2`"},
+		{"t1 natural right outer join t2", "`t1` NATURAL RIGHT JOIN `t2`"},
+		{"t1 straight_join t2", "`t1` STRAIGHT_JOIN `t2`"},
+		{"t1 straight_join t2 on t1.a>t2.a", "`t1` STRAIGHT_JOIN `t2` ON `t1`.`a`>`t2`.`a`"},
+		{"t1 cross join t2", "`t1` JOIN `t2`"},
+		{"t1 cross join t2 on t1.a>t2.a", "`t1` JOIN `t2` ON `t1`.`a`>`t2`.`a`"},
+		{"t1 inner join t2 using (b)", "`t1` JOIN `t2` USING (`b`)"},
+		{"t1 join t2 using (b,c) left join t3 on t1.a>t3.a", "(`t1` JOIN `t2` USING (`b`,`c`)) LEFT JOIN `t3` ON `t1`.`a`>`t3`.`a`"},
+		{"t1 natural join t2 right outer join t3 using (b,c)", "(`t1` NATURAL JOIN `t2`) RIGHT JOIN `t3` USING (`b`,`c`)"},
+		{"(a al left join b bl on al.a1 > bl.b1) join (a ar right join b br on ar.a1 > br.b1)", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
+		{"a al left join b bl on al.a1 > bl.b1, a ar right join b br on ar.a1 > br.b1", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
+		{"t1, t2", "(`t1`) JOIN `t2`"},
+		{"t1, t2, t3", "((`t1`) JOIN `t2`) JOIN `t3`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From.TableRefs
+	}
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+}
+func (tc *testDMLSuite) TestDeleteTableListRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1,t2", "`t1`,`t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DeleteStmt).Tables
+	}
+	RunNodeRestoreTest(c, testCases, "DELETE %s FROM t1, t2;", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "DELETE FROM %s USING t1, t2;", extractNodeFunc)
+}
