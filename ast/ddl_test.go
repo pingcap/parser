@@ -132,3 +132,15 @@ func (ts *testDDLSuite) TestDDLReferenceDefRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) %s)", extractNodeFunc)
 }
+
+func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"truncate t1", "TRUNCATE TABLE `t1`"},
+		{"truncate table t1", "TRUNCATE TABLE `t1`"},
+		{"truncate a.t1", "TRUNCATE TABLE `a`.`t1`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*TruncateTableStmt)
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
+}
