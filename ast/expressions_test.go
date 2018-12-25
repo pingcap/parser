@@ -305,10 +305,10 @@ func (tc *testExpressionsSuite) TestMaxValueExprRestore(c *C) {
 func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"@a>1", "@`a`>1"},
-		// {"@`aB`+1", "@`ab`+1"},
+		{"@`aB`+1", "@`aB`+1"},
 		{"@'a':=1", "@`a`:=1"},
 		{"@`a``b`=4", "@`a``b`=4"},
-		// {`@"aBC">1`, "@`abc`>1"},
+		{`@"aBC">1`, "@`aBC`>1"},
 		{"@`a`+1", "@`a`+1"},
 		{"@@var", "@@`var`"},
 		{"@@global.b='foo'", "@@GLOBAL.`b`='foo'"},
