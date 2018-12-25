@@ -193,7 +193,35 @@ type ReferenceDef struct {
 
 // Restore implements Node interface.
 func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.Table != nil {
+		ctx.WriteKeyWord("REFERENCES ")
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ReferenceDef")
+		}
+	}
+	ctx.WritePlain("(")
+	for i, indexColNames := range n.IndexColNames {
+		if i > 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := indexColNames.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+	if n.OnDelete.ReferOpt != ReferOptionNoOption {
+		ctx.WritePlain(" ")
+		if err := n.OnDelete.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing OnDelete")
+		}
+	}
+	if n.OnUpdate.ReferOpt != ReferOptionNoOption {
+		ctx.WritePlain(" ")
+		if err := n.OnUpdate.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing OnUpdate")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1094,7 +1122,11 @@ type TruncateTableStmt struct {
 
 // Restore implements Node interface.
 func (n *TruncateTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("TRUNCATE TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TruncateTableStmt.Table")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.

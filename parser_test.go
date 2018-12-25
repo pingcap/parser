@@ -1839,6 +1839,8 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err, NotNil)
 	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
+	_, _, err = parser.Parse("SELECT 1 FROM DUAL WHERE 1 IN (SELECT /*+ DEBUG_HINT3 */ 1)", "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -2317,7 +2319,7 @@ func (s *testParserSuite) TestView(c *C) {
 
 	src := `CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = root@localhost
                   SQL SECURITY DEFINER
-			      VIEW V(a,b,c) AS select c,d,e from t 
+			      VIEW V(a,b,c) AS select c,d,e from t
                   WITH CASCADED CHECK OPTION;`
 
 	var st ast.StmtNode
@@ -2741,6 +2743,98 @@ func (s *testParserSuite) TestFieldText(c *C) {
 		traceStmt := stmts[0].(*ast.TraceStmt)
 		c.Assert(traceStmt.Text(), Equals, sql)
 		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
+}
+
+// See https://github.com/pingcap/parser/issue/94
+func (s *testParserSuite) TestQuotedSystemVariables(c *C) {
+	parser := New()
+
+	st, err := parser.ParseOneStmt(
+		"select @@Sql_Mode, @@`SQL_MODE`, @@session.`sql_mode`, @@global.`s ql``mode`, @@session.'sql\\nmode', @@local.\"sql\\\"mode\";",
+		"",
+		"",
+	)
+	c.Assert(err, IsNil)
+	ss := st.(*ast.SelectStmt)
+	expected := []*ast.VariableExpr{
+		{
+			Name:          "sql_mode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: false,
+		},
+		{
+			Name:          "sql_mode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: false,
+		},
+		{
+			Name:          "sql_mode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+		{
+			Name:          "s ql`mode",
+			IsGlobal:      true,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+		{
+			Name:          "sql\nmode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+		{
+			Name:          `sql"mode`,
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+	}
+
+	c.Assert(len(ss.Fields.Fields), Equals, len(expected))
+	for i, field := range ss.Fields.Fields {
+		ve := field.Expr.(*ast.VariableExpr)
+		cmt := Commentf("field %d, ve = %v", i, ve)
+		c.Assert(ve.Name, Equals, expected[i].Name, cmt)
+		c.Assert(ve.IsGlobal, Equals, expected[i].IsGlobal, cmt)
+		c.Assert(ve.IsSystem, Equals, expected[i].IsSystem, cmt)
+		c.Assert(ve.ExplicitScope, Equals, expected[i].ExplicitScope, cmt)
+	}
+}
+
+// See https://github.com/pingcap/parser/issue/95
+func (s *testParserSuite) TestQuotedVariableColumnName(c *C) {
+	parser := New()
+
+	st, err := parser.ParseOneStmt(
+		"select @abc, @`abc`, @'aBc', @\"AbC\", @6, @`6`, @'6', @\"6\", @@sql_mode, @@`sql_mode`, @;",
+		"",
+		"",
+	)
+	c.Assert(err, IsNil)
+	ss := st.(*ast.SelectStmt)
+	expected := []string{
+		"@abc",
+		"@`abc`",
+		"@'aBc'",
+		`@"AbC"`,
+		"@6",
+		"@`6`",
+		"@'6'",
+		`@"6"`,
+		"@@sql_mode",
+		"@@`sql_mode`",
+		"@",
+	}
+
+	c.Assert(len(ss.Fields.Fields), Equals, len(expected))
+	for i, field := range ss.Fields.Fields {
+		c.Assert(field.Text(), Equals, expected[i])
 	}
 }
 
