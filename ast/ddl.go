@@ -956,6 +956,8 @@ type ColumnPosition struct {
 // Restore implements Node interface.
 func (n *ColumnPosition) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
+	case ColumnPositionNone:
+		// do nothing
 	case ColumnPositionFirst:
 		ctx.WriteKeyWord("FIRST")
 	case ColumnPositionAfter:
@@ -963,6 +965,8 @@ func (n *ColumnPosition) Restore(ctx *RestoreCtx) error {
 		if err := n.RelativeColumn.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore ColumnPosition.RelativeColumn")
 		}
+	default:
+		return errors.Errorf("invalid ColumnPositionType: %d", n.Tp)
 	}
 	return nil
 }
