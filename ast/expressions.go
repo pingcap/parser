@@ -620,7 +620,7 @@ func (n *PatternInExpr) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(",")
 		}
 		if err := expr.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore PatternInExpr.List")
+			return errors.Annotatef(err, "An error occurred while restore PatternInExpr.List[%d]", i)
 		}
 	}
 	if n.Sel != nil {
