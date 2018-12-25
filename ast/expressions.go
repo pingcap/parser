@@ -1097,7 +1097,10 @@ func (n *ValuesExpr) Restore(ctx *RestoreCtx) error {
 
 // Format the ExprNode into a Writer.
 func (n *ValuesExpr) Format(w io.Writer) {
-	panic("Not implemented")
+	fmt.Fprint(w, "VALUES")
+	fmt.Fprint(w, "(")
+	n.Column.Format(w)
+	fmt.Fprint(w, ")")
 }
 
 // Accept implements Node Accept interface.
