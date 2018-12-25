@@ -1543,21 +1543,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop schema xxx", true, ""},
 		{"drop schema if exists xxx", true, ""},
 		{"drop schema if not exists xxx", false, ""},
-		{"drop table", false, ""},
-		{"drop table xxx", true, ""},
-		{"drop table xxx, yyy", true, ""},
+		{"drop table", false, "DROP TABLE"},
+		{"drop table xxx", true, "DROP TABLE `xxx`"},
+		{"drop table xxx, yyy", true, "DROP TABLE `xxx`, `yyy`"},
 		{"drop tables xxx", true, ""},
 		{"drop tables xxx, yyy", true, ""},
-		{"drop table if exists xxx", true, ""},
+		{"drop table if exists xxx", true, "DROP TABLE IF EXISTS `xxx`"},
+		{"drop table if exists xxx, yyy", true, "DROP TABLE IF EXISTS `xxx`, `yyy`"},
 		{"drop table if not exists xxx", false, ""},
 		{"drop table xxx restrict", true, ""},
 		{"drop table xxx, yyy cascade", true, ""},
 		{"drop table if exists xxx restrict", true, ""},
-		{"drop view", false, ""},
-		{"drop view xxx", true, ""},
-		{"drop view xxx, yyy", true, ""},
-		{"drop view if exists xxx", true, ""},
-		{"drop view if exists xxx, yyy", true, ""},
+		{"drop view", false, "DROP VIEW"},
+		{"drop view xxx", true, "DROP VIEW `xxx`"},
+		{"drop view xxx, yyy", true, "DROP VIEW `xxx`, `yyy`"},
+		{"drop view if exists xxx", true, "DROP VIEW IF EXISTS `xxx`"},
+		{"drop view if exists xxx, yyy", true, "DROP VIEW IF EXISTS `xxx`, `yyy`"},
 		{"drop stats t", true, "DROP STATS `t`"},
 		// for issue 974
 		{`CREATE TABLE address (
@@ -1838,6 +1839,8 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err, NotNil)
 	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
+	_, _, err = parser.Parse("SELECT 1 FROM DUAL WHERE 1 IN (SELECT /*+ DEBUG_HINT3 */ 1)", "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
