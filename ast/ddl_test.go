@@ -63,6 +63,17 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	}
 }
 
+func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"world", "`world`"},
+		{"world(2)", "`world`(2)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateIndexStmt).IndexColNames[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
+}
+
 func (ts *testDDLSuite) TestDDLOnDeleteRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"on delete restrict", "ON DELETE RESTRICT"},
@@ -105,4 +116,16 @@ func (ts *testDDLSuite) TestDDLIndexOption(c *C) {
 		return node.(*CreateIndexStmt).IndexOption
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (a) %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"truncate t1", "TRUNCATE TABLE `t1`"},
+		{"truncate table t1", "TRUNCATE TABLE `t1`"},
+		{"truncate a.t1", "TRUNCATE TABLE `a`.`t1`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*TruncateTableStmt)
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
