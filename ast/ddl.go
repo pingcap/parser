@@ -473,10 +473,9 @@ type Constraint struct {
 
 // Restore implements Node interface.
 func (n *Constraint) Restore(ctx *RestoreCtx) error {
-	if n.Tp == ConstraintNoConstraint {
-		return nil
-	}
 	switch n.Tp {
+	case ConstraintNoConstraint:
+		return nil
 	case ConstraintPrimaryKey:
 		ctx.WriteKeyWord("PRIMARY KEY")
 	case ConstraintKey:
