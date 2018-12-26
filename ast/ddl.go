@@ -473,25 +473,26 @@ type Constraint struct {
 
 // Restore implements Node interface.
 func (n *Constraint) Restore(ctx *RestoreCtx) error {
-	if n.Tp != ConstraintNoConstraint {
-		switch n.Tp {
-		case ConstraintPrimaryKey:
-			ctx.WriteKeyWord("PRIMARY KEY")
-		case ConstraintKey:
-			ctx.WriteKeyWord("KEY")
-		case ConstraintIndex:
-			ctx.WriteKeyWord("INDEX")
-		case ConstraintUniq:
-			ctx.WriteKeyWord("UNIQUE")
-		case ConstraintUniqKey:
-			ctx.WriteKeyWord("UNIQUE KEY")
-		case ConstraintUniqIndex:
-			ctx.WriteKeyWord("UNIQUE INDEX")
-		case ConstraintForeignKey:
-			ctx.WriteKeyWord("FOREIGN KEY")
-		case ConstraintFulltext:
-			ctx.WriteKeyWord("FULLTEXT")
-		}
+	if n.Tp == ConstraintNoConstraint {
+		return nil
+	}
+	switch n.Tp {
+	case ConstraintPrimaryKey:
+		ctx.WriteKeyWord("PRIMARY KEY")
+	case ConstraintKey:
+		ctx.WriteKeyWord("KEY")
+	case ConstraintIndex:
+		ctx.WriteKeyWord("INDEX")
+	case ConstraintUniq:
+		ctx.WriteKeyWord("UNIQUE")
+	case ConstraintUniqKey:
+		ctx.WriteKeyWord("UNIQUE KEY")
+	case ConstraintUniqIndex:
+		ctx.WriteKeyWord("UNIQUE INDEX")
+	case ConstraintForeignKey:
+		ctx.WriteKeyWord("FOREIGN KEY")
+	case ConstraintFulltext:
+		ctx.WriteKeyWord("FULLTEXT")
 	}
 
 	if n.Name != "" {
