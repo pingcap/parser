@@ -62,3 +62,107 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		v.node.Accept(visitor1{})
 	}
 }
+
+func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"world", "`world`"},
+		{"world(2)", "`world`(2)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateIndexStmt).IndexColNames[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLOnDeleteRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"on delete restrict", "ON DELETE RESTRICT"},
+		{"on delete CASCADE", "ON DELETE CASCADE"},
+		{"on delete SET NULL", "ON DELETE SET NULL"},
+		{"on delete no action", "ON DELETE NO ACTION"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Constraints[1].Refer.OnDelete
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s)", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ON UPDATE RESTRICT", "ON UPDATE RESTRICT"},
+		{"on update CASCADE", "ON UPDATE CASCADE"},
+		{"on update SET NULL", "ON UPDATE SET NULL"},
+		{"on update no action", "ON UPDATE NO ACTION"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Constraints[1].Refer.OnUpdate
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) ON DELETE CASCADE %s )", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLIndexOption(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"key_block_size=16", "KEY_BLOCK_SIZE=16"},
+		{"USING HASH", "USING HASH"},
+		{"comment 'hello'", "COMMENT 'hello'"},
+		{"key_block_size=16 USING HASH", "KEY_BLOCK_SIZE=16 USING HASH"},
+		{"USING HASH KEY_BLOCK_SIZE=16", "KEY_BLOCK_SIZE=16 USING HASH"},
+		{"USING HASH COMMENT 'foo'", "USING HASH COMMENT 'foo'"},
+		{"COMMENT 'foo'", "COMMENT 'foo'"},
+		{"key_block_size = 32 using hash comment 'hello'", "KEY_BLOCK_SIZE=32 USING HASH COMMENT 'hello'"},
+		{"key_block_size=32 using btree comment 'hello'", "KEY_BLOCK_SIZE=32 USING BTREE COMMENT 'hello'"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateIndexStmt).IndexOption
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (a) %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestTableToTableRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1 to t2", "`t1` TO `t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*RenameTableStmt).TableToTables[0]
+	}
+	RunNodeRestoreTest(c, testCases, "rename table %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLReferenceDefRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"REFERENCES parent(id) ON DELETE CASCADE ON UPDATE RESTRICT", "REFERENCES `parent`(`id`) ON DELETE CASCADE ON UPDATE RESTRICT"},
+		{"REFERENCES parent(id) ON DELETE CASCADE", "REFERENCES `parent`(`id`) ON DELETE CASCADE"},
+		{"REFERENCES parent(id,hello) ON DELETE CASCADE", "REFERENCES `parent`(`id`, `hello`) ON DELETE CASCADE"},
+		{"REFERENCES parent(id,hello(12)) ON DELETE CASCADE", "REFERENCES `parent`(`id`, `hello`(12)) ON DELETE CASCADE"},
+		{"REFERENCES parent(id(8),hello(12)) ON DELETE CASCADE", "REFERENCES `parent`(`id`(8), `hello`(12)) ON DELETE CASCADE"},
+		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Constraints[1].Refer
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) %s)", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"truncate t1", "TRUNCATE TABLE `t1`"},
+		{"truncate table t1", "TRUNCATE TABLE `t1`"},
+		{"truncate a.t1", "TRUNCATE TABLE `a`.`t1`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*TruncateTableStmt)
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestColumnPositionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"", ""},
+		{"first", "FIRST"},
+		{"after b", "AFTER `b`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*AlterTableStmt).Specs[0].Position
+	}
+	RunNodeRestoreTest(c, testCases, "alter table t add column a varchar(255) %s", extractNodeFunc)
+}
