@@ -1519,7 +1519,41 @@ type FrameBound struct {
 
 // Restore implements Node interface.
 func (n *FrameBound) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.UnBounded {
+		ctx.WriteKeyWord("UNBOUNDED")
+	}
+	switch n.Type {
+	case CurrentRow:
+		ctx.WriteKeyWord("CURRENT ROW")
+	case Preceding, Following:
+		if n.Unit != nil {
+			ctx.WriteKeyWord("INTERVAL ")
+		}
+		if n.Expr != nil {
+			if err := n.Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore FrameBound.Expr")
+			}
+		}
+		if n.Unit != nil {
+			// Here the Unit string should not be quoted
+			singleQuotesFlag := ctx.Flags & RestoreStringSingleQuotes
+			doubleQuotesFlag := ctx.Flags & RestoreStringDoubleQuotes
+			ctx.Flags &= ^RestoreStringSingleQuotes
+			ctx.Flags &= ^RestoreStringDoubleQuotes
+			ctx.WritePlain(" ")
+			if err := n.Unit.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore FrameBound.Unit")
+			}
+			ctx.Flags |= singleQuotesFlag
+			ctx.Flags |= doubleQuotesFlag
+		}
+		if n.Type == Preceding {
+			ctx.WriteKeyWord(" PRECEDING")
+		} else {
+			ctx.WriteKeyWord(" FOLLOWING")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
