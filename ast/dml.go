@@ -555,7 +555,10 @@ type TableRefsClause struct {
 
 // Restore implements Node interface.
 func (n *TableRefsClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.TableRefs.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableRefsClause.TableRefs")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.

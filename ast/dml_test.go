@@ -226,6 +226,19 @@ func (tc *testDMLSuite) TestJoinRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
 }
+
+func (ts *testDMLSuite) TestTableRefsClauseRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t", "`t`"},
+		{"t1 join t2", "`t1` JOIN `t2`"},
+		{"t1, t2", "(`t1`) JOIN `t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From
+	}
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+}
+
 func (tc *testDMLSuite) TestDeleteTableListRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"t1,t2", "`t1`,`t2`"},
@@ -236,6 +249,7 @@ func (tc *testDMLSuite) TestDeleteTableListRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "DELETE %s FROM t1, t2;", extractNodeFunc)
 	RunNodeRestoreTest(c, testCases, "DELETE FROM %s USING t1, t2;", extractNodeFunc)
 }
+
 func (tc *testExpressionsSuite) TestByItemRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"a", "`a`"},
