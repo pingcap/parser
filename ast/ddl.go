@@ -345,7 +345,7 @@ const (
 	ColumnOptionDefaultValue
 	ColumnOptionUniqKey
 	ColumnOptionNull
-	ColumnOptionOnUpdate  // For Timestamp and Datetime only.
+	ColumnOptionOnUpdate // For Timestamp and Datetime only.
 	ColumnOptionFulltext
 	ColumnOptionComment
 	ColumnOptionGenerated
