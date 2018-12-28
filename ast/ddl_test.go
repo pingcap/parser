@@ -164,16 +164,37 @@ func (ts *testDDLSuite) TestDDLConstraintRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, %s)", extractNodeFunc)
 }
 
+func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"primary key", "PRIMARY KEY"},
+		{"not null", "NOT NULL"},
+		{"null", "NULL"},
+		{"auto_increment", "AUTO_INCREMENT"},
+		{"DEFAULT 10", "DEFAULT 10"},
+		{"DEFAULT '10'", "DEFAULT '10'"},
+		{"DEFAULT 1.1", "DEFAULT 1.1"},
+		{"UNIQUE KEY", "UNIQUE KEY"},
+		//{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP"}, //todo Waiting for FuncCallExpr
+		{"comment 'hello'", "COMMENT 'hello'"},
+		{"generated always as(id + 1)", "GENERATED ALWAYS AS(`id`+1)"},
+		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Cols[0].Options[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT %s)", extractNodeFunc)
+}
+
 func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
-		//{"PRIMARY KEY", "PRIMARY KEY"},
-		//{"NOT NULL", "NOT NULL"},
-		{"id INT NULL", "id INT NULL"},
+		//{"id int PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
+		//{"id int NOT NULL", "`id` INT(11) NOT NULL"},
+		{"id INT NULL", "`id` INT(11) NULL"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0]
 	}
-	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (%s)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE t (%s)", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {

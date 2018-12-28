@@ -380,29 +380,52 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("AUTO_INCREMENT")
 	case ColumnOptionDefaultValue:
 		ctx.WriteKeyWord("DEFAULT")
+		if n.Expr != nil {
+			ctx.WritePlain(" ")
+			if err := n.Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while splicing ColumnOption DefaultValue Expr")
+			}
+		}
 	case ColumnOptionUniqKey:
 		ctx.WriteKeyWord("UNIQUE KEY")
 	case ColumnOptionNull:
 		ctx.WriteKeyWord("NULL")
 	case ColumnOptionOnUpdate:
-		ctx.WriteKeyWord("ON UPDATE")
-	case ColumnOptionFulltext:
+		//todo Waiting for FuncCallExpr
+		//ctx.WriteKeyWord("ON UPDATE")
+		//if n.Expr != nil {
+		//	ctx.WritePlain(" ")
+		//	if err := n.Expr.Restore(ctx); err != nil {
+		//		return errors.Annotate(err, "An error occurred while splicing ColumnOption ON UPDATE Expr")
+		//	}
+		//}
+	case ColumnOptionFulltext: //There is no parsing in goyacc
 	case ColumnOptionComment:
 		ctx.WriteKeyWord("COMMENT")
+		if n.Expr != nil {
+			ctx.WritePlain(" ")
+			if err := n.Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while splicing ColumnOption COMMENT Expr")
+			}
+		}
 	case ColumnOptionGenerated:
 		ctx.WriteKeyWord("GENERATED ALWAYS")
+		if n.Expr != nil {
+			ctx.WritePlain(" ")
+			ctx.WriteKeyWord("AS")
+			ctx.WritePlain("(")
+			if err := n.Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while splicing ColumnOption GENERATED ALWAYS Expr")
+			}
+			ctx.WritePlain(")")
+		}
 	case ColumnOptionReference:
-		ctx.WriteKeyWord("REFERENCES")
+		if n.Refer != nil {
+			if err := n.Refer.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
+			}
+		}
 	}
-
-	if err := n.Expr.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing ColumnOption Expr")
-	}
-
-	if err := n.Refer.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
-	}
-
 	return nil
 }
 
@@ -606,20 +629,19 @@ func (n *ColumnDef) Restore(ctx *RestoreCtx) error {
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while splicing ColumnDef Name")
 	}
-
-	ctx.WriteKeyWord(n.Tp.String())
-
-	ctx.WritePlain("(")
+	if n.Tp != nil {
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(n.Tp.String())
+	}
 	for i, options := range n.Options {
 		if i > 0 {
-			ctx.WritePlain(", ")
+			ctx.WritePlain(",")
 		}
+		ctx.WritePlain(" ")
 		if err := options.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing ColumnDef ColumnOption")
 		}
 	}
-	ctx.WritePlain(")")
-
 	return nil
 }
 
