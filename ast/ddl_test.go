@@ -172,9 +172,14 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"auto_increment", "AUTO_INCREMENT"},
 		{"DEFAULT 10", "DEFAULT 10"},
 		{"DEFAULT '10'", "DEFAULT '10'"},
+		{"DEFAULT 'hello'", "DEFAULT 'hello'"},
 		{"DEFAULT 1.1", "DEFAULT 1.1"},
+		{"DEFAULT NULL", "DEFAULT NULL"},
+		{"DEFAULT ''", "DEFAULT ''"},
+		{"DEFAULT TRUE", "DEFAULT TRUE"},
+		{"DEFAULT FALSE", "DEFAULT FALSE"},
 		{"UNIQUE KEY", "UNIQUE KEY"},
-		//{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP"}, //todo Waiting for FuncCallExpr
+		//{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP"}, //TODO: Waiting for FuncCallExpr
 		{"comment 'hello'", "COMMENT 'hello'"},
 		{"generated always as(id + 1)", "GENERATED ALWAYS AS(`id`+1)"},
 		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
@@ -187,6 +192,16 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 
 func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
+		{"id json", "`id` JSON"},
+		{"id tinyint(4)", "`id` TINYINT(4)"},
+		{"id smallint(6)", "`id` SMALLINT(6)"},
+		{"id mediumint(9)", "`id` MEDIUMINT(9)"},
+		{"id integer(11)", "`id` INT(11)"},
+		{"id bigint(20)", "`id` BIGINT(20)"},
+		{"id DATE", "`id` DATE"},
+		{"id DATETIME", "`id` DATETIME"},
+		{"id DECIMAL(4,2)", "`id` DECIMAL(4,2)"},
+		{"id char(1)", "`id` CHAR(1)"},
 		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
 		{"id int(11) NOT NULL", "`id` INT(11) NOT NULL"},
 		{"id INT(11) NULL", "`id` INT(11) NULL"},
@@ -195,7 +210,7 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
 		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
 		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
-		//{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP"}, //todo Waiting for FuncCallExpr
+		//{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP"}, //TODO: Waiting for FuncCallExpr
 		{"id INT(11) comment 'hello'", "`id` INT(11) COMMENT 'hello'"},
 		{"id INT(11) generated always as(id + 1)", "`id` INT(11) GENERATED ALWAYS AS(`id`+1)"},
 		{"id INT(11) REFERENCES parent(id)", "`id` INT(11) REFERENCES `parent`(`id`)"},

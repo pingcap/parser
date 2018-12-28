@@ -379,19 +379,16 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 	case ColumnOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT")
 	case ColumnOptionDefaultValue:
-		ctx.WriteKeyWord("DEFAULT")
-		if n.Expr != nil {
-			ctx.WritePlain(" ")
-			if err := n.Expr.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing ColumnOption DefaultValue Expr")
-			}
+		ctx.WriteKeyWord("DEFAULT ")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ColumnOption DefaultValue Expr")
 		}
 	case ColumnOptionUniqKey:
 		ctx.WriteKeyWord("UNIQUE KEY")
 	case ColumnOptionNull:
 		ctx.WriteKeyWord("NULL")
 	case ColumnOptionOnUpdate:
-		//todo Waiting for FuncCallExpr
+		//TODO: Waiting for FuncCallExpr
 		//ctx.WriteKeyWord("ON UPDATE")
 		//if n.Expr != nil {
 		//	ctx.WritePlain(" ")
@@ -399,32 +396,26 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		//		return errors.Annotate(err, "An error occurred while splicing ColumnOption ON UPDATE Expr")
 		//	}
 		//}
-	case ColumnOptionFulltext: //There is no parsing in goyacc
+	case ColumnOptionFulltext:
+		// TiDB Parser ignore the `ColumnOptionFulltext` type now
 	case ColumnOptionComment:
-		ctx.WriteKeyWord("COMMENT")
-		if n.Expr != nil {
-			ctx.WritePlain(" ")
-			if err := n.Expr.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing ColumnOption COMMENT Expr")
-			}
+		ctx.WriteKeyWord("COMMENT ")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ColumnOption COMMENT Expr")
 		}
 	case ColumnOptionGenerated:
-		ctx.WriteKeyWord("GENERATED ALWAYS")
-		if n.Expr != nil {
-			ctx.WritePlain(" ")
-			ctx.WriteKeyWord("AS")
-			ctx.WritePlain("(")
-			if err := n.Expr.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing ColumnOption GENERATED ALWAYS Expr")
-			}
-			ctx.WritePlain(")")
+		ctx.WriteKeyWord("GENERATED ALWAYS AS")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ColumnOption GENERATED ALWAYS Expr")
 		}
+		ctx.WritePlain(")")
 	case ColumnOptionReference:
-		if n.Refer != nil {
-			if err := n.Refer.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
-			}
+		if err := n.Refer.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
 		}
+	default:
+		return errors.New("An error occurred while splicing ColumnOption")
 	}
 	return nil
 }
