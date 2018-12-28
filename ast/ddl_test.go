@@ -187,9 +187,18 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 
 func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
-		//{"id int PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
-		//{"id int NOT NULL", "`id` INT(11) NOT NULL"},
-		{"id INT NULL", "`id` INT(11) NULL"},
+		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
+		{"id int(11) NOT NULL", "`id` INT(11) NOT NULL"},
+		{"id INT(11) NULL", "`id` INT(11) NULL"},
+		{"id INT(11) auto_increment", "`id` INT(11) AUTO_INCREMENT"},
+		{"id INT(11) DEFAULT 10", "`id` INT(11) DEFAULT 10"},
+		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
+		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
+		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
+		//{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP"}, //todo Waiting for FuncCallExpr
+		{"id INT(11) comment 'hello'", "`id` INT(11) COMMENT 'hello'"},
+		{"id INT(11) generated always as(id + 1)", "`id` INT(11) GENERATED ALWAYS AS(`id`+1)"},
+		{"id INT(11) REFERENCES parent(id)", "`id` INT(11) REFERENCES `parent`(`id`)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0]
