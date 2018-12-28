@@ -345,7 +345,7 @@ const (
 	ColumnOptionDefaultValue
 	ColumnOptionUniqKey
 	ColumnOptionNull
-	ColumnOptionOnUpdate // For Timestamp and Datetime only.
+	ColumnOptionOnUpdate  // For Timestamp and Datetime only.
 	ColumnOptionFulltext
 	ColumnOptionComment
 	ColumnOptionGenerated
@@ -389,13 +389,10 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("NULL")
 	case ColumnOptionOnUpdate:
 		//TODO: Waiting for FuncCallExpr
-		//ctx.WriteKeyWord("ON UPDATE")
-		//if n.Expr != nil {
-		//	ctx.WritePlain(" ")
-		//	if err := n.Expr.Restore(ctx); err != nil {
-		//		return errors.Annotate(err, "An error occurred while splicing ColumnOption ON UPDATE Expr")
-		//	}
-		//}
+		ctx.WriteKeyWord("ON UPDATE ")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ColumnOption ON UPDATE Expr")
+		}
 	case ColumnOptionFulltext:
 		// TiDB Parser ignore the `ColumnOptionFulltext` type now
 	case ColumnOptionComment:
