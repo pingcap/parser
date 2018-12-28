@@ -164,6 +164,18 @@ func (ts *testDDLSuite) TestDDLConstraintRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, %s)", extractNodeFunc)
 }
 
+func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		//{"PRIMARY KEY", "PRIMARY KEY"},
+		//{"NOT NULL", "NOT NULL"},
+		{"id INT NULL", "id INT NULL"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Cols[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (%s)", extractNodeFunc)
+}
+
 func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"truncate t1", "TRUNCATE TABLE `t1`"},

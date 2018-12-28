@@ -369,7 +369,41 @@ type ColumnOption struct {
 
 // Restore implements Node interface.
 func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.Tp {
+	case ColumnOptionNoOption:
+		return nil
+	case ColumnOptionPrimaryKey:
+		ctx.WriteKeyWord("PRIMARY KEY")
+	case ColumnOptionNotNull:
+		ctx.WriteKeyWord("NOT NULL")
+	case ColumnOptionAutoIncrement:
+		ctx.WriteKeyWord("AUTO_INCREMENT")
+	case ColumnOptionDefaultValue:
+		ctx.WriteKeyWord("DEFAULT")
+	case ColumnOptionUniqKey:
+		ctx.WriteKeyWord("UNIQUE KEY")
+	case ColumnOptionNull:
+		ctx.WriteKeyWord("NULL")
+	case ColumnOptionOnUpdate:
+		ctx.WriteKeyWord("ON UPDATE")
+	case ColumnOptionFulltext:
+	case ColumnOptionComment:
+		ctx.WriteKeyWord("COMMENT")
+	case ColumnOptionGenerated:
+		ctx.WriteKeyWord("GENERATED ALWAYS")
+	case ColumnOptionReference:
+		ctx.WriteKeyWord("REFERENCES")
+	}
+
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing ColumnOption Expr")
+	}
+
+	if err := n.Refer.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -569,7 +603,24 @@ type ColumnDef struct {
 
 // Restore implements Node interface.
 func (n *ColumnDef) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Name.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing ColumnDef Name")
+	}
+
+	ctx.WriteKeyWord(n.Tp.String())
+
+	ctx.WritePlain("(")
+	for i, options := range n.Options {
+		if i > 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := options.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ColumnDef ColumnOption")
+		}
+	}
+	ctx.WritePlain(")")
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
