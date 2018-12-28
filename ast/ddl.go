@@ -639,7 +639,7 @@ func (n *ColumnDef) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WritePlain(" ")
 		if err := options.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while splicing ColumnDef ColumnOption")
+			return errors.Annotatef(err, "An error occurred while splicing ColumnDef ColumnOption: [%v]", i)
 		}
 	}
 	return nil
