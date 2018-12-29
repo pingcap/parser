@@ -14,6 +14,8 @@
 package ast
 
 import (
+	"strings"
+
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
@@ -1535,17 +1537,12 @@ func (n *FrameBound) Restore(ctx *RestoreCtx) error {
 			}
 		}
 		if n.Unit != nil {
-			// Here the Unit string should not be quoted
-			singleQuotesFlag := ctx.Flags & RestoreStringSingleQuotes
-			doubleQuotesFlag := ctx.Flags & RestoreStringDoubleQuotes
-			ctx.Flags &= ^RestoreStringSingleQuotes
-			ctx.Flags &= ^RestoreStringDoubleQuotes
+			// Here the Unit string should not be quoted.
+			// TODO: This is a temporary workaround that should be changed once something like "Keyword Expression" is implemented.
+			var sb strings.Builder
+			n.Unit.Restore(NewRestoreCtx(0, &sb))
 			ctx.WritePlain(" ")
-			if err := n.Unit.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore FrameBound.Unit")
-			}
-			ctx.Flags |= singleQuotesFlag
-			ctx.Flags |= doubleQuotesFlag
+			ctx.WriteKeyWord(sb.String())
 		}
 		if n.Type == Preceding {
 			ctx.WriteKeyWord(" PRECEDING")
