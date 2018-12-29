@@ -12563,7 +12563,7 @@ yynewstate:
 		}
 	case 1401:
 		{
-			parser.yyVAL.item = mysql.PrivilegeType(0)
+			parser.yyVAL.item = mysql.CreateViewPriv
 		}
 	case 1402:
 		{
