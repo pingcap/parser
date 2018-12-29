@@ -825,19 +825,23 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 	if n.OrReplace {
 		ctx.WriteKeyWord("OR REPLACE ")
 	}
-	ctx.WritePlainf("ALGORITHM = %s ", n.Algorithm.String())
+	ctx.WriteKeyWord("ALGORITHM")
+	ctx.WritePlain(" = ")
+	ctx.WriteKeyWord(n.Algorithm.String())
+	ctx.WriteKeyWord(" DEFINER")
+	ctx.WritePlain(" = ")
 	if n.Definer.CurrentUser {
-		ctx.WritePlain("DEFINER = current_user ")
+		ctx.WriteKeyWord(" current_user ")
 	} else {
-		ctx.WritePlain("DEFINER = ")
 		ctx.WriteName(n.Definer.Username)
 		if n.Definer.Hostname != "" {
 			ctx.WritePlain("@")
 			ctx.WriteName(n.Definer.Hostname)
 		}
 	}
-	ctx.WritePlainf(" SQL SECURITY %s ", n.Security.String())
-	ctx.WriteKeyWord("VIEW ")
+	ctx.WriteKeyWord(" SQL SECURITY ")
+	ctx.WriteKeyWord(n.Security.String())
+	ctx.WriteKeyWord(" VIEW ")
 	ctx.WriteName(n.ViewName.Schema.O)
 	ctx.WritePlain(".")
 	ctx.WriteName(n.ViewName.Name.O)
