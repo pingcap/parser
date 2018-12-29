@@ -675,6 +675,7 @@ import (
 	FlushOption			"Flush option"
 	TableRefsClause			"Table references clause"
 	FuncDatetimePrec		"Function datetime precision"
+	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
 	GlobalScope			"The scope of variable"
 	GroupByClause			"GROUP BY clause"
 	HashString			"Hashed string"
@@ -789,7 +790,8 @@ import (
 	TableRefs 			"table references"
 	TableToTable 			"rename table to table"
 	TableToTableList 		"rename table to table by list"
-
+	TimeUnit		"Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
+	TimestampUnit		"Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	TransactionChar		"Transaction characteristic"
 	TransactionChars	"Transaction characteristic list"
 	TrimDirection		"Trim string direction"
@@ -895,8 +897,6 @@ import (
 	IntoOpt			"INTO or EmptyString"
 	ValueSym		"Value or Values"
 	Varchar			"{NATIONAL VARCHAR|VARCHAR|NVARCHAR}"
-	TimeUnit		"Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
-	TimestampUnit		"Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	DeallocateSym		"Deallocate or drop"
 	OuterOpt		"optional OUTER clause"
 	CrossOpt		"Cross join option"
@@ -914,7 +914,6 @@ import (
 	logAnd			"logical and operator"
 	logOr			"logical or operator"
 	FieldsOrColumns 	"Fields or columns"
-	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -2989,7 +2988,7 @@ UnReservedKeyword:
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
-| "ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken 
+| "ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
@@ -3349,7 +3348,7 @@ BitExpr:
 			Args: []ast.ExprNode{
 				$1,
 				$4,
-				ast.NewValueExpr($5),
+				&ast.TimeUnitExpr{Unit: $5.(ast.TimeUnitType)},
 			},
 		}
 	}
@@ -3360,7 +3359,7 @@ BitExpr:
 			Args: []ast.ExprNode{
 				$1,
 				$4,
-				ast.NewValueExpr($5),
+				&ast.TimeUnitExpr{Unit: $5.(ast.TimeUnitType)},
 			},
 		}
 	}
@@ -3750,7 +3749,7 @@ FunctionCallNonKeyword:
 			Args: []ast.ExprNode{
 				$3,
 				$5,
-				ast.NewValueExpr("DAY"),
+				&ast.TimeUnitExpr{Unit: ast.TimeUnitDay},
 			},
 		}
 	}
@@ -3761,7 +3760,7 @@ FunctionCallNonKeyword:
 			Args: []ast.ExprNode{
 				$3,
 				$6,
-				ast.NewValueExpr($7),
+				&ast.TimeUnitExpr{Unit: $7.(ast.TimeUnitType)},
 			},
 		}
 	}
@@ -3772,13 +3771,13 @@ FunctionCallNonKeyword:
 			Args: []ast.ExprNode{
 				$3,
 				$6,
-				ast.NewValueExpr($7),
+				&ast.TimeUnitExpr{Unit: $7.(ast.TimeUnitType)},
 			},
 		}
 	}
 |	builtinExtract '(' TimeUnit "FROM" Expression ')'
 	{
-		timeUnit := ast.NewValueExpr($3)
+		timeUnit := &ast.TimeUnitExpr{Unit: $3.(ast.TimeUnitType)}
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args: []ast.ExprNode{timeUnit, $5},
@@ -3788,7 +3787,10 @@ FunctionCallNonKeyword:
 	{
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
-			Args: []ast.ExprNode{ast.NewValueExpr($3), $5},
+			Args: []ast.ExprNode{
+				&ast.GetFormatSelectorExpr{Selector: $3.(ast.GetFormatSelectorType)},
+				$5,
+			},
 		}
 	}
 |	builtinPosition '(' BitExpr "IN" Expression ')'
@@ -3827,14 +3829,14 @@ FunctionCallNonKeyword:
 	{
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
-			Args: []ast.ExprNode{ast.NewValueExpr($3), $5, $7},
+			Args: []ast.ExprNode{&ast.TimeUnitExpr{Unit: $3.(ast.TimeUnitType)}, $5, $7},
 		}
 	}
 |	"TIMESTAMPDIFF" '(' TimestampUnit ',' Expression ',' Expression ')'
 	{
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
-			Args: []ast.ExprNode{ast.NewValueExpr($3), $5, $7},
+			Args: []ast.ExprNode{&ast.TimeUnitExpr{Unit: $3.(ast.TimeUnitType)}, $5, $7},
 		}
 	}
 |	builtinTrim '(' Expression ')'
@@ -3854,7 +3856,7 @@ FunctionCallNonKeyword:
 |	builtinTrim '(' TrimDirection "FROM" Expression ')'
 	{
 		nilVal := ast.NewValueExpr(nil)
-		direction := ast.NewValueExpr(int($3.(ast.TrimDirectionType)))
+		direction := &ast.TrimDirectionExpr{Direction: $3.(ast.TrimDirectionType)}
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args: []ast.ExprNode{$5, nilVal, direction},
@@ -3862,7 +3864,7 @@ FunctionCallNonKeyword:
 	}
 |	builtinTrim '(' TrimDirection Expression "FROM" Expression ')'
 	{
-		direction := ast.NewValueExpr(int($3.(ast.TrimDirectionType)))
+		direction := &ast.TrimDirectionExpr{Direction: $3.(ast.TrimDirectionType)}
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args: []ast.ExprNode{$6, $4, direction},
@@ -3872,19 +3874,19 @@ FunctionCallNonKeyword:
 GetFormatSelector:
 	"DATE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorDate
 	}
 | 	"DATETIME"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorDatetime
 	}
 |	"TIME"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorTime
 	}
 |	"TIMESTAMP"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorDatetime
 	}
 
 
@@ -4084,123 +4086,91 @@ FuncDatetimePrec:
 	}
 
 TimeUnit:
-	"MICROSECOND"
+	TimestampUnit
 	{
-		$$ = strings.ToUpper($1)
-	}
-|	"SECOND"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"MINUTE"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"HOUR"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"DAY"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"WEEK"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"MONTH"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"QUARTER"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"YEAR"
-	{
-		$$ = strings.ToUpper($1)
+		$$ = $1
 	}
 |	"SECOND_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitSecondMicrosecond
 	}
 |	"MINUTE_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMinuteMicrosecond
 	}
 |	"MINUTE_SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMinuteSecond
 	}
 |	"HOUR_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHourMicrosecond
 	}
 |	"HOUR_SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHourSecond
 	}
 |	"HOUR_MINUTE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHourMinute
 	}
 |	"DAY_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDayMicrosecond
 	}
 |	"DAY_SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDaySecond
 	}
 |	"DAY_MINUTE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDayMinute
 	}
 |	"DAY_HOUR"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDayHour
 	}
 |	"YEAR_MONTH"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitYearMonth
 	}
 
 TimestampUnit:
 	"MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMicrosecond
 	}
 |	"SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitSecond
 	}
 |	"MINUTE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMinute
 	}
 |	"HOUR"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHour
 	}
 |	"DAY"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDay
 	}
 |	"WEEK"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitWeek
 	}
 |	"MONTH"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMonth
 	}
 |	"QUARTER"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitQuarter
 	}
 |	"YEAR"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitYear
 	}
 
 ExpressionOpt:
@@ -4729,7 +4699,7 @@ WindowFrameStart:
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: $3.(ast.TimeUnitType),}
 	}
 |	"CURRENT" "ROW"
 	{
@@ -4761,7 +4731,7 @@ WindowFrameBound:
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: $3.(ast.TimeUnitType),}
 	}
 
 OptWindowingClause:
