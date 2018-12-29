@@ -14,8 +14,6 @@
 package ast_test
 
 import (
-	"testing"
-
 	. "github.com/pingcap/check"
 	. "github.com/pingcap/parser/ast"
 )
@@ -54,9 +52,6 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
-}
-
-func TestXXXX(t *testing.T) {
 }
 
 func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
