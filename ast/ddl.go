@@ -821,7 +821,34 @@ type CreateViewStmt struct {
 
 // Restore implements Node interface.
 func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE ")
+	if n.OrReplace {
+		ctx.WriteKeyWord("OR REPLACE ")
+	}
+	ctx.WritePlainf("ALGORITHM = %s ", n.Algorithm)
+	if n.Definer.CurrentUser {
+		ctx.WritePlain("DEFINER = current_user ")
+	} else {
+		ctx.WritePlain("DEFINER = ")
+		ctx.WriteName(n.Definer.Username)
+		if n.Definer.Hostname != "" {
+			ctx.WritePlain("@")
+			ctx.WriteName(n.Definer.Hostname)
+		}
+	}
+	ctx.WritePlainf(" SQL SECURITY %s ", n.Security)
+	ctx.WriteKeyWord("VIEW ")
+	ctx.WriteName(n.ViewName.Schema.O)
+	ctx.WritePlain(".")
+	ctx.WriteName(n.ViewName.Name.O)
+	ctx.WriteKeyWord(" AS ")
+
+	if err := n.Select.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while create index")
+	}
+
+	ctx.WritePlainf(" WITH %s CHECK OPTION", n.CheckOption)
+	return nil
 }
 
 // Accept implements Node Accept interface.
