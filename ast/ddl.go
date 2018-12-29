@@ -825,7 +825,7 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 	if n.OrReplace {
 		ctx.WriteKeyWord("OR REPLACE ")
 	}
-	ctx.WritePlainf("ALGORITHM = %s ", n.Algorithm)
+	ctx.WritePlainf("ALGORITHM = %s ", n.Algorithm.String())
 	if n.Definer.CurrentUser {
 		ctx.WritePlain("DEFINER = current_user ")
 	} else {
@@ -836,7 +836,7 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteName(n.Definer.Hostname)
 		}
 	}
-	ctx.WritePlainf(" SQL SECURITY %s ", n.Security)
+	ctx.WritePlainf(" SQL SECURITY %s ", n.Security.String())
 	ctx.WriteKeyWord("VIEW ")
 	ctx.WriteName(n.ViewName.Schema.O)
 	ctx.WritePlain(".")
@@ -847,7 +847,7 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while create index")
 	}
 
-	ctx.WritePlainf(" WITH %s CHECK OPTION", n.CheckOption)
+	ctx.WritePlainf(" WITH %s CHECK OPTION", n.CheckOption.String())
 	return nil
 }
 
