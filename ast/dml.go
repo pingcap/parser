@@ -1384,7 +1384,37 @@ type WindowSpec struct {
 
 // Restore implements Node interface.
 func (n *WindowSpec) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteName(n.Name.String())
+	ctx.WriteKeyWord(" AS ")
+	ctx.WritePlain("(")
+	sep := ""
+	if refName := n.Ref.String(); refName != "" {
+		ctx.WriteName(refName)
+		sep = " "
+	}
+	if n.PartitionBy != nil {
+		ctx.WritePlain(sep)
+		if err := n.PartitionBy.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore WindowSpec.PartitionBy")
+		}
+		sep = " "
+	}
+	if n.OrderBy != nil {
+		ctx.WritePlain(sep)
+		if err := n.OrderBy.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore WindowSpec.OrderBy")
+		}
+		sep = " "
+	}
+	if n.Frame != nil {
+		ctx.WritePlain(sep)
+		if err := n.Frame.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore WindowSpec.Frame")
+		}
+	}
+	ctx.WritePlain(")")
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1427,7 +1457,16 @@ type PartitionByClause struct {
 
 // Restore implements Node interface.
 func (n *PartitionByClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("PARTITION BY ")
+	for i, v := range n.Items {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore PartitionByClause.Items[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1468,7 +1507,24 @@ type FrameClause struct {
 
 // Restore implements Node interface.
 func (n *FrameClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.Type {
+	case Rows:
+		ctx.WriteKeyWord("ROWS")
+	case Ranges:
+		ctx.WriteKeyWord("RANGE")
+	default:
+		return errors.New("Unsupported window function frame type")
+	}
+	ctx.WriteKeyWord(" BETWEEN ")
+	if err := n.Extent.Start.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore FrameClause.Extent.Start")
+	}
+	ctx.WriteKeyWord(" AND ")
+	if err := n.Extent.End.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore FrameClause.Extent.End")
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
