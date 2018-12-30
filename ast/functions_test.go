@@ -47,6 +47,21 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"CONV('a',16,2)", "CONV('a', 16, 2)"},
 		{"COS(PI())", "COS(PI())"},
 		{"RAND()", "RAND()"},
+
+		{"ADDDATE('2000-01-01', 1)", "ADDDATE('2000-01-01', 1)"},
+		{"DATE_ADD('2000-01-01', INTERVAL 1 DAY)", "DATE_ADD('2000-01-01', INTERVAL 1 DAY)"},
+		{"DATE_ADD('2000-01-01', INTERVAL '1 1:12:23.100000' DAY_MICROSECOND)", "DATE_ADD('2000-01-01', INTERVAL '1 1:12:23.100000' DAY_MICROSECOND)"},
+		{"EXTRACT(DAY FROM '2000-01-01')", "EXTRACT(DAY FROM '2000-01-01')"},
+		{"GET_FORMAT(DATE, 'EUR')", "GET_FORMAT(DATE, 'EUR')"},
+		{"POSITION('a' IN 'abc')", "POSITION('a' IN 'abc')"},
+		{"TRIM('  bar   ')", "TRIM('  bar   ')"},
+		{"TRIM('a' FROM '  bar   ')", "TRIM('a' FROM '  bar   ')"},
+		{"TRIM(LEADING FROM '  bar   ')", "TRIM(LEADING FROM '  bar   ')"},
+		{"TRIM(BOTH FROM '  bar   ')", "TRIM(BOTH FROM '  bar   ')"},
+		{"TRIM(TRAILING FROM '  bar   ')", "TRIM(TRAILING FROM '  bar   ')"},
+		{"TRIM(LEADING 'x' FROM 'xxxyxxx')", "TRIM(LEADING 'x' FROM 'xxxyxxx')"},
+		{"TRIM(BOTH 'x' FROM 'xxxyxxx')", "TRIM(BOTH 'x' FROM 'xxxyxxx')"},
+		{"TRIM(TRAILING 'x' FROM 'xxxyxxx')", "TRIM(TRAILING 'x' FROM 'xxxyxxx')"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
