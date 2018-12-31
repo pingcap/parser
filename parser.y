@@ -3544,9 +3544,9 @@ SimpleExpr:
 		// See https://dev.mysql.com/doc/refman/5.7/en/cast-functions.html#function_convert
 		charset1 := ast.NewValueExpr($5)
 		$$ = &ast.FuncCallExpr{
-        	FnName: model.NewCIStr($1),
-        	Args: []ast.ExprNode{$3, charset1},
-        }
+			FnName: model.NewCIStr($1),
+			Args: []ast.ExprNode{$3, charset1},
+		}
 	}
 |	"DEFAULT" '(' SimpleIdent ')'
 	{
