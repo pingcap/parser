@@ -331,4 +331,15 @@ func (ts *testDMLSuite) TestWindowSpecRestore(c *C) {
 		return &node.(*SelectStmt).WindowSpecs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "select rank() over w from t window %s", extractNodeFunc)
+
+	testCases = []NodeRestoreTestCase{
+		{"w", "(`w`)"},
+		{"()", "()"},
+		{"(w PARTITION BY country)", "(`w` PARTITION BY `country`)"},
+		{"(PARTITION BY a ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING)", "(PARTITION BY `a` ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING)"},
+	}
+	extractNodeFunc = func(node Node) Node {
+		return &node.(*SelectStmt).Fields.Fields[0].Expr.(*WindowFuncExpr).Spec
+	}
+	RunNodeRestoreTest(c, testCases, "select rank() over %s from t window w as (order by a)", extractNodeFunc)
 }

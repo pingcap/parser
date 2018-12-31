@@ -1384,8 +1384,10 @@ type WindowSpec struct {
 
 // Restore implements Node interface.
 func (n *WindowSpec) Restore(ctx *RestoreCtx) error {
-	ctx.WriteName(n.Name.String())
-	ctx.WriteKeyWord(" AS ")
+	if name := n.Name.String(); name != "" {
+		ctx.WriteName(name)
+		ctx.WriteKeyWord(" AS ")
+	}
 	ctx.WritePlain("(")
 	sep := ""
 	if refName := n.Ref.String(); refName != "" {
