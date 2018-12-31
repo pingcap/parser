@@ -515,7 +515,6 @@ type CastFunctionType int
 const (
 	CastFunction CastFunctionType = iota + 1
 	CastConvertFunction
-	CastConvertUsingFunction
 	CastBinaryOperator
 )
 
@@ -553,17 +552,6 @@ func (n *FuncCastExpr) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WritePlain(", ")
 		n.Tp.FormatAsCastType(ctx.In)
-		ctx.WritePlain(")")
-	case CastConvertUsingFunction:
-		ctx.WriteKeyWord("CONVERT")
-		ctx.WritePlain("(")
-		if err := n.Expr.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
-		}
-		ctx.WritePlain(" ")
-		ctx.WriteKeyWord("USING")
-		ctx.WritePlain(" ")
-		ctx.WritePlain(n.Tp.Charset)
 		ctx.WritePlain(")")
 	case CastBinaryOperator:
 		ctx.WriteKeyWord("BINARY")
