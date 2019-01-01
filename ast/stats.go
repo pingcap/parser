@@ -14,6 +14,7 @@
 package ast
 
 import (
+	"fmt"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 )
@@ -39,7 +40,41 @@ type AnalyzeTableStmt struct {
 
 // Restore implements Node interface.
 func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ANALYZE TABLE ")
+	for i, table := range n.TableNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AnalyzeTableStmt.Tables "+string(i))
+		}
+	}
+	if len(n.PartitionNames) != 0 {
+		ctx.WriteKeyWord(" PARTITION ")
+	}
+	for i, partition := range n.PartitionNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		ctx.WriteName(partition.O)
+	}
+	if n.IndexFlag {
+		ctx.WriteKeyWord(" INDEX")
+	}
+	for i, index := range n.IndexNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		} else {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteName(index.O)
+	}
+	if n.MaxNumBuckets != 0 {
+		ctx.WriteKeyWord(" WITH ")
+		ctx.WriteName(fmt.Sprintf("%d", n.MaxNumBuckets))
+		ctx.WriteKeyWord(" BUCKETS")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -100,7 +135,9 @@ type LoadStatsStmt struct {
 
 // Restore implements Node interface.
 func (n *LoadStatsStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("LOAD STATS ")
+	ctx.WriteName(n.Path)
+	return nil
 }
 
 // Accept implements Node Accept interface.
