@@ -14,7 +14,6 @@
 package ast
 
 import (
-	"fmt"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 )
@@ -71,7 +70,7 @@ func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
 	}
 	if n.MaxNumBuckets != 0 {
 		ctx.WriteKeyWord(" WITH ")
-		ctx.WriteName(fmt.Sprintf("%d", n.MaxNumBuckets))
+		ctx.WritePlainf("%d", n.MaxNumBuckets)
 		ctx.WriteKeyWord(" BUCKETS")
 	}
 	return nil
@@ -136,7 +135,7 @@ type LoadStatsStmt struct {
 // Restore implements Node interface.
 func (n *LoadStatsStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("LOAD STATS ")
-	ctx.WriteName(n.Path)
+	ctx.WriteString(n.Path)
 	return nil
 }
 

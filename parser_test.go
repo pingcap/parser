@@ -604,7 +604,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"show stats_healthy where table_name = 't'", true, ""},
 
 		// for load stats
-		{"load stats '/tmp/stats.json'", true, "LOAD STATS `/tmp/stats.json`"},
+		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
 		// set
 		// user defined
 		{"SET @ = 1", true, ""},
@@ -2448,12 +2448,12 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t1 index", true, "ANALYZE TABLE `t1` INDEX"},
 		{"analyze table t1 index a", true, "ANALYZE TABLE `t1` INDEX `a`"},
 		{"analyze table t1 index a,b", true, "ANALYZE TABLE `t1` INDEX `a`,`b`"},
-		{"analyze table t with 4 buckets", true, "ANALYZE TABLE `t` WITH `4` BUCKETS"},
-		{"analyze table t index a with 4 buckets", true, "ANALYZE TABLE `t` INDEX `a` WITH `4` BUCKETS"},
+		{"analyze table t with 4 buckets", true, "ANALYZE TABLE `t` WITH 4 BUCKETS"},
+		{"analyze table t index a with 4 buckets", true, "ANALYZE TABLE `t` INDEX `a` WITH 4 BUCKETS"},
 		{"analyze table t partition a", true, "ANALYZE TABLE `t` PARTITION `a`"},
-		{"analyze table t partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH `4` BUCKETS"},
+		{"analyze table t partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH 4 BUCKETS"},
 		{"analyze table t partition a index b", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b`"},
-		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH `4` BUCKETS"},
+		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH 4 BUCKETS"},
 	}
 	s.RunTest(c, table)
 }
