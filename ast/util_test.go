@@ -65,6 +65,8 @@ type nodeTextCleaner struct {
 func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 	in.SetText("")
 	switch node := in.(type) {
+	case *FuncCallExpr:
+		node.FnName.O = strings.ToLower(node.FnName.O)
 	case *AggregateFuncExpr:
 		node.F = strings.ToLower(node.F)
 	}

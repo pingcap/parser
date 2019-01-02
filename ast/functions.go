@@ -330,21 +330,16 @@ type FuncCallExpr struct {
 
 // Restore implements Node interface.
 func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
-	switch n.FnName.O {
-	case "CONVERT":
-		ctx.WriteKeyWord("CONVERT")
-		ctx.WritePlain("(")
+	ctx.WriteKeyWord(n.FnName.O)
+	ctx.WritePlain("(")
+	switch n.FnName.L {
+	case "convert":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
-		ctx.WritePlain(" ")
-		ctx.WriteKeyWord("USING")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(" USING ")
 		ctx.WritePlain(n.Args[1].GetType().Charset)
-		ctx.WritePlain(")")
-	case "ADDDATE":
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
+	case "adddate":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
@@ -352,58 +347,38 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 		if err := n.Args[1].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
-		ctx.WritePlain(")")
-	case "DATE_ADD":
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
+	case "date_add":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
 		ctx.WritePlain(", ")
-		ctx.WriteKeyWord("INTERVAL")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord("INTERVAL ")
 		if err := n.Args[1].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
 		ctx.WritePlain(" ")
 		ctx.WriteKeyWord(n.Args[2].(ValueExpr).GetString())
-		ctx.WritePlain(")")
-	case "EXTRACT":
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
+	case "extract":
 		ctx.WriteKeyWord(n.Args[0].(ValueExpr).GetString())
-		ctx.WritePlain(" ")
-		ctx.WriteKeyWord("FROM")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(" FROM ")
 		if err := n.Args[1].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
-		ctx.WritePlain(")")
-	case "GET_FORMAT":
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
+	case "get_format":
 		ctx.WriteKeyWord(n.Args[0].(ValueExpr).GetString())
 		ctx.WritePlain(", ")
 		if err := n.Args[1].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
-		ctx.WritePlain(")")
-	case "POSITION":
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
+	case "position":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
-		ctx.WritePlain(" ")
-		ctx.WriteKeyWord("IN")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(" IN ")
 		if err := n.Args[1].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
-		ctx.WritePlain(")")
-	case "TRIM":
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
+	case "trim":
 		switch len(n.Args) {
 		case 1:
 			if err := n.Args[0].Restore(ctx); err != nil {
@@ -413,38 +388,31 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 			if err := n.Args[1].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 			}
-			ctx.WritePlain(" ")
-			ctx.WriteKeyWord("FROM")
-			ctx.WritePlain(" ")
+			ctx.WriteKeyWord(" FROM ")
 			if err := n.Args[0].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 			}
 		case 3:
 			switch fmt.Sprint(n.Args[2].(ValueExpr).GetValue()) {
 			case "3":
-				ctx.WriteKeyWord("TRAILING")
+				ctx.WriteKeyWord("TRAILING ")
 			case "2":
-				ctx.WriteKeyWord("LEADING")
+				ctx.WriteKeyWord("LEADING ")
 			case "0", "1":
-				ctx.WriteKeyWord("BOTH")
+				ctx.WriteKeyWord("BOTH ")
 			}
-			ctx.WritePlain(" ")
 			if n.Args[1].(ValueExpr).GetValue() != nil {
 				if err := n.Args[1].Restore(ctx); err != nil {
 					return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 				}
 				ctx.WritePlain(" ")
 			}
-			ctx.WriteKeyWord("FROM")
-			ctx.WritePlain(" ")
+			ctx.WriteKeyWord("FROM ")
 			if err := n.Args[0].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 			}
 		}
-		ctx.WritePlain(")")
 	default:
-		ctx.WriteKeyWord(n.FnName.O)
-		ctx.WritePlain("(")
 		for i, argv := range n.Args {
 			if i != 0 {
 				ctx.WritePlain(", ")
@@ -453,8 +421,8 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args %d", i)
 			}
 		}
-		ctx.WritePlain(")")
 	}
+	ctx.WritePlain(")")
 	return nil
 }
 
@@ -539,9 +507,7 @@ func (n *FuncCastExpr) Restore(ctx *RestoreCtx) error {
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
-		ctx.WritePlain(" ")
-		ctx.WriteKeyWord("AS")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(" AS ")
 		n.Tp.FormatAsCastType(ctx.In)
 		ctx.WritePlain(")")
 	case CastConvertFunction:
@@ -554,8 +520,7 @@ func (n *FuncCastExpr) Restore(ctx *RestoreCtx) error {
 		n.Tp.FormatAsCastType(ctx.In)
 		ctx.WritePlain(")")
 	case CastBinaryOperator:
-		ctx.WriteKeyWord("BINARY")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord("BINARY ")
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
@@ -676,8 +641,7 @@ func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(n.F)
 	ctx.WritePlain("(")
 	if n.Distinct {
-		ctx.WriteKeyWord("DISTINCT")
-		ctx.WritePlain(" ")
+		ctx.WriteKeyWord("DISTINCT ")
 	}
 	for i, argv := range n.Args {
 		if i != 0 {

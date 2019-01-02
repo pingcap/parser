@@ -51,6 +51,7 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"DATE_ADD('2000-01-01', INTERVAL 1 DAY)", "DATE_ADD('2000-01-01', INTERVAL 1 DAY)"},
 		{"DATE_ADD('2000-01-01', INTERVAL '1 1:12:23.100000' DAY_MICROSECOND)", "DATE_ADD('2000-01-01', INTERVAL '1 1:12:23.100000' DAY_MICROSECOND)"},
 		{"EXTRACT(DAY FROM '2000-01-01')", "EXTRACT(DAY FROM '2000-01-01')"},
+		{"extract(day from '1999-01-01')", "EXTRACT(DAY FROM '1999-01-01')"},
 		{"GET_FORMAT(DATE, 'EUR')", "GET_FORMAT(DATE, 'EUR')"},
 		{"POSITION('a' IN 'abc')", "POSITION('a' IN 'abc')"},
 		{"TRIM('  bar   ')", "TRIM('  bar   ')"},
