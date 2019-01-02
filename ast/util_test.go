@@ -63,9 +63,6 @@ type nodeTextCleaner struct {
 
 // Enter implements Visitor interface.
 func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
-	//in.SetText("")
-	//return in, false
-
 	in.SetText("")
 	switch node := in.(type) {
 	case *AggregateFuncExpr:
