@@ -18,6 +18,7 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/restore"
 )
 
 var (
@@ -83,8 +84,8 @@ type Join struct {
 	StraightJoin bool
 }
 
-// Restore implements Node interface.
-func (n *Join) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *Join) Restore(ctx *restore.RestoreCtx) error {
 	if ctx.JoinLevel != 0 {
 		ctx.WritePlain("(")
 		defer ctx.WritePlain(")")
@@ -183,8 +184,8 @@ type TableName struct {
 	IndexHints []*IndexHint
 }
 
-// Restore implements Node interface.
-func (n *TableName) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *TableName) Restore(ctx *restore.RestoreCtx) error {
 	if n.Schema.String() != "" {
 		ctx.WriteName(n.Schema.String())
 		ctx.WritePlain(".")
@@ -227,8 +228,8 @@ type IndexHint struct {
 	HintScope  IndexHintScope
 }
 
-// IndexHint Restore (The const field uses switch to facilitate understanding)
-func (n *IndexHint) Restore(ctx *RestoreCtx) error {
+// IndexHint restore (The const field uses switch to facilitate understanding)
+func (n *IndexHint) Restore(ctx *restore.RestoreCtx) error {
 	indexHintType := ""
 	switch n.HintType {
 	case 1:
@@ -284,8 +285,8 @@ type DeleteTableList struct {
 	Tables []*TableName
 }
 
-// Restore implements Node interface.
-func (n *DeleteTableList) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *DeleteTableList) Restore(ctx *restore.RestoreCtx) error {
 	for i, t := range n.Tables {
 		if i != 0 {
 			ctx.WritePlain(",")
@@ -323,8 +324,8 @@ type OnCondition struct {
 	Expr ExprNode
 }
 
-// Restore implements Node interface.
-func (n *OnCondition) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *OnCondition) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -355,8 +356,8 @@ type TableSource struct {
 	AsName model.CIStr
 }
 
-// Restore implements Node interface.
-func (n *TableSource) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *TableSource) Restore(ctx *restore.RestoreCtx) error {
 	needParen := false
 	switch n.Source.(type) {
 	case *SelectStmt, *UnionStmt:
@@ -425,8 +426,8 @@ type WildCardField struct {
 	Schema model.CIStr
 }
 
-// Restore implements Node interface.
-func (n *WildCardField) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *WildCardField) Restore(ctx *restore.RestoreCtx) error {
 	if schema := n.Schema.String(); schema != "" {
 		ctx.WriteName(schema)
 		ctx.WritePlain(".")
@@ -469,8 +470,8 @@ type SelectField struct {
 	Auxiliary bool
 }
 
-// Restore implements Node interface.
-func (n *SelectField) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *SelectField) Restore(ctx *restore.RestoreCtx) error {
 	if n.WildCard != nil {
 		if err := n.WildCard.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SelectField.WildCard")
@@ -512,8 +513,8 @@ type FieldList struct {
 	Fields []*SelectField
 }
 
-// Restore implements Node interface.
-func (n *FieldList) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *FieldList) Restore(ctx *restore.RestoreCtx) error {
 	for i, v := range n.Fields {
 		if i != 0 {
 			ctx.WritePlain(", ")
@@ -549,8 +550,8 @@ type TableRefsClause struct {
 	TableRefs *Join
 }
 
-// Restore implements Node interface.
-func (n *TableRefsClause) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *TableRefsClause) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -577,8 +578,8 @@ type ByItem struct {
 	Desc bool
 }
 
-// Restore implements Node interface.
-func (n *ByItem) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *ByItem) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore ByItem.Expr")
 	}
@@ -609,8 +610,8 @@ type GroupByClause struct {
 	Items []*ByItem
 }
 
-// Restore implements Node interface.
-func (n *GroupByClause) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *GroupByClause) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("GROUP BY ")
 	for i, v := range n.Items {
 		if i != 0 {
@@ -646,8 +647,8 @@ type HavingClause struct {
 	Expr ExprNode
 }
 
-// Restore implements Node interface.
-func (n *HavingClause) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *HavingClause) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("HAVING ")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore HavingClause.Expr")
@@ -677,8 +678,8 @@ type OrderByClause struct {
 	ForUnion bool
 }
 
-// Restore implements Node interface.
-func (n *OrderByClause) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *OrderByClause) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("ORDER BY ")
 	for i, item := range n.Items {
 		if i != 0 {
@@ -744,8 +745,8 @@ type SelectStmt struct {
 	IsInBraces bool
 }
 
-// Restore implements Node interface.
-func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *SelectStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -843,8 +844,8 @@ type UnionSelectList struct {
 	Selects []*SelectStmt
 }
 
-// Restore implements Node interface.
-func (n *UnionSelectList) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *UnionSelectList) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -876,8 +877,8 @@ type UnionStmt struct {
 	Limit      *Limit
 }
 
-// Restore implements Node interface.
-func (n *UnionStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *UnionStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -921,8 +922,8 @@ type Assignment struct {
 	Expr ExprNode
 }
 
-// Restore implements Node interface.
-func (n *Assignment) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *Assignment) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -960,8 +961,8 @@ type LoadDataStmt struct {
 	IgnoreLines uint64
 }
 
-// Restore implements Node interface.
-func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *LoadDataStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1018,8 +1019,8 @@ type InsertStmt struct {
 	Select      ResultSetNode
 }
 
-// Restore implements Node interface.
-func (n *InsertStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *InsertStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1099,8 +1100,8 @@ type DeleteStmt struct {
 	TableHints []*TableOptimizerHint
 }
 
-// Restore implements Node interface.
-func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *DeleteStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1164,8 +1165,8 @@ type UpdateStmt struct {
 	TableHints    []*TableOptimizerHint
 }
 
-// Restore implements Node interface.
-func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *UpdateStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1220,8 +1221,8 @@ type Limit struct {
 	Offset ExprNode
 }
 
-// Restore implements Node interface.
-func (n *Limit) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *Limit) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("LIMIT ")
 	if n.Offset != nil {
 		if err := n.Offset.Restore(ctx); err != nil {
@@ -1315,8 +1316,8 @@ type ShowStmt struct {
 	Where       ExprNode
 }
 
-// Restore implements Node interface.
-func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *ShowStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1380,8 +1381,8 @@ type WindowSpec struct {
 	Frame       *FrameClause
 }
 
-// Restore implements Node interface.
-func (n *WindowSpec) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *WindowSpec) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1423,8 +1424,8 @@ type PartitionByClause struct {
 	Items []*ByItem
 }
 
-// Restore implements Node interface.
-func (n *PartitionByClause) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *PartitionByClause) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1464,8 +1465,8 @@ type FrameClause struct {
 	Extent FrameExtent
 }
 
-// Restore implements Node interface.
-func (n *FrameClause) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *FrameClause) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1517,8 +1518,8 @@ type FrameBound struct {
 	Unit ExprNode
 }
 
-// Restore implements Node interface.
-func (n *FrameBound) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *FrameBound) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 

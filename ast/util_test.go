@@ -20,10 +20,10 @@ import (
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/restore"
 )
 
 var _ = Suite(&testCacheableSuite{})
-var _ = Suite(&testRestoreCtxSuite{})
 
 type testCacheableSuite struct {
 }
@@ -77,29 +77,29 @@ type testRestoreCtxSuite struct {
 
 func (s *testRestoreCtxSuite) TestRestoreCtx(c *C) {
 	testCases := []struct {
-		flag   RestoreFlags
+		flag   restore.RestoreFlags
 		expect string
 	}{
 		{0, "key`.'\"Word\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreStringSingleQuotes, "key`.'\"Word\\ 'str`.''\"ing\\' na`.'\"Me\\"},
-		{RestoreStringDoubleQuotes, "key`.'\"Word\\ \"str`.'\"\"ing\\\" na`.'\"Me\\"},
-		{RestoreStringEscapeBackslash, "key`.'\"Word\\ str`.'\"ing\\\\ na`.'\"Me\\"},
-		{RestoreKeyWordUppercase, "KEY`.'\"WORD\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreKeyWordLowercase, "key`.'\"word\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreNameUppercase, "key`.'\"Word\\ str`.'\"ing\\ NA`.'\"ME\\"},
-		{RestoreNameLowercase, "key`.'\"Word\\ str`.'\"ing\\ na`.'\"me\\"},
-		{RestoreNameDoubleQuotes, "key`.'\"Word\\ str`.'\"ing\\ \"na`.'\"\"Me\\\""},
-		{RestoreNameBackQuotes, "key`.'\"Word\\ str`.'\"ing\\ `na``.'\"Me\\`"},
-		{DefaultRestoreFlags, "KEY`.'\"WORD\\ 'str`.''\"ing\\' `na``.'\"Me\\`"},
-		{RestoreStringSingleQuotes | RestoreStringDoubleQuotes, "key`.'\"Word\\ 'str`.''\"ing\\' na`.'\"Me\\"},
-		{RestoreKeyWordUppercase | RestoreKeyWordLowercase, "KEY`.'\"WORD\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreNameUppercase | RestoreNameLowercase, "key`.'\"Word\\ str`.'\"ing\\ NA`.'\"ME\\"},
-		{RestoreNameDoubleQuotes | RestoreNameBackQuotes, "key`.'\"Word\\ str`.'\"ing\\ \"na`.'\"\"Me\\\""},
+		{restore.RestoreStringSingleQuotes, "key`.'\"Word\\ 'str`.''\"ing\\' na`.'\"Me\\"},
+		{restore.RestoreStringDoubleQuotes, "key`.'\"Word\\ \"str`.'\"\"ing\\\" na`.'\"Me\\"},
+		{restore.RestoreStringEscapeBackslash, "key`.'\"Word\\ str`.'\"ing\\\\ na`.'\"Me\\"},
+		{restore.RestoreKeyWordUppercase, "KEY`.'\"WORD\\ str`.'\"ing\\ na`.'\"Me\\"},
+		{restore.RestoreKeyWordLowercase, "key`.'\"word\\ str`.'\"ing\\ na`.'\"Me\\"},
+		{restore.RestoreNameUppercase, "key`.'\"Word\\ str`.'\"ing\\ NA`.'\"ME\\"},
+		{restore.RestoreNameLowercase, "key`.'\"Word\\ str`.'\"ing\\ na`.'\"me\\"},
+		{restore.RestoreNameDoubleQuotes, "key`.'\"Word\\ str`.'\"ing\\ \"na`.'\"\"Me\\\""},
+		{restore.RestoreNameBackQuotes, "key`.'\"Word\\ str`.'\"ing\\ `na``.'\"Me\\`"},
+		{restore.DefaultRestoreFlags, "KEY`.'\"WORD\\ 'str`.''\"ing\\' `na``.'\"Me\\`"},
+		{restore.RestoreStringSingleQuotes | restore.RestoreStringDoubleQuotes, "key`.'\"Word\\ 'str`.''\"ing\\' na`.'\"Me\\"},
+		{restore.RestoreKeyWordUppercase | restore.RestoreKeyWordLowercase, "KEY`.'\"WORD\\ str`.'\"ing\\ na`.'\"Me\\"},
+		{restore.RestoreNameUppercase | restore.RestoreNameLowercase, "key`.'\"Word\\ str`.'\"ing\\ NA`.'\"ME\\"},
+		{restore.RestoreNameDoubleQuotes | restore.RestoreNameBackQuotes, "key`.'\"Word\\ str`.'\"ing\\ \"na`.'\"\"Me\\\""},
 	}
 	var sb strings.Builder
 	for _, testCase := range testCases {
 		sb.Reset()
-		ctx := NewRestoreCtx(testCase.flag, &sb)
+		ctx := restore.NewRestoreCtx(testCase.flag, &sb)
 		ctx.WriteKeyWord("key`.'\"Word\\")
 		ctx.WritePlain(" ")
 		ctx.WriteString("str`.'\"ing\\")
@@ -116,6 +116,7 @@ type NodeRestoreTestCase struct {
 
 func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node) {
 	parser := parser.New()
+	parser.EnableWindowFunc(true)
 	for _, testCase := range nodeTestCases {
 		sourceSQL := fmt.Sprintf(template, testCase.sourceSQL)
 		expectSQL := fmt.Sprintf(template, testCase.expectSQL)
@@ -123,7 +124,7 @@ func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template stri
 		comment := Commentf("source %#v", testCase)
 		c.Assert(err, IsNil, comment)
 		var sb strings.Builder
-		err = extractNodeFunc(stmt).Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+		err = extractNodeFunc(stmt).Restore(restore.NewRestoreCtx(restore.DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSql := fmt.Sprintf(template, sb.String())
 		comment = Commentf("source %#v; restore %v", testCase, restoreSql)

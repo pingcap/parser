@@ -16,6 +16,7 @@ package ast
 import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
+	"github.com/pingcap/parser/restore"
 )
 
 var (
@@ -37,8 +38,8 @@ type AnalyzeTableStmt struct {
 	IndexFlag bool
 }
 
-// Restore implements Node interface.
-func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *AnalyzeTableStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -66,8 +67,8 @@ type DropStatsStmt struct {
 	Table *TableName
 }
 
-// Restore implements Node interface.
-func (n *DropStatsStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *DropStatsStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP STATS ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while add table")
@@ -98,8 +99,8 @@ type LoadStatsStmt struct {
 	Path string
 }
 
-// Restore implements Node interface.
-func (n *LoadStatsStmt) Restore(ctx *RestoreCtx) error {
+// restore implements Node interface.
+func (n *LoadStatsStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 

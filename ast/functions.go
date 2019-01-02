@@ -15,6 +15,7 @@ package ast
 
 import (
 	"fmt"
+	. "github.com/pingcap/parser/restore"
 	"io"
 
 	"github.com/pingcap/errors"
@@ -328,7 +329,7 @@ type FuncCallExpr struct {
 	Args []ExprNode
 }
 
-// Restore implements Node interface.
+// restore implements Node interface.
 func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -405,7 +406,7 @@ type FuncCastExpr struct {
 	FunctionType CastFunctionType
 }
 
-// Restore implements Node interface.
+// restore implements Node interface.
 func (n *FuncCastExpr) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -518,7 +519,7 @@ type AggregateFuncExpr struct {
 	Distinct bool
 }
 
-// Restore implements Node interface.
+// restore implements Node interface.
 func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -591,7 +592,7 @@ type WindowFuncExpr struct {
 	Spec WindowSpec
 }
 
-// Restore implements Node interface.
+// restore implements Node interface.
 func (n *WindowFuncExpr) Restore(ctx *RestoreCtx) error {
 	return errors.New("Not implemented")
 }
