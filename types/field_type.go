@@ -199,14 +199,13 @@ func (ft *FieldType) String() string {
 func (ft *FieldType) Restore(ctx *restore.RestoreCtx) error {
 	compactStr := func() string {
 		ts := TypeToStr(ft.Tp, ft.Charset)
-		suffix := ""
-
-		defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
-		if defaultFlen == -1 {
+		if ft.Flen == -1 {
 			ctx.WriteKeyWord(ts)
 			return ""
 		}
+		suffix := ""
 
+		defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
 		isDecimalNotDefault := ft.Decimal != defaultDecimal && ft.Decimal != 0 && ft.Decimal != UnspecifiedLength
 
 		// displayFlen and displayDecimal are flen and decimal values with `-1` substituted with default value.
