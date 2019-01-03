@@ -14,6 +14,8 @@
 package ast
 
 import (
+	"strings"
+
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
@@ -118,8 +120,8 @@ func (n *Join) Restore(ctx *RestoreCtx) error {
 	ctx.JoinLevel--
 
 	if n.On != nil {
-		ctx.WriteKeyWord(" ON ")
-		if err := n.On.Expr.Restore(ctx); err != nil {
+		ctx.WritePlain(" ")
+		if err := n.On.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore Join.On")
 		}
 	}
@@ -325,7 +327,11 @@ type OnCondition struct {
 
 // Restore implements Node interface.
 func (n *OnCondition) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ON ")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore OnCondition.Expr")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -551,7 +557,10 @@ type TableRefsClause struct {
 
 // Restore implements Node interface.
 func (n *TableRefsClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.TableRefs.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableRefsClause.TableRefs")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -611,6 +620,7 @@ type GroupByClause struct {
 
 // Restore implements Node interface.
 func (n *GroupByClause) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("GROUP BY ")
 	for i, v := range n.Items {
 		if i != 0 {
 			ctx.WritePlain(",")
@@ -647,7 +657,11 @@ type HavingClause struct {
 
 // Restore implements Node interface.
 func (n *HavingClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("HAVING ")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore HavingClause.Expr")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -674,7 +688,16 @@ type OrderByClause struct {
 
 // Restore implements Node interface.
 func (n *OrderByClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ORDER BY ")
+	for i, item := range n.Items {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := item.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore OrderByClause.Items[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -909,7 +932,14 @@ type Assignment struct {
 
 // Restore implements Node interface.
 func (n *Assignment) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Column.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Assignment.Column")
+	}
+	ctx.WritePlain("=")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Assignment.Expr")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1505,7 +1535,36 @@ type FrameBound struct {
 
 // Restore implements Node interface.
 func (n *FrameBound) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.UnBounded {
+		ctx.WriteKeyWord("UNBOUNDED")
+	}
+	switch n.Type {
+	case CurrentRow:
+		ctx.WriteKeyWord("CURRENT ROW")
+	case Preceding, Following:
+		if n.Unit != nil {
+			ctx.WriteKeyWord("INTERVAL ")
+		}
+		if n.Expr != nil {
+			if err := n.Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore FrameBound.Expr")
+			}
+		}
+		if n.Unit != nil {
+			// Here the Unit string should not be quoted.
+			// TODO: This is a temporary workaround that should be changed once something like "Keyword Expression" is implemented.
+			var sb strings.Builder
+			n.Unit.Restore(NewRestoreCtx(0, &sb))
+			ctx.WritePlain(" ")
+			ctx.WriteKeyWord(sb.String())
+		}
+		if n.Type == Preceding {
+			ctx.WriteKeyWord(" PRECEDING")
+		} else {
+			ctx.WriteKeyWord(" FOLLOWING")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
