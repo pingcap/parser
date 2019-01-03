@@ -338,7 +338,7 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
 		ctx.WriteKeyWord(" USING ")
-		ctx.WritePlain(n.Args[1].GetType().Charset)
+		ctx.WriteKeyWord(n.Args[1].GetType().Charset)
 	case "adddate":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
