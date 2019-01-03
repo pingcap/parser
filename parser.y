@@ -599,7 +599,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
-	ShowStmt			"Show engines/databases/tables/columns/warnings/status statement"
+	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
 	TraceableStmt			"traceable statment"
@@ -5899,6 +5899,14 @@ ShowStmt:
 			DBName:	$5.(string),
 		}
 	}
+|	"SHOW" "CREATE" "USER" Username
+        {
+                // See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
+                $$ = &ast.ShowStmt{
+                        Tp:	ast.ShowCreateUser,
+                        User:	$4.(*auth.UserIdentity),
+                }
+        }
 |	"SHOW" "GRANTS"
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
@@ -7404,6 +7412,10 @@ PrivType:
 	{
 		$$ = mysql.GrantPriv
 	}
+|	"SHOW" "CREATE" "USER"
+        {
+                $$ = mysql.PrivilegeType(0)
+        }
 |	"REFERENCES"
 	{
 		$$ = mysql.ReferencesPriv
