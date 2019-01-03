@@ -289,6 +289,17 @@ func (tc *testDMLSuite) TestOrderByClauseRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "SELECT 1 FROM t1 UNION SELECT 2 FROM t2 %s", extractNodeFromUnionStmtFunc)
 }
 
+func (tc *testDMLSuite) TestAssignmentRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"a=1", "`a`=1"},
+		{"b=1+2", "`b`=1+2"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*UpdateStmt).List[0]
+	}
+	RunNodeRestoreTest(c, testCases, "UPDATE t1 SET %s", extractNodeFunc)
+}
+
 func (ts *testDMLSuite) TestHavingClauseRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"HAVING a", "HAVING `a`"},
@@ -299,4 +310,22 @@ func (ts *testDMLSuite) TestHavingClauseRestore(c *C) {
 		return node.(*SelectStmt).Having
 	}
 	RunNodeRestoreTest(c, testCases, "select 1 from t1 group by 1 %s", extractNodeFunc)
+}
+
+func (ts *testDMLSuite) TestFrameBoundRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"CURRENT ROW", "CURRENT ROW"},
+		{"UNBOUNDED PRECEDING", "UNBOUNDED PRECEDING"},
+		{"1 PRECEDING", "1 PRECEDING"},
+		{"? PRECEDING", "? PRECEDING"},
+		{"INTERVAL 5 DAY PRECEDING", "INTERVAL 5 DAY PRECEDING"},
+		{"UNBOUNDED FOLLOWING", "UNBOUNDED FOLLOWING"},
+		{"1 FOLLOWING", "1 FOLLOWING"},
+		{"? FOLLOWING", "? FOLLOWING"},
+		{"INTERVAL '2:30' MINUTE_SECOND FOLLOWING", "INTERVAL '2:30' MINUTE_SECOND FOLLOWING"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return &node.(*SelectStmt).Fields.Fields[0].Expr.(*WindowFuncExpr).Spec.Frame.Extent.Start
+	}
+	RunNodeRestoreTest(c, testCases, "select avg(val) over (rows between %s and current row) from t", extractNodeFunc)
 }
