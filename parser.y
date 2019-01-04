@@ -483,6 +483,7 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
+	restore		"RESTORE"
 
 	builtinAddDate
 	builtinBitAnd
@@ -1619,7 +1620,7 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FULLTEXT" KeyOrIndex IndexName '(' IndexColNameList ')' IndexOptionList
+|	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexColNameList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintFulltext,
@@ -2957,7 +2958,6 @@ IndexOption:
 	"KEY_BLOCK_SIZE" EqOpt LengthNum
 	{
 		$$ = &ast.IndexOption{
-			// TODO bug should be fix here!
 			KeyBlockSize: $3.(uint64),
 		}
 	}
@@ -3015,7 +3015,7 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ"
+"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -4734,7 +4734,7 @@ WindowFrameStart:
 	}
 |	paramMarker "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewValueExpr($1),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewParamMarkerExpr(yyS[yypt].offset),}
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
@@ -4766,7 +4766,7 @@ WindowFrameBound:
 	}
 |	paramMarker "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewValueExpr($1),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewParamMarkerExpr(yyS[yypt].offset),}
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
@@ -5215,6 +5215,7 @@ TableOptimizerHints:
 	{
 		yyerrok()
 		parser.lastErrorAsWarn()
+		$$ = nil
 	}
 
 HintTableList:
@@ -5782,6 +5783,13 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
+|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NumList
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			JobIDs: $6.([]int64),
+		}
+	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
 	{
 		$$ = &ast.AdminStmt{
@@ -5910,11 +5918,12 @@ ShowStmt:
 			Table:	$4.(*ast.TableName),
 		}
 	}
-|	"SHOW" "CREATE" "DATABASE" DBName
+|	"SHOW" "CREATE" "DATABASE" IfNotExists DBName
 	{
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateDatabase,
-			DBName:	$4.(string),
+			IfNotExists: $4.(bool),
+			DBName:	$5.(string),
 		}
 	}
 |	"SHOW" "GRANTS"

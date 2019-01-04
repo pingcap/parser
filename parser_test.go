@@ -367,10 +367,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 			WHERE stuff.value >= ALL (SELECT stuff.value
 			FROM stuff)`, true, ""},
 		{"BEGIN", true, ""},
-		{"START TRANSACTION", true, ""},
+		{"START TRANSACTION", true, "START TRANSACTION"},
 		// 45
-		{"COMMIT", true, ""},
-		{"ROLLBACK", true, ""},
+		{"COMMIT", true, "COMMIT"},
+		{"ROLLBACK", true, "ROLLBACK"},
 		{`BEGIN;
 			INSERT INTO foo VALUES (42, 3.14);
 			INSERT INTO foo VALUES (-1, 2.78);
@@ -481,6 +481,9 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top internal 7", true, ""},
 		{"admin show slow top all 9", true, ""},
 		{"admin show slow recent 11", true, ""},
+		{"admin restore table by job 11", true, ""},
+		{"admin restore table by job 11,12,13", true, ""},
+		{"admin restore table by job", false, ""},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, ""},
@@ -590,6 +593,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show create table
 		{"show create table test.t", true, ""},
 		{"show create table t", true, ""},
+		// for show create database
+		{"show create database d1", true, ""},
+		{"show create database if not exists d1", true, ""},
 		// for show stats_meta.
 		{"show stats_meta", true, ""},
 		{"show stats_meta where table_name = 't'", true, ""},
@@ -604,7 +610,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"show stats_healthy where table_name = 't'", true, ""},
 
 		// for load stats
-		{"load stats '/tmp/stats.json'", true, ""},
+		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
 		// set
 		// user defined
 		{"SET @ = 1", true, ""},
@@ -1543,21 +1549,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop schema xxx", true, ""},
 		{"drop schema if exists xxx", true, ""},
 		{"drop schema if not exists xxx", false, ""},
-		{"drop table", false, ""},
-		{"drop table xxx", true, ""},
-		{"drop table xxx, yyy", true, ""},
+		{"drop table", false, "DROP TABLE"},
+		{"drop table xxx", true, "DROP TABLE `xxx`"},
+		{"drop table xxx, yyy", true, "DROP TABLE `xxx`, `yyy`"},
 		{"drop tables xxx", true, ""},
 		{"drop tables xxx, yyy", true, ""},
-		{"drop table if exists xxx", true, ""},
+		{"drop table if exists xxx", true, "DROP TABLE IF EXISTS `xxx`"},
+		{"drop table if exists xxx, yyy", true, "DROP TABLE IF EXISTS `xxx`, `yyy`"},
 		{"drop table if not exists xxx", false, ""},
 		{"drop table xxx restrict", true, ""},
 		{"drop table xxx, yyy cascade", true, ""},
 		{"drop table if exists xxx restrict", true, ""},
-		{"drop view", false, ""},
-		{"drop view xxx", true, ""},
-		{"drop view xxx, yyy", true, ""},
-		{"drop view if exists xxx", true, ""},
-		{"drop view if exists xxx, yyy", true, ""},
+		{"drop view", false, "DROP VIEW"},
+		{"drop view xxx", true, "DROP VIEW `xxx`"},
+		{"drop view xxx, yyy", true, "DROP VIEW `xxx`, `yyy`"},
+		{"drop view if exists xxx", true, "DROP VIEW IF EXISTS `xxx`"},
+		{"drop view if exists xxx, yyy", true, "DROP VIEW IF EXISTS `xxx`, `yyy`"},
 		{"drop stats t", true, "DROP STATS `t`"},
 		// for issue 974
 		{`CREATE TABLE address (
@@ -1733,6 +1740,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, LOCK=SHARED", true, ""},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, LOCK=EXCLUSIVE", true, ""},
 		{"ALTER TABLE t ADD FULLTEXT KEY `FullText` (`name` ASC)", true, ""},
+		{"ALTER TABLE t ADD FULLTEXT `FullText` (`name` ASC)", true, ""},
 		{"ALTER TABLE t ADD FULLTEXT INDEX `FullText` (`name` ASC)", true, ""},
 		{"ALTER TABLE t ADD INDEX (a) USING BTREE COMMENT 'a'", true, ""},
 		{"ALTER TABLE t ADD KEY (a) USING HASH COMMENT 'a'", true, ""},
@@ -1794,10 +1802,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop index if exists a on db.`tb-ttb`", true, "DROP INDEX IF EXISTS `a` ON `db`.`tb-ttb`"},
 
 		// for rename table statement
-		{"RENAME TABLE t TO t1", true, ""},
-		{"RENAME TABLE t t1", false, ""},
-		{"RENAME TABLE d.t TO d1.t1", true, ""},
-		{"RENAME TABLE t1 TO t2, t3 TO t4", true, ""},
+		{"RENAME TABLE t TO t1", true, "RENAME TABLE `t` TO `t1`"},
+		{"RENAME TABLE t t1", false, "RENAME TABLE `t` TO `t1`"},
+		{"RENAME TABLE d.t TO d1.t1", true, "RENAME TABLE `d`.`t` TO `d1`.`t1`"},
+		{"RENAME TABLE t1 TO t2, t3 TO t4", true, "RENAME TABLE `t1` TO `t2`, `t3` TO `t4`"},
 
 		// for truncate statement
 		{"TRUNCATE TABLE t1", true, ""},
@@ -1839,6 +1847,8 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err, NotNil)
 	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
+	_, _, err = parser.Parse("SELECT 1 FROM DUAL WHERE 1 IN (SELECT /*+ DEBUG_HINT3 */ 1)", "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -2317,7 +2327,7 @@ func (s *testParserSuite) TestView(c *C) {
 
 	src := `CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = root@localhost
                   SQL SECURITY DEFINER
-			      VIEW V(a,b,c) AS select c,d,e from t 
+			      VIEW V(a,b,c) AS select c,d,e from t
                   WITH CASCADED CHECK OPTION;`
 
 	var st ast.StmtNode
@@ -2440,17 +2450,17 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 
 func (s *testParserSuite) TestAnalyze(c *C) {
 	table := []testCase{
-		{"analyze table t1", true, ""},
-		{"analyze table t,t1", true, ""},
-		{"analyze table t1 index", true, ""},
-		{"analyze table t1 index a", true, ""},
-		{"analyze table t1 index a,b", true, ""},
-		{"analyze table t with 4 buckets", true, ""},
-		{"analyze table t index a with 4 buckets", true, ""},
-		{"analyze table t partition a", true, ""},
-		{"analyze table t partition a with 4 buckets", true, ""},
-		{"analyze table t partition a index b", true, ""},
-		{"analyze table t partition a index b with 4 buckets", true, ""},
+		{"analyze table t1", true, "ANALYZE TABLE `t1`"},
+		{"analyze table t,t1", true, "ANALYZE TABLE `t`,`t1`"},
+		{"analyze table t1 index", true, "ANALYZE TABLE `t1` INDEX"},
+		{"analyze table t1 index a", true, "ANALYZE TABLE `t1` INDEX `a`"},
+		{"analyze table t1 index a,b", true, "ANALYZE TABLE `t1` INDEX `a`,`b`"},
+		{"analyze table t with 4 buckets", true, "ANALYZE TABLE `t` WITH 4 BUCKETS"},
+		{"analyze table t index a with 4 buckets", true, "ANALYZE TABLE `t` INDEX `a` WITH 4 BUCKETS"},
+		{"analyze table t partition a", true, "ANALYZE TABLE `t` PARTITION `a`"},
+		{"analyze table t partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH 4 BUCKETS"},
+		{"analyze table t partition a index b", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b`"},
+		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH 4 BUCKETS"},
 	}
 	s.RunTest(c, table)
 }
@@ -2741,6 +2751,98 @@ func (s *testParserSuite) TestFieldText(c *C) {
 		traceStmt := stmts[0].(*ast.TraceStmt)
 		c.Assert(traceStmt.Text(), Equals, sql)
 		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
+}
+
+// See https://github.com/pingcap/parser/issue/94
+func (s *testParserSuite) TestQuotedSystemVariables(c *C) {
+	parser := New()
+
+	st, err := parser.ParseOneStmt(
+		"select @@Sql_Mode, @@`SQL_MODE`, @@session.`sql_mode`, @@global.`s ql``mode`, @@session.'sql\\nmode', @@local.\"sql\\\"mode\";",
+		"",
+		"",
+	)
+	c.Assert(err, IsNil)
+	ss := st.(*ast.SelectStmt)
+	expected := []*ast.VariableExpr{
+		{
+			Name:          "sql_mode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: false,
+		},
+		{
+			Name:          "sql_mode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: false,
+		},
+		{
+			Name:          "sql_mode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+		{
+			Name:          "s ql`mode",
+			IsGlobal:      true,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+		{
+			Name:          "sql\nmode",
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+		{
+			Name:          `sql"mode`,
+			IsGlobal:      false,
+			IsSystem:      true,
+			ExplicitScope: true,
+		},
+	}
+
+	c.Assert(len(ss.Fields.Fields), Equals, len(expected))
+	for i, field := range ss.Fields.Fields {
+		ve := field.Expr.(*ast.VariableExpr)
+		cmt := Commentf("field %d, ve = %v", i, ve)
+		c.Assert(ve.Name, Equals, expected[i].Name, cmt)
+		c.Assert(ve.IsGlobal, Equals, expected[i].IsGlobal, cmt)
+		c.Assert(ve.IsSystem, Equals, expected[i].IsSystem, cmt)
+		c.Assert(ve.ExplicitScope, Equals, expected[i].ExplicitScope, cmt)
+	}
+}
+
+// See https://github.com/pingcap/parser/issue/95
+func (s *testParserSuite) TestQuotedVariableColumnName(c *C) {
+	parser := New()
+
+	st, err := parser.ParseOneStmt(
+		"select @abc, @`abc`, @'aBc', @\"AbC\", @6, @`6`, @'6', @\"6\", @@sql_mode, @@`sql_mode`, @;",
+		"",
+		"",
+	)
+	c.Assert(err, IsNil)
+	ss := st.(*ast.SelectStmt)
+	expected := []string{
+		"@abc",
+		"@`abc`",
+		"@'aBc'",
+		`@"AbC"`,
+		"@6",
+		"@`6`",
+		"@'6'",
+		`@"6"`,
+		"@@sql_mode",
+		"@@`sql_mode`",
+		"@",
+	}
+
+	c.Assert(len(ss.Fields.Fields), Equals, len(expected))
+	for i, field := range ss.Fields.Fields {
+		c.Assert(field.Text(), Equals, expected[i])
 	}
 }
 
