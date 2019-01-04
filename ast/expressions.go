@@ -15,7 +15,6 @@ package ast
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/restore"
 	"io"
 	"regexp"
 	"strings"
@@ -23,6 +22,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/opcode"
+	"github.com/pingcap/parser/util/restore"
 )
 
 var (

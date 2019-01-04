@@ -16,7 +16,7 @@ package ast
 import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
-	"github.com/pingcap/parser/restore"
+	"github.com/pingcap/parser/util/restore"
 )
 
 var (
@@ -38,9 +38,43 @@ type AnalyzeTableStmt struct {
 	IndexFlag bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *AnalyzeTableStmt) Restore(ctx *restore.RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ANALYZE TABLE ")
+	for i, table := range n.TableNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := table.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AnalyzeTableStmt.TableNames[%d]", i)
+		}
+	}
+	if len(n.PartitionNames) != 0 {
+		ctx.WriteKeyWord(" PARTITION ")
+	}
+	for i, partition := range n.PartitionNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		ctx.WriteName(partition.O)
+	}
+	if n.IndexFlag {
+		ctx.WriteKeyWord(" INDEX")
+	}
+	for i, index := range n.IndexNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		} else {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteName(index.O)
+	}
+	if n.MaxNumBuckets != 0 {
+		ctx.WriteKeyWord(" WITH ")
+		ctx.WritePlainf("%d", n.MaxNumBuckets)
+		ctx.WriteKeyWord(" BUCKETS")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -67,7 +101,7 @@ type DropStatsStmt struct {
 	Table *TableName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DropStatsStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP STATS ")
 	if err := n.Table.Restore(ctx); err != nil {
@@ -99,9 +133,11 @@ type LoadStatsStmt struct {
 	Path string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *LoadStatsStmt) Restore(ctx *restore.RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("LOAD STATS ")
+	ctx.WriteString(n.Path)
+	return nil
 }
 
 // Accept implements Node Accept interface.

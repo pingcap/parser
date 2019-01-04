@@ -17,8 +17,8 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
-	"github.com/pingcap/parser/restore"
 	"github.com/pingcap/parser/types"
+	"github.com/pingcap/parser/util/restore"
 )
 
 var (

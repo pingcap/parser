@@ -15,7 +15,7 @@ package types
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/restore"
+	"github.com/pingcap/parser/util/restore"
 	"io"
 	"strings"
 

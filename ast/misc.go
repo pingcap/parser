@@ -22,7 +22,7 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/restore"
+	"github.com/pingcap/parser/util/restore"
 )
 
 var (
@@ -99,7 +99,7 @@ type TraceStmt struct {
 	Format string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *TraceStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -130,7 +130,7 @@ type ExplainStmt struct {
 	Analyze bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ExplainStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -161,7 +161,7 @@ type PrepareStmt struct {
 	SQLVar  *VariableExpr
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *PrepareStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -191,7 +191,7 @@ type DeallocateStmt struct {
 	Name string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DeallocateStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -224,7 +224,7 @@ type ExecuteStmt struct {
 	ExecID    uint32
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ExecuteStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -252,9 +252,10 @@ type BeginStmt struct {
 	stmtNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *BeginStmt) Restore(ctx *restore.RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("START TRANSACTION")
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -275,7 +276,7 @@ type BinlogStmt struct {
 	Str string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *BinlogStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -296,9 +297,10 @@ type CommitStmt struct {
 	stmtNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CommitStmt) Restore(ctx *restore.RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("COMMIT")
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -317,9 +319,10 @@ type RollbackStmt struct {
 	stmtNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *RollbackStmt) Restore(ctx *restore.RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ROLLBACK")
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -340,7 +343,7 @@ type UseStmt struct {
 	DBName string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *UseStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("USE ")
 	ctx.WriteName(n.DBName)
@@ -378,7 +381,7 @@ type VariableAssignment struct {
 	ExtendValue ValueExpr
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *VariableAssignment) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -419,7 +422,7 @@ type FlushStmt struct {
 	ReadLock        bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *FlushStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -454,7 +457,7 @@ type KillStmt struct {
 	TiDBExtension bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *KillStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -476,7 +479,7 @@ type SetStmt struct {
 	Variables []*VariableAssignment
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *SetStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -528,7 +531,7 @@ type SetPwdStmt struct {
 	Password string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *SetPwdStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -596,7 +599,7 @@ type CreateUserStmt struct {
 	Specs       []*UserSpec
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CreateUserStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -632,7 +635,7 @@ type AlterUserStmt struct {
 	Specs       []*UserSpec
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *AlterUserStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -667,7 +670,7 @@ type DropUserStmt struct {
 	UserList []*auth.UserIdentity
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DropUserStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -689,7 +692,7 @@ type DoStmt struct {
 	Exprs []ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DoStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -781,7 +784,7 @@ type AdminStmt struct {
 	ShowSlow     *ShowSlow
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *AdminStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -813,7 +816,7 @@ type PrivElem struct {
 	Cols []*ColumnName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *PrivElem) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -876,7 +879,7 @@ type RevokeStmt struct {
 	Users      []*UserSpec
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *RevokeStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -909,7 +912,7 @@ type GrantStmt struct {
 	WithGrant  bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *GrantStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -979,7 +982,7 @@ type TableOptimizerHint struct {
 	MaxExecutionTime uint64
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *TableOptimizerHint) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }

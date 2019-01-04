@@ -16,7 +16,7 @@
 package ast
 
 import (
-	"github.com/pingcap/parser/restore"
+	"github.com/pingcap/parser/util/restore"
 	"io"
 
 	"github.com/pingcap/parser/model"
