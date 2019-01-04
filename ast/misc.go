@@ -16,6 +16,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/errors"
@@ -984,7 +985,20 @@ type TableOptimizerHint struct {
 
 // Restore implements Node interface.
 func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord(n.HintName.String())
+	ctx.WritePlain("(")
+	if len(n.Tables) > 0 {
+		for i, v := range n.Tables {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(v.String())
+		}
+	} else {
+		ctx.WritePlain(strconv.FormatUint(n.MaxExecutionTime, 10))
+	}
+	ctx.WritePlain(")")
+	return nil
 }
 
 // Accept implements Node Accept interface.
