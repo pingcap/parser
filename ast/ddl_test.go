@@ -187,3 +187,7 @@ func (ts *testDDLSuite) TestColumnPositionRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "alter table t add column a varchar(255) %s", extractNodeFunc)
 }
+
+func (ts *testDDLSuite) TestCreateIndexStmtRestore(c *C) {
+
+}
