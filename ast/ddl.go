@@ -64,7 +64,7 @@ type DatabaseOption struct {
 	Value string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DatabaseOption) Restore(ctx *restore.RestoreCtx) error {
 	switch n.Tp {
 	case DatabaseOptionCharset:
@@ -91,7 +91,7 @@ type CreateDatabaseStmt struct {
 	Options     []*DatabaseOption
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CreateDatabaseStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("CREATE DATABASE ")
 	if n.IfNotExists {
@@ -127,7 +127,7 @@ type DropDatabaseStmt struct {
 	Name     string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DropDatabaseStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP DATABASE ")
 	if n.IfExists {
@@ -155,7 +155,7 @@ type IndexColName struct {
 	Length int
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *IndexColName) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Column.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while splicing IndexColName")
@@ -192,7 +192,7 @@ type ReferenceDef struct {
 	OnUpdate      *OnUpdateOpt
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ReferenceDef) Restore(ctx *restore.RestoreCtx) error {
 	if n.Table != nil {
 		ctx.WriteKeyWord("REFERENCES ")
@@ -290,7 +290,7 @@ type OnDeleteOpt struct {
 	ReferOpt ReferOptionType
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *OnDeleteOpt) Restore(ctx *restore.RestoreCtx) error {
 	if n.ReferOpt != ReferOptionNoOption {
 		ctx.WriteKeyWord("ON DELETE ")
@@ -315,7 +315,7 @@ type OnUpdateOpt struct {
 	ReferOpt ReferOptionType
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *OnUpdateOpt) Restore(ctx *restore.RestoreCtx) error {
 	if n.ReferOpt != ReferOptionNoOption {
 		ctx.WriteKeyWord("ON UPDATE ")
@@ -368,7 +368,7 @@ type ColumnOption struct {
 	Refer *ReferenceDef
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ColumnOption) Restore(ctx *restore.RestoreCtx) error {
 	switch n.Tp {
 	case ColumnOptionNoOption:
@@ -448,7 +448,7 @@ type IndexOption struct {
 	Comment      string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *IndexOption) Restore(ctx *restore.RestoreCtx) error {
 	hasPrevOption := false
 	if n.KeyBlockSize > 0 {
@@ -516,7 +516,7 @@ type Constraint struct {
 	Option *IndexOption // Index Options
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *Constraint) Restore(ctx *restore.RestoreCtx) error {
 	switch n.Tp {
 	case ConstraintNoConstraint:
@@ -612,7 +612,7 @@ type ColumnDef struct {
 	Options []*ColumnOption
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ColumnDef) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while splicing ColumnDef Name")
@@ -673,7 +673,7 @@ type CreateTableStmt struct {
 	Select      ResultSetNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CreateTableStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -732,7 +732,7 @@ type DropTableStmt struct {
 	IsView   bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DropTableStmt) Restore(ctx *restore.RestoreCtx) error {
 	if n.IsView {
 		ctx.WriteKeyWord("DROP VIEW ")
@@ -785,7 +785,7 @@ type RenameTableStmt struct {
 	TableToTables []*TableToTable
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *RenameTableStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("RENAME TABLE ")
 	for index, table2table := range n.TableToTables {
@@ -835,7 +835,7 @@ type TableToTable struct {
 	NewTable *TableName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *TableToTable) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.OldTable.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TableToTable.OldTable")
@@ -882,7 +882,7 @@ type CreateViewStmt struct {
 	CheckOption model.ViewCheckOption
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CreateViewStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -919,7 +919,7 @@ type CreateIndexStmt struct {
 	IndexOption   *IndexOption
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CreateIndexStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -963,7 +963,7 @@ type DropIndexStmt struct {
 	Table     *TableName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DropIndexStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP INDEX ")
 	if n.IfExists {
@@ -1067,7 +1067,7 @@ type ColumnPosition struct {
 	RelativeColumn *ColumnName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ColumnPosition) Restore(ctx *restore.RestoreCtx) error {
 	switch n.Tp {
 	case ColumnPositionNone:
@@ -1162,7 +1162,7 @@ type AlterTableSpec struct {
 	Num             uint64
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *AlterTableSpec) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -1221,7 +1221,7 @@ type AlterTableStmt struct {
 	Specs []*AlterTableSpec
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *AlterTableStmt) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -1256,7 +1256,7 @@ type TruncateTableStmt struct {
 	Table *TableName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *TruncateTableStmt) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("TRUNCATE TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {

@@ -329,7 +329,7 @@ type FuncCallExpr struct {
 	Args []ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *FuncCallExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord(n.FnName.O)
 	ctx.WritePlain("(")
@@ -499,7 +499,7 @@ type FuncCastExpr struct {
 	FunctionType CastFunctionType
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *FuncCastExpr) Restore(ctx *restore.RestoreCtx) error {
 	switch n.FunctionType {
 	case CastFunction:
@@ -637,7 +637,7 @@ type AggregateFuncExpr struct {
 	Distinct bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *AggregateFuncExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord(n.F)
 	ctx.WritePlain("(")
@@ -724,7 +724,7 @@ type WindowFuncExpr struct {
 	Spec WindowSpec
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *WindowFuncExpr) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }

@@ -139,7 +139,7 @@ func (o Op) Format(w io.Writer) {
 	fmt.Fprintf(w, "%s", opsLiteral[o])
 }
 
-// restore the Op into a Writer
+// Restore the Op into a Writer
 func (o Op) Restore(w io.Writer) error {
 	if v, ok := opsLiteral[o]; ok {
 		fmt.Fprint(w, v)

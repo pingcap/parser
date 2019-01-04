@@ -16,17 +16,17 @@
 package ast
 
 import (
-	"github.com/pingcap/parser/util/restore"
 	"io"
 
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
+	"github.com/pingcap/parser/util/restore"
 )
 
 // Node is the basic element of the AST.
 // Interfaces embed Node should have 'Node' name suffix.
 type Node interface {
-	// restore returns the sql text from ast tree
+	// Restore returns the sql text from ast tree
 	Restore(ctx *restore.RestoreCtx) error
 	// Accept accepts Visitor to visit itself.
 	// The returned node should replace original node.

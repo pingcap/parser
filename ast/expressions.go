@@ -80,7 +80,7 @@ type BetweenExpr struct {
 	Not bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *BetweenExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore BetweenExpr.Expr")
@@ -153,7 +153,7 @@ type BinaryOperationExpr struct {
 	R ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *BinaryOperationExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.L")
@@ -209,7 +209,7 @@ type WhenClause struct {
 	Result ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *WhenClause) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("WHEN ")
 	if err := n.Expr.Restore(ctx); err != nil {
@@ -255,7 +255,7 @@ type CaseExpr struct {
 	ElseClause ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CaseExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("CASE")
 	if n.Value != nil {
@@ -345,7 +345,7 @@ type SubqueryExpr struct {
 	Exists     bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *SubqueryExpr) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -386,7 +386,7 @@ type CompareSubqueryExpr struct {
 	All bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *CompareSubqueryExpr) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -424,7 +424,7 @@ type ColumnName struct {
 	Name   model.CIStr
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ColumnName) Restore(ctx *restore.RestoreCtx) error {
 	if n.Schema.O != "" {
 		ctx.WriteName(n.Schema.O)
@@ -486,7 +486,7 @@ type ColumnNameExpr struct {
 	Refer *ResultField
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ColumnNameExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Trace(err)
@@ -522,7 +522,7 @@ type DefaultExpr struct {
 	Name *ColumnName
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *DefaultExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("DEFAULT")
 	if n.Name != nil {
@@ -567,7 +567,7 @@ type ExistsSubqueryExpr struct {
 	Not bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ExistsSubqueryExpr) Restore(ctx *restore.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
@@ -605,7 +605,7 @@ type PatternInExpr struct {
 	Sel ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *PatternInExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PatternInExpr.Expr")
@@ -688,7 +688,7 @@ type IsNullExpr struct {
 	Not bool
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *IsNullExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Trace(err)
@@ -737,7 +737,7 @@ type IsTruthExpr struct {
 	True int64
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *IsTruthExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Trace(err)
@@ -801,7 +801,7 @@ type PatternLikeExpr struct {
 	PatTypes []byte
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *PatternLikeExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PatternLikeExpr.Expr")
@@ -873,7 +873,7 @@ type ParenthesesExpr struct {
 	Expr ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ParenthesesExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WritePlain("(")
 	if err := n.Expr.Restore(ctx); err != nil {
@@ -920,7 +920,7 @@ type PositionExpr struct {
 	Refer *ResultField
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *PositionExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WritePlainf("%d", n.N)
 	return nil
@@ -964,7 +964,7 @@ type PatternRegexpExpr struct {
 	Sexpr *string
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *PatternRegexpExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PatternRegexpExpr.Expr")
@@ -1022,7 +1022,7 @@ type RowExpr struct {
 	Values []ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *RowExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("ROW")
 	ctx.WritePlain("(")
@@ -1069,7 +1069,7 @@ type UnaryOperationExpr struct {
 	V ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *UnaryOperationExpr) Restore(ctx *restore.RestoreCtx) error {
 	if err := n.Op.Restore(ctx.In); err != nil {
 		return errors.Trace(err)
@@ -1108,7 +1108,7 @@ type ValuesExpr struct {
 	Column *ColumnNameExpr
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *ValuesExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("VALUES")
 	ctx.WritePlain("(")
@@ -1157,7 +1157,7 @@ type VariableExpr struct {
 	Value ExprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *VariableExpr) Restore(ctx *restore.RestoreCtx) error {
 	if n.IsSystem {
 		ctx.WritePlain("@@")
@@ -1213,7 +1213,7 @@ type MaxValueExpr struct {
 	exprNode
 }
 
-// restore implements Node interface.
+// Restore implements Node interface.
 func (n *MaxValueExpr) Restore(ctx *restore.RestoreCtx) error {
 	ctx.WriteKeyWord("MAXVALUE")
 	return nil
