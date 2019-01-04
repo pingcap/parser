@@ -156,7 +156,13 @@ type IndexColName struct {
 
 // Restore implements Node interface.
 func (n *IndexColName) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Column.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing IndexColName")
+	}
+	if n.Length > 0 {
+		ctx.WritePlainf("(%d)", n.Length)
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -187,7 +193,35 @@ type ReferenceDef struct {
 
 // Restore implements Node interface.
 func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.Table != nil {
+		ctx.WriteKeyWord("REFERENCES ")
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing ReferenceDef")
+		}
+	}
+	ctx.WritePlain("(")
+	for i, indexColNames := range n.IndexColNames {
+		if i > 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := indexColNames.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+	if n.OnDelete.ReferOpt != ReferOptionNoOption {
+		ctx.WritePlain(" ")
+		if err := n.OnDelete.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing OnDelete")
+		}
+	}
+	if n.OnUpdate.ReferOpt != ReferOptionNoOption {
+		ctx.WritePlain(" ")
+		if err := n.OnUpdate.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing OnUpdate")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -439,7 +473,58 @@ type Constraint struct {
 
 // Restore implements Node interface.
 func (n *Constraint) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.Tp {
+	case ConstraintNoConstraint:
+		return nil
+	case ConstraintPrimaryKey:
+		ctx.WriteKeyWord("PRIMARY KEY")
+	case ConstraintKey:
+		ctx.WriteKeyWord("KEY")
+	case ConstraintIndex:
+		ctx.WriteKeyWord("INDEX")
+	case ConstraintUniq:
+		ctx.WriteKeyWord("UNIQUE")
+	case ConstraintUniqKey:
+		ctx.WriteKeyWord("UNIQUE KEY")
+	case ConstraintUniqIndex:
+		ctx.WriteKeyWord("UNIQUE INDEX")
+	case ConstraintForeignKey:
+		ctx.WriteKeyWord("FOREIGN KEY")
+	case ConstraintFulltext:
+		ctx.WriteKeyWord("FULLTEXT")
+	}
+
+	if n.Name != "" {
+		ctx.WritePlain(" ")
+		ctx.WriteName(n.Name)
+	}
+
+	ctx.WritePlain("(")
+	for i, keys := range n.Keys {
+		if i > 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := keys.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing Constraint Keys: [%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+
+	if n.Refer != nil {
+		ctx.WritePlain(" ")
+		if err := n.Refer.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing Constraint Refer")
+		}
+	}
+
+	if n.Option != nil {
+		ctx.WritePlain(" ")
+		if err := n.Option.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing Constraint Option")
+		}
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -639,7 +724,16 @@ type RenameTableStmt struct {
 
 // Restore implements Node interface.
 func (n *RenameTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("RENAME TABLE ")
+	for index, table2table := range n.TableToTables {
+		if index != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := table2table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore RenameTableStmt.TableToTables")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -680,7 +774,14 @@ type TableToTable struct {
 
 // Restore implements Node interface.
 func (n *TableToTable) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.OldTable.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableToTable.OldTable")
+	}
+	ctx.WriteKeyWord(" TO ")
+	if err := n.NewTable.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableToTable.NewTable")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -905,7 +1006,20 @@ type ColumnPosition struct {
 
 // Restore implements Node interface.
 func (n *ColumnPosition) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.Tp {
+	case ColumnPositionNone:
+		// do nothing
+	case ColumnPositionFirst:
+		ctx.WriteKeyWord("FIRST")
+	case ColumnPositionAfter:
+		ctx.WriteKeyWord("AFTER ")
+		if err := n.RelativeColumn.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore ColumnPosition.RelativeColumn")
+		}
+	default:
+		return errors.Errorf("invalid ColumnPositionType: %d", n.Tp)
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1081,7 +1195,11 @@ type TruncateTableStmt struct {
 
 // Restore implements Node interface.
 func (n *TruncateTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("TRUNCATE TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TruncateTableStmt.Table")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.

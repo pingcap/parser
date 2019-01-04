@@ -178,3 +178,154 @@ func (tc *testDMLSuite) TestFieldListRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "SELECT %s", extractNodeFunc)
 }
+
+func (tc *testDMLSuite) TestTableSourceRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"tbl", "`tbl`"},
+		{"tbl as t", "`tbl` AS `t`"},
+		// TODO: Once `Restore` of SelectStmt or UnionStmt is implemented, add the following test cases
+		// {"(select * from tbl) as t", "(SELECT * FROM `tbl`) AS `t`"},
+		// {"(select * from a union select * from b) as t", "(SELECT * FROM `a` UNION SELECT * FROM `b`) AS `t`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From.TableRefs.Left
+	}
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestOnConditionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"on t1.a=t2.a", "ON `t1`.`a`=`t2`.`a`"},
+		{"on t1.a=t2.a and t1.b=t2.b", "ON `t1`.`a`=`t2`.`a`&&`t1`.`b`=`t2`.`b`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From.TableRefs.On
+	}
+	RunNodeRestoreTest(c, testCases, "select * from t1 join t2 %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestJoinRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1 natural join t2", "`t1` NATURAL JOIN `t2`"},
+		{"t1 natural left join t2", "`t1` NATURAL LEFT JOIN `t2`"},
+		{"t1 natural right outer join t2", "`t1` NATURAL RIGHT JOIN `t2`"},
+		{"t1 straight_join t2", "`t1` STRAIGHT_JOIN `t2`"},
+		{"t1 straight_join t2 on t1.a>t2.a", "`t1` STRAIGHT_JOIN `t2` ON `t1`.`a`>`t2`.`a`"},
+		{"t1 cross join t2", "`t1` JOIN `t2`"},
+		{"t1 cross join t2 on t1.a>t2.a", "`t1` JOIN `t2` ON `t1`.`a`>`t2`.`a`"},
+		{"t1 inner join t2 using (b)", "`t1` JOIN `t2` USING (`b`)"},
+		{"t1 join t2 using (b,c) left join t3 on t1.a>t3.a", "(`t1` JOIN `t2` USING (`b`,`c`)) LEFT JOIN `t3` ON `t1`.`a`>`t3`.`a`"},
+		{"t1 natural join t2 right outer join t3 using (b,c)", "(`t1` NATURAL JOIN `t2`) RIGHT JOIN `t3` USING (`b`,`c`)"},
+		{"(a al left join b bl on al.a1 > bl.b1) join (a ar right join b br on ar.a1 > br.b1)", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
+		{"a al left join b bl on al.a1 > bl.b1, a ar right join b br on ar.a1 > br.b1", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
+		{"t1, t2", "(`t1`) JOIN `t2`"},
+		{"t1, t2, t3", "((`t1`) JOIN `t2`) JOIN `t3`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From.TableRefs
+	}
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+}
+
+func (ts *testDMLSuite) TestTableRefsClauseRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t", "`t`"},
+		{"t1 join t2", "`t1` JOIN `t2`"},
+		{"t1, t2", "(`t1`) JOIN `t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).From
+	}
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestDeleteTableListRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"t1,t2", "`t1`,`t2`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DeleteStmt).Tables
+	}
+	RunNodeRestoreTest(c, testCases, "DELETE %s FROM t1, t2;", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "DELETE FROM %s USING t1, t2;", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestByItemRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"a", "`a`"},
+		{"a desc", "`a` DESC"},
+		{"NULL", "NULL"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).OrderBy.Items[0]
+	}
+	RunNodeRestoreTest(c, testCases, "select * from t order by %s", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestGroupByClauseRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"GROUP BY a,b desc", "GROUP BY `a`,`b` DESC"},
+		{"GROUP BY 1 desc,b", "GROUP BY 1 DESC,`b`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).GroupBy
+	}
+	RunNodeRestoreTest(c, testCases, "select * from t %s", extractNodeFunc)
+}
+
+func (tc *testDMLSuite) TestOrderByClauseRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ORDER BY a", "ORDER BY `a`"},
+		{"ORDER BY a,b", "ORDER BY `a`,`b`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).OrderBy
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT 1 FROM t1 %s", extractNodeFunc)
+
+	extractNodeFromUnionStmtFunc := func(node Node) Node {
+		return node.(*UnionStmt).OrderBy
+	}
+	RunNodeRestoreTest(c, testCases, "SELECT 1 FROM t1 UNION SELECT 2 FROM t2 %s", extractNodeFromUnionStmtFunc)
+}
+
+func (tc *testDMLSuite) TestAssignmentRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"a=1", "`a`=1"},
+		{"b=1+2", "`b`=1+2"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*UpdateStmt).List[0]
+	}
+	RunNodeRestoreTest(c, testCases, "UPDATE t1 SET %s", extractNodeFunc)
+}
+
+func (ts *testDMLSuite) TestHavingClauseRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"HAVING a", "HAVING `a`"},
+		{"HAVING NULL", "HAVING NULL"},
+		{"HAVING a>b", "HAVING `a`>`b`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Having
+	}
+	RunNodeRestoreTest(c, testCases, "select 1 from t1 group by 1 %s", extractNodeFunc)
+}
+
+func (ts *testDMLSuite) TestFrameBoundRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"CURRENT ROW", "CURRENT ROW"},
+		{"UNBOUNDED PRECEDING", "UNBOUNDED PRECEDING"},
+		{"1 PRECEDING", "1 PRECEDING"},
+		{"? PRECEDING", "? PRECEDING"},
+		{"INTERVAL 5 DAY PRECEDING", "INTERVAL 5 DAY PRECEDING"},
+		{"UNBOUNDED FOLLOWING", "UNBOUNDED FOLLOWING"},
+		{"1 FOLLOWING", "1 FOLLOWING"},
+		{"? FOLLOWING", "? FOLLOWING"},
+		{"INTERVAL '2:30' MINUTE_SECOND FOLLOWING", "INTERVAL '2:30' MINUTE_SECOND FOLLOWING"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return &node.(*SelectStmt).Fields.Fields[0].Expr.(*WindowFuncExpr).Spec.Frame.Extent.Start
+	}
+	RunNodeRestoreTest(c, testCases, "select avg(val) over (rows between %s and current row) from t", extractNodeFunc)
+}

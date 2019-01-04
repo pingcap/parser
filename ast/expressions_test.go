@@ -234,6 +234,21 @@ func (tc *testExpressionsSuite) TestDefaultExpr(c *C) {
 	RunNodeRestoreTest(c, testCases, "insert into t values(%s)", extractNodeFunc)
 }
 
+func (tc *testExpressionsSuite) TestPatternInExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"'a' in ('b')", "'a' IN ('b')"},
+		{"2 in (0,3,7)", "2 IN (0,3,7)"},
+		{"2 not in (0,3,7)", "2 NOT IN (0,3,7)"},
+		// TODO: Test for subquery when it's implemented
+		// 2 in (select 2)
+		// 2 not in (select 2)
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+}
+
 func (tc *testExpressionsSuite) TestPatternLikeExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"a like 't1'", "`a` LIKE 't1'"},
@@ -300,4 +315,37 @@ func (tc *testExpressionsSuite) TestMaxValueExprRestore(c *C) {
 		return node.(*AlterTableStmt).Specs[0].PartDefinitions[0].LessThan[0]
 	}
 	RunNodeRestoreTest(c, testCases, "alter table posts add partition ( partition p1 values less than %s)", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestPositionExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"1", "1"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).OrderBy.Items[0]
+	}
+	RunNodeRestoreTest(c, testCases, "select * from t order by %s", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"@a>1", "@`a`>1"},
+		{"@`aB`+1", "@`aB`+1"},
+		{"@'a':=1", "@`a`:=1"},
+		{"@`a``b`=4", "@`a``b`=4"},
+		{`@"aBC">1`, "@`aBC`>1"},
+		{"@`a`+1", "@`a`+1"},
+		{"@``", "@``"},
+		{"@", "@``"},
+		{"@@``", "@@``"},
+		{"@@", "@@``"},
+		{"@@var", "@@`var`"},
+		{"@@global.b='foo'", "@@GLOBAL.`b`='foo'"},
+		{"@@session.'C'", "@@SESSION.`c`"},
+		{`@@local."aBc"`, "@@SESSION.`abc`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }

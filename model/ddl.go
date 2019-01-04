@@ -53,7 +53,8 @@ const (
 	ActionCreateView                   ActionType = 21
 	ActionModifyTableCharsetAndCollate ActionType = 22
 	ActionTruncateTablePartition       ActionType = 23
-	ActionRestoreTable                 ActionType = 24
+	ActionDropView                     ActionType = 24
+	ActionRestoreTable                 ActionType = 25
 )
 
 // AddIndexStr is a string related to the operation of "add index".
@@ -83,6 +84,7 @@ var actionMap = map[ActionType]string{
 	ActionCreateView:                   "create view",
 	ActionModifyTableCharsetAndCollate: "modify table charset and collate",
 	ActionTruncateTablePartition:       "truncate partition",
+	ActionDropView:                     "drop view",
 	ActionRestoreTable:                 "restore table",
 }
 

@@ -1601,7 +1601,7 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FULLTEXT" KeyOrIndex IndexName '(' IndexColNameList ')' IndexOptionList
+|	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexColNameList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintFulltext,
@@ -4715,7 +4715,7 @@ WindowFrameStart:
 	}
 |	paramMarker "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewValueExpr($1),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewParamMarkerExpr(yyS[yypt].offset),}
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
@@ -4747,7 +4747,7 @@ WindowFrameBound:
 	}
 |	paramMarker "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewValueExpr($1),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewParamMarkerExpr(yyS[yypt].offset),}
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
@@ -5196,6 +5196,7 @@ TableOptimizerHints:
 	{
 		yyerrok()
 		parser.lastErrorAsWarn()
+		$$ = nil
 	}
 
 HintTableList:
@@ -5898,11 +5899,12 @@ ShowStmt:
 			Table:	$4.(*ast.TableName),
 		}
 	}
-|	"SHOW" "CREATE" "DATABASE" DBName
+|	"SHOW" "CREATE" "DATABASE" IfNotExists DBName
 	{
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateDatabase,
-			DBName:	$4.(string),
+			IfNotExists: $4.(bool),
+			DBName:	$5.(string),
 		}
 	}
 |	"SHOW" "GRANTS"
