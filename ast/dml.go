@@ -933,7 +933,14 @@ type Assignment struct {
 
 // Restore implements Node interface.
 func (n *Assignment) Restore(ctx *restore.RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Column.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Assignment.Column")
+	}
+	ctx.WritePlain("=")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Assignment.Expr")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1311,13 +1318,14 @@ type ShowStmt struct {
 	dmlNode
 	resultSetNode
 
-	Tp     ShowStmtType // Databases/Tables/Columns/....
-	DBName string
-	Table  *TableName  // Used for showing columns.
-	Column *ColumnName // Used for `desc table column`.
-	Flag   int         // Some flag parsed from sql, such as FULL.
-	Full   bool
-	User   *auth.UserIdentity // Used for show grants.
+	Tp          ShowStmtType // Databases/Tables/Columns/....
+	DBName      string
+	Table       *TableName  // Used for showing columns.
+	Column      *ColumnName // Used for `desc table column`.
+	Flag        int         // Some flag parsed from sql, such as FULL.
+	Full        bool
+	User        *auth.UserIdentity // Used for show grants.
+	IfNotExists bool               // Used for `show create database if not exists`
 
 	// GlobalScope is used by show variables
 	GlobalScope bool

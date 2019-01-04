@@ -179,7 +179,7 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"DEFAULT TRUE", "DEFAULT TRUE"},
 		{"DEFAULT FALSE", "DEFAULT FALSE"},
 		{"UNIQUE KEY", "UNIQUE KEY"},
-		//{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP"}, //TODO: Waiting for FuncCallExpr
+		{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP()"},
 		{"comment 'hello'", "COMMENT 'hello'"},
 		{"generated always as(id + 1)", "GENERATED ALWAYS AS(`id`+1)"},
 		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
@@ -212,7 +212,7 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
 		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
 		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
-		//{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP"}, //TODO: Waiting for FuncCallExpr
+		{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP()"},
 		{"id INT(11) comment 'hello'", "`id` INT(11) COMMENT 'hello'"},
 		{"id INT(11) generated always as(id + 1)", "`id` INT(11) GENERATED ALWAYS AS(`id`+1)"},
 		{"id INT(11) REFERENCES parent(id)", "`id` INT(11) REFERENCES `parent`(`id`)"},

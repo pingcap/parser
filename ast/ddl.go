@@ -389,7 +389,6 @@ func (n *ColumnOption) Restore(ctx *restore.RestoreCtx) error {
 	case ColumnOptionNull:
 		ctx.WriteKeyWord("NULL")
 	case ColumnOptionOnUpdate:
-		//TODO: Waiting for FuncCallExpr
 		ctx.WriteKeyWord("ON UPDATE ")
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ON UPDATE Expr")
