@@ -95,7 +95,7 @@ func (rf RestoreFlags) HasNameBackQuotesFlag() bool {
 	return rf.has(RestoreNameBackQuotes)
 }
 
-// RestoreCtx is `restore` context to hold flags and writer.
+// RestoreCtx is `Restore` context to hold flags and writer.
 type RestoreCtx struct {
 	Flags     RestoreFlags
 	In        io.Writer

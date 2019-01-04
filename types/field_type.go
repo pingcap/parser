@@ -15,13 +15,13 @@ package types
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/util/restore"
 	"io"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/util/restore"
 )
 
 // UnspecifiedLength is unspecified length.
