@@ -18,7 +18,7 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 var (
@@ -65,7 +65,7 @@ type DatabaseOption struct {
 }
 
 // Restore implements Node interface.
-func (n *DatabaseOption) Restore(ctx *restore.RestoreCtx) error {
+func (n *DatabaseOption) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch n.Tp {
 	case DatabaseOptionCharset:
 		ctx.WriteKeyWord("CHARACTER SET")
@@ -92,7 +92,7 @@ type CreateDatabaseStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *CreateDatabaseStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *CreateDatabaseStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("CREATE DATABASE ")
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXISTS ")
@@ -128,7 +128,7 @@ type DropDatabaseStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DropDatabaseStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DropDatabaseStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP DATABASE ")
 	if n.IfExists {
 		ctx.WriteKeyWord("IF EXISTS ")
@@ -156,7 +156,7 @@ type IndexColName struct {
 }
 
 // Restore implements Node interface.
-func (n *IndexColName) Restore(ctx *restore.RestoreCtx) error {
+func (n *IndexColName) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Column.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while splicing IndexColName")
 	}
@@ -193,7 +193,7 @@ type ReferenceDef struct {
 }
 
 // Restore implements Node interface.
-func (n *ReferenceDef) Restore(ctx *restore.RestoreCtx) error {
+func (n *ReferenceDef) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.Table != nil {
 		ctx.WriteKeyWord("REFERENCES ")
 		if err := n.Table.Restore(ctx); err != nil {
@@ -291,7 +291,7 @@ type OnDeleteOpt struct {
 }
 
 // Restore implements Node interface.
-func (n *OnDeleteOpt) Restore(ctx *restore.RestoreCtx) error {
+func (n *OnDeleteOpt) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.ReferOpt != ReferOptionNoOption {
 		ctx.WriteKeyWord("ON DELETE ")
 		ctx.WriteKeyWord(n.ReferOpt.String())
@@ -316,7 +316,7 @@ type OnUpdateOpt struct {
 }
 
 // Restore implements Node interface.
-func (n *OnUpdateOpt) Restore(ctx *restore.RestoreCtx) error {
+func (n *OnUpdateOpt) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.ReferOpt != ReferOptionNoOption {
 		ctx.WriteKeyWord("ON UPDATE ")
 		ctx.WriteKeyWord(n.ReferOpt.String())
@@ -369,7 +369,7 @@ type ColumnOption struct {
 }
 
 // Restore implements Node interface.
-func (n *ColumnOption) Restore(ctx *restore.RestoreCtx) error {
+func (n *ColumnOption) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch n.Tp {
 	case ColumnOptionNoOption:
 		return nil
@@ -449,7 +449,7 @@ type IndexOption struct {
 }
 
 // Restore implements Node interface.
-func (n *IndexOption) Restore(ctx *restore.RestoreCtx) error {
+func (n *IndexOption) Restore(ctx *fmtsql.RestoreCtx) error {
 	hasPrevOption := false
 	if n.KeyBlockSize > 0 {
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE")
@@ -517,7 +517,7 @@ type Constraint struct {
 }
 
 // Restore implements Node interface.
-func (n *Constraint) Restore(ctx *restore.RestoreCtx) error {
+func (n *Constraint) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch n.Tp {
 	case ConstraintNoConstraint:
 		return nil
@@ -613,7 +613,7 @@ type ColumnDef struct {
 }
 
 // Restore implements Node interface.
-func (n *ColumnDef) Restore(ctx *restore.RestoreCtx) error {
+func (n *ColumnDef) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while splicing ColumnDef Name")
 	}
@@ -674,7 +674,7 @@ type CreateTableStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *CreateTableStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *CreateTableStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -733,7 +733,7 @@ type DropTableStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DropTableStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DropTableStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.IsView {
 		ctx.WriteKeyWord("DROP VIEW ")
 	} else {
@@ -786,7 +786,7 @@ type RenameTableStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *RenameTableStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *RenameTableStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("RENAME TABLE ")
 	for index, table2table := range n.TableToTables {
 		if index != 0 {
@@ -836,7 +836,7 @@ type TableToTable struct {
 }
 
 // Restore implements Node interface.
-func (n *TableToTable) Restore(ctx *restore.RestoreCtx) error {
+func (n *TableToTable) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.OldTable.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TableToTable.OldTable")
 	}
@@ -883,7 +883,7 @@ type CreateViewStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *CreateViewStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *CreateViewStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -920,7 +920,7 @@ type CreateIndexStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *CreateIndexStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *CreateIndexStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -964,7 +964,7 @@ type DropIndexStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DropIndexStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DropIndexStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("DROP INDEX ")
 	if n.IfExists {
 		ctx.WriteKeyWord("IF EXISTS ")
@@ -1068,7 +1068,7 @@ type ColumnPosition struct {
 }
 
 // Restore implements Node interface.
-func (n *ColumnPosition) Restore(ctx *restore.RestoreCtx) error {
+func (n *ColumnPosition) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch n.Tp {
 	case ColumnPositionNone:
 		// do nothing
@@ -1163,7 +1163,7 @@ type AlterTableSpec struct {
 }
 
 // Restore implements Node interface.
-func (n *AlterTableSpec) Restore(ctx *restore.RestoreCtx) error {
+func (n *AlterTableSpec) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1222,7 +1222,7 @@ type AlterTableStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *AlterTableStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *AlterTableStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1257,7 +1257,7 @@ type TruncateTableStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *TruncateTableStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *TruncateTableStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("TRUNCATE TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TruncateTableStmt.Table")

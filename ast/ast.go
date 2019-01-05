@@ -20,14 +20,14 @@ import (
 
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 // Node is the basic element of the AST.
 // Interfaces embed Node should have 'Node' name suffix.
 type Node interface {
 	// Restore returns the sql text from ast tree
-	Restore(ctx *restore.RestoreCtx) error
+	Restore(ctx *fmtsql.RestoreCtx) error
 	// Accept accepts Visitor to visit itself.
 	// The returned node should replace original node.
 	// ok returns false to stop visiting.

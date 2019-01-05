@@ -20,7 +20,7 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 var (
@@ -87,7 +87,7 @@ type Join struct {
 }
 
 // Restore implements Node interface.
-func (n *Join) Restore(ctx *restore.RestoreCtx) error {
+func (n *Join) Restore(ctx *fmtsql.RestoreCtx) error {
 	if ctx.JoinLevel != 0 {
 		ctx.WritePlain("(")
 		defer ctx.WritePlain(")")
@@ -187,7 +187,7 @@ type TableName struct {
 }
 
 // Restore implements Node interface.
-func (n *TableName) Restore(ctx *restore.RestoreCtx) error {
+func (n *TableName) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.Schema.String() != "" {
 		ctx.WriteName(n.Schema.String())
 		ctx.WritePlain(".")
@@ -231,7 +231,7 @@ type IndexHint struct {
 }
 
 // IndexHint Restore (The const field uses switch to facilitate understanding)
-func (n *IndexHint) Restore(ctx *restore.RestoreCtx) error {
+func (n *IndexHint) Restore(ctx *fmtsql.RestoreCtx) error {
 	indexHintType := ""
 	switch n.HintType {
 	case 1:
@@ -288,7 +288,7 @@ type DeleteTableList struct {
 }
 
 // Restore implements Node interface.
-func (n *DeleteTableList) Restore(ctx *restore.RestoreCtx) error {
+func (n *DeleteTableList) Restore(ctx *fmtsql.RestoreCtx) error {
 	for i, t := range n.Tables {
 		if i != 0 {
 			ctx.WritePlain(",")
@@ -327,7 +327,7 @@ type OnCondition struct {
 }
 
 // Restore implements Node interface.
-func (n *OnCondition) Restore(ctx *restore.RestoreCtx) error {
+func (n *OnCondition) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("ON ")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore OnCondition.Expr")
@@ -363,7 +363,7 @@ type TableSource struct {
 }
 
 // Restore implements Node interface.
-func (n *TableSource) Restore(ctx *restore.RestoreCtx) error {
+func (n *TableSource) Restore(ctx *fmtsql.RestoreCtx) error {
 	needParen := false
 	switch n.Source.(type) {
 	case *SelectStmt, *UnionStmt:
@@ -433,7 +433,7 @@ type WildCardField struct {
 }
 
 // Restore implements Node interface.
-func (n *WildCardField) Restore(ctx *restore.RestoreCtx) error {
+func (n *WildCardField) Restore(ctx *fmtsql.RestoreCtx) error {
 	if schema := n.Schema.String(); schema != "" {
 		ctx.WriteName(schema)
 		ctx.WritePlain(".")
@@ -477,7 +477,7 @@ type SelectField struct {
 }
 
 // Restore implements Node interface.
-func (n *SelectField) Restore(ctx *restore.RestoreCtx) error {
+func (n *SelectField) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.WildCard != nil {
 		if err := n.WildCard.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SelectField.WildCard")
@@ -520,7 +520,7 @@ type FieldList struct {
 }
 
 // Restore implements Node interface.
-func (n *FieldList) Restore(ctx *restore.RestoreCtx) error {
+func (n *FieldList) Restore(ctx *fmtsql.RestoreCtx) error {
 	for i, v := range n.Fields {
 		if i != 0 {
 			ctx.WritePlain(", ")
@@ -557,7 +557,7 @@ type TableRefsClause struct {
 }
 
 // Restore implements Node interface.
-func (n *TableRefsClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *TableRefsClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.TableRefs.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TableRefsClause.TableRefs")
 	}
@@ -588,7 +588,7 @@ type ByItem struct {
 }
 
 // Restore implements Node interface.
-func (n *ByItem) Restore(ctx *restore.RestoreCtx) error {
+func (n *ByItem) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore ByItem.Expr")
 	}
@@ -620,7 +620,7 @@ type GroupByClause struct {
 }
 
 // Restore implements Node interface.
-func (n *GroupByClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *GroupByClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("GROUP BY ")
 	for i, v := range n.Items {
 		if i != 0 {
@@ -657,7 +657,7 @@ type HavingClause struct {
 }
 
 // Restore implements Node interface.
-func (n *HavingClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *HavingClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("HAVING ")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore HavingClause.Expr")
@@ -688,7 +688,7 @@ type OrderByClause struct {
 }
 
 // Restore implements Node interface.
-func (n *OrderByClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *OrderByClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("ORDER BY ")
 	for i, item := range n.Items {
 		if i != 0 {
@@ -755,7 +755,7 @@ type SelectStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *SelectStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *SelectStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -854,7 +854,7 @@ type UnionSelectList struct {
 }
 
 // Restore implements Node interface.
-func (n *UnionSelectList) Restore(ctx *restore.RestoreCtx) error {
+func (n *UnionSelectList) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -887,7 +887,7 @@ type UnionStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *UnionStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *UnionStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -932,7 +932,7 @@ type Assignment struct {
 }
 
 // Restore implements Node interface.
-func (n *Assignment) Restore(ctx *restore.RestoreCtx) error {
+func (n *Assignment) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Column.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore Assignment.Column")
 	}
@@ -978,7 +978,7 @@ type LoadDataStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *LoadDataStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *LoadDataStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1036,7 +1036,7 @@ type InsertStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *InsertStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *InsertStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1117,7 +1117,7 @@ type DeleteStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DeleteStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DeleteStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1182,7 +1182,7 @@ type UpdateStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *UpdateStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *UpdateStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1238,7 +1238,7 @@ type Limit struct {
 }
 
 // Restore implements Node interface.
-func (n *Limit) Restore(ctx *restore.RestoreCtx) error {
+func (n *Limit) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("LIMIT ")
 	if n.Offset != nil {
 		if err := n.Offset.Restore(ctx); err != nil {
@@ -1334,7 +1334,7 @@ type ShowStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *ShowStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *ShowStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -1399,7 +1399,7 @@ type WindowSpec struct {
 }
 
 // Restore implements Node interface.
-func (n *WindowSpec) Restore(ctx *restore.RestoreCtx) error {
+func (n *WindowSpec) Restore(ctx *fmtsql.RestoreCtx) error {
 	if name := n.Name.String(); name != "" {
 		ctx.WriteName(name)
 		ctx.WriteKeyWord(" AS ")
@@ -1474,7 +1474,7 @@ type PartitionByClause struct {
 }
 
 // Restore implements Node interface.
-func (n *PartitionByClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *PartitionByClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("PARTITION BY ")
 	for i, v := range n.Items {
 		if i != 0 {
@@ -1524,7 +1524,7 @@ type FrameClause struct {
 }
 
 // Restore implements Node interface.
-func (n *FrameClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *FrameClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch n.Type {
 	case Rows:
 		ctx.WriteKeyWord("ROWS")
@@ -1594,7 +1594,7 @@ type FrameBound struct {
 }
 
 // Restore implements Node interface.
-func (n *FrameBound) Restore(ctx *restore.RestoreCtx) error {
+func (n *FrameBound) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.UnBounded {
 		ctx.WriteKeyWord("UNBOUNDED")
 	}
@@ -1614,7 +1614,7 @@ func (n *FrameBound) Restore(ctx *restore.RestoreCtx) error {
 			// Here the Unit string should not be quoted.
 			// TODO: This is a temporary workaround that should be changed once something like "Keyword Expression" is implemented.
 			var sb strings.Builder
-			n.Unit.Restore(restore.NewRestoreCtx(0, &sb))
+			n.Unit.Restore(fmtsql.NewRestoreCtx(0, &sb))
 			ctx.WritePlain(" ")
 			ctx.WriteKeyWord(sb.String())
 		}

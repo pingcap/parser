@@ -20,7 +20,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 var (
@@ -330,7 +330,7 @@ type FuncCallExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *FuncCallExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *FuncCallExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord(n.FnName.O)
 	ctx.WritePlain("(")
 	switch n.FnName.L {
@@ -500,7 +500,7 @@ type FuncCastExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *FuncCastExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *FuncCastExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch n.FunctionType {
 	case CastFunction:
 		ctx.WriteKeyWord("CAST")
@@ -638,7 +638,7 @@ type AggregateFuncExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *AggregateFuncExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *AggregateFuncExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord(n.F)
 	ctx.WritePlain("(")
 	if n.Distinct {
@@ -725,7 +725,7 @@ type WindowFuncExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *WindowFuncExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *WindowFuncExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord(n.F)
 	ctx.WritePlain("(")
 	for i, v := range n.Args {

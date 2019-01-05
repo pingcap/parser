@@ -1,4 +1,4 @@
-package restore
+package fmtsql
 
 import (
 	. "github.com/pingcap/check"

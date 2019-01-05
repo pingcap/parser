@@ -22,7 +22,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/opcode"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 var (
@@ -81,7 +81,7 @@ type BetweenExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *BetweenExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *BetweenExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore BetweenExpr.Expr")
 	}
@@ -154,7 +154,7 @@ type BinaryOperationExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *BinaryOperationExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *BinaryOperationExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.L")
 	}
@@ -210,7 +210,7 @@ type WhenClause struct {
 }
 
 // Restore implements Node interface.
-func (n *WhenClause) Restore(ctx *restore.RestoreCtx) error {
+func (n *WhenClause) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("WHEN ")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore WhenClauses.Expr")
@@ -256,7 +256,7 @@ type CaseExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *CaseExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *CaseExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("CASE")
 	if n.Value != nil {
 		ctx.WritePlain(" ")
@@ -346,7 +346,7 @@ type SubqueryExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *SubqueryExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *SubqueryExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -387,7 +387,7 @@ type CompareSubqueryExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *CompareSubqueryExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *CompareSubqueryExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -425,7 +425,7 @@ type ColumnName struct {
 }
 
 // Restore implements Node interface.
-func (n *ColumnName) Restore(ctx *restore.RestoreCtx) error {
+func (n *ColumnName) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.Schema.O != "" {
 		ctx.WriteName(n.Schema.O)
 		ctx.WritePlain(".")
@@ -487,7 +487,7 @@ type ColumnNameExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *ColumnNameExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *ColumnNameExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
@@ -523,7 +523,7 @@ type DefaultExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *DefaultExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *DefaultExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("DEFAULT")
 	if n.Name != nil {
 		ctx.WritePlain("(")
@@ -568,7 +568,7 @@ type ExistsSubqueryExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *ExistsSubqueryExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *ExistsSubqueryExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -606,7 +606,7 @@ type PatternInExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *PatternInExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *PatternInExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PatternInExpr.Expr")
 	}
@@ -689,7 +689,7 @@ type IsNullExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *IsNullExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *IsNullExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
@@ -738,7 +738,7 @@ type IsTruthExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *IsTruthExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *IsTruthExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
@@ -802,7 +802,7 @@ type PatternLikeExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *PatternLikeExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *PatternLikeExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PatternLikeExpr.Expr")
 	}
@@ -814,7 +814,7 @@ func (n *PatternLikeExpr) Restore(ctx *restore.RestoreCtx) error {
 	}
 
 	if err := n.Pattern.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore PatternLikeExpr.Pattern")
+		return errors.Annotate(err, "An error occurred while fmtsql PatternLikeExpr.Pattern")
 	}
 
 	return nil
@@ -874,7 +874,7 @@ type ParenthesesExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *ParenthesesExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *ParenthesesExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WritePlain("(")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore ParenthesesExpr.Expr")
@@ -921,7 +921,7 @@ type PositionExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *PositionExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *PositionExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WritePlainf("%d", n.N)
 	return nil
 }
@@ -965,7 +965,7 @@ type PatternRegexpExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *PatternRegexpExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *PatternRegexpExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PatternRegexpExpr.Expr")
 	}
@@ -1023,7 +1023,7 @@ type RowExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *RowExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *RowExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("ROW")
 	ctx.WritePlain("(")
 	for i, v := range n.Values {
@@ -1070,7 +1070,7 @@ type UnaryOperationExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *UnaryOperationExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *UnaryOperationExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if err := n.Op.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
@@ -1109,7 +1109,7 @@ type ValuesExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *ValuesExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *ValuesExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("VALUES")
 	ctx.WritePlain("(")
 	if err := n.Column.Restore(ctx); err != nil {
@@ -1158,7 +1158,7 @@ type VariableExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *VariableExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *VariableExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	if n.IsSystem {
 		ctx.WritePlain("@@")
 		if n.ExplicitScope {
@@ -1214,7 +1214,7 @@ type MaxValueExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *MaxValueExpr) Restore(ctx *restore.RestoreCtx) error {
+func (n *MaxValueExpr) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("MAXVALUE")
 	return nil
 }

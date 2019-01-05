@@ -26,7 +26,7 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -279,7 +279,7 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	c.Assert(err, IsNil, comment)
 	restoreSQLs := ""
 	for _, stmt := range stmts {
-		err = stmt.Restore(restore.NewRestoreCtx(restore.DefaultRestoreFlags, &sb))
+		err = stmt.Restore(fmtsql.NewRestoreCtx(fmtsql.DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSQL := sb.String()
 		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
@@ -293,7 +293,7 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 		}
 		restoreSQLs += restoreSQL
 	}
-	comment = Commentf("restore %v; expect %v", restoreSQLs, expectSQLs)
+	comment = Commentf("fmtsql %v; expect %v", restoreSQLs, expectSQLs)
 	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
 }
 

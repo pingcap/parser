@@ -21,7 +21,7 @@ import (
 	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 // UnspecifiedLength is unspecified length.
@@ -196,7 +196,7 @@ func (ft *FieldType) String() string {
 	return strings.Join(strs, " ")
 }
 
-func (ft *FieldType) Restore(ctx *restore.RestoreCtx) error {
+func (ft *FieldType) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord(TypeToStr(ft.Tp, ft.Charset))
 
 	if ft.Flen == -1 {

@@ -7,7 +7,7 @@ import (
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -59,7 +59,7 @@ func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template stri
 		comment := Commentf("source %#v", testCase)
 		c.Assert(err, IsNil, comment)
 		var sb strings.Builder
-		err = extractNodeFunc(stmt).Restore(restore.NewRestoreCtx(restore.DefaultRestoreFlags, &sb))
+		err = extractNodeFunc(stmt).Restore(fmtsql.NewRestoreCtx(fmtsql.DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSql := fmt.Sprintf(template, sb.String())
 		comment = Commentf("source %#v; restore %v", testCase, restoreSql)

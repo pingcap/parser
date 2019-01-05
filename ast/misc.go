@@ -22,7 +22,7 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/util/restore"
+	"github.com/pingcap/parser/util/fmtsql"
 )
 
 var (
@@ -100,7 +100,7 @@ type TraceStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *TraceStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *TraceStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -131,7 +131,7 @@ type ExplainStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *ExplainStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *ExplainStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -162,7 +162,7 @@ type PrepareStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *PrepareStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *PrepareStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -192,7 +192,7 @@ type DeallocateStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DeallocateStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DeallocateStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -225,7 +225,7 @@ type ExecuteStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *ExecuteStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *ExecuteStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -253,7 +253,7 @@ type BeginStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *BeginStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *BeginStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("START TRANSACTION")
 	return nil
 }
@@ -277,7 +277,7 @@ type BinlogStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *BinlogStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *BinlogStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -298,7 +298,7 @@ type CommitStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *CommitStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *CommitStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("COMMIT")
 	return nil
 }
@@ -320,7 +320,7 @@ type RollbackStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *RollbackStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *RollbackStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("ROLLBACK")
 	return nil
 }
@@ -344,7 +344,7 @@ type UseStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *UseStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *UseStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord("USE ")
 	ctx.WriteName(n.DBName)
 	return nil
@@ -382,7 +382,7 @@ type VariableAssignment struct {
 }
 
 // Restore implements Node interface.
-func (n *VariableAssignment) Restore(ctx *restore.RestoreCtx) error {
+func (n *VariableAssignment) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -423,7 +423,7 @@ type FlushStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *FlushStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *FlushStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -458,7 +458,7 @@ type KillStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *KillStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *KillStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -480,7 +480,7 @@ type SetStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *SetStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *SetStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -532,7 +532,7 @@ type SetPwdStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *SetPwdStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *SetPwdStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -600,7 +600,7 @@ type CreateUserStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *CreateUserStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *CreateUserStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -636,7 +636,7 @@ type AlterUserStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *AlterUserStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *AlterUserStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -671,7 +671,7 @@ type DropUserStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DropUserStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DropUserStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -693,7 +693,7 @@ type DoStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *DoStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *DoStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -786,7 +786,7 @@ type AdminStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *AdminStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *AdminStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -818,7 +818,7 @@ type PrivElem struct {
 }
 
 // Restore implements Node interface.
-func (n *PrivElem) Restore(ctx *restore.RestoreCtx) error {
+func (n *PrivElem) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -881,7 +881,7 @@ type RevokeStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *RevokeStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *RevokeStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -914,7 +914,7 @@ type GrantStmt struct {
 }
 
 // Restore implements Node interface.
-func (n *GrantStmt) Restore(ctx *restore.RestoreCtx) error {
+func (n *GrantStmt) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
@@ -984,7 +984,7 @@ type TableOptimizerHint struct {
 }
 
 // Restore implements Node interface.
-func (n *TableOptimizerHint) Restore(ctx *restore.RestoreCtx) error {
+func (n *TableOptimizerHint) Restore(ctx *fmtsql.RestoreCtx) error {
 	return errors.New("Not implemented")
 }
 
