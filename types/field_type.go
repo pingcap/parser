@@ -197,82 +197,72 @@ func (ft *FieldType) String() string {
 }
 
 func (ft *FieldType) Restore(ctx *restore.RestoreCtx) error {
-	compactStr := func() string {
-		ts := TypeToStr(ft.Tp, ft.Charset)
-		if ft.Flen == -1 {
-			ctx.WriteKeyWord(ts)
-			return ""
-		}
-		suffix := ""
+	ctx.WriteKeyWord(TypeToStr(ft.Tp, ft.Charset))
 
-		defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
-		isDecimalNotDefault := ft.Decimal != defaultDecimal && ft.Decimal != 0 && ft.Decimal != UnspecifiedLength
-
-		// displayFlen and displayDecimal are flen and decimal values with `-1` substituted with default value.
-		displayFlen, displayDecimal := ft.Flen, ft.Decimal
-		if displayFlen == 0 || displayFlen == UnspecifiedLength {
-			displayFlen = defaultFlen
-		}
-		if displayDecimal == 0 || displayDecimal == UnspecifiedLength {
-			displayDecimal = defaultDecimal
-		}
-
-		switch ft.Tp {
-		case mysql.TypeEnum, mysql.TypeSet:
-			// Format is ENUM ('e1', 'e2') or SET ('e1', 'e2')
-			es := make([]string, 0, len(ft.Elems))
-			for _, e := range ft.Elems {
-				e = format.OutputFormat(e)
-				es = append(es, e)
-			}
-			suffix = fmt.Sprintf("('%s')", strings.Join(es, "','"))
-		case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
-			if isDecimalNotDefault {
-				suffix = fmt.Sprintf("(%d)", displayDecimal)
-			}
-		case mysql.TypeDouble, mysql.TypeFloat:
-			// 1. Flen Not Default, Decimal Not Default -> Valid
-			// 2. Flen Not Default, Decimal Default (-1) -> Invalid
-			// 3. Flen Default, Decimal Not Default -> Valid
-			// 4. Flen Default, Decimal Default -> Valid (hide)
-			if isDecimalNotDefault {
-				suffix = fmt.Sprintf("(%d,%d)", displayFlen, displayDecimal)
-			}
-		case mysql.TypeNewDecimal:
-			suffix = fmt.Sprintf("(%d,%d)", displayFlen, displayDecimal)
-		case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
-			// Flen is always shown.
-			suffix = fmt.Sprintf("(%d)", displayFlen)
-		}
-		return ts + suffix
-	}
-
-	strs := []string{compactStr()}
-	if strs[0] == "" {
+	if ft.Flen == -1 {
 		return nil
 	}
 
+	defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
+	isDecimalNotDefault := ft.Decimal != defaultDecimal && ft.Decimal != 0 && ft.Decimal != UnspecifiedLength
+
+	// displayFlen and displayDecimal are flen and decimal values with `-1` substituted with default value.
+	displayFlen, displayDecimal := ft.Flen, ft.Decimal
+	if displayFlen == 0 || displayFlen == UnspecifiedLength {
+		displayFlen = defaultFlen
+	}
+	if displayDecimal == 0 || displayDecimal == UnspecifiedLength {
+		displayDecimal = defaultDecimal
+	}
+
+	switch ft.Tp {
+	case mysql.TypeEnum, mysql.TypeSet:
+		// Format is ENUM ('e1', 'e2') or SET ('e1', 'e2')
+		es := make([]string, 0, len(ft.Elems))
+		for _, e := range ft.Elems {
+			e = format.OutputFormat(e)
+			es = append(es, e)
+		}
+		ctx.WritePlainf("('%s')", strings.Join(es, "','"))
+	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
+		if isDecimalNotDefault {
+			ctx.WritePlainf("(%d)", displayDecimal)
+		}
+	case mysql.TypeDouble, mysql.TypeFloat:
+		// 1. Flen Not Default, Decimal Not Default -> Valid
+		// 2. Flen Not Default, Decimal Default (-1) -> Invalid
+		// 3. Flen Default, Decimal Not Default -> Valid
+		// 4. Flen Default, Decimal Default -> Valid (hide)
+		if isDecimalNotDefault {
+			ctx.WritePlainf("(%d,%d)", displayFlen, displayDecimal)
+		}
+	case mysql.TypeNewDecimal:
+		ctx.WritePlainf("(%d,%d)", displayFlen, displayDecimal)
+	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
+		// Flen is always shown.
+		ctx.WritePlainf("(%d)", displayFlen)
+	}
+
 	if mysql.HasUnsignedFlag(ft.Flag) {
-		strs = append(strs, "UNSIGNED")
+		ctx.WriteKeyWord(" UNSIGNED")
 	}
 	if mysql.HasZerofillFlag(ft.Flag) {
-		strs = append(strs, "ZEROFILL")
+		ctx.WriteKeyWord(" ZEROFILL")
 	}
 	if mysql.HasBinaryFlag(ft.Flag) && ft.Tp != mysql.TypeString {
-		strs = append(strs, "BINARY")
+		ctx.WriteKeyWord(" BINARY")
 	}
 
 	if IsTypeChar(ft.Tp) || IsTypeBlob(ft.Tp) {
 		if ft.Charset != "" && ft.Charset != charset.CharsetBin {
-			strs = append(strs, fmt.Sprintf("CHARACTER SET %s", ft.Charset))
+			ctx.WriteKeyWord(" CHARACTER SET ")
+			ctx.WritePlainf("%s", ft.Charset)
 		}
 		if ft.Collate != "" && ft.Collate != charset.CharsetBin {
-			strs = append(strs, fmt.Sprintf("COLLATE %s", ft.Collate))
+			ctx.WriteKeyWord(" COLLATE ")
+			ctx.WritePlain(ft.Collate)
 		}
 	}
-
-	result := strings.Join(strs, " ")
-	ctx.WriteKeyWord(result)
 
 	return nil
 }

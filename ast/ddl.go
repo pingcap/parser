@@ -394,7 +394,7 @@ func (n *ColumnOption) Restore(ctx *restore.RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ON UPDATE Expr")
 		}
 	case ColumnOptionFulltext:
-		// TiDB Parser ignore the `ColumnOptionFulltext` type now
+		return errors.New("TiDB Parser ignore the `ColumnOptionFulltext` type now")
 	case ColumnOptionComment:
 		ctx.WriteKeyWord("COMMENT ")
 		if err := n.Expr.Restore(ctx); err != nil {

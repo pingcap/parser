@@ -192,7 +192,15 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 
 func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
+		// for type
 		{"id json", "`id` JSON"},
+		{"id time(5)", "`id` TIME(5)"},
+		{"id int(5) unsigned", "`id` INT(5) UNSIGNED"},
+		{"id int(5) UNSIGNED ZEROFILL", "`id` INT(5) UNSIGNED ZEROFILL"},
+		{"id float(12,3)", "`id` FLOAT(12,3)"},
+		{"id float", "`id` FLOAT"},
+		{"id double(22,3)", "`id` DOUBLE(22,3)"},
+		{"id double", "`id` DOUBLE"},
 		{"id tinyint(4)", "`id` TINYINT(4)"},
 		{"id smallint(6)", "`id` SMALLINT(6)"},
 		{"id mediumint(9)", "`id` MEDIUMINT(9)"},
@@ -202,8 +210,16 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id DATETIME", "`id` DATETIME"},
 		{"id DECIMAL(4,2)", "`id` DECIMAL(4,2)"},
 		{"id char(1)", "`id` CHAR(1)"},
+		{"id varchar(10) BINARY", "`id` VARCHAR(10) BINARY"},
+		{"id binary(1)", "`id` BINARY(1)"},
+		{"id timestamp(2)", "`id` TIMESTAMP(2)"},
+		{"id timestamp", "`id` TIMESTAMP"},
+		{"id datetime(2)", "`id` DATETIME(2)"},
+		{"id date", "`id` DATE"},
+		{"id year", "`id` YEAR"},
 		{"id INT", "`id` INT"},
 		{"id INT NULL", "`id` INT NULL"},
+
 		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
 		{"id int(11) NOT NULL", "`id` INT(11) NOT NULL"},
 		{"id INT(11) NULL", "`id` INT(11) NULL"},
