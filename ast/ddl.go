@@ -14,6 +14,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	. "github.com/pingcap/parser/format"
@@ -1223,7 +1225,23 @@ type AlterTableStmt struct {
 
 // Restore implements Node interface.
 func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ALTER ")
+	ctx.WriteKeyWord("TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
+	}
+	for i, spec := range n.Specs {
+		if i == 0 {
+			ctx.WritePlain(" ")
+		}
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableStmt.Specs[%d]", i))
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
