@@ -985,7 +985,20 @@ type TableOptimizerHint struct {
 
 // Restore implements Node interface.
 func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord(n.HintName.String())
+	ctx.WritePlain("(")
+	if n.HintName.O == "MAX_EXECUTION_TIME" {
+		ctx.WritePlainf("%d", n.MaxExecutionTime)
+	} else {
+		for i, table := range n.Tables {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteName(table.String())
+		}
+	}
+	ctx.WritePlain(")")
+	return nil
 }
 
 // Accept implements Node Accept interface.
