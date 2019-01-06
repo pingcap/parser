@@ -26,7 +26,8 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/pingcap/tidb/types"
+	"github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestT(t *testing.T) {
@@ -1431,24 +1432,24 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"create table 123 (123a1 int)", false, ""},
 		{fmt.Sprintf("select * from t%cble", 0), false, ""},
 		// for issue 3954, should NOT be recognized as identifiers.
-		{`select .78+123`, true, ""},
-		{`select .78+.21`, true, ""},
-		{`select .78-123`, true, ""},
-		{`select .78-.21`, true, ""},
-		{`select .78--123`, true, ""},
-		{`select .78*123`, true, ""},
-		{`select .78*.21`, true, ""},
-		{`select .78/123`, true, ""},
-		{`select .78/.21`, true, ""},
-		{`select .78,123`, true, ""},
-		{`select .78,.21`, true, ""},
-		{`select .78 , 123`, true, ""},
+		{`select .78+123`, true, "SELECT 0.78+123"},
+		{`select .78+.21`, true, "SELECT 0.78+0.21"},
+		{`select .78-123`, true, "SELECT 0.78-123"},
+		{`select .78-.21`, true, "SELECT 0.78-0.21"},
+		{`select .78--123`, true, "SELECT 0.78--123"},
+		{`select .78*123`, true, "SELECT 0.78*123"},
+		{`select .78*.21`, true, "SELECT 0.78*0.21"},
+		{`select .78/123`, true, "SELECT 0.78/123"},
+		{`select .78/.21`, true, "SELECT 0.78/0.21"},
+		{`select .78,123`, true, "SELECT 0.78,123"},
+		{`select .78,.21`, true, "SELECT 0.78,0.21"},
+		{`select .78 , 123`, true, "SELECT 0.78,123"},
 		{`select .78.123`, false, ""},
-		{`select .78#123`, true, ""}, // select .78
+		{`select .78#123`, true, "SELECT 0.78"}, // select .78
 		{`insert float_test values(.67, 'string');`, true, ""},
-		{`select .78'123'`, true, ""}, // select .78 as '123'
-		{"select .78`123`", true, ""}, // select .78 as `123`
-		{`select .78"123"`, true, ""}, // select .78 as "123"
+		{`select .78'123'`, true, "SELECT 0.78 AS `123`"}, // select .78 as '123'
+		{"select .78`123`", true, "SELECT 0.78 AS `123`"}, // select .78 as `123`
+		{`select .78"123"`, true, "SELECT 0.78 AS `123`"}, // select .78 as "123"
 	}
 	s.RunTest(c, table)
 }
@@ -2879,9 +2880,28 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 		node.FnName.O = strings.ToLower(node.FnName.O)
 	case *ast.AggregateFuncExpr:
 		node.F = strings.ToLower(node.F)
+	case *ast.BinaryOperationExpr:
+		if v, ok := node.L.(*driver.ValueExpr); ok {
+			switch v.Kind() {
+			case types.KindMysqlDecimal:
+				v.GetMysqlDecimal().FromString(v.GetMysqlDecimal().ToString())
+			}
+		}
+		if v, ok := node.R.(*driver.ValueExpr); ok {
+			switch v.Kind() {
+			case types.KindMysqlDecimal:
+				v.GetMysqlDecimal().FromString(v.GetMysqlDecimal().ToString())
+			}
+		}
 	case *ast.FieldList:
 		for _, f := range node.Fields {
 			f.Offset = 0
+			if v, ok := f.Expr.(*driver.ValueExpr); ok {
+				switch v.Kind() {
+				case types.KindMysqlDecimal:
+					v.GetMysqlDecimal().FromString(v.GetMysqlDecimal().ToString())
+				}
+			}
 		}
 	}
 	return in, false
