@@ -293,7 +293,7 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 		}
 		restoreSQLs += restoreSQL
 	}
-	comment = Commentf("fmtsql %v; expect %v", restoreSQLs, expectSQLs)
+	comment = Commentf("restore %v; expect %v", restoreSQLs, expectSQLs)
 	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
 }
 

@@ -140,7 +140,7 @@ func (o Op) Format(w io.Writer) {
 	fmt.Fprintf(w, "%s", opsLiteral[o])
 }
 
-// Restore the Op into a Writer
+// Restore implements Node interface.
 func (o Op) Restore(ctx *fmtsql.RestoreCtx) error {
 	if v, ok := opsLiteral[o]; ok {
 		ctx.WriteKeyWord(v)

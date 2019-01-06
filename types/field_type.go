@@ -196,6 +196,7 @@ func (ft *FieldType) String() string {
 	return strings.Join(strs, " ")
 }
 
+// Restore implements Node interface.
 func (ft *FieldType) Restore(ctx *fmtsql.RestoreCtx) error {
 	ctx.WriteKeyWord(TypeToStr(ft.Tp, ft.Charset))
 
@@ -218,12 +219,14 @@ func (ft *FieldType) Restore(ctx *fmtsql.RestoreCtx) error {
 	switch ft.Tp {
 	case mysql.TypeEnum, mysql.TypeSet:
 		// Format is ENUM ('e1', 'e2') or SET ('e1', 'e2')
-		es := make([]string, 0, len(ft.Elems))
-		for _, e := range ft.Elems {
-			e = format.OutputFormat(e)
-			es = append(es, e)
+		ctx.WritePlain("(")
+		for i, e := range ft.Elems {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteString(e)
 		}
-		ctx.WritePlainf("('%s')", strings.Join(es, "','"))
+		ctx.WritePlain(")")
 	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
 		if isDecimalNotDefault {
 			ctx.WritePlainf("(%d)", displayDecimal)
@@ -255,8 +258,7 @@ func (ft *FieldType) Restore(ctx *fmtsql.RestoreCtx) error {
 
 	if IsTypeChar(ft.Tp) || IsTypeBlob(ft.Tp) {
 		if ft.Charset != "" && ft.Charset != charset.CharsetBin {
-			ctx.WriteKeyWord(" CHARACTER SET ")
-			ctx.WritePlainf("%s", ft.Charset)
+			ctx.WriteKeyWord(" CHARACTER SET " + ft.Charset)
 		}
 		if ft.Collate != "" && ft.Collate != charset.CharsetBin {
 			ctx.WriteKeyWord(" COLLATE ")
