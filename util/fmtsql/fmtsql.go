@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-//RestoreFlag mark the fmtsql format
+//RestoreFlag mark the Restore format
 type RestoreFlags uint64
 
 // Mutually exclusive group of `RestoreFlags`:
