@@ -275,3 +275,57 @@ func (ts *testDDLSuite) TestColumnPositionRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "alter table t add column a varchar(255) %s", extractNodeFunc)
 }
+
+func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ENGINE innodb", "ENGINE = innodb"},
+		{"ENGINE = innodb", "ENGINE = innodb"},
+		{"ENGINE = 'innodb'", "ENGINE = innodb"},
+		{"DEFAULT CHARACTER SET utf8", "DEFAULT CHARACTER SET = UTF8"},
+		{"DEFAULT CHARACTER SET = utf8", "DEFAULT CHARACTER SET = UTF8"},
+		{"DEFAULT CHARSET utf8", "DEFAULT CHARACTER SET = UTF8"},
+		{"DEFAULT CHARSET = utf8", "DEFAULT CHARACTER SET = UTF8"},
+		{"DEFAULT COLLATE utf8_bin", "DEFAULT COLLATE = UTF8_BIN"},
+		{"DEFAULT COLLATE = utf8_bin", "DEFAULT COLLATE = UTF8_BIN"},
+		{"AUTO_INCREMENT 3", "AUTO_INCREMENT = 3"},
+		{"AUTO_INCREMENT = 6", "AUTO_INCREMENT = 6"},
+		{"COMMENT ''", "COMMENT = ''"},
+		{"COMMENT 'system role'", "COMMENT = 'system role'"},
+		{"COMMENT = 'system role'", "COMMENT = 'system role'"},
+		{"AVG_ROW_LENGTH 12", "AVG_ROW_LENGTH = 12"},
+		{"AVG_ROW_LENGTH = 6", "AVG_ROW_LENGTH = 6"},
+		{"connection 'abc'", "CONNECTION = 'abc'"},
+		{"CONNECTION = 'abc'", "CONNECTION = 'abc'"},
+		{"checksum 1", "CHECKSUM = 1"},
+		{"checksum = 0", "CHECKSUM = 0"},
+		{"PASSWORD '123456'", "PASSWORD = '123456'"},
+		{"PASSWORD = ''", "PASSWORD = ''"},
+		{"compression 'NONE'", "COMPRESSION = 'NONE'"},
+		{"compression = 'lz4'", "COMPRESSION = 'lz4'"},
+		{"key_block_size 1024", "KEY_BLOCK_SIZE = 1024"},
+		{"KEY_BLOCK_SIZE = 1024", "KEY_BLOCK_SIZE = 1024"},
+		{"max_rows 1000", "MAX_ROWS = 1000"},
+		{"max_rows = 1000", "MAX_ROWS = 1000"},
+		{"min_rows 1000", "MIN_ROWS = 1000"},
+		{"MIN_ROWS = 1000", "MIN_ROWS = 1000"},
+		{"DELAY_KEY_WRITE 1", "DELAY_KEY_WRITE = 1"},
+		{"DELAY_KEY_WRITE = 1000", "DELAY_KEY_WRITE = 1000"},
+		{"ROW_FORMAT default", "ROW_FORMAT = DEFAULT"},
+		{"ROW_FORMAT = default", "ROW_FORMAT = DEFAULT"},
+		{"ROW_FORMAT = fixed", "ROW_FORMAT = FIXED"},
+		{"ROW_FORMAT = compressed", "ROW_FORMAT = COMPRESSED"},
+		{"ROW_FORMAT = compact", "ROW_FORMAT = COMPACT"},
+		{"ROW_FORMAT = redundant", "ROW_FORMAT = REDUNDANT"},
+		{"ROW_FORMAT = dynamic", "ROW_FORMAT = DYNAMIC"},
+		{"shard_row_id_bits 1", "SHARD_ROW_ID_BITS = 1"},
+		{"shard_row_id_bits = 1", "SHARD_ROW_ID_BITS = 1"},
+		{"CONVERT TO CHARACTER SET utf8", "DEFAULT CHARACTER SET = UTF8"},
+		{"CONVERT TO CHARSET utf8", "DEFAULT CHARACTER SET = UTF8"},
+		{"CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin", "CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
+		{"CONVERT TO CHARSET utf8 COLLATE utf8_bin", "CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*AlterTableStmt).Specs[0]
+	}
+	RunNodeRestoreTest(c, testCases, "ALTER TABLE t %s", extractNodeFunc)
+}

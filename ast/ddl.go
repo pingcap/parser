@@ -1050,6 +1050,102 @@ type TableOption struct {
 	UintValue uint64
 }
 
+func (n *TableOption) Restore(ctx *RestoreCtx) error {
+	switch n.Tp {
+	case TableOptionEngine:
+		ctx.WriteKeyWord("ENGINE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(n.StrValue)
+	case TableOptionCharset:
+		ctx.WriteKeyWord("DEFAULT ")
+		ctx.WriteKeyWord("CHARACTER ")
+		ctx.WriteKeyWord("SET ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord(n.StrValue)
+	case TableOptionCollate:
+		ctx.WriteKeyWord("DEFAULT ")
+		ctx.WriteKeyWord("COLLATE ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord(n.StrValue)
+	case TableOptionAutoIncrement:
+		ctx.WriteKeyWord("AUTO_INCREMENT ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionComment:
+		ctx.WriteKeyWord("COMMENT ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+	case TableOptionAvgRowLength:
+		ctx.WriteKeyWord("AVG_ROW_LENGTH ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionCheckSum:
+		ctx.WriteKeyWord("CHECKSUM ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionCompression:
+		ctx.WriteKeyWord("COMPRESSION ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+	case TableOptionConnection:
+		ctx.WriteKeyWord("CONNECTION ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+	case TableOptionPassword:
+		ctx.WriteKeyWord("PASSWORD ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+	case TableOptionKeyBlockSize:
+		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionMaxRows:
+		ctx.WriteKeyWord("MAX_ROWS ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionMinRows:
+		ctx.WriteKeyWord("MIN_ROWS ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionDelayKeyWrite:
+		ctx.WriteKeyWord("DELAY_KEY_WRITE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionRowFormat:
+		ctx.WriteKeyWord("ROW_FORMAT ")
+		ctx.WritePlain("= ")
+		switch n.UintValue {
+		case RowFormatDefault:
+			ctx.WriteKeyWord("DEFAULT")
+		case RowFormatDynamic:
+			ctx.WriteKeyWord("DYNAMIC")
+		case RowFormatFixed:
+			ctx.WriteKeyWord("FIXED")
+		case RowFormatCompressed:
+			ctx.WriteKeyWord("COMPRESSED")
+		case RowFormatRedundant:
+			ctx.WriteKeyWord("REDUNDANT")
+		case RowFormatCompact:
+			ctx.WriteKeyWord("COMPACT")
+		default:
+			return errors.Errorf("invalid TableOption: TableOptionRowFormat: %d", n.UintValue)
+		}
+	case TableOptionStatsPersistent:
+		// TODO: not support
+		ctx.WritePlain(" /* TableOptionStatsPersistent not support */ ")
+	case TableOptionShardRowID:
+		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(fmt.Sprint(n.UintValue))
+	case TableOptionPackKeys:
+		// TODO: not support
+		ctx.WritePlain(" /* TableOptionPackKeys not support */ ")
+	default:
+		return errors.Errorf("invalid TableOption: %d", n.Tp)
+	}
+	return nil
+}
+
 // ColumnPositionType is the type for ColumnPosition.
 type ColumnPositionType int
 
@@ -1166,6 +1262,31 @@ type AlterTableSpec struct {
 
 // Restore implements Node interface.
 func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
+	switch n.Tp {
+	case AlterTableOption:
+		switch {
+		case len(n.Options) == 2 &&
+			n.Options[0].Tp == TableOptionCharset &&
+			n.Options[1].Tp == TableOptionCollate:
+			ctx.WriteKeyWord("CONVERT ")
+			ctx.WriteKeyWord("TO ")
+			ctx.WriteKeyWord("CHARACTER ")
+			ctx.WriteKeyWord("SET ")
+			ctx.WriteKeyWord(n.Options[0].StrValue)
+			ctx.WriteKeyWord(" COLLATE ")
+			ctx.WriteKeyWord(n.Options[1].StrValue)
+		default:
+			for i, opt := range n.Options {
+				if i != 0 {
+					ctx.WritePlain(", ")
+				}
+				if err := opt.Restore(ctx); err != nil {
+					return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.Options[%d]", i))
+				}
+			}
+		}
+		return nil
+	}
 	return errors.New("Not implemented")
 }
 
