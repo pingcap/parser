@@ -7420,10 +7420,6 @@ PrivType:
 	{
 		$$ = mysql.GrantPriv
 	}
-|	"SHOW" "CREATE" "USER"
-        {
-                $$ = mysql.PrivilegeType(0)
-        }
 |	"REFERENCES"
 	{
 		$$ = mysql.ReferencesPriv
