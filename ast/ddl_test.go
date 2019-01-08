@@ -219,6 +219,13 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id year", "`id` YEAR"},
 		{"id INT", "`id` INT"},
 		{"id INT NULL", "`id` INT NULL"},
+		{"id enum('a','b')", "`id` ENUM('a','b')"},
+		{"id enum('''a''','''b''')", "`id` ENUM('''a''','''b''')"},
+		{"id enum('a\\nb','a\\tb','a\\rb')", "`id` ENUM('a\nb','a\tb','a\rb')"},
+		{"id set('a','b')", "`id` SET('a','b')"},
+		{"id set('''a''','''b''')", "`id` SET('''a''','''b''')"},
+		{"id set('a\\nb','a''	\\r\\nb','a\\rb')", "`id` SET('a\nb','a''	\r\nb','a\rb')"},
+		{`id set("a'\nb","a'b\tc")`, "`id` SET('a''\nb','a''b\tc')"},
 
 		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
 		{"id int(11) NOT NULL", "`id` INT(11) NOT NULL"},

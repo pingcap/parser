@@ -199,25 +199,8 @@ func (ft *FieldType) String() string {
 func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(TypeToStr(ft.Tp, ft.Charset))
 
-	if ft.Flen == -1 {
-		return nil
-	}
-
-	defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
-	isDecimalNotDefault := ft.Decimal != defaultDecimal && ft.Decimal != 0 && ft.Decimal != UnspecifiedLength
-
-	// displayFlen and displayDecimal are flen and decimal values with `-1` substituted with default value.
-	displayFlen, displayDecimal := ft.Flen, ft.Decimal
-	if displayFlen == 0 || displayFlen == UnspecifiedLength {
-		displayFlen = defaultFlen
-	}
-	if displayDecimal == 0 || displayDecimal == UnspecifiedLength {
-		displayDecimal = defaultDecimal
-	}
-
 	switch ft.Tp {
 	case mysql.TypeEnum, mysql.TypeSet:
-		// Format is ENUM ('e1', 'e2') or SET ('e1', 'e2')
 		ctx.WritePlain("(")
 		for i, e := range ft.Elems {
 			if i != 0 {
@@ -227,22 +210,21 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 		}
 		ctx.WritePlain(")")
 	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
-		if isDecimalNotDefault {
-			ctx.WritePlainf("(%d)", displayDecimal)
+		if ft.Flen > 0 && ft.Decimal > 0 {
+			ctx.WritePlainf("(%d)", ft.Decimal)
 		}
 	case mysql.TypeDouble, mysql.TypeFloat:
-		// 1. Flen Not Default, Decimal Not Default -> Valid
-		// 2. Flen Not Default, Decimal Default (-1) -> Invalid
-		// 3. Flen Default, Decimal Not Default -> Valid
-		// 4. Flen Default, Decimal Default -> Valid (hide)
-		if isDecimalNotDefault {
-			ctx.WritePlainf("(%d,%d)", displayFlen, displayDecimal)
+		if ft.Flen > 0 && ft.Decimal > 0 {
+			ctx.WritePlainf("(%d,%d)", ft.Flen, ft.Decimal)
 		}
 	case mysql.TypeNewDecimal:
-		ctx.WritePlainf("(%d,%d)", displayFlen, displayDecimal)
+		if ft.Flen > 0 && ft.Decimal > 0 {
+			ctx.WritePlainf("(%d,%d)", ft.Flen, ft.Decimal)
+		}
 	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
-		// Flen is always shown.
-		ctx.WritePlainf("(%d)", displayFlen)
+		if ft.Flen > 0 {
+			ctx.WritePlainf("(%d)", ft.Flen)
+		}
 	}
 
 	if mysql.HasUnsignedFlag(ft.Flag) {
