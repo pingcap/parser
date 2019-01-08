@@ -719,7 +719,7 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// DropBindingStmt creates sql binding hint.
+// DropBindingStmt deletes sql binding hint.
 type DropBindingStmt struct {
 	stmtNode
 

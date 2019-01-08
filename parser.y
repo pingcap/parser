@@ -583,7 +583,7 @@ import (
 	DropTableStmt			"DROP TABLE statement"
 	DropUserStmt			"DROP USER"
 	DropViewStmt			"DROP VIEW statement"
-	DropBindingStmt		    "DROP BINDING  statement"
+	DropBindingStmt		    	"DROP BINDING  statement"
 	DeallocateStmt			"Deallocate prepared statement"
 	DeleteFromStmt			"DELETE FROM statement"
 	EmptyStmt			"empty statement"
@@ -7306,12 +7306,12 @@ HashString:
  *      CREATE GLOBAL BINDING FOR select Col1,Col2 from table USING select Col1,Col2 from table use index(Col1)
  *******************************************************************/
 CreateBindingStmt:
-    "CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
-    {
+	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
+    	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
-        endOffset := parser.startOffset(&yyS[yypt-1])
-        selStmt := $5.(*ast.SelectStmt)
-        selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+        	endOffset := parser.startOffset(&yyS[yypt-1])
+        	selStmt := $5.(*ast.SelectStmt)
+        	selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
 		hintedSelStmt := $7.(*ast.SelectStmt)
@@ -7333,8 +7333,8 @@ CreateBindingStmt:
  *      DROP GLOBAL BINDING FOR select Col1,Col2 from table
  *******************************************************************/
 DropBindingStmt:
-    "DROP" GlobalScope "BINDING" "FOR" SelectStmt
-    {
+	"DROP" GlobalScope "BINDING" "FOR" SelectStmt
+	{
 		startOffset := parser.startOffset(&yyS[yypt])
 		selStmt := $5.(*ast.SelectStmt)
 		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
