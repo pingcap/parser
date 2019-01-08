@@ -182,7 +182,8 @@ type TableName struct {
 	DBInfo    *model.DBInfo
 	TableInfo *model.TableInfo
 
-	IndexHints []*IndexHint
+	IndexHints     []*IndexHint
+	PartitionNames []model.CIStr
 }
 
 // Restore implements Node interface.
