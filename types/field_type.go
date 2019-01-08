@@ -195,6 +195,79 @@ func (ft *FieldType) String() string {
 	return strings.Join(strs, " ")
 }
 
+// Restore implements Node interface.
+func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord(TypeToStr(ft.Tp, ft.Charset))
+
+	if ft.Flen == -1 {
+		return nil
+	}
+
+	defaultFlen, defaultDecimal := mysql.GetDefaultFieldLengthAndDecimal(ft.Tp)
+	isDecimalNotDefault := ft.Decimal != defaultDecimal && ft.Decimal != 0 && ft.Decimal != UnspecifiedLength
+
+	// displayFlen and displayDecimal are flen and decimal values with `-1` substituted with default value.
+	displayFlen, displayDecimal := ft.Flen, ft.Decimal
+	if displayFlen == 0 || displayFlen == UnspecifiedLength {
+		displayFlen = defaultFlen
+	}
+	if displayDecimal == 0 || displayDecimal == UnspecifiedLength {
+		displayDecimal = defaultDecimal
+	}
+
+	switch ft.Tp {
+	case mysql.TypeEnum, mysql.TypeSet:
+		// Format is ENUM ('e1', 'e2') or SET ('e1', 'e2')
+		ctx.WritePlain("(")
+		for i, e := range ft.Elems {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteString(e)
+		}
+		ctx.WritePlain(")")
+	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
+		if isDecimalNotDefault {
+			ctx.WritePlainf("(%d)", displayDecimal)
+		}
+	case mysql.TypeDouble, mysql.TypeFloat:
+		// 1. Flen Not Default, Decimal Not Default -> Valid
+		// 2. Flen Not Default, Decimal Default (-1) -> Invalid
+		// 3. Flen Default, Decimal Not Default -> Valid
+		// 4. Flen Default, Decimal Default -> Valid (hide)
+		if isDecimalNotDefault {
+			ctx.WritePlainf("(%d,%d)", displayFlen, displayDecimal)
+		}
+	case mysql.TypeNewDecimal:
+		ctx.WritePlainf("(%d,%d)", displayFlen, displayDecimal)
+	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
+		// Flen is always shown.
+		ctx.WritePlainf("(%d)", displayFlen)
+	}
+
+	if mysql.HasUnsignedFlag(ft.Flag) {
+		ctx.WriteKeyWord(" UNSIGNED")
+	}
+	if mysql.HasZerofillFlag(ft.Flag) {
+		ctx.WriteKeyWord(" ZEROFILL")
+	}
+	if mysql.HasBinaryFlag(ft.Flag) && ft.Tp != mysql.TypeString {
+		ctx.WriteKeyWord(" BINARY")
+	}
+
+	if IsTypeChar(ft.Tp) || IsTypeBlob(ft.Tp) {
+		if ft.Charset != "" && ft.Charset != charset.CharsetBin {
+			ctx.WriteKeyWord(" CHARACTER SET " + ft.Charset)
+		}
+		if ft.Collate != "" && ft.Collate != charset.CharsetBin {
+			ctx.WriteKeyWord(" COLLATE ")
+			ctx.WritePlain(ft.Collate)
+		}
+	}
+
+	return nil
+}
+
 // FormatAsCastType is used for write AST back to string.
 func (ft *FieldType) FormatAsCastType(w io.Writer) {
 	switch ft.Tp {

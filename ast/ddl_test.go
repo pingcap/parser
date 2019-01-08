@@ -164,6 +164,81 @@ func (ts *testDDLSuite) TestDDLConstraintRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, %s)", extractNodeFunc)
 }
 
+func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"primary key", "PRIMARY KEY"},
+		{"not null", "NOT NULL"},
+		{"null", "NULL"},
+		{"auto_increment", "AUTO_INCREMENT"},
+		{"DEFAULT 10", "DEFAULT 10"},
+		{"DEFAULT '10'", "DEFAULT '10'"},
+		{"DEFAULT 'hello'", "DEFAULT 'hello'"},
+		{"DEFAULT 1.1", "DEFAULT 1.1"},
+		{"DEFAULT NULL", "DEFAULT NULL"},
+		{"DEFAULT ''", "DEFAULT ''"},
+		{"DEFAULT TRUE", "DEFAULT TRUE"},
+		{"DEFAULT FALSE", "DEFAULT FALSE"},
+		{"UNIQUE KEY", "UNIQUE KEY"},
+		{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP()"},
+		{"comment 'hello'", "COMMENT 'hello'"},
+		{"generated always as(id + 1)", "GENERATED ALWAYS AS(`id`+1)"},
+		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Cols[0].Options[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT %s)", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		// for type
+		{"id json", "`id` JSON"},
+		{"id time(5)", "`id` TIME(5)"},
+		{"id int(5) unsigned", "`id` INT(5) UNSIGNED"},
+		{"id int(5) UNSIGNED ZEROFILL", "`id` INT(5) UNSIGNED ZEROFILL"},
+		{"id float(12,3)", "`id` FLOAT(12,3)"},
+		{"id float", "`id` FLOAT"},
+		{"id double(22,3)", "`id` DOUBLE(22,3)"},
+		{"id double", "`id` DOUBLE"},
+		{"id tinyint(4)", "`id` TINYINT(4)"},
+		{"id smallint(6)", "`id` SMALLINT(6)"},
+		{"id mediumint(9)", "`id` MEDIUMINT(9)"},
+		{"id integer(11)", "`id` INT(11)"},
+		{"id bigint(20)", "`id` BIGINT(20)"},
+		{"id DATE", "`id` DATE"},
+		{"id DATETIME", "`id` DATETIME"},
+		{"id DECIMAL(4,2)", "`id` DECIMAL(4,2)"},
+		{"id char(1)", "`id` CHAR(1)"},
+		{"id varchar(10) BINARY", "`id` VARCHAR(10) BINARY"},
+		{"id binary(1)", "`id` BINARY(1)"},
+		{"id timestamp(2)", "`id` TIMESTAMP(2)"},
+		{"id timestamp", "`id` TIMESTAMP"},
+		{"id datetime(2)", "`id` DATETIME(2)"},
+		{"id date", "`id` DATE"},
+		{"id year", "`id` YEAR"},
+		{"id INT", "`id` INT"},
+		{"id INT NULL", "`id` INT NULL"},
+
+		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
+		{"id int(11) NOT NULL", "`id` INT(11) NOT NULL"},
+		{"id INT(11) NULL", "`id` INT(11) NULL"},
+		{"id INT(11) auto_increment", "`id` INT(11) AUTO_INCREMENT"},
+		{"id INT(11) DEFAULT 10", "`id` INT(11) DEFAULT 10"},
+		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
+		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
+		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
+		{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP()"},
+		{"id INT(11) comment 'hello'", "`id` INT(11) COMMENT 'hello'"},
+		{"id INT(11) generated always as(id + 1)", "`id` INT(11) GENERATED ALWAYS AS(`id`+1)"},
+		{"id INT(11) REFERENCES parent(id)", "`id` INT(11) REFERENCES `parent`(`id`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateTableStmt).Cols[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE t (%s)", extractNodeFunc)
+}
+
 func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"truncate t1", "TRUNCATE TABLE `t1`"},
