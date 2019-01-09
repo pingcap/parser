@@ -226,6 +226,12 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id set('''a''','''b''')", "`id` SET('''a''','''b''')"},
 		{"id set('a\\nb','a''	\\r\\nb','a\\rb')", "`id` SET('a\nb','a''	\r\nb','a\rb')"},
 		{`id set("a'\nb","a'b\tc")`, "`id` SET('a''\nb','a''b\tc')"},
+		{"id TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_G", "`id` TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_G"},
+		{"id text character set UTF8", "`id` TEXT CHARACTER SET UTF8"},
+		{"id text charset UTF8", "`id` TEXT CHARACTER SET UTF8"},
+		{"id varchar(50) collate UTF8MB4_CZECH_CI", "`id` VARCHAR(50) COLLATE UTF8MB4_CZECH_CI"},
+		{"id varchar(50) collate utf8", "`id` VARCHAR(50) COLLATE utf8"},
+		{"c1 char(10) character set LATIN1 collate latin1_german1_ci", "`c1` CHAR(10) CHARACTER SET LATIN1 COLLATE latin1_german1_ci"},
 
 		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
 		{"id int(11) NOT NULL", "`id` INT(11) NOT NULL"},
