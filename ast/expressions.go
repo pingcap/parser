@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/errors"
+	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/opcode"
 )
@@ -157,7 +158,7 @@ func (n *BinaryOperationExpr) Restore(ctx *RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.L")
 	}
-	if err := n.Op.Restore(ctx.In); err != nil {
+	if err := n.Op.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.Op")
 	}
 	if err := n.R.Restore(ctx); err != nil {
@@ -1070,7 +1071,7 @@ type UnaryOperationExpr struct {
 
 // Restore implements Node interface.
 func (n *UnaryOperationExpr) Restore(ctx *RestoreCtx) error {
-	if err := n.Op.Restore(ctx.In); err != nil {
+	if err := n.Op.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	if err := n.V.Restore(ctx); err != nil {
