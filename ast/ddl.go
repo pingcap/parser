@@ -23,6 +23,7 @@ import (
 
 var (
 	_ DDLNode = &AlterTableStmt{}
+	_ DDLNode = &AlterDatabaseStmt{}
 	_ DDLNode = &CreateDatabaseStmt{}
 	_ DDLNode = &CreateIndexStmt{}
 	_ DDLNode = &CreateTableStmt{}
@@ -115,6 +116,43 @@ func (n *CreateDatabaseStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateDatabaseStmt)
+	return v.Leave(n)
+}
+
+// AlterDatabaseStmt is a statement to alter a database.
+// See https://dev.mysql.com/doc/refman/5.7/en/alter-database.html
+type AlterDatabaseStmt struct {
+	ddlNode
+
+	IfExists bool
+	Name     string
+	Options  []*DatabaseOption
+}
+
+// Restore implements Node interface.
+func (n *AlterDatabaseStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("ALTER DATABASE ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.Name)
+	for _, option := range n.Options {
+		ctx.WritePlain(" ")
+		err := option.Restore(ctx)
+		if err != nil {
+			return errors.Trace(err)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *AlterDatabaseStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AlterDatabaseStmt)
 	return v.Leave(n)
 }
 

@@ -563,6 +563,7 @@ import (
 %type	<statement>
 	AdminStmt			"Check table statement or show ddl statement"
 	AlterTableStmt			"Alter table statement"
+	AlterDatabaseStmt               "Alter database statement"
 	AlterUserStmt			"Alter user statement"
 	AnalyzeTableStmt		"Analyze table statement"
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
@@ -1825,6 +1826,25 @@ IndexColNameList:
 	}
 
 
+/*******************************************************************
+ *
+ *  Alter Database Statement
+ *  ALTER {DATABASE | SCHEMA} [IF NOT EXISTS] db_name
+ *      [alter_specification] ...
+ *
+ *  alter_specification:
+ *      [DEFAULT] CHARACTER SET [=] charset_name
+ *    | [DEFAULT] COLLATE [=] collation_name
+ *******************************************************************/
+AlterDatabaseStmt:
+	"ALTER" DatabaseSym IfExists DBName DatabaseOptionList
+	{
+		$$ = &ast.AlterDatabaseStmt{
+			IfExists: $3.(bool),
+			Name:     $4.(string),
+			Options:  $5.([]*ast.DatabaseOption),
+		}
+	}
 
 /*******************************************************************
  *
@@ -5908,13 +5928,13 @@ ShowStmt:
 		}
 	}
 |	"SHOW" "CREATE" "USER" Username
-        {
-                // See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
-                $$ = &ast.ShowStmt{
-                        Tp:	ast.ShowCreateUser,
-                        User:	$4.(*auth.UserIdentity),
-                }
-        }
+	{
+		// See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
+		$$ = &ast.ShowStmt{
+			Tp:    ast.ShowCreateUser,
+			User:  $4.(*auth.UserIdentity),
+		}
+	}
 |	"SHOW" "GRANTS"
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
@@ -6263,6 +6283,7 @@ Statement:
 	EmptyStmt
 |	AdminStmt
 |	AlterTableStmt
+|	AlterDatabaseStmt
 |	AlterUserStmt
 |	AnalyzeTableStmt
 |	BeginTransactionStmt
