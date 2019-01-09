@@ -482,6 +482,7 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
+	restore		"RESTORE"
 
 	builtinAddDate
 	builtinBitAnd
@@ -599,7 +600,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
-	ShowStmt			"Show engines/databases/tables/columns/warnings/status statement"
+	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
 	TraceableStmt			"traceable statment"
@@ -2996,7 +2997,7 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ"
+"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -5775,6 +5776,13 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
+|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NumList
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			JobIDs: $6.([]int64),
+		}
+	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
 	{
 		$$ = &ast.AdminStmt{
@@ -5911,6 +5919,14 @@ ShowStmt:
 			DBName:	$5.(string),
 		}
 	}
+|	"SHOW" "CREATE" "USER" Username
+        {
+                // See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
+                $$ = &ast.ShowStmt{
+                        Tp:	ast.ShowCreateUser,
+                        User:	$4.(*auth.UserIdentity),
+                }
+        }
 |	"SHOW" "GRANTS"
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
