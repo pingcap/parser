@@ -22,7 +22,6 @@ Code changes
  - Has exported function/method change
  - Has exported variable/fields change
  - Has interface methods change
- - Has persistent data change
 
 Side effects
 
