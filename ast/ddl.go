@@ -675,7 +675,60 @@ type CreateTableStmt struct {
 
 // Restore implements Node interface.
 func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE TABLE ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
+
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Table")
+	}
+	if n.ReferTable != nil {
+		ctx.WriteKeyWord("LIKE ")
+		if err := n.ReferTable.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt ReferTable")
+		}
+	}
+
+	ctx.WritePlain("(")
+	for i, col := range n.Cols {
+		if i > 0 {
+			ctx.WritePlain(" ")
+		}
+		if err := col.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt ColumnDef: [%v]", i)
+		}
+	}
+	for i, constraint := range n.Constraints {
+		if i > 0 {
+			ctx.WritePlain(",")
+		}
+		if err := constraint.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt Constraints: [%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+
+	for i, option := range n.Options {
+		if i > 0 {
+			ctx.WritePlain(" ")
+		}
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt TableOption: [%v]", i)
+		}
+	}
+
+	if n.Partition != nil {
+		if err := n.Partition.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Partition")
+		}
+	}
+
+	//TODO: Waiting for Create Select
+	//TODO: OnDuplicate
+	//TODO: Select
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1048,6 +1101,67 @@ type TableOption struct {
 	UintValue uint64
 }
 
+func (n *TableOption) Restore(ctx *RestoreCtx) error {
+	switch n.Tp {
+	case TableOptionNone:
+		return nil
+	case TableOptionEngine:
+		ctx.WriteKeyWord("ENGINE = ")
+		ctx.WriteString(n.StrValue)
+	case TableOptionCharset:
+		ctx.WriteKeyWord("DEFAULT CHARACTER SET ")
+		ctx.WriteString(n.StrValue)
+	case TableOptionCollate:
+		ctx.WriteKeyWord("DEFAULT COLLATE")
+		ctx.WriteString(n.StrValue)
+	case TableOptionAutoIncrement:
+		ctx.WriteKeyWord("AUTO_INCREMENT ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionComment:
+		ctx.WriteKeyWord("COMMENT ")
+		ctx.WritePlain(n.StrValue)
+	case TableOptionAvgRowLength:
+		ctx.WriteKeyWord("AVG_ROW_LENGTH ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionConnection:
+		ctx.WriteKeyWord("CONNECTION ")
+		ctx.WritePlain(n.StrValue)
+	case TableOptionCheckSum:
+		ctx.WriteKeyWord("CHECKSUM ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionPassword:
+		ctx.WriteKeyWord("PASSWORD ")
+		ctx.WritePlain(n.StrValue)
+	case TableOptionCompression:
+		ctx.WriteKeyWord("COMPRESSION ")
+		ctx.WritePlain(n.StrValue)
+	case TableOptionKeyBlockSize:
+		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionMaxRows:
+		ctx.WriteKeyWord("MAX_ROWS ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionMinRows:
+		ctx.WriteKeyWord("MIN_ROWS ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionDelayKeyWrite:
+		ctx.WriteKeyWord("DELAY_KEY_WRITE ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionRowFormat:
+		ctx.WriteKeyWord("ROW_FORMAT ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionStatsPersistent:
+		ctx.WriteKeyWord("STATS_PERSISTENT")
+	case TableOptionShardRowID:
+		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionPackKeys:
+		return errors.New("TiDB Parser ignore the `TableOptionPackKeys` type now")
+	}
+
+	return nil
+}
+
 // ColumnPositionType is the type for ColumnPosition.
 type ColumnPositionType int
 
@@ -1288,6 +1402,24 @@ type PartitionDefinition struct {
 	Comment  string
 }
 
+func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("PARTITION ")
+	ctx.WriteName(n.Name.String())
+	for i, lessThan := range n.LessThan {
+		if i > 0 {
+			ctx.WritePlain(" ")
+		}
+		if err := lessThan.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
+		}
+	}
+	//if n.MaxValue {
+	//
+	//}
+	ctx.WritePlain(n.Comment)
+	return nil
+}
+
 // PartitionOptions specifies the partition options.
 type PartitionOptions struct {
 	Tp          model.PartitionType
@@ -1295,4 +1427,39 @@ type PartitionOptions struct {
 	ColumnNames []*ColumnName
 	Definitions []*PartitionDefinition
 	Num         uint64
+}
+
+func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
+	switch n.Tp {
+	case model.PartitionTypeRange:
+		ctx.WriteKeyWord("RANGE")
+	case model.PartitionTypeHash:
+		ctx.WriteKeyWord("HASH")
+	case model.PartitionTypeList:
+		return errors.New("TiDB Parser ignore the `PartitionTypeList` type now")
+	default:
+		return errors.New("")
+	}
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore PartitionOptions Expr")
+	}
+	for i, col := range n.ColumnNames {
+		if i > 0 {
+			ctx.WritePlain(",")
+		}
+		if err := col.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing PartitionOptions ColumnName: [%v]", i)
+		}
+	}
+	ctx.WritePlainf("%d", n.Num)
+	for i, def := range n.Definitions {
+		if i > 0 {
+			ctx.WritePlain(",")
+		}
+		if err := def.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing PartitionOptions Definitions: [%v]", i)
+		}
+	}
+
+	return nil
 }

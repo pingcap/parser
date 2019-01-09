@@ -1456,7 +1456,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (", false, ""},
 		{"CREATE TABLE foo ()", false, ""},
 		{"CREATE TABLE foo ();", false, ""},
-		{"CREATE TABLE foo (a TINYINT UNSIGNED);", true, ""},
+		{"CREATE TABLE foo (a TINYINT UNSIGNED);", true, "CREATE TABLE `foo`(`a` TINYINT UNSIGNED)"},
 		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, ""},
 		{"CREATE TABLE foo (a bigint unsigned, b bool);", true, ""},
 		{"CREATE TABLE foo (a TINYINT, b SMALLINT) CREATE TABLE bar (x INT, y int64)", false, ""},
