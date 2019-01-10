@@ -1094,7 +1094,7 @@ func (n *InsertStmt) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore InsertStmt.Select")
 			}
 		default:
-			errors.Errorf("Incorrect type for InsertStmt.Select: %T", v)
+			return errors.Errorf("Incorrect type for InsertStmt.Select: %T", v)
 		}
 	}
 	if n.Setlist != nil {
