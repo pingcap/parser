@@ -1075,7 +1075,7 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionComment:
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
+		ctx.WriteString(n.StrValue)
 	case TableOptionAvgRowLength:
 		ctx.WriteKeyWord("AVG_ROW_LENGTH ")
 		ctx.WritePlain("= ")
@@ -1087,15 +1087,15 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionCompression:
 		ctx.WriteKeyWord("COMPRESSION ")
 		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
+		ctx.WriteString(n.StrValue)
 	case TableOptionConnection:
 		ctx.WriteKeyWord("CONNECTION ")
 		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
+		ctx.WriteString(n.StrValue)
 	case TableOptionPassword:
 		ctx.WriteKeyWord("PASSWORD ")
 		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
+		ctx.WriteString(n.StrValue)
 	case TableOptionKeyBlockSize:
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
 		ctx.WritePlain("= ")
