@@ -683,6 +683,7 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Table")
 	}
+	ctx.WritePlain(" ")
 	if n.ReferTable != nil {
 		ctx.WriteKeyWord("LIKE ")
 		if err := n.ReferTable.Restore(ctx); err != nil {
@@ -690,40 +691,41 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	ctx.WritePlain("(")
-	for i, col := range n.Cols {
-		if i > 0 {
-			ctx.WritePlain(" ")
+	if len(n.Cols) > 0 {
+		ctx.WritePlain("(")
+		for i, col := range n.Cols {
+			if i > 0 {
+				ctx.WritePlain(",")
+			}
+			if err := col.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt ColumnDef: [%v]", i)
+			}
 		}
-		if err := col.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt ColumnDef: [%v]", i)
+		for i, constraint := range n.Constraints {
+			if i > 0 {
+				ctx.WritePlain(",")
+			}
+			if err := constraint.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt Constraints: [%v]", i)
+			}
 		}
+		ctx.WritePlain(")")
 	}
-	for i, constraint := range n.Constraints {
-		if i > 0 {
-			ctx.WritePlain(",")
-		}
-		if err := constraint.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt Constraints: [%v]", i)
-		}
-	}
-	ctx.WritePlain(")")
 
 	for i, option := range n.Options {
-		if i > 0 {
-			ctx.WritePlain(" ")
-		}
+		ctx.WritePlain(" ")
 		if err := option.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while splicing CreateTableStmt TableOption: [%v]", i)
 		}
 	}
 
 	if n.Partition != nil {
+		ctx.WritePlain(" ")
 		if err := n.Partition.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Partition")
 		}
 	}
-
+	ctx.WritePlain(";")
 	//TODO: Waiting for Create Select
 	//TODO: OnDuplicate
 	//TODO: Select
@@ -1109,10 +1111,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ENGINE = ")
 		ctx.WriteString(n.StrValue)
 	case TableOptionCharset:
-		ctx.WriteKeyWord("DEFAULT CHARACTER SET ")
+		ctx.WriteKeyWord("CHARACTER SET ")
 		ctx.WriteString(n.StrValue)
 	case TableOptionCollate:
-		ctx.WriteKeyWord("DEFAULT COLLATE")
+		ctx.WriteKeyWord("COLLATE")
 		ctx.WriteString(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
@@ -1430,19 +1432,24 @@ type PartitionOptions struct {
 }
 
 func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("PARTITION BY ")
 	switch n.Tp {
 	case model.PartitionTypeRange:
-		ctx.WriteKeyWord("RANGE")
+		ctx.WriteKeyWord("RANGE ")
 	case model.PartitionTypeHash:
-		ctx.WriteKeyWord("HASH")
+		ctx.WriteKeyWord("HASH ")
 	case model.PartitionTypeList:
 		return errors.New("TiDB Parser ignore the `PartitionTypeList` type now")
 	default:
-		return errors.New("")
+		return errors.New(" ")
 	}
+
+	ctx.WritePlain("(")
 	if err := n.Expr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PartitionOptions Expr")
 	}
+	ctx.WritePlain(") ")
+
 	for i, col := range n.ColumnNames {
 		if i > 0 {
 			ctx.WritePlain(",")
@@ -1451,7 +1458,12 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while splicing PartitionOptions ColumnName: [%v]", i)
 		}
 	}
-	ctx.WritePlainf("%d", n.Num)
+
+	if n.Num > 0 {
+		ctx.WriteKeyWord("PARTITIONS ")
+		ctx.WritePlainf("%d", n.Num)
+	}
+
 	for i, def := range n.Definitions {
 		if i > 0 {
 			ctx.WritePlain(",")

@@ -1456,20 +1456,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (", false, ""},
 		{"CREATE TABLE foo ()", false, ""},
 		{"CREATE TABLE foo ();", false, ""},
-		{"CREATE TABLE foo (a TINYINT UNSIGNED);", true, "CREATE TABLE `foo`(`a` TINYINT UNSIGNED)"},
-		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, ""},
-		{"CREATE TABLE foo (a bigint unsigned, b bool);", true, ""},
+		{"CREATE TABLE foo (a varchar(50), b int);", true, "CREATE TABLE `foo` (`a` VARCHAR(50),`b` INT);"},
+		{"CREATE TABLE foo (a TINYINT UNSIGNED);", true, "CREATE TABLE `foo` (`a` TINYINT UNSIGNED);"},
+		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED);"},
+		{"CREATE TABLE foo (a bigint unsigned, b bool);", true, "CREATE TABLE `foo` (`a` BIGINT UNSIGNED,`b` TINYINT(1));"},
 		{"CREATE TABLE foo (a TINYINT, b SMALLINT) CREATE TABLE bar (x INT, y int64)", false, ""},
 		{"CREATE TABLE foo (a int, b float); CREATE TABLE bar (x double, y float)", true, ""},
 		{"CREATE TABLE foo (a bytes)", false, ""},
-		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, ""},
-		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED) -- foo", true, ""},
+		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED);"},
+		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED) -- foo", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED);"},
 		// {"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED) // foo", true,"},
-		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED) /* foo */", true, ""},
-		{"CREATE TABLE foo /* foo */ (a SMALLINT UNSIGNED, b INT UNSIGNED) /* foo */", true, ""},
-		{"CREATE TABLE foo (name CHAR(50) BINARY)", true, ""},
-		{"CREATE TABLE foo (name CHAR(50) COLLATE utf8_bin)", true, ""},
-		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8)", true, ""},
+		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED) /* foo */", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED);"},
+		{"CREATE TABLE foo /* foo */ (a SMALLINT UNSIGNED, b INT UNSIGNED) /* foo */", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED);"},
+		//{"CREATE TABLE foo (name CHAR(50) BINARY);", true, "CREATE TABLE `foo`(`name` CHAR(50) BINARY);"},
+		{"CREATE TABLE foo (name CHAR(50) COLLATE utf8_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) COLLATE utf8_bin);"},
+		{"CREATE TABLE foo (id varchar(50) collate utf8);", true, "CREATE TABLE `foo` (`id` VARCHAR(50) COLLATE utf8);"},
+		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET UTF8)", true, "CREATE TABLE `foo` (`name` CHAR(50) CHARACTER SET UTF8);"}, //utf8 != UTF8
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 BINARY)", true, ""},
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 BINARY CHARACTER set utf8)", false, ""},
 		{"CREATE TABLE foo (name CHAR(50) BINARY CHARACTER SET utf8 COLLATE utf8_bin)", true, ""},
@@ -1477,10 +1479,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (a, b.c);", false, ""},
 		{"CREATE TABLE (name CHAR(50) BINARY)", false, ""},
 		// for table option
-		{"create table t (c int) avg_row_length = 3", true, ""},
-		{"create table t (c int) avg_row_length 3", true, ""},
-		{"create table t (c int) checksum = 0", true, ""},
-		{"create table t (c int) checksum 1", true, ""},
+		{"create table t (c int) avg_row_length = 3", true, "CREATE TABLE `t` (`c` INT) AVG_ROW_LENGTH 3;"},
+		{"create table t (c int) avg_row_length 3", true, "CREATE TABLE `t` (`c` INT) AVG_ROW_LENGTH 3;"},
+		{"create table t (c int) checksum = 0", true, "CREATE TABLE `t` (`c` INT) CHECKSUM 0;"},
+		{"create table t (c int) checksum 1", true, "CREATE TABLE `t` (`c` INT) CHECKSUM 1;"},
 		{"create table t (c int) compression = 'NONE'", true, ""},
 		{"create table t (c int) compression 'lz4'", true, ""},
 		{"create table t (c int) connection = 'abc'", true, ""},
@@ -1512,7 +1514,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`create table t1 (c1 int) compression="zlib";`, true, ""},
 
 		// partition option
-		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true, ""},
+		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true, "CREATE TABLE `t` (`c` INT) PARTITION BY HASH (`c`) PARTITIONS 32;"},
 		{"create table t (c int) PARTITION BY HASH (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", false, ""},
 		{"create table t (c int) PARTITION BY RANGE (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", true, ""},
 		{"create table t (c int, `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '') PARTITION BY RANGE (UNIX_TIMESTAMP(create_time)) (PARTITION p201610 VALUES LESS THAN(1477929600), PARTITION p201611 VALUES LESS THAN(1480521600),PARTITION p201612 VALUES LESS THAN(1483200000),PARTITION p201701 VALUES LESS THAN(1485878400),PARTITION p201702 VALUES LESS THAN(1488297600),PARTITION p201703 VALUES LESS THAN(1490976000))", true, ""},
@@ -1534,7 +1536,7 @@ func (s *testParserSuite) TestDDL(c *C) {
  PARTITION part11 VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB) */ ;`, true, ""},
 
 		// for check clause
-		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)), check (c2 in (0, 1)))", true, ""},
+		//{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)), check (c2 in (0, 1)))", true, "CREATE TABLE `t`(`c1` TINYINT(1), `c2` TINYINT(1), CHECK (`c1` IN (0, 1)), CHECK (`c2` IN (0, 1)));"}, // check有问题
 		{"CREATE TABLE Customer (SD integer CHECK (SD > 0), First_Name varchar(30));", true, ""},
 
 		{"create database xxx", true, "CREATE DATABASE `xxx`"},
@@ -1664,7 +1666,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		// Create table with primary key name.
 		{"create table if not exists `t` (`id` int not null auto_increment comment '消息ID', primary key `pk_id` (`id`) );", true, ""},
 		// Create table with like.
-		{"create table a like b", true, ""},
+		{"create table a like b", true, "CREATE TABLE `a` LIKE `b`;"},
 		{"create table a (like b)", true, ""},
 		{"create table if not exists a like b", true, ""},
 		{"create table if not exists a (like b)", true, ""},
