@@ -1061,60 +1061,57 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain("''")
 		}
 	case TableOptionCharset:
-		ctx.WriteKeyWord("DEFAULT ")
-		ctx.WriteKeyWord("CHARACTER ")
-		ctx.WriteKeyWord("SET ")
+		ctx.WriteKeyWord("DEFAULT CHARACTER SET ")
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionCollate:
-		ctx.WriteKeyWord("DEFAULT ")
-		ctx.WriteKeyWord("COLLATE ")
+		ctx.WriteKeyWord("DEFAULT COLLATE ")
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionComment:
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionAvgRowLength:
 		ctx.WriteKeyWord("AVG_ROW_LENGTH ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionCheckSum:
 		ctx.WriteKeyWord("CHECKSUM ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionCompression:
 		ctx.WriteKeyWord("COMPRESSION ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionConnection:
 		ctx.WriteKeyWord("CONNECTION ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionPassword:
 		ctx.WriteKeyWord("PASSWORD ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprintf("'%s'", n.StrValue))
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionKeyBlockSize:
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionMaxRows:
 		ctx.WriteKeyWord("MAX_ROWS ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionMinRows:
 		ctx.WriteKeyWord("MIN_ROWS ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionDelayKeyWrite:
 		ctx.WriteKeyWord("DELAY_KEY_WRITE ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionRowFormat:
 		ctx.WriteKeyWord("ROW_FORMAT ")
 		ctx.WritePlain("= ")
@@ -1136,14 +1133,14 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		}
 	case TableOptionStatsPersistent:
 		// TODO: not support
-		ctx.WritePlain(" /* TableOptionStatsPersistent not support */ ")
+		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(fmt.Sprint(n.UintValue))
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
 		// TODO: not support
-		ctx.WritePlain(" /* TableOptionPackKeys not support */ ")
+		ctx.WritePlain(" /* TableOptionPackKeys is not supported */ ")
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
@@ -1236,6 +1233,20 @@ const (
 // See https://dev.mysql.com/doc/refman/5.7/en/alter-table.html#alter-table-concurrency
 type LockType byte
 
+func (n LockType) String() string {
+	switch n {
+	case LockTypeNone:
+		return "NONE"
+	case LockTypeDefault:
+		return "DEFAULT"
+	case LockTypeShared:
+		return "SHARED"
+	case LockTypeExclusive:
+		return "EXCLUSIVE"
+	}
+	return ""
+}
+
 // Lock Types.
 const (
 	LockTypeNone LockType = iota + 1
@@ -1272,10 +1283,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		case len(n.Options) == 2 &&
 			n.Options[0].Tp == TableOptionCharset &&
 			n.Options[1].Tp == TableOptionCollate:
-			ctx.WriteKeyWord("CONVERT ")
-			ctx.WriteKeyWord("TO ")
-			ctx.WriteKeyWord("CHARACTER ")
-			ctx.WriteKeyWord("SET ")
+			ctx.WriteKeyWord("CONVERT TO CHARACTER SET ")
 			ctx.WriteKeyWord(n.Options[0].StrValue)
 			ctx.WriteKeyWord(" COLLATE ")
 			ctx.WriteKeyWord(n.Options[1].StrValue)
@@ -1290,8 +1298,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			}
 		}
 	case AlterTableAddColumns:
-		ctx.WriteKeyWord("ADD ")
-		ctx.WriteKeyWord("COLUMN ")
+		ctx.WriteKeyWord("ADD COLUMN ")
 		if n.Position != nil && len(n.NewColumns) == 1 {
 			if err := n.NewColumns[0].Restore(ctx); err != nil {
 				return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.NewColumns[%d]", 0))
@@ -1315,34 +1322,26 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(")")
 		}
 	case AlterTableAddConstraint:
-		ctx.WriteKeyWord("ADD ")
-		ctx.WriteKeyWord("CONSTRAINT ")
+		ctx.WriteKeyWord("ADD CONSTRAINT ")
 		if err := n.Constraint.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Constraint")
 		}
 	case AlterTableDropColumn:
-		ctx.WriteKeyWord("DROP ")
-		ctx.WriteKeyWord("COLUMN ")
+		ctx.WriteKeyWord("DROP COLUMN ")
 		if err := n.OldColumnName.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.OldColumnName")
 		}
 	// TODO: RestrictOrCascadeOpt not support
 	case AlterTableDropPrimaryKey:
-		ctx.WriteKeyWord("DROP ")
-		ctx.WriteKeyWord("PRIMARY ")
-		ctx.WriteKeyWord("KEY")
+		ctx.WriteKeyWord("DROP PRIMARY KEY")
 	case AlterTableDropIndex:
-		ctx.WriteKeyWord("DROP ")
-		ctx.WriteKeyWord("INDEX ")
+		ctx.WriteKeyWord("DROP INDEX ")
 		ctx.WriteName(n.Name)
 	case AlterTableDropForeignKey:
-		ctx.WriteKeyWord("DROP ")
-		ctx.WriteKeyWord("FOREIGN ")
-		ctx.WriteKeyWord("KEY ")
+		ctx.WriteKeyWord("DROP FOREIGN KEY ")
 		ctx.WriteName(n.Name)
 	case AlterTableModifyColumn:
-		ctx.WriteKeyWord("MODIFY ")
-		ctx.WriteKeyWord("COLUMN ")
+		ctx.WriteKeyWord("MODIFY COLUMN ")
 		if err := n.NewColumns[0].Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0]")
 		}
@@ -1353,8 +1352,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
 		}
 	case AlterTableChangeColumn:
-		ctx.WriteKeyWord("CHANGE ")
-		ctx.WriteKeyWord("COLUMN ")
+		ctx.WriteKeyWord("CHANGE COLUMN ")
 		if err := n.OldColumnName.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.OldColumnName")
 		}
@@ -1369,57 +1367,40 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
 		}
 	case AlterTableRenameTable:
-		ctx.WriteKeyWord("RENAME ")
-		ctx.WriteKeyWord("AS ")
+		ctx.WriteKeyWord("RENAME AS ")
 		if err := n.NewTable.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewTable")
 		}
 	case AlterTableAlterColumn:
-		ctx.WriteKeyWord("ALTER ")
-		ctx.WriteKeyWord("COLUMN ")
+		ctx.WriteKeyWord("ALTER COLUMN ")
 		if err := n.NewColumns[0].Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0]")
 		}
 		if len(n.NewColumns[0].Options) == 1 {
-			ctx.WriteKeyWord("SET ")
-			ctx.WriteKeyWord("DEFAULT ")
+			ctx.WriteKeyWord("SET DEFAULT ")
 			if err := n.NewColumns[0].Options[0].Expr.Restore(ctx); err != nil {
 				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
 			}
 		} else {
-			ctx.WriteKeyWord(" DROP ")
-			ctx.WriteKeyWord("DEFAULT")
+			ctx.WriteKeyWord(" DROP DEFAULT")
 		}
 	case AlterTableLock:
 		ctx.WriteKeyWord("LOCK ")
 		ctx.WritePlain("= ")
-		switch n.LockType {
-		case LockTypeNone:
-			ctx.WriteKeyWord("NONE")
-		case LockTypeDefault:
-			ctx.WriteKeyWord("DEFAULT")
-		case LockTypeShared:
-			ctx.WriteKeyWord("SHARED")
-		case LockTypeExclusive:
-			ctx.WriteKeyWord("EXCLUSIVE")
-		default:
-			return errors.New("An error occurred while restore AlterTableSpec.LockType")
-		}
+		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableAlgorithm:
 		// TODO: not support
-		ctx.WritePlain(" /* AlterTableAlgorithm not support */ ")
+		ctx.WritePlain(" /* AlterTableAlgorithm is not supported */ ")
 	case AlterTableRenameIndex:
-		ctx.WriteKeyWord("RENAME ")
-		ctx.WriteKeyWord("INDEX ")
+		ctx.WriteKeyWord("RENAME INDEX ")
 		ctx.WriteName(n.FromKey.O)
 		ctx.WriteKeyWord(" TO ")
 		ctx.WriteName(n.ToKey.O)
 	case AlterTableForce:
 		// TODO: not support
-		ctx.WritePlain(" /* AlterTableForce not support */ ")
+		ctx.WritePlain(" /* AlterTableForce is not supported */ ")
 	case AlterTableAddPartitions:
-		ctx.WriteKeyWord("ADD ")
-		ctx.WriteKeyWord("PARTITION")
+		ctx.WriteKeyWord("ADD PARTITION")
 		if n.PartDefinitions != nil {
 			ctx.WritePlain(" (")
 			for i, part := range n.PartDefinitions {
@@ -1429,9 +1410,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 				ctx.WriteKeyWord("PARTITION ")
 				ctx.WriteName(part.Name.O)
 				if part.LessThan != nil {
-					ctx.WriteKeyWord(" VALUES ")
-					ctx.WriteKeyWord("LESS ")
-					ctx.WriteKeyWord("THAN ")
+					ctx.WriteKeyWord(" VALUES LESS THAN ")
 					ctx.WritePlain("(")
 					for k, less := range part.LessThan {
 						if err := less.Restore(ctx); err != nil {
@@ -1449,23 +1428,20 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(")")
 		} else if n.Num != 0 {
 			ctx.WriteKeyWord(" PARTITIONS ")
-			ctx.WritePlain(fmt.Sprint(n.Num))
+			ctx.WritePlainf("%d", n.Num)
 		}
 	case AlterTableCoalescePartitions:
-		ctx.WriteKeyWord("COALESCE ")
-		ctx.WriteKeyWord("PARTITION ")
-		ctx.WritePlain(fmt.Sprint(n.Num))
+		ctx.WriteKeyWord("COALESCE PARTITION ")
+		ctx.WritePlainf("%d", n.Num)
 	case AlterTableDropPartition:
-		ctx.WriteKeyWord("DROP ")
-		ctx.WriteKeyWord("PARTITION ")
+		ctx.WriteKeyWord("DROP PARTITION ")
 		ctx.WriteName(n.Name)
 	case AlterTableTruncatePartition:
-		ctx.WriteKeyWord("TRUNCATE ")
-		ctx.WriteKeyWord("PARTITION ")
+		ctx.WriteKeyWord("TRUNCATE PARTITION ")
 		ctx.WriteName(n.Name)
 	default:
 		// TODO: not support
-		ctx.WritePlain(fmt.Sprintf(" /* %d not support */ ", n.Tp))
+		ctx.WritePlain(fmt.Sprintf(" /* %d is not supported */ ", n.Tp))
 	}
 	return nil
 }
