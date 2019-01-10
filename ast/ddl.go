@@ -1127,16 +1127,16 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionConnection:
 		ctx.WriteKeyWord("CONNECTION ")
-		ctx.WritePlain(n.StrValue)
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionCheckSum:
 		ctx.WriteKeyWord("CHECKSUM ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPassword:
 		ctx.WriteKeyWord("PASSWORD ")
-		ctx.WritePlain(n.StrValue)
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionCompression:
 		ctx.WriteKeyWord("COMPRESSION ")
-		ctx.WritePlain(n.StrValue)
+		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionKeyBlockSize:
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
 		ctx.WritePlainf("%d", n.UintValue)
@@ -1151,16 +1151,30 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionRowFormat:
 		ctx.WriteKeyWord("ROW_FORMAT ")
-		ctx.WritePlainf("%d", n.UintValue)
+		switch n.UintValue {
+		case 1:
+			ctx.WriteKeyWord("DEFAULT")
+		case 2:
+			ctx.WriteKeyWord("DYNAMIC")
+		case 3:
+			ctx.WriteKeyWord("FIXED")
+		case 4:
+			ctx.WriteKeyWord("COMPRESSED")
+		case 5:
+			ctx.WriteKeyWord("REDUNDANT")
+		case 6:
+			ctx.WriteKeyWord("COMPACT")
+		}
 	case TableOptionStatsPersistent:
-		ctx.WriteKeyWord("STATS_PERSISTENT")
+		return errors.New("TiDB Parser ignore the `TableOptionStatsPersistent` type now")
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
 		return errors.New("TiDB Parser ignore the `TableOptionPackKeys` type now")
+	default:
+		return errors.Errorf("invalid TableOptionType: %d", n.Tp)
 	}
-
 	return nil
 }
 
@@ -1415,9 +1429,7 @@ func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
 		}
 	}
-	//if n.MaxValue {
-	//
-	//}
+	//TODO: TiDB Parser ignore the `MaxValue` type now
 	ctx.WritePlain(n.Comment)
 	return nil
 }
@@ -1441,7 +1453,7 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 	case model.PartitionTypeList:
 		return errors.New("TiDB Parser ignore the `PartitionTypeList` type now")
 	default:
-		return errors.New(" ")
+		return errors.Errorf("invalid model.PartitionType: %d", n.Tp)
 	}
 
 	ctx.WritePlain("(")
