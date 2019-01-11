@@ -1166,12 +1166,22 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 			ctx.WriteKeyWord("COMPACT")
 		}
 	case TableOptionStatsPersistent:
-		return errors.New("TiDB Parser ignore the `TableOptionStatsPersistent` type now")
+		ctx.WriteKeyWord("STATS_PERSISTENT ")
+		if n.StrValue != "" {
+			ctx.WritePlain(n.StrValue)
+		} else {
+			ctx.WritePlainf("%d", n.UintValue)
+		}
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
-		return errors.New("TiDB Parser ignore the `TableOptionPackKeys` type now")
+		ctx.WriteKeyWord("PACK_KEYS ")
+		if n.StrValue != "" {
+			ctx.WritePlain(n.StrValue)
+		} else {
+			ctx.WritePlainf("%d", n.UintValue)
+		}
 	default:
 		return errors.Errorf("invalid TableOptionType: %d", n.Tp)
 	}

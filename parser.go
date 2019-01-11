@@ -11611,7 +11611,13 @@ yynewstate:
 		}
 	case 1225:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
+			switch yyS[yypt-0].item.(type) {
+			case uint64:
+				parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionStatsPersistent, UintValue: yyS[yypt-0].item.(uint64)}
+			default:
+				parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionStatsPersistent, StrValue: "DEFAULT"}
+			}
+
 		}
 	case 1226:
 		{
@@ -11619,8 +11625,12 @@ yynewstate:
 		}
 	case 1227:
 		{
-			// Parse it but will ignore it.
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionPackKeys}
+			switch yyS[yypt-0].item.(type) {
+			case uint64:
+				parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionPackKeys, UintValue: yyS[yypt-0].item.(uint64)}
+			default:
+				parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionPackKeys, StrValue: "DEFAULT"}
+			}
 		}
 	case 1230:
 		{

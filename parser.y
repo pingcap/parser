@@ -6490,7 +6490,13 @@ TableOption:
 	}
 |	"STATS_PERSISTENT" EqOpt StatsPersistentVal
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
+                switch $3.(type) {
+                case uint64:
+                        $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent, UintValue: $3.(uint64)}
+                default:
+                        $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent, StrValue: "DEFAULT"}
+                }
+
 	}
 |	"SHARD_ROW_ID_BITS" EqOpt LengthNum
 	{
@@ -6498,8 +6504,12 @@ TableOption:
 	}
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
-		// Parse it but will ignore it.
-		$$ = &ast.TableOption{Tp: ast.TableOptionPackKeys}
+		switch $3.(type) {
+                case uint64:
+                    $$ = &ast.TableOption{Tp: ast.TableOptionPackKeys, UintValue: $3.(uint64)}
+                default:
+                    $$ = &ast.TableOption{Tp: ast.TableOptionPackKeys, StrValue: "DEFAULT"}
+                }
 	}
 
 StatsPersistentVal:
