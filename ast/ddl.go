@@ -1401,26 +1401,12 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ADD PARTITION")
 		if n.PartDefinitions != nil {
 			ctx.WritePlain(" (")
-			for i, part := range n.PartDefinitions {
+			for i, def := range n.PartDefinitions {
 				if i != 0 {
 					ctx.WritePlain(", ")
 				}
-				ctx.WriteKeyWord("PARTITION ")
-				ctx.WriteName(part.Name.O)
-				if part.LessThan != nil {
-					ctx.WriteKeyWord(" VALUES LESS THAN ")
-					ctx.WritePlain("(")
-					for k, less := range part.LessThan {
-						if err := less.Restore(ctx); err != nil {
-							return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PartDefinitions[%d].LessThan[%d]", i, k)
-						}
-					}
-					ctx.WritePlain(")")
-				}
-				if part.Comment != "" {
-					ctx.WriteKeyWord(" COMMENT ")
-					ctx.WritePlain("= ")
-					ctx.WriteString(part.Comment)
+				if err := def.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PartDefinitions[%d]", i)
 				}
 			}
 			ctx.WritePlain(")")
@@ -1577,6 +1563,28 @@ type PartitionDefinition struct {
 	LessThan []ExprNode
 	MaxValue bool
 	Comment  string
+}
+
+// Restore implements Node interface.
+func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("PARTITION ")
+	ctx.WriteName(n.Name.O)
+	if n.LessThan != nil {
+		ctx.WriteKeyWord(" VALUES LESS THAN ")
+		ctx.WritePlain("(")
+		for k, less := range n.LessThan {
+			if err := less.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore PartitionDefinition.LessThan[%d]", k)
+			}
+		}
+		ctx.WritePlain(")")
+	}
+	if n.Comment != "" {
+		ctx.WriteKeyWord(" COMMENT ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.Comment)
+	}
+	return nil
 }
 
 // PartitionOptions specifies the partition options.
