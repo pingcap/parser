@@ -1500,8 +1500,7 @@ type AlterTableStmt struct {
 
 // Restore implements Node interface.
 func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("ALTER ")
-	ctx.WriteKeyWord("TABLE ")
+	ctx.WriteKeyWord("ALTER TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
