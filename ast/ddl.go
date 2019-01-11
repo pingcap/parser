@@ -940,7 +940,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(", ")
 		}
 		if err := indexColName.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexColNames")
+			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.IndexColNames: [%v]", i)
 		}
 	}
 	ctx.WritePlain(")")
