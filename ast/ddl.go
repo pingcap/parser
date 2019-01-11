@@ -14,8 +14,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	. "github.com/pingcap/parser/format"
@@ -1293,7 +1291,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 					ctx.WritePlain(", ")
 				}
 				if err := opt.Restore(ctx); err != nil {
-					return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.Options[%d]", i))
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.Options[%d]", i)
 				}
 			}
 		}
@@ -1301,7 +1299,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ADD COLUMN ")
 		if n.Position != nil && len(n.NewColumns) == 1 {
 			if err := n.NewColumns[0].Restore(ctx); err != nil {
-				return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.NewColumns[%d]", 0))
+				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", 0)
 			}
 			if n.Position.Tp != ColumnPositionNone {
 				ctx.WritePlain(" ")
@@ -1316,7 +1314,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 					ctx.WritePlain(", ")
 				}
 				if err := col.Restore(ctx); err != nil {
-					return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.NewColumns[%d]", i))
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", i)
 				}
 			}
 			ctx.WritePlain(")")
@@ -1414,7 +1412,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 					ctx.WritePlain("(")
 					for k, less := range part.LessThan {
 						if err := less.Restore(ctx); err != nil {
-							return errors.WithMessage(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.PartDefinitions[%d].LessThan[%d]", i, k))
+							return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PartDefinitions[%d].LessThan[%d]", i, k)
 						}
 					}
 					ctx.WritePlain(")")
@@ -1441,7 +1439,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteName(n.Name)
 	default:
 		// TODO: not support
-		ctx.WritePlain(fmt.Sprintf(" /* %d is not supported */ ", n.Tp))
+		ctx.WritePlainf(" /* %d is not supported */ ", n.Tp)
 	}
 	return nil
 }
@@ -1515,7 +1513,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(", ")
 		}
 		if err := spec.Restore(ctx); err != nil {
-			return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableStmt.Specs[%d]", i))
+			return errors.Annotatef(err, "An error occurred while restore AlterTableStmt.Specs[%d]", i)
 		}
 	}
 	return nil
