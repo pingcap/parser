@@ -1507,8 +1507,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 	for i, spec := range n.Specs {
 		if i == 0 {
 			ctx.WritePlain(" ")
-		}
-		if i != 0 {
+		} else {
 			ctx.WritePlain(", ")
 		}
 		if err := spec.Restore(ctx); err != nil {
