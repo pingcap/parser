@@ -1425,7 +1425,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteName(n.Name)
 	default:
 		// TODO: not support
-		ctx.WritePlainf(" /* %d is not supported */ ", n.Tp)
+		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
 	}
 	return nil
 }
