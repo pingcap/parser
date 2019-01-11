@@ -20,5 +20,5 @@ If possible, provide a recipe for reproducing the error.
 
 
 
-4. What version of TiDB are you using (`tidb-server -V` or run `select tidb_version();` on TiDB)?
+4. What version of TiDB SQL Parser are you using?
 
