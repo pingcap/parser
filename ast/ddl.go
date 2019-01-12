@@ -927,9 +927,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WriteKeyWord("INDEX ")
 	ctx.WriteName(n.IndexName)
-	ctx.WritePlain(" ")
-
-	ctx.WriteKeyWord("ON ")
+	ctx.WriteKeyWord(" ON ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.Table")
 	}
