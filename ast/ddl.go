@@ -472,6 +472,9 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
+	} else if n.Comment == "" && n.Tp == model.IndexTypeInvalid && n.KeyBlockSize == 0 {
+		ctx.WriteKeyWord("COMMENT ")
+		ctx.WritePlain("''")
 	}
 	return nil
 }
@@ -1117,11 +1120,11 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionCharset:
 		ctx.WriteKeyWord("CHARACTER SET ")
 		ctx.WritePlain("= ")
-		ctx.WriteString(n.StrValue)
+		ctx.WritePlain(n.StrValue)
 	case TableOptionCollate:
-		ctx.WriteKeyWord("COLLATE")
+		ctx.WriteKeyWord("COLLATE ")
 		ctx.WritePlain("= ")
-		ctx.WriteString(n.StrValue)
+		ctx.WritePlain(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
 		ctx.WritePlain("= ")
