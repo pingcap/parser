@@ -396,7 +396,7 @@ func (n *CompareSubqueryExpr) Restore(ctx *RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CompareSubqueryExpr.L")
 	}
-	if err := n.Op.Restore(ctx.In); err != nil {
+	if err := n.Op.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CompareSubqueryExpr.Op")
 	}
 	if n.All {
