@@ -2219,9 +2219,9 @@ func (s *testParserSuite) TestIndexHint(c *C) {
 
 func (s *testParserSuite) TestPriority(c *C) {
 	table := []testCase{
-	{`select high_priority * from t`, true, "SELECT HIGH_PRIORITY * FROM `t`"},
-	{`select low_priority * from t`, true, "SELECT LOW_PRIORITY * FROM `t`"},
-	{`select delayed * from t`, true, "SELECT DELAYED * FROM `t`"},
+		{`select high_priority * from t`, true, "SELECT HIGH_PRIORITY * FROM `t`"},
+		{`select low_priority * from t`, true, "SELECT LOW_PRIORITY * FROM `t`"},
+		{`select delayed * from t`, true, "SELECT DELAYED * FROM `t`"},
 		{`insert high_priority into t values (1)`, true, "INSERT HIGH_PRIORITY INTO `t` VALUES (1)"},
 		{`insert LOW_PRIORITY into t values (1)`, true, "INSERT LOW_PRIORITY INTO `t` VALUES (1)"},
 		{`insert delayed into t values (1)`, true, "INSERT DELAYED INTO `t` VALUES (1)"},
