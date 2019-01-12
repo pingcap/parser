@@ -533,13 +533,15 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("UNIQUE KEY")
 	case ConstraintUniqIndex:
 		ctx.WriteKeyWord("UNIQUE INDEX")
-	case ConstraintForeignKey:
-		ctx.WriteKeyWord("FOREIGN KEY")
 	case ConstraintFulltext:
 		ctx.WriteKeyWord("FULLTEXT")
 	}
 
-	if n.Name != "" {
+	if n.Tp == ConstraintForeignKey {
+		ctx.WriteKeyWord("CONSTRAINT ")
+		ctx.WriteName(n.Name)
+		ctx.WriteKeyWord(" FOREIGN KEY ")
+	} else if n.Name != "" {
 		ctx.WritePlain(" ")
 		ctx.WriteName(n.Name)
 	}
@@ -624,9 +626,10 @@ func (n *ColumnDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	for i, options := range n.Options {
-		if i > 0 {
-			ctx.WritePlain(",")
-		}
+		//先去掉 > 0 加逗号的逻辑
+		//if i > 0 {
+		//	ctx.WritePlain(",")
+		//}
 		ctx.WritePlain(" ")
 		if err := options.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while splicing ColumnDef ColumnOption: [%v]", i)
@@ -691,7 +694,7 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if len(n.Cols) > 0 {
+	if col := len(n.Cols); col > 0 {
 		ctx.WritePlain("(")
 		for i, col := range n.Cols {
 			if i > 0 {
@@ -702,7 +705,7 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 			}
 		}
 		for i, constraint := range n.Constraints {
-			if i > 0 {
+			if i > 0 || col >= 1 {
 				ctx.WritePlain(",")
 			}
 			if err := constraint.Restore(ctx); err != nil {
@@ -1108,49 +1111,64 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionNone:
 		return nil
 	case TableOptionEngine:
-		ctx.WriteKeyWord("ENGINE = ")
-		ctx.WriteString(n.StrValue)
+		ctx.WriteKeyWord("ENGINE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlain(n.StrValue)
 	case TableOptionCharset:
 		ctx.WriteKeyWord("CHARACTER SET ")
+		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
 	case TableOptionCollate:
 		ctx.WriteKeyWord("COLLATE")
+		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionComment:
 		ctx.WriteKeyWord("COMMENT ")
-		ctx.WritePlain(n.StrValue)
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
 	case TableOptionAvgRowLength:
 		ctx.WriteKeyWord("AVG_ROW_LENGTH ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionConnection:
 		ctx.WriteKeyWord("CONNECTION ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionCheckSum:
 		ctx.WriteKeyWord("CHECKSUM ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPassword:
 		ctx.WriteKeyWord("PASSWORD ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionCompression:
 		ctx.WriteKeyWord("COMPRESSION ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionKeyBlockSize:
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionMaxRows:
 		ctx.WriteKeyWord("MAX_ROWS ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionMinRows:
 		ctx.WriteKeyWord("MIN_ROWS ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionDelayKeyWrite:
 		ctx.WriteKeyWord("DELAY_KEY_WRITE ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionRowFormat:
 		ctx.WriteKeyWord("ROW_FORMAT ")
+		ctx.WritePlain("= ")
 		switch n.UintValue {
 		case 1:
 			ctx.WriteKeyWord("DEFAULT")
@@ -1167,6 +1185,7 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		}
 	case TableOptionStatsPersistent:
 		ctx.WriteKeyWord("STATS_PERSISTENT ")
+		ctx.WritePlain("= ")
 		if n.StrValue != "" {
 			ctx.WritePlain(n.StrValue)
 		} else {
@@ -1174,9 +1193,11 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		}
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
+		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
 		ctx.WriteKeyWord("PACK_KEYS ")
+		ctx.WritePlain("= ")
 		if n.StrValue != "" {
 			ctx.WritePlain(n.StrValue)
 		} else {
@@ -1430,16 +1451,26 @@ type PartitionDefinition struct {
 
 func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("PARTITION ")
-	ctx.WriteName(n.Name.String())
+	ctx.WritePlain(n.Name.String())
+	ctx.WritePlain(" ")
 	for i, lessThan := range n.LessThan {
 		if i > 0 {
 			ctx.WritePlain(" ")
 		}
-		if err := lessThan.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
+		ctx.WriteKeyWord("VALUES LESS THAN ")
+		switch lessThan.(type) {
+		case ValueExpr:
+			ctx.WritePlain("(")
+			if err := lessThan.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
+			}
+			ctx.WritePlain(")")
+		default:
+			if err := lessThan.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
+			}
 		}
 	}
-	//TODO: TiDB Parser ignore the `MaxValue` type now
 	ctx.WritePlain(n.Comment)
 	return nil
 }
@@ -1486,13 +1517,17 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.Num)
 	}
 
-	for i, def := range n.Definitions {
-		if i > 0 {
-			ctx.WritePlain(",")
+	if len(n.Definitions) > 0 {
+		ctx.WritePlain("(")
+		for i, def := range n.Definitions {
+			if i > 0 {
+				ctx.WritePlain(",")
+			}
+			if err := def.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing PartitionOptions Definitions: [%v]", i)
+			}
 		}
-		if err := def.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while splicing PartitionOptions Definitions: [%v]", i)
-		}
+		ctx.WritePlain(")")
 	}
 
 	return nil
