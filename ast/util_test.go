@@ -77,7 +77,7 @@ func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 	case *FieldList:
 		for _, f := range node.Fields {
 			f.Offset = 0
-    }
+		}
 	case *AlterTableSpec:
 		for _, opt := range node.Options {
 			opt.StrValue = strings.ToLower(opt.StrValue)
