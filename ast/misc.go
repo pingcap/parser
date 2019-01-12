@@ -799,6 +799,9 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 
 	n = newNode.(*AdminStmt)
 	for i, val := range n.Tables {
+		if n.Tp == AdminRestoreTable {
+			break
+		}
 		node, ok := val.Accept(v)
 		if !ok {
 			return n, false
