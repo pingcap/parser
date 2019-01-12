@@ -511,6 +511,11 @@ func (m SQLMode) HasNoAutoCreateUserMode() bool {
 	return m&ModeNoAutoCreateUser == ModeNoAutoCreateUser
 }
 
+// HasAllowInvalidDatesMode detects if 'ALLOW_INVALID_DATES' mode is set in SQLMode
+func (m SQLMode) HasAllowInvalidDatesMode() bool {
+	return m&ModeAllowInvalidDates == ModeAllowInvalidDates
+}
+
 // consts for sql modes.
 const (
 	ModeNone        SQLMode = 0
