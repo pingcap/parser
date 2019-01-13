@@ -917,13 +917,13 @@ var MySQLErrName = map[uint16]string{
 	ErrAdminCheckTable:    "TiDB admin check table failed.",
 
 	ErrInvalidPluginID:            "Wrong plugin id: %s, valid plugin id is [name]-[version], both name and version should not contain '-'",
-	ErrInvalidPluginManifest:      "Can not read plugin %s's manifest",
+	ErrInvalidPluginManifest:      "Cannot read plugin %s's manifest",
 	ErrInvalidPluginName:          "Plugin load with %s but got wrong name %s",
 	ErrInvalidPluginVersion:       "Plugin load with %s but got %s",
-	ErrDuplicatePlugin:            "Plugin [%s] be duplicate declared in init parameters",
-	ErrInvalidPluginSysVarName:    "Plugin %s's sysVar %s must be prefix with plugin name %s",
+	ErrDuplicatePlugin:            "Plugin [%s] is redeclared",
+	ErrInvalidPluginSysVarName:    "Plugin %s's sysVar %s must start with its plugin name %s",
 	ErrRequireVersionCheckFail:    "Plugin %s require %s be %v but got %v",
-	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so can not reload",
+	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so cannot be reloaded",
 	ErrUnsupportedReloadPluginVar: "reload plugin with different sysVar is unsupported %v",
 
 	// TiKV/PD errors.
