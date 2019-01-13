@@ -653,12 +653,12 @@ func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(", ")
 			}
 			if err := n.Args[i].Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args %d", i)
+				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args[%d]", i)
 			}
 		}
 		ctx.WriteKeyWord(" SEPARATOR ")
 		if err := n.Args[len(n.Args)-1].Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args SEPARATOR")
+			return errors.Annotate(err, "An error occurred while restore AggregateFuncExpr.Args SEPARATOR")
 		}
 	default:
 		for i, argv := range n.Args {
@@ -666,7 +666,7 @@ func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(", ")
 			}
 			if err := argv.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args %d", i)
+				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args[%d]", i)
 			}
 		}
 	}
