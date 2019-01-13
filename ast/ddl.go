@@ -472,9 +472,6 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
-	} else if n.Comment == "" && n.Tp == model.IndexTypeInvalid && n.KeyBlockSize == 0 {
-		ctx.WriteKeyWord("COMMENT ")
-		ctx.WritePlain("''")
 	}
 	return nil
 }
@@ -1111,20 +1108,22 @@ type TableOption struct {
 
 func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
-	case TableOptionNone:
-		return nil
 	case TableOptionEngine:
 		ctx.WriteKeyWord("ENGINE ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(n.StrValue)
+		if n.StrValue != "" {
+			ctx.WritePlain(n.StrValue)
+		} else {
+			ctx.WritePlain("''")
+		}
 	case TableOptionCharset:
-		ctx.WriteKeyWord("CHARACTER SET ")
+		ctx.WriteKeyWord("DEFAULT CHARACTER SET ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(n.StrValue)
+		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionCollate:
-		ctx.WriteKeyWord("COLLATE ")
+		ctx.WriteKeyWord("DEFAULT COLLATE ")
 		ctx.WritePlain("= ")
-		ctx.WritePlain(n.StrValue)
+		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
 		ctx.WritePlain("= ")
@@ -1137,22 +1136,22 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("AVG_ROW_LENGTH ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
-	case TableOptionConnection:
-		ctx.WriteKeyWord("CONNECTION ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionCheckSum:
 		ctx.WriteKeyWord("CHECKSUM ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
-	case TableOptionPassword:
-		ctx.WriteKeyWord("PASSWORD ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
 	case TableOptionCompression:
 		ctx.WriteKeyWord("COMPRESSION ")
 		ctx.WritePlain("= ")
-		ctx.WritePlainf("'%s'", n.StrValue)
+		ctx.WriteString(n.StrValue)
+	case TableOptionConnection:
+		ctx.WriteKeyWord("CONNECTION ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case TableOptionPassword:
+		ctx.WriteKeyWord("PASSWORD ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
 	case TableOptionKeyBlockSize:
 		ctx.WriteKeyWord("KEY_BLOCK_SIZE ")
 		ctx.WritePlain("= ")
@@ -1173,41 +1172,33 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ROW_FORMAT ")
 		ctx.WritePlain("= ")
 		switch n.UintValue {
-		case 1:
+		case RowFormatDefault:
 			ctx.WriteKeyWord("DEFAULT")
-		case 2:
+		case RowFormatDynamic:
 			ctx.WriteKeyWord("DYNAMIC")
-		case 3:
+		case RowFormatFixed:
 			ctx.WriteKeyWord("FIXED")
-		case 4:
+		case RowFormatCompressed:
 			ctx.WriteKeyWord("COMPRESSED")
-		case 5:
+		case RowFormatRedundant:
 			ctx.WriteKeyWord("REDUNDANT")
-		case 6:
+		case RowFormatCompact:
 			ctx.WriteKeyWord("COMPACT")
+		default:
+			return errors.Errorf("invalid TableOption: TableOptionRowFormat: %d", n.UintValue)
 		}
 	case TableOptionStatsPersistent:
-		ctx.WriteKeyWord("STATS_PERSISTENT ")
-		ctx.WritePlain("= ")
-		if n.StrValue != "" {
-			ctx.WritePlain(n.StrValue)
-		} else {
-			ctx.WritePlainf("%d", n.UintValue)
-		}
+		// TODO: not support
+		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
-		ctx.WriteKeyWord("PACK_KEYS ")
-		ctx.WritePlain("= ")
-		if n.StrValue != "" {
-			ctx.WritePlain(n.StrValue)
-		} else {
-			ctx.WritePlainf("%d", n.UintValue)
-		}
+		// TODO: not support
+		ctx.WritePlain(" /* TableOptionPackKeys is not supported */ ")
 	default:
-		return errors.Errorf("invalid TableOptionType: %d", n.Tp)
+		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
 	return nil
 }
@@ -1298,6 +1289,20 @@ const (
 // See https://dev.mysql.com/doc/refman/5.7/en/alter-table.html#alter-table-concurrency
 type LockType byte
 
+func (n LockType) String() string {
+	switch n {
+	case LockTypeNone:
+		return "NONE"
+	case LockTypeDefault:
+		return "DEFAULT"
+	case LockTypeShared:
+		return "SHARED"
+	case LockTypeExclusive:
+		return "EXCLUSIVE"
+	}
+	return ""
+}
+
 // Lock Types.
 const (
 	LockTypeNone LockType = iota + 1
@@ -1328,7 +1333,159 @@ type AlterTableSpec struct {
 
 // Restore implements Node interface.
 func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	switch n.Tp {
+	case AlterTableOption:
+		switch {
+		case len(n.Options) == 2 &&
+			n.Options[0].Tp == TableOptionCharset &&
+			n.Options[1].Tp == TableOptionCollate:
+			ctx.WriteKeyWord("CONVERT TO CHARACTER SET ")
+			ctx.WriteKeyWord(n.Options[0].StrValue)
+			ctx.WriteKeyWord(" COLLATE ")
+			ctx.WriteKeyWord(n.Options[1].StrValue)
+		default:
+			for i, opt := range n.Options {
+				if i != 0 {
+					ctx.WritePlain(", ")
+				}
+				if err := opt.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.Options[%d]", i)
+				}
+			}
+		}
+	case AlterTableAddColumns:
+		ctx.WriteKeyWord("ADD COLUMN ")
+		if n.Position != nil && len(n.NewColumns) == 1 {
+			if err := n.NewColumns[0].Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", 0)
+			}
+			if n.Position.Tp != ColumnPositionNone {
+				ctx.WritePlain(" ")
+			}
+			if err := n.Position.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
+			}
+		} else {
+			ctx.WritePlain("(")
+			for i, col := range n.NewColumns {
+				if i != 0 {
+					ctx.WritePlain(", ")
+				}
+				if err := col.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", i)
+				}
+			}
+			ctx.WritePlain(")")
+		}
+	case AlterTableAddConstraint:
+		ctx.WriteKeyWord("ADD ")
+		if err := n.Constraint.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Constraint")
+		}
+	case AlterTableDropColumn:
+		ctx.WriteKeyWord("DROP COLUMN ")
+		if err := n.OldColumnName.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.OldColumnName")
+		}
+	// TODO: RestrictOrCascadeOpt not support
+	case AlterTableDropPrimaryKey:
+		ctx.WriteKeyWord("DROP PRIMARY KEY")
+	case AlterTableDropIndex:
+		ctx.WriteKeyWord("DROP INDEX ")
+		ctx.WriteName(n.Name)
+	case AlterTableDropForeignKey:
+		ctx.WriteKeyWord("DROP FOREIGN KEY ")
+		ctx.WriteName(n.Name)
+	case AlterTableModifyColumn:
+		ctx.WriteKeyWord("MODIFY COLUMN ")
+		if err := n.NewColumns[0].Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0]")
+		}
+		if n.Position.Tp != ColumnPositionNone {
+			ctx.WritePlain(" ")
+		}
+		if err := n.Position.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
+		}
+	case AlterTableChangeColumn:
+		ctx.WriteKeyWord("CHANGE COLUMN ")
+		if err := n.OldColumnName.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.OldColumnName")
+		}
+		ctx.WritePlain(" ")
+		if err := n.NewColumns[0].Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0]")
+		}
+		if n.Position.Tp != ColumnPositionNone {
+			ctx.WritePlain(" ")
+		}
+		if err := n.Position.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
+		}
+	case AlterTableRenameTable:
+		ctx.WriteKeyWord("RENAME AS ")
+		if err := n.NewTable.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewTable")
+		}
+	case AlterTableAlterColumn:
+		ctx.WriteKeyWord("ALTER COLUMN ")
+		if err := n.NewColumns[0].Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0]")
+		}
+		if len(n.NewColumns[0].Options) == 1 {
+			ctx.WriteKeyWord("SET DEFAULT ")
+			if err := n.NewColumns[0].Options[0].Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+			}
+		} else {
+			ctx.WriteKeyWord(" DROP DEFAULT")
+		}
+	case AlterTableLock:
+		ctx.WriteKeyWord("LOCK ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord(n.LockType.String())
+	case AlterTableAlgorithm:
+		// TODO: not support
+		ctx.WritePlain(" /* AlterTableAlgorithm is not supported */ ")
+	case AlterTableRenameIndex:
+		ctx.WriteKeyWord("RENAME INDEX ")
+		ctx.WriteName(n.FromKey.O)
+		ctx.WriteKeyWord(" TO ")
+		ctx.WriteName(n.ToKey.O)
+	case AlterTableForce:
+		// TODO: not support
+		ctx.WritePlain(" /* AlterTableForce is not supported */ ")
+	case AlterTableAddPartitions:
+		ctx.WriteKeyWord("ADD PARTITION")
+		if n.PartDefinitions != nil {
+			ctx.WritePlain(" (")
+			for i, def := range n.PartDefinitions {
+				if i != 0 {
+					ctx.WritePlain(", ")
+				}
+				if err := def.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PartDefinitions[%d]", i)
+				}
+			}
+			ctx.WritePlain(")")
+		} else if n.Num != 0 {
+			ctx.WriteKeyWord(" PARTITIONS ")
+			ctx.WritePlainf("%d", n.Num)
+		}
+	case AlterTableCoalescePartitions:
+		ctx.WriteKeyWord("COALESCE PARTITION ")
+		ctx.WritePlainf("%d", n.Num)
+	case AlterTableDropPartition:
+		ctx.WriteKeyWord("DROP PARTITION ")
+		ctx.WriteName(n.Name)
+	case AlterTableTruncatePartition:
+		ctx.WriteKeyWord("TRUNCATE PARTITION ")
+		ctx.WriteName(n.Name)
+	default:
+		// TODO: not support
+		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1387,7 +1544,21 @@ type AlterTableStmt struct {
 
 // Restore implements Node interface.
 func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ALTER TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
+	}
+	for i, spec := range n.Specs {
+		if i == 0 {
+			ctx.WritePlain(" ")
+		} else {
+			ctx.WritePlain(", ")
+		}
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableStmt.Specs[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1452,29 +1623,25 @@ type PartitionDefinition struct {
 	Comment  string
 }
 
+// Restore implements Node interface.
 func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("PARTITION ")
-	ctx.WritePlain(n.Name.String())
-	ctx.WritePlain(" ")
-	for i, lessThan := range n.LessThan {
-		if i > 0 {
-			ctx.WritePlain(" ")
-		}
-		ctx.WriteKeyWord("VALUES LESS THAN ")
-		switch lessThan.(type) {
-		case ValueExpr:
-			ctx.WritePlain("(")
-			if err := lessThan.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
-			}
-			ctx.WritePlain(")")
-		default:
-			if err := lessThan.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while splicing PartitionDefinition LessThan: [%v]", i)
+	ctx.WriteName(n.Name.O)
+	if n.LessThan != nil {
+		ctx.WriteKeyWord(" VALUES LESS THAN ")
+		ctx.WritePlain("(")
+		for k, less := range n.LessThan {
+			if err := less.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore PartitionDefinition.LessThan[%d]", k)
 			}
 		}
+		ctx.WritePlain(")")
 	}
-	ctx.WritePlain(n.Comment)
+	if n.Comment != "" {
+		ctx.WriteKeyWord(" COMMENT ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.Comment)
+	}
 	return nil
 }
 
