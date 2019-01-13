@@ -916,6 +916,16 @@ var MySQLErrName = map[uint16]string{
 	ErrForUpdateCantRetry: "[%d] can not retry select for update statement",
 	ErrAdminCheckTable:    "TiDB admin check table failed.",
 
+	ErrInvalidPluginID:            "Wrong plugin id: %s, valid plugin id is [name]-[version], both name and version should not contain '-'",
+	ErrInvalidPluginManifest:      "Can not read plugin %s's manifest",
+	ErrInvalidPluginName:          "Plugin load with %s but got wrong name %s",
+	ErrInvalidPluginVersion:       "Plugin load with %s but got %s",
+	ErrDuplicatePlugin:            "Plugin [%s] be duplicate declared in init parameters",
+	ErrInvalidPluginSysVarName:    "Plugin %s's sysVar %s must be prefix with plugin name %s",
+	ErrRequireVersionCheckFail:    "Plugin %s require %s be %v but got %v",
+	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so can not reload",
+	ErrUnsupportedReloadPluginVar: "reload plugin with different sysVar is unsupported %v",
+
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
 	ErrTiKVServerTimeout:  "TiKV server timeout",
