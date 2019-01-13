@@ -769,9 +769,9 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 
 	if n.TableHints != nil && len(n.TableHints) != 0 {
 		ctx.WritePlain("/*+ ")
-		for _, tableHint := range n.TableHints {
+		for i, tableHint := range n.TableHints {
 			if err := tableHint.Restore(ctx); err != nil {
-				errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]",i)
+				errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]", i)
 			}
 		}
 		ctx.WritePlain("*/ ")
@@ -789,7 +789,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := field.Restore(ctx); err != nil {
-				errors.Annotatef(err, "An error occurred while restore SelectStmt.Fields[%i]",i)
+				errors.Annotatef(err, "An error occurred while restore SelectStmt.Fields[%d]", i)
 			}
 		}
 	}
@@ -832,7 +832,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := windowsSpec.Restore(ctx); err != nil {
-				errors.Annotatef(err, "An error occurred while restore SelectStmt.WindowSpec[%d]",i)
+				errors.Annotatef(err, "An error occurred while restore SelectStmt.WindowSpec[%d]", i)
 			}
 		}
 	}
