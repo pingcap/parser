@@ -924,7 +924,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidPluginSysVarName:    "Plugin %s's sysVar %s must start with its plugin name %s",
 	ErrRequireVersionCheckFail:    "Plugin %s require %s be %v but got %v",
 	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so cannot be reloaded",
-	ErrUnsupportedReloadPluginVar: "reload plugin with different sysVar is unsupported %v",
+	ErrUnsupportedReloadPluginVar: "Reload plugin with different sysVar is unsupported %v",
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
