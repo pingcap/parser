@@ -839,7 +839,7 @@ func (n *PatternLikeExpr) Restore(ctx *RestoreCtx) error {
 	escape := string(n.Escape)
 	if escape != "\\" {
 		ctx.WriteKeyWord(" ESCAPE ")
-		ctx.WritePlainf("'%s'", escape)
+		ctx.WriteString(escape)
 
 	}
 	return nil

@@ -1047,7 +1047,7 @@ type TableOptimizerHint struct {
 func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(n.HintName.String())
 	ctx.WritePlain("(")
-	if n.HintName.O == "MAX_EXECUTION_TIME" {
+	if n.HintName.L == "max_execution_time" {
 		ctx.WritePlainf("%d", n.MaxExecutionTime)
 	} else {
 		for i, table := range n.Tables {

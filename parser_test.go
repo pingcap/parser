@@ -2179,6 +2179,7 @@ func (s *testParserSuite) TestLikeEscape(c *C) {
 		{`select "abc_" like "abc\\_" escape '\\'`, true, "SELECT 'abc_' LIKE 'abc\\_'"},
 		{`select "abc_" like "abc\\_" escape '||'`, false, ""},
 		{`select "abc" like "escape" escape '+'`, true, "SELECT 'abc' LIKE 'escape' ESCAPE '+'"},
+		{"select '''_' like '''_' escape ''''", true, "SELECT '''_' LIKE '''_' ESCAPE ''''"},
 	}
 
 	s.RunTest(c, table)
@@ -2375,9 +2376,9 @@ func (s *testParserSuite) TestView(c *C) {
 	c.Assert(v.Algorithm, Equals, model.AlgorithmUndefined)
 	c.Assert(v.Definer.Username, Equals, "root")
 	c.Assert(v.Definer.Hostname, Equals, "localhost")
-	c.Assert(v.Cols[0], Equals, model.CIStr{"a", "a"})
-	c.Assert(v.Cols[1], Equals, model.CIStr{"b", "b"})
-	c.Assert(v.Cols[2], Equals, model.CIStr{"c", "c"})
+	c.Assert(v.Cols[0], Equals, model.NewCIStr("a"))
+	c.Assert(v.Cols[1], Equals, model.NewCIStr("b"))
+	c.Assert(v.Cols[2], Equals, model.NewCIStr("c"))
 	c.Assert(v.Select.Text(), Equals, "select c,d,e from t")
 	c.Assert(v.Security, Equals, model.SecurityDefiner)
 	c.Assert(v.CheckOption, Equals, model.CheckOptionCascaded)
