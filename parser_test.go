@@ -483,7 +483,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top all 9", true, ""},
 		{"admin show slow recent 11", true, ""},
 		{"admin restore table by job 11", true, ""},
-		{"admin restore table by job 11,12,13", true, ""},
+		{"admin restore table by job 11,12,13", false, ""},
 		{"admin restore table by job", false, ""},
 		{"admin restore table t1", true, ""},
 		{"admin restore table t1,t2", false, ""},

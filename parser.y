@@ -5764,11 +5764,11 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
-|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NumList
+|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminRestoreTable,
-			JobIDs: $6.([]int64),
+			JobIDs: []int64{$6.(int64)},
 		}
 	}
 |	"ADMIN" "RESTORE" "TABLE" TableName
