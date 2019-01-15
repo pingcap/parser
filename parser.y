@@ -6531,7 +6531,6 @@ TableOption:
 |	"STATS_PERSISTENT" EqOpt StatsPersistentVal
 	{
                 $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
-
 	}
 |	"SHARD_ROW_ID_BITS" EqOpt LengthNum
 	{
@@ -6539,6 +6538,7 @@ TableOption:
 	}
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
+		// Parse it but will ignore it.
 		$$ = &ast.TableOption{Tp: ast.TableOptionPackKeys}
 	}
 
