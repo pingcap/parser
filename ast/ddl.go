@@ -693,7 +693,7 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if col := len(n.Cols); col > 0 {
+	if lenCols := len(n.Cols); lenCols > 0 {
 		ctx.WritePlain("(")
 		for i, col := range n.Cols {
 			if i > 0 {
@@ -704,7 +704,7 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 			}
 		}
 		for i, constraint := range n.Constraints {
-			if i > 0 || col >= 1 {
+			if i > 0 || lenCols >= 1 {
 				ctx.WritePlain(",")
 			}
 			if err := constraint.Restore(ctx); err != nil {
@@ -727,8 +727,24 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Partition")
 		}
 	}
-	ctx.WritePlain(";")
-	//TODO: Restore Select Stmt
+
+	if n.Select != nil {
+		ctx.WritePlain(" ")
+
+		switch n.OnDuplicate {
+		case OnDuplicateCreateTableSelectError:
+			// nothing output
+		case OnDuplicateCreateTableSelectIgnore:
+			ctx.WriteKeyWord("IGNORE ")
+		case OnDuplicateCreateTableSelectReplace:
+			ctx.WriteKeyWord("REPLACE ")
+		}
+
+		ctx.WriteKeyWord("AS ")
+		if err := n.Select.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Select")
+		}
+	}
 
 	return nil
 }
