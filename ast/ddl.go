@@ -14,6 +14,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	. "github.com/pingcap/parser/format"
@@ -962,7 +964,7 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(" DEFINER")
 	ctx.WritePlain(" = ")
 	if n.Definer.CurrentUser {
-		ctx.WriteKeyWord(" current_user ")
+		ctx.WriteKeyWord("current_user")
 	} else {
 		ctx.WriteName(n.Definer.Username)
 		if n.Definer.Hostname != "" {
@@ -970,19 +972,34 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteName(n.Definer.Hostname)
 		}
 	}
-	ctx.WriteKeyWord(" SQL SECURITY ")
-	ctx.WriteKeyWord(n.Security.String())
-	ctx.WriteKeyWord(" VIEW ")
-	ctx.WriteName(n.ViewName.Schema.O)
-	ctx.WritePlain(".")
+	ctx.WriteKeyWord(fmt.Sprintf(" SQL SECURITY %s VIEW ", n.Security.String()))
+	if n.ViewName.Schema.L != "" {
+		ctx.WriteName(n.ViewName.Schema.O)
+		ctx.WritePlain(".")
+	}
 	ctx.WriteName(n.ViewName.Name.O)
+
+	for i, col := range n.Cols {
+		if i == 0 {
+			ctx.WritePlain(" (")
+		} else {
+			ctx.WritePlain(",")
+		}
+		ctx.WriteName(col.O)
+		if i == len(n.Cols)-1 {
+			ctx.WritePlain(")")
+		}
+	}
+
 	ctx.WriteKeyWord(" AS ")
 
 	if err := n.Select.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while create index")
+		return errors.Annotate(err, "An error occurred while create CreateViewStmt.Select")
 	}
 
-	ctx.WritePlainf(" WITH %s CHECK OPTION", n.CheckOption.String())
+	if n.CheckOption != model.CheckOptionCascaded {
+		ctx.WriteKeyWord(fmt.Sprintf(" WITH %s CHECK OPTION", n.CheckOption.String()))
+	}
 	return nil
 }
 
