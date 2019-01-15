@@ -727,6 +727,7 @@ import (
 	PartitionDefinitionListOpt	"Partition definition list option"
 	PartitionOpt			"Partition option"
 	PartitionNameList		"Partition name list"
+	PartitionNameListOpt    "table partition names list optional"
 	PartitionNumOpt			"PARTITION NUM option"
 	PartDefValuesOpt		"VALUES {LESS THAN {(expr | value_list) | MAXVALUE} | IN {value_list}"
 	PartDefOptionsOpt		"PartDefOptionList option"
@@ -4941,11 +4942,12 @@ TableRef:
 	}
 
 TableFactor:
-	TableName TableAsNameOpt IndexHintListOpt
+	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
 	{
 		tn := $1.(*ast.TableName)
-		tn.IndexHints = $3.([]*ast.IndexHint)
-		$$ = &ast.TableSource{Source: tn, AsName: $2.(model.CIStr)}
+		tn.PartitionNames = $2.([]model.CIStr)
+		tn.IndexHints = $4.([]*ast.IndexHint)
+		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
 |	'(' SelectStmt ')' TableAsName
 	{
@@ -4962,6 +4964,16 @@ TableFactor:
 	{
 		$$ = $2
 	}
+
+PartitionNameListOpt:
+    /* empty */
+    {
+        $$ = []model.CIStr{}
+    }
+|    "PARTITION" '(' PartitionNameList ')'
+    {
+        $$ = $3
+    }
 
 TableAsNameOpt:
 	{
@@ -5768,11 +5780,26 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
-|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NumList
+|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminRestoreTable,
-			JobIDs: $6.([]int64),
+			JobIDs: []int64{$6.(int64)},
+		}
+	}
+|	"ADMIN" "RESTORE" "TABLE" TableName
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
+		}
+	}
+|	"ADMIN" "RESTORE" "TABLE" TableName NUM
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
+		        JobNumber: $5.(int64),
 		}
 	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
@@ -6503,12 +6530,7 @@ TableOption:
 	}
 |	"STATS_PERSISTENT" EqOpt StatsPersistentVal
 	{
-                switch $3.(type) {
-                case uint64:
-                        $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent, UintValue: $3.(uint64)}
-                default:
-                        $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent, StrValue: "DEFAULT"}
-                }
+                $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
 
 	}
 |	"SHARD_ROW_ID_BITS" EqOpt LengthNum
@@ -6517,12 +6539,7 @@ TableOption:
 	}
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
-		switch $3.(type) {
-                case uint64:
-                    $$ = &ast.TableOption{Tp: ast.TableOptionPackKeys, UintValue: $3.(uint64)}
-                default:
-                    $$ = &ast.TableOption{Tp: ast.TableOptionPackKeys, StrValue: "DEFAULT"}
-                }
+		$$ = &ast.TableOption{Tp: ast.TableOptionPackKeys}
 	}
 
 StatsPersistentVal:

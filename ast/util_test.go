@@ -80,6 +80,10 @@ func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 		}
 	case *AggregateFuncExpr:
 		node.F = strings.ToLower(node.F)
+	case *FieldList:
+		for _, f := range node.Fields {
+			f.Offset = 0
+		}
 	case *AlterTableSpec:
 		for _, opt := range node.Options {
 			opt.StrValue = strings.ToLower(opt.StrValue)

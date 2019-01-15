@@ -539,8 +539,11 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 
 	if n.Tp == ConstraintForeignKey {
 		ctx.WriteKeyWord("CONSTRAINT ")
-		ctx.WriteName(n.Name)
-		ctx.WriteKeyWord(" FOREIGN KEY ")
+		if n.Name != "" {
+			ctx.WriteName(n.Name)
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("FOREIGN KEY ")
 	} else if n.Name != "" {
 		ctx.WritePlain(" ")
 		ctx.WriteName(n.Name)
@@ -626,10 +629,6 @@ func (n *ColumnDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	for i, options := range n.Options {
-		//先去掉 > 0 加逗号的逻辑
-		//if i > 0 {
-		//	ctx.WritePlain(",")
-		//}
 		ctx.WritePlain(" ")
 		if err := options.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while splicing ColumnDef ColumnOption: [%v]", i)
@@ -729,9 +728,7 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WritePlain(";")
-	//TODO: Waiting for Create Select
-	//TODO: OnDuplicate
-	//TODO: Select
+	//TODO: Restore Select Stmt
 
 	return nil
 }
@@ -979,7 +976,36 @@ type CreateIndexStmt struct {
 
 // Restore implements Node interface.
 func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE ")
+	if n.Unique {
+		ctx.WriteKeyWord("UNIQUE ")
+	}
+	ctx.WriteKeyWord("INDEX ")
+	ctx.WriteName(n.IndexName)
+	ctx.WriteKeyWord(" ON ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.Table")
+	}
+
+	ctx.WritePlain(" (")
+	for i, indexColName := range n.IndexColNames {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := indexColName.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.IndexColNames: [%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" {
+		ctx.WritePlain(" ")
+		if err := n.IndexOption.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
+		}
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
