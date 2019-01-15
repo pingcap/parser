@@ -1674,7 +1674,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		summoner_id int(11) DEFAULT '0',
 		union_name varbinary(52) NOT NULL,
 		union_id int(11) DEFAULT '0',
-		PRIMARY KEY (union_name)) ENGINE=MyISAM DEFAULT CHARSET=binary;`, true, ""}, //varbinary 解析binary的问题
+		PRIMARY KEY (union_name)) ENGINE=MyISAM DEFAULT CHARSET=binary;`, true, "CREATE TABLE `t1` (`accout_id` INT(11) DEFAULT '0',`summoner_id` INT(11) DEFAULT '0',`union_name` VARBINARY(52) NOT NULL,`union_id` INT(11) DEFAULT '0',PRIMARY KEY(`union_name`)) ENGINE = MyISAM DEFAULT CHARACTER SET = BINARY;"},
 		// Create table with multiple index options.
 		{`create table t (c int, index ci (c) USING BTREE COMMENT "123");`, true, "CREATE TABLE `t` (`c` INT,INDEX `ci`(`c`) USING BTREE COMMENT '123');"},
 		// for default value

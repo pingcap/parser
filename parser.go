@@ -11692,7 +11692,6 @@ yynewstate:
 	case 1234:
 		{
 			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
-
 		}
 	case 1235:
 		{
@@ -11700,6 +11699,7 @@ yynewstate:
 		}
 	case 1236:
 		{
+			// Parse it but will ignore it.
 			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionPackKeys}
 		}
 	case 1239:
