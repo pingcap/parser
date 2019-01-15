@@ -1515,6 +1515,7 @@ const (
 	ShowStatus
 	ShowCollation
 	ShowCreateTable
+	ShowCreateView
 	ShowCreateUser
 	ShowGrants
 	ShowTriggers
