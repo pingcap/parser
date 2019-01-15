@@ -399,7 +399,7 @@ var AllColumnPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv}
 const AllPrivilegeLiteral = "ALL PRIVILEGES"
 
 // DefaultSQLMode for GLOBAL_VARIABLES
-const DefaultSQLMode = "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+const DefaultSQLMode = "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 
 // DefaultLengthOfMysqlTypes is the map for default physical length of MySQL data types.
 // See http://dev.mysql.com/doc/refman/5.7/en/storage-requirements.html
@@ -511,6 +511,11 @@ func (m SQLMode) HasNoAutoCreateUserMode() bool {
 	return m&ModeNoAutoCreateUser == ModeNoAutoCreateUser
 }
 
+// HasAllowInvalidDatesMode detects if 'ALLOW_INVALID_DATES' mode is set in SQLMode
+func (m SQLMode) HasAllowInvalidDatesMode() bool {
+	return m&ModeAllowInvalidDates == ModeAllowInvalidDates
+}
+
 // consts for sql modes.
 const (
 	ModeNone        SQLMode = 0
@@ -546,6 +551,7 @@ const (
 	ModeHighNotPrecedence
 	ModeNoEngineSubstitution
 	ModePadCharToFullLength
+	ModeAllowInvalidDates
 )
 
 // FormatSQLModeStr re-format 'SQL_MODE' variable.
@@ -623,6 +629,7 @@ var Str2SQLMode = map[string]SQLMode{
 	"HIGH_NOT_PRECEDENCE":        ModeHighNotPrecedence,
 	"NO_ENGINE_SUBSTITUTION":     ModeNoEngineSubstitution,
 	"PAD_CHAR_TO_FULL_LENGTH":    ModePadCharToFullLength,
+	"ALLOW_INVALID_DATES":        ModeAllowInvalidDates,
 }
 
 // CombinationSQLMode is the special modes that provided as shorthand for combinations of mode values.
