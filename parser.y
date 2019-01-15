@@ -6530,7 +6530,7 @@ TableOption:
 	}
 |	"STATS_PERSISTENT" EqOpt StatsPersistentVal
 	{
-                $$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
 	}
 |	"SHARD_ROW_ID_BITS" EqOpt LengthNum
 	{
