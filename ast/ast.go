@@ -18,6 +18,7 @@ package ast
 import (
 	"io"
 
+	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
 )
@@ -53,6 +54,7 @@ const (
 	FlagHasVariable
 	FlagHasDefault
 	FlagPreEvaluated
+	FlagHasWindowFunc
 )
 
 // ExprNode is a node that can be evaluated.

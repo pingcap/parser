@@ -423,6 +423,8 @@ import (
 	value		"VALUE"
 	variables	"VARIABLES"
 	view		"VIEW"
+	binding		"BINDING"
+	bindings	"BINDINGS"
 	warnings	"WARNINGS"
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
@@ -482,6 +484,7 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
+	restore		"RESTORE"
 
 	builtinAddDate
 	builtinBitAnd
@@ -572,6 +575,7 @@ import (
 	CreateUserStmt			"CREATE User statement"
 	CreateDatabaseStmt		"Create Database Statement"
 	CreateIndexStmt			"CREATE INDEX statement"
+	CreateBindingStmt		"CREATE BINDING  statement"
 	DoStmt				"Do statement"
 	DropDatabaseStmt		"DROP DATABASE statement"
 	DropIndexStmt			"DROP INDEX statement"
@@ -579,6 +583,7 @@ import (
 	DropTableStmt			"DROP TABLE statement"
 	DropUserStmt			"DROP USER"
 	DropViewStmt			"DROP VIEW statement"
+	DropBindingStmt		    	"DROP BINDING  statement"
 	DeallocateStmt			"Deallocate prepared statement"
 	DeleteFromStmt			"DELETE FROM statement"
 	EmptyStmt			"empty statement"
@@ -599,7 +604,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
-	ShowStmt			"Show engines/databases/tables/columns/warnings/status statement"
+	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
 	TraceableStmt			"traceable statment"
@@ -722,6 +727,7 @@ import (
 	PartitionDefinitionListOpt	"Partition definition list option"
 	PartitionOpt			"Partition option"
 	PartitionNameList		"Partition name list"
+	PartitionNameListOpt    "table partition names list optional"
 	PartitionNumOpt			"PARTITION NUM option"
 	PartDefValuesOpt		"VALUES {LESS THAN {(expr | value_list) | MAXVALUE} | IN {value_list}"
 	PartDefOptionsOpt		"PartDefOptionList option"
@@ -1083,7 +1089,7 @@ AlterTableSpec:
 			Tp: ast.AlterTableDropPartition,
 			Name: $3,
 		}
-	}	
+	}
 |	"TRUNCATE" "PARTITION" Identifier
 	{
 		$$ = &ast.AlterTableSpec{
@@ -2987,7 +2993,7 @@ UnReservedKeyword:
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
 | "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
-| "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "MODIFY" | "EVENTS" | "PARTITIONS"
+| "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER"
@@ -2995,7 +3001,7 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ"
+"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -4714,7 +4720,7 @@ WindowFrameStart:
 	}
 |	paramMarker "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewValueExpr($1),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewParamMarkerExpr(yyS[yypt].offset),}
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
@@ -4746,7 +4752,7 @@ WindowFrameBound:
 	}
 |	paramMarker "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewValueExpr($1),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewParamMarkerExpr(yyS[yypt].offset),}
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
@@ -4936,11 +4942,12 @@ TableRef:
 	}
 
 TableFactor:
-	TableName TableAsNameOpt IndexHintListOpt
+	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
 	{
 		tn := $1.(*ast.TableName)
-		tn.IndexHints = $3.([]*ast.IndexHint)
-		$$ = &ast.TableSource{Source: tn, AsName: $2.(model.CIStr)}
+		tn.PartitionNames = $2.([]model.CIStr)
+		tn.IndexHints = $4.([]*ast.IndexHint)
+		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
 |	'(' SelectStmt ')' TableAsName
 	{
@@ -4957,6 +4964,16 @@ TableFactor:
 	{
 		$$ = $2
 	}
+
+PartitionNameListOpt:
+    /* empty */
+    {
+        $$ = []model.CIStr{}
+    }
+|    "PARTITION" '(' PartitionNameList ')'
+    {
+        $$ = $3
+    }
 
 TableAsNameOpt:
 	{
@@ -5763,6 +5780,28 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
+|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			JobIDs: []int64{$6.(int64)},
+		}
+	}
+|	"ADMIN" "RESTORE" "TABLE" TableName
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
+		}
+	}
+|	"ADMIN" "RESTORE" "TABLE" TableName NUM
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
+		        JobNumber: $5.(int64),
+		}
+	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
 	{
 		$$ = &ast.AdminStmt{
@@ -5891,13 +5930,22 @@ ShowStmt:
 			Table:	$4.(*ast.TableName),
 		}
 	}
-|	"SHOW" "CREATE" "DATABASE" DBName
+|	"SHOW" "CREATE" "DATABASE" IfNotExists DBName
 	{
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateDatabase,
-			DBName:	$4.(string),
+			IfNotExists: $4.(bool),
+			DBName:	$5.(string),
 		}
 	}
+|	"SHOW" "CREATE" "USER" Username
+        {
+                // See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
+                $$ = &ast.ShowStmt{
+                        Tp:	ast.ShowCreateUser,
+                        User:	$4.(*auth.UserIdentity),
+                }
+        }
 |	"SHOW" "GRANTS"
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
@@ -6085,6 +6133,13 @@ ShowTargetFilterable:
 			GlobalScope: $1.(bool),
 		}
 	}
+|	GlobalScope "BINDINGS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp: ast.ShowBindings,
+			GlobalScope: $1.(bool),
+		}
+	}
 |	"COLLATION"
 	{
 		$$ = &ast.ShowStmt{
@@ -6260,6 +6315,7 @@ Statement:
 |	CreateTableStmt
 |	CreateViewStmt
 |	CreateUserStmt
+|	CreateBindingStmt
 |	DoStmt
 |	DropDatabaseStmt
 |	DropIndexStmt
@@ -6267,6 +6323,7 @@ Statement:
 |	DropViewStmt
 |	DropUserStmt
 |	DropStatsStmt
+|	DropBindingStmt
 |	FlushStmt
 |	GrantStmt
 |	InsertIntoStmt
@@ -7266,6 +7323,55 @@ HashString:
 	stringLit
 	{
 		$$ = $1
+	}
+
+/*******************************************************************
+ *
+ *  Create Binding Statement
+ *
+ *  Example:
+ *      CREATE GLOBAL BINDING FOR select Col1,Col2 from table USING select Col1,Col2 from table use index(Col1)
+ *******************************************************************/
+CreateBindingStmt:
+	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
+    	{
+		startOffset := parser.startOffset(&yyS[yypt-2])
+        	endOffset := parser.startOffset(&yyS[yypt-1])
+        	selStmt := $5.(*ast.SelectStmt)
+        	selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+
+		startOffset = parser.startOffset(&yyS[yypt])
+		hintedSelStmt := $7.(*ast.SelectStmt)
+		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		x := &ast.CreateBindingStmt {
+			OriginSel:  selStmt,
+			HintedSel:  hintedSelStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+/*******************************************************************
+ *
+ *  Drop Binding Statement
+ *
+ *  Example:
+ *      DROP GLOBAL BINDING FOR select Col1,Col2 from table
+ *******************************************************************/
+DropBindingStmt:
+	"DROP" GlobalScope "BINDING" "FOR" SelectStmt
+	{
+		startOffset := parser.startOffset(&yyS[yypt])
+		selStmt := $5.(*ast.SelectStmt)
+		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		x := &ast.DropBindingStmt {
+			OriginSel:  selStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
 	}
 
 /*************************************************************************************

@@ -892,11 +892,41 @@ const (
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
+	ErrWindowNoSuchWindow                                           = 3579
+	ErrWindowCircularityInWindowGraph                               = 3580
+	ErrWindowNoChildPartitioning                                    = 3581
+	ErrWindowNoInherentFrame                                        = 3582
+	ErrWindowNoRedefineOrderBy                                      = 3583
+	ErrWindowFrameStartIllegal                                      = 3584
+	ErrWindowFrameEndIllegal                                        = 3585
+	ErrWindowFrameIllegal                                           = 3586
+	ErrWindowRangeFrameOrderType                                    = 3587
+	ErrWindowRangeFrameTEMPORALType                                 = 3588
+	ErrWindowRangeFrameNumericType                                  = 3589
+	ErrWindowRangeBoundNotConstant                                  = 3590
+	ErrWindowDuplicateName                                          = 3591
+	ErrWindowIllegalOrderBy                                         = 3592
+	ErrWindowInvalidWindowFuncUse                                   = 3593
+	ErrWindowInvalidWindowFuncAliasUse                              = 3594
+	ErrWindowNestedWindowFuncUseInWindowSpec                        = 3595
+	ErrWindowRowsIntervalUse                                        = 3596
+	ErrWindowNoGroupOrderUnused                                     = 3597
+	ErrWindowExplainJson                                            = 3598
+	ErrWindowFunctionIgnoresFrame                                   = 3599
 
 	// TiDB self-defined errors.
-	ErrMemExceedThreshold = 8001
-	ErrForUpdateCantRetry = 8002
-	ErrAdminCheckTable    = 8003
+	ErrMemExceedThreshold         = 8001
+	ErrForUpdateCantRetry         = 8002
+	ErrAdminCheckTable            = 8003
+	ErrInvalidPluginID            = 8101
+	ErrInvalidPluginManifest      = 8102
+	ErrInvalidPluginName          = 8103
+	ErrInvalidPluginVersion       = 8104
+	ErrDuplicatePlugin            = 8105
+	ErrInvalidPluginSysVarName    = 8106
+	ErrRequireVersionCheckFail    = 8107
+	ErrUnsupportedReloadPlugin    = 8018
+	ErrUnsupportedReloadPluginVar = 8019
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
