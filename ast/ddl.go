@@ -729,18 +729,15 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	if n.Select != nil {
-		ctx.WritePlain(" ")
-
 		switch n.OnDuplicate {
 		case OnDuplicateCreateTableSelectError:
-			// nothing output
+			ctx.WriteKeyWord(" AS ")
 		case OnDuplicateCreateTableSelectIgnore:
-			ctx.WriteKeyWord("IGNORE ")
+			ctx.WriteKeyWord(" IGNORE AS ")
 		case OnDuplicateCreateTableSelectReplace:
-			ctx.WriteKeyWord("REPLACE ")
+			ctx.WriteKeyWord(" REPLACE AS ")
 		}
 
-		ctx.WriteKeyWord("AS ")
 		if err := n.Select.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt Select")
 		}
