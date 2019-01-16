@@ -14,8 +14,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	. "github.com/pingcap/parser/format"
@@ -972,7 +970,9 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteName(n.Definer.Hostname)
 		}
 	}
-	ctx.WriteKeyWord(fmt.Sprintf(" SQL SECURITY %s VIEW ", n.Security.String()))
+	ctx.WriteKeyWord(" SQL SECURITY ")
+	ctx.WriteKeyWord(n.Security.String())
+	ctx.WriteKeyWord(" VIEW ")
 	if n.ViewName.Schema.L != "" {
 		ctx.WriteName(n.ViewName.Schema.O)
 		ctx.WritePlain(".")
@@ -998,7 +998,9 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	if n.CheckOption != model.CheckOptionCascaded {
-		ctx.WriteKeyWord(fmt.Sprintf(" WITH %s CHECK OPTION", n.CheckOption.String()))
+		ctx.WriteKeyWord(" WITH ")
+		ctx.WriteKeyWord(n.CheckOption.String())
+		ctx.WriteKeyWord(" CHECK OPTION")
 	}
 	return nil
 }
