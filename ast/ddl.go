@@ -1741,3 +1741,34 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 
 	return nil
 }
+
+// RestoreTableStmt is a statement to restore dropped table.
+type RestoreTableStmt struct {
+	ddlNode
+
+	JobID  int64
+	Table  *TableName
+	JobNum int64
+}
+
+// Restore implements Node interface.
+func (n *RestoreTableStmt) Restore(ctx *RestoreCtx) error {
+	return errors.New("Not implemented")
+}
+
+// Accept implements Node Accept interface.
+func (n *RestoreTableStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	n = newNode.(*RestoreTableStmt)
+	node, ok := n.Table.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Table = node.(*TableName)
+
+	return v.Leave(n)
+}

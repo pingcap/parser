@@ -5782,25 +5782,22 @@ AdminStmt:
 	}
 |	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
 	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminRestoreTable,
-			JobIDs: []int64{$6.(int64)},
+		$$ = &ast.RestoreTableStmt{
+			JobID: $6.(int64),
 		}
 	}
 |	"ADMIN" "RESTORE" "TABLE" TableName
 	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminRestoreTable,
-			Tables: []*ast.TableName{$4.(*ast.TableName)},
-		}
+	    $$ = &ast.RestoreTableStmt{
+        	Table: $4.(*ast.TableName),
+        }
 	}
 |	"ADMIN" "RESTORE" "TABLE" TableName NUM
 	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminRestoreTable,
-			Tables: []*ast.TableName{$4.(*ast.TableName)},
-		        JobNumber: $5.(int64),
-		}
+	    $$ = &ast.RestoreTableStmt{
+        	Table: $4.(*ast.TableName),
+        	JobNum: $5.(int64),
+        }
 	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
 	{

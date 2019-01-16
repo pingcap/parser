@@ -11057,24 +11057,21 @@ yynewstate:
 		}
 	case 1069:
 		{
-			parser.yyVAL.statement = &ast.AdminStmt{
-				Tp:     ast.AdminRestoreTable,
-				JobIDs: []int64{yyS[yypt-0].item.(int64)},
+			parser.yyVAL.statement = &ast.RestoreTableStmt{
+				JobID: yyS[yypt-0].item.(int64),
 			}
 		}
 	case 1070:
 		{
-			parser.yyVAL.statement = &ast.AdminStmt{
-				Tp:     ast.AdminRestoreTable,
-				Tables: []*ast.TableName{yyS[yypt-0].item.(*ast.TableName)},
+			parser.yyVAL.statement = &ast.RestoreTableStmt{
+				Table: yyS[yypt-0].item.(*ast.TableName),
 			}
 		}
 	case 1071:
 		{
-			parser.yyVAL.statement = &ast.AdminStmt{
-				Tp:        ast.AdminRestoreTable,
-				Tables:    []*ast.TableName{yyS[yypt-1].item.(*ast.TableName)},
-				JobNumber: yyS[yypt-0].item.(int64),
+			parser.yyVAL.statement = &ast.RestoreTableStmt{
+				Table:  yyS[yypt-1].item.(*ast.TableName),
+				JobNum: yyS[yypt-0].item.(int64),
 			}
 		}
 	case 1072:
