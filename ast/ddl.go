@@ -961,6 +961,8 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(n.Algorithm.String())
 	ctx.WriteKeyWord(" DEFINER")
 	ctx.WritePlain(" = ")
+
+	// todo Use n.Definer.Restore(ctx) to replace this part
 	if n.Definer.CurrentUser {
 		ctx.WriteKeyWord("current_user")
 	} else {
@@ -970,14 +972,14 @@ func (n *CreateViewStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteName(n.Definer.Hostname)
 		}
 	}
+
 	ctx.WriteKeyWord(" SQL SECURITY ")
 	ctx.WriteKeyWord(n.Security.String())
 	ctx.WriteKeyWord(" VIEW ")
-	if n.ViewName.Schema.L != "" {
-		ctx.WriteName(n.ViewName.Schema.O)
-		ctx.WritePlain(".")
+
+	if err := n.ViewName.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while create CreateViewStmt.ViewName")
 	}
-	ctx.WriteName(n.ViewName.Name.O)
 
 	for i, col := range n.Cols {
 		if i == 0 {
