@@ -1753,7 +1753,19 @@ type RestoreTableStmt struct {
 
 // Restore implements Node interface.
 func (n *RestoreTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("RESTORE TABLE ")
+	if n.JobID != 0 {
+		ctx.WriteKeyWord("BY JOB ")
+		ctx.WritePlainf("%d", n.JobID)
+	} else {
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing RestoreTableStmt Table")
+		}
+		if n.JobNum > 0 {
+			ctx.WritePlainf(" %d", n.JobNum)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1764,11 +1776,12 @@ func (n *RestoreTableStmt) Accept(v Visitor) (Node, bool) {
 	}
 
 	n = newNode.(*RestoreTableStmt)
-	node, ok := n.Table.Accept(v)
-	if !ok {
-		return n, false
+	if n.Table != nil {
+		node, ok := n.Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Table = node.(*TableName)
 	}
-	n.Table = node.(*TableName)
-
 	return v.Leave(n)
 }

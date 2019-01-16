@@ -1849,13 +1849,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE bar (m INT) REPLACE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) REPLACE AS SELECT `n` FROM `foo`"},
 
 		// for restore table
-		{"restore table by job 11", true, ""},
+		{"restore table by job 11", true, "RESTORE TABLE BY JOB 11"},
 		{"restore table by job 11,12,13", false, ""},
 		{"restore table by job", false, ""},
-		{"restore table t1", true, ""},
+		{"restore table t1", true, "RESTORE TABLE `t1`"},
 		{"restore table t1,t2", false, ""},
 		{"restore table ", false, ""},
-		{"restore table t1 100", true, ""},
+		{"restore table t1 100", true, "RESTORE TABLE `t1` 100"},
 		{"restore table t1 abc", false, ""},
 	}
 	s.RunTest(c, table)
