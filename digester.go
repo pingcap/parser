@@ -18,6 +18,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	hash2 "hash"
+	"strings"
 	"sync"
 	"unicode"
 )
@@ -91,7 +92,7 @@ func (d *sqlDigester) normalize(sql string) {
 		case intLit, stringLit, decLit, floatLit, bitLit, hexLit:
 			d.buffer.WriteRune('?')
 		default:
-			d.buffer.WriteString(lit)
+			d.buffer.WriteString(strings.ToLower(lit))
 		}
 	}
 	d.lexer.reset("")

@@ -18,12 +18,12 @@ import (
 	"github.com/pingcap/parser"
 )
 
-var _ = Suite(&testNormalizeSuite{})
+var _ = Suite(&testSQLDigestSuite{})
 
-type testNormalizeSuite struct {
+type testSQLDigestSuite struct {
 }
 
-func (s *testNormalizeSuite) TestDigestNormalSQL(c *C) {
+func (s *testSQLDigestSuite) TestDigestText(c *C) {
 	tests := []struct {
 		input  string
 		expect string
@@ -37,12 +37,11 @@ func (s *testNormalizeSuite) TestDigestNormalSQL(c *C) {
 	}
 }
 
-func (s *testNormalizeSuite) TestDigestEqForSimpleSQL(c *C) {
+func (s *testSQLDigestSuite) TestDigestHashEqForSimpleSQL(c *C) {
 	sqlGroups := [][]string{
 		{"select * from b where id = 1", "select * from b where id = '1'", "select * from b where id =2"},
-		{"select 2 from b, c where b.id =          c.id where c.id > 1", "select 4 from b, c where " +
-			"b.id = c.id where c.id > 23"},
-		{"Select ?", "select 1"},
+		{"select 2 from b, c where b.id = c.id where c.id > 1", "select 4 from b, c where b.id = c.id where c.id > 23"},
+		{"Select 3", "select 1"},
 	}
 	for _, sqlGroup := range sqlGroups {
 		var d string
@@ -57,7 +56,7 @@ func (s *testNormalizeSuite) TestDigestEqForSimpleSQL(c *C) {
 	}
 }
 
-func (s *testNormalizeSuite) TestDigestNotEqForSimpleSQL(c *C) {
+func (s *testSQLDigestSuite) TestDigestHashNotEqForSimpleSQL(c *C) {
 	sqlGroups := [][]string{
 		{"select * from b where id = 1", "select a from b where id = 1", "select * from d where bid =1"},
 	}
