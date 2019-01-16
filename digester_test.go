@@ -14,47 +14,62 @@
 package parser_test
 
 import (
-	"testing"
-
+	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 )
 
-func TestDigestEqForSimpleSQL(t *testing.T) {
+var _ = Suite(&testNormalizeSuite{})
+
+type testNormalizeSuite struct {
+}
+
+func (s *testNormalizeSuite) TestDigestNormalSQL(c *C) {
+	tests := []struct {
+		input  string
+		expect string
+	}{
+		{"select 1", "select ?"},
+		{"select * from b where id = 1", "select * from b where id = ?"},
+	}
+	for _, test := range tests {
+		actual := parser.DigestText(test.input)
+		c.Assert(actual, Equals, test.expect)
+	}
+}
+
+func (s *testNormalizeSuite) TestDigestEqForSimpleSQL(c *C) {
 	sqlGroups := [][]string{
 		{"select * from b where id = 1", "select * from b where id = '1'", "select * from b where id =2"},
 		{"select 2 from b, c where b.id =          c.id where c.id > 1", "select 4 from b, c where " +
 			"b.id = c.id where c.id > 23"},
+		{"Select ?", "select 1"},
 	}
 	for _, sqlGroup := range sqlGroups {
 		var d string
 		for _, sql := range sqlGroup {
-			dig := parser.Digest(sql)
+			dig := parser.DigestHash(sql)
 			if d == "" {
 				d = dig
 				continue
 			}
-			if d != dig {
-				t.Errorf("digest for %s's digest result %s not eq to previous %s", sql, d, dig)
-			}
+			c.Assert(d, Equals, dig)
 		}
 	}
 }
 
-func TestDigestNotEqForSimpleSQL(t *testing.T) {
+func (s *testNormalizeSuite) TestDigestNotEqForSimpleSQL(c *C) {
 	sqlGroups := [][]string{
 		{"select * from b where id = 1", "select a from b where id = 1", "select * from d where bid =1"},
 	}
 	for _, sqlGroup := range sqlGroups {
 		var d string
 		for _, sql := range sqlGroup {
-			dig := parser.Digest(sql)
+			dig := parser.DigestHash(sql)
 			if d == "" {
 				d = dig
 				continue
 			}
-			if d == dig {
-				t.Errorf("digest for %s's digest result %s not eq to previous %s", sql, d, dig)
-			}
+			c.Assert(d, Not(Equals), dig)
 		}
 	}
 }
