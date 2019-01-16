@@ -31,7 +31,7 @@ func DigestHash(sql string) (result string) {
 	return
 }
 
-// DigestText generates the normalized sql query.
+// DigestText generates the normalized statements.
 func DigestText(sql string) (result string) {
 	d := digesterPool.Get().(*sqlDigester)
 	result = d.doDigestText(sql)
