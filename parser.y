@@ -601,6 +601,7 @@ import (
 	SelectStmt			"SELECT statement"
 	RenameTableStmt         	"rename table statement"
 	ReplaceIntoStmt			"REPLACE INTO statement"
+	RestoreTableStmt        "restore table statement"
 	RevokeStmt			"Revoke statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
@@ -1335,7 +1336,35 @@ TableToTable:
 			NewTable: $3.(*ast.TableName),
 		}
 	}
-
+/*******************************************************************
+ *
+ *  Restore Table Statement
+ *
+ *  Example:
+ *      RESTORE TABLE t1;
+ *      RESTORE TABLE BY JOB 100;
+ *
+ *******************************************************************/
+RestoreTableStmt:
+	"RESTORE" "TABLE" "BY" "JOB" NUM
+    {
+        $$ = &ast.RestoreTableStmt{
+            JobID: $5.(int64),
+        }
+    }
+|	"RESTORE" "TABLE" TableName
+    {
+        $$ = &ast.RestoreTableStmt{
+            Table: $3.(*ast.TableName),
+        }
+    }
+|	"RESTORE" "TABLE" TableName NUM
+    {
+        $$ = &ast.RestoreTableStmt{
+            Table: $3.(*ast.TableName),
+            JobNum: $4.(int64),
+        }
+    }
 
 /*******************************************************************************************/
 
@@ -5780,25 +5809,6 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
-|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
-	{
-		$$ = &ast.RestoreTableStmt{
-			JobID: $6.(int64),
-		}
-	}
-|	"ADMIN" "RESTORE" "TABLE" TableName
-	{
-	    $$ = &ast.RestoreTableStmt{
-        	Table: $4.(*ast.TableName),
-        }
-	}
-|	"ADMIN" "RESTORE" "TABLE" TableName NUM
-	{
-	    $$ = &ast.RestoreTableStmt{
-        	Table: $4.(*ast.TableName),
-        	JobNum: $5.(int64),
-        }
-	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
 	{
 		$$ = &ast.AdminStmt{
@@ -6331,6 +6341,7 @@ Statement:
 |	RollbackStmt
 |	RenameTableStmt
 |	ReplaceIntoStmt
+|   RestoreTableStmt
 |	RevokeStmt
 |	SelectStmt
 |	UnionStmt
