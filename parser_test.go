@@ -395,9 +395,9 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DO 1 from t", false, ""},
 
 		// load data
-		{"load data infile '/tmp/t.csv' into table t", true, ""},
-		{"load data infile '/tmp/t.csv' into table t character set utf8", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, ""},
+		{"load data infile '/tmp/t.csv' into table t", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data infile '/tmp/t.csv' into table t character set utf8", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
 		{"load data infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, ""},
 		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, ""},
 		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},

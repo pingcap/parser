@@ -1117,7 +1117,55 @@ type LoadDataStmt struct {
 
 // Restore implements Node interface.
 func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("LOAD DATA ")
+	if n.IsLocal {
+		ctx.WriteKeyWord("LOCAL ")
+	}
+	ctx.WriteKeyWord("INFILE ")
+	ctx.WriteString(n.Path)
+	ctx.WriteKeyWord(" INTO TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore LoadDataStmt.Table")
+	}
+	if n.FieldsInfo.Terminated != "\t" || n.FieldsInfo.Escaped != "\\"[0] {
+		ctx.WriteKeyWord(" FIELDS")
+		if n.FieldsInfo.Terminated != "\t" {
+			ctx.WriteKeyWord(" TERMINATED BY ")
+			ctx.WriteString(n.FieldsInfo.Terminated)
+		}
+		if n.FieldsInfo.Enclosed != 0 {
+			ctx.WriteKeyWord(" ENCLOSED BY ")
+			ctx.WriteString(string(n.FieldsInfo.Enclosed))
+		}
+		if n.FieldsInfo.Escaped != "\\"[0] {
+			ctx.WriteKeyWord(" ESCAPED BY ")
+			ctx.WriteString(string(n.FieldsInfo.Enclosed))
+		}
+	}
+	if n.LinesInfo != nil {
+		// ctx.WritePlain(" ")
+		// if err := n.LinesInfo.Restore(ctx); err != nil {
+		// 	return errors.Annotate(err, "An error occurred while restore LoadDataStmt.LinesInfo")
+		// }
+	}
+	if n.IgnoreLines != 0 {
+		ctx.WriteKeyWord(" IGNORE ")
+		ctx.WritePlainf("%d", n.IgnoreLines)
+		ctx.WriteKeyWord(" LINES")
+	}
+	if len(n.Columns) != 0 {
+		ctx.WritePlain(" (")
+		for i, column := range n.Columns {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := column.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore LoadDataStmt.Columns")
+			}
+		}
+		ctx.WritePlain(")")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
