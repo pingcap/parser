@@ -1139,7 +1139,11 @@ func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if n.FieldsInfo.Escaped != "\\"[0] {
 			ctx.WriteKeyWord(" ESCAPED BY ")
-			ctx.WriteString(string(n.FieldsInfo.Escaped))
+			if n.FieldsInfo.Escaped == 0 {
+				ctx.WritePlain("''")
+			} else {
+				ctx.WriteString(string(n.FieldsInfo.Escaped))
+			}
 		}
 	}
 	if n.LinesInfo.Starting != "" || n.LinesInfo.Terminated != "\n" {
@@ -1162,7 +1166,7 @@ func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain(" (")
 		for i, column := range n.Columns {
 			if i != 0 {
-				ctx.WritePlain(", ")
+				ctx.WritePlain(",")
 			}
 			if err := column.Restore(ctx); err != nil {
 				return errors.Annotate(err, "An error occurred while restore LoadDataStmt.Columns")
