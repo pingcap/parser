@@ -1139,14 +1139,19 @@ func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if n.FieldsInfo.Escaped != "\\"[0] {
 			ctx.WriteKeyWord(" ESCAPED BY ")
-			ctx.WriteString(string(n.FieldsInfo.Enclosed))
+			ctx.WriteString(string(n.FieldsInfo.Escaped))
 		}
 	}
-	if n.LinesInfo != nil {
-		// ctx.WritePlain(" ")
-		// if err := n.LinesInfo.Restore(ctx); err != nil {
-		// 	return errors.Annotate(err, "An error occurred while restore LoadDataStmt.LinesInfo")
-		// }
+	if n.LinesInfo.Starting != "" || n.LinesInfo.Terminated != "\n" {
+		ctx.WriteKeyWord(" LINES")
+		if n.LinesInfo.Starting != "" {
+			ctx.WriteKeyWord(" STARTING BY ")
+			ctx.WriteString(n.LinesInfo.Starting)
+		}
+		if n.LinesInfo.Terminated != "\n" {
+			ctx.WriteKeyWord(" TERMINATED BY ")
+			ctx.WriteString(n.LinesInfo.Terminated)
+		}
 	}
 	if n.IgnoreLines != 0 {
 		ctx.WriteKeyWord(" IGNORE ")
