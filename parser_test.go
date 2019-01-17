@@ -2080,9 +2080,9 @@ func (s *testParserSuite) TestComment(c *C) {
 
 func (s *testParserSuite) TestCommentErrMsg(c *C) {
 	table := []testErrMsgCase{
-		{"delete from t where a = 7 or 1=1/*' and b = 'p'", false, errors.New("[parser:1064]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '/*' and b = 'p'' at line 1")},
-		{"delete from t where a = 7 or\n 1=1/*' and b = 'p'", false, errors.New("[parser:1064]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '/*' and b = 'p'' at line 2")},
-		{"select 1/*", false, errors.New("[parser:1064]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '/*' at line 1")},
+		{"delete from t where a = 7 or 1=1/*' and b = 'p'", false, errors.New("near '/*' and b = 'p'' at line 1")},
+		{"delete from t where a = 7 or\n 1=1/*' and b = 'p'", false, errors.New("near '/*' and b = 'p'' at line 2")},
+		{"select 1/*", false, errors.New("near '/*' at line 1")},
 		{"select 1/* comment */", false, nil},
 	}
 	s.RunErrMsgTest(c, table)
