@@ -137,6 +137,13 @@ const ExtraHandleID = -1
 // ExtraHandleName is the name of ExtraHandle Column.
 var ExtraHandleName = NewCIStr("_tidb_rowid")
 
+const (
+	// TableInfoVersion0 means the table info version is 0.
+	TableInfoVersion0 = uint64(0)
+	// TableInfoVersion1 means the table info version is 1.
+	TableInfoVersion1 = uint64(1)
+)
+
 // TableInfo provides meta data describing a DB table.
 type TableInfo struct {
 	ID      int64  `json:"id"`
@@ -172,6 +179,12 @@ type TableInfo struct {
 	Compression string `json:"compression"`
 
 	View *ViewInfo `json:"view"`
+	// Version means the version of the table info.
+	// Version = 0: For ColumnInfo.OriginDefaultValue and ColumnInfo.DefaultValue of timestamp column will stores the default time in system time zone.
+	//              There will be bug if multiple TiDB server in different system time zone.
+	// Version = 1: For ColumnInfo.OriginDefaultValue and ColumnInfo.DefaultValue of timestamp column will stores the default time in UTC time zone.
+	//              This will fix bug in version 0. For compatibility with version 0, we add version field in table info struct.
+	Version uint64 `json:"version"`
 }
 
 // GetPartitionInfo returns the partition information.
