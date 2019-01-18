@@ -34,6 +34,7 @@ func (s *testSQLDigestSuite) TestDigestText(c *C) {
 		{"select 1 from b where id in (1, a, 4)", "select ? from b where id in ( ? , a , ? )"},
 		{"select 1 from b order by 2", "select ? from b order by 2"},
 		{"select /*+ a hint */ 1", "select ?"},
+		{"select /* a hint */ 1", "select ?"},
 	}
 	for _, test := range tests {
 		actual := parser.DigestText(test.input)

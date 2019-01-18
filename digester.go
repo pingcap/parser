@@ -88,11 +88,11 @@ func (d *sqlDigester) normalize(sql string) {
 		if pos.Offset == len(sql) {
 			break
 		}
-		currTok := token{tok, strings.ToLower(lit)}
 		if tok == hintEnd {
 			d.popUntilHintBegin()
 			continue
 		}
+		currTok := token{tok, strings.ToLower(lit)}
 		if isLit(tok) {
 			currTok = d.genericLit(currTok)
 		}
