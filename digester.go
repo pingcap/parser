@@ -89,12 +89,12 @@ func (d *sqlDigester) normalize(sql string) {
 			break
 		}
 		if tok == hintEnd {
-			d.popUntilHintBegin()
+			d.reduceHint()
 			continue
 		}
 		currTok := token{tok, strings.ToLower(lit)}
 		if isLit(tok) {
-			currTok = d.genericLit(currTok)
+			currTok = d.reduceLit(currTok)
 		}
 		d.tokens = append(d.tokens, currTok)
 	}
@@ -108,7 +108,19 @@ func (d *sqlDigester) normalize(sql string) {
 	d.tokens = d.tokens[:0]
 }
 
-func (d *sqlDigester) genericLit(currTok token) token {
+func (d *sqlDigester) reduceHint() {
+	for {
+		token := d.tokens.popBack(1)
+		if len(token) == 0 {
+			return
+		}
+		if token[0].tok == hintBegin {
+			return
+		}
+	}
+}
+
+func (d *sqlDigester) reduceLit(currTok token) token {
 	// "?, ?, ?, ?" => "..."
 	last2 := d.tokens.back(2)
 	if isGenericList(last2) {
@@ -131,16 +143,36 @@ func (d *sqlDigester) genericLit(currTok token) token {
 	currTok.lit = "?"
 	return currTok
 }
-func (d *sqlDigester) popUntilHintBegin() {
-	for {
-		token := d.tokens.popBack(1)
-		if len(token) == 0 {
-			return
-		}
-		if token[0].tok == hintBegin {
-			return
-		}
+
+func isGenericList(last2 []token) (generic bool) {
+	if len(last2) < 2 {
+		return false
 	}
+	if !isComma(last2[1].tok) {
+		return false
+	}
+	switch last2[0].tok {
+	case genericSymbol, genericSymbolList:
+		generic = true
+	default:
+	}
+	return
+}
+
+func isOrderBy(last2 []token) (orderBy bool) {
+	if len(last2) < 2 {
+		return false
+	}
+	if last2[1].lit != "by" {
+		return false
+	}
+	orderBy = last2[0].lit == "order"
+	return
+}
+
+func isComma(tok int) (isComma bool) {
+	isComma = tok == 44
+	return
 }
 
 type token struct {
@@ -174,36 +206,5 @@ func isLit(tok int) (beLit bool) {
 		beLit = true
 	default:
 	}
-	return
-}
-
-func isGenericList(last2 []token) (generic bool) {
-	if len(last2) < 2 {
-		return false
-	}
-	if !isComma(last2[1].tok) {
-		return false
-	}
-	switch last2[0].tok {
-	case genericSymbol, genericSymbolList:
-		generic = true
-	default:
-	}
-	return
-}
-
-func isOrderBy(last2 []token) (orderBy bool) {
-	if len(last2) < 2 {
-		return false
-	}
-	if last2[1].lit != "by" {
-		return false
-	}
-	orderBy = last2[0].lit == "order"
-	return
-}
-
-func isComma(tok int) (isComma bool) {
-	isComma = tok == 44
 	return
 }
