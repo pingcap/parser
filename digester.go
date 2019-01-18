@@ -53,6 +53,7 @@ type sqlDigester struct {
 	buffer bytes.Buffer
 	lexer  *Scanner
 	hasher hash2.Hash
+	tokens tokenDeque
 }
 
 func (d *sqlDigester) doDigest(sql string) (result string) {
@@ -72,9 +73,13 @@ func (d *sqlDigester) doDigestText(sql string) (result string) {
 	return
 }
 
+const (
+	genericSymbol     = -1
+	genericSymbolList = -2
+)
+
 func (d *sqlDigester) normalize(sql string) {
 	d.lexer.reset(sql)
-	isHead := true
 	for {
 		tok, pos, lit := d.lexer.scan()
 		if tok == unicode.ReplacementChar && d.lexer.r.eof() {
@@ -83,17 +88,122 @@ func (d *sqlDigester) normalize(sql string) {
 		if pos.Offset == len(sql) {
 			break
 		}
-		if isHead {
-			isHead = false
-		} else {
-			d.buffer.WriteRune(' ')
+		currTok := token{tok, strings.ToLower(lit)}
+		if tok == hintEnd {
+			d.popUntilHintBegin()
+			continue
 		}
-		switch tok {
-		case intLit, stringLit, decLit, floatLit, bitLit, hexLit:
-			d.buffer.WriteRune('?')
-		default:
-			d.buffer.WriteString(strings.ToLower(lit))
+		if isLit(tok) {
+			currTok = d.genericLit(currTok)
 		}
+		d.tokens = append(d.tokens, currTok)
 	}
 	d.lexer.reset("")
+	for i, token := range d.tokens {
+		d.buffer.WriteString(token.lit)
+		if i != len(d.tokens)-1 {
+			d.buffer.WriteRune(' ')
+		}
+	}
+	d.tokens = d.tokens[:0]
+}
+
+func (d *sqlDigester) genericLit(currTok token) token {
+	// "?, ?, ?, ?" => "..."
+	last2 := d.tokens.back(2)
+	if isGenericList(last2) {
+		d.tokens.popBack(2)
+		currTok.tok = genericSymbolList
+		currTok.lit = "..."
+		return currTok
+	}
+
+	// order by n => order by n
+	if currTok.tok == intLit {
+		last2 := d.tokens.back(2)
+		if isOrderBy(last2) {
+			return currTok
+		}
+	}
+
+	// 2 => ?
+	currTok.tok = genericSymbol
+	currTok.lit = "?"
+	return currTok
+}
+func (d *sqlDigester) popUntilHintBegin() {
+	for {
+		token := d.tokens.popBack(1)
+		if len(token) == 0 {
+			return
+		}
+		if token[0].tok == hintBegin {
+			return
+		}
+	}
+}
+
+type token struct {
+	tok int
+	lit string
+}
+
+type tokenDeque []token
+
+func (s *tokenDeque) pushBack(t token) {
+	*s = append(*s, t)
+}
+
+func (s *tokenDeque) popBack(n int) (t []token) {
+	t = (*s)[len(*s)-n:]
+	*s = (*s)[:len(*s)-n]
+	return
+}
+
+func (s *tokenDeque) back(n int) (t []token) {
+	if len(*s)-2 < 0 {
+		return
+	}
+	t = (*s)[len(*s)-2:]
+	return
+}
+
+func isLit(tok int) (beLit bool) {
+	switch tok {
+	case intLit, stringLit, decLit, floatLit, bitLit, hexLit:
+		beLit = true
+	default:
+	}
+	return
+}
+
+func isGenericList(last2 []token) (generic bool) {
+	if len(last2) < 2 {
+		return false
+	}
+	if !isComma(last2[1].tok) {
+		return false
+	}
+	switch last2[0].tok {
+	case genericSymbol, genericSymbolList:
+		generic = true
+	default:
+	}
+	return
+}
+
+func isOrderBy(last2 []token) (orderBy bool) {
+	if len(last2) < 2 {
+		return false
+	}
+	if last2[1].lit != "by" {
+		return false
+	}
+	orderBy = last2[0].lit == "order"
+	return
+}
+
+func isComma(tok int) (isComma bool) {
+	isComma = tok == 44
+	return
 }
