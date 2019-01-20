@@ -85,7 +85,7 @@ type ColumnInfo struct {
 	Comment             string      `json:"comment"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
-	//              There will be bug if multiple TiDB server in different system time zone.
+	//              That is a bug if multiple TiDB servers in different system time zone.
 	// Version = 1: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in UTC time zone.
 	//              This will fix bug in version 0. For compatibility with version 0, we add version field in column info struct.
 	Version uint64 `json:"version"`
