@@ -7550,7 +7550,7 @@ PrivType:
 	}
 |	"SHOW" "VIEW"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.ShowViewPriv
 	}
 |	"CREATE" "ROUTINE"
 	{
