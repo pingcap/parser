@@ -395,44 +395,44 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DO 1 from t", false, ""},
 
 		// load data
-		{"load data infile '/tmp/t.csv' into table t", true, ""},
-		{"load data infile '/tmp/t.csv' into table t character set utf8", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, ""},
+		{"load data infile '/tmp/t.csv' into table t", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data infile '/tmp/t.csv' into table t character set utf8", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab'"},
+		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
 		{"load data infile '/tmp/t.csv' into table t terminated by 'xy' fields terminated by 'ab'", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, ""},
+		{"load data local infile '/tmp/t.csv' into table t", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
 		{"load data local infile '/tmp/t.csv' into table t terminated by 'xy' fields terminated by 'ab'", false, ""},
-		{"load data infile '/tmp/t.csv' into table t (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, ""},
+		{"load data infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
 		{"load data local infile '/tmp/t.csv' into table t (a,b) fields terminated by 'ab'", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t ignore 1 lines", true, ""},
+		{"load data local infile '/tmp/t.csv' into table t ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` IGNORE 1 LINES"},
 		{"load data local infile '/tmp/t.csv' into table t ignore -1 lines", false, ""},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b) ignore 1 lines", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, ""},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
 
 		// select for update
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
@@ -563,72 +563,75 @@ AAAAAAAAAAAA5gm5Mg==
 func (s *testParserSuite) TestDBAStmt(c *C) {
 	table := []testCase{
 		// for SHOW statement
-		{"SHOW VARIABLES LIKE 'character_set_results'", true, ""},
-		{"SHOW GLOBAL VARIABLES LIKE 'character_set_results'", true, ""},
-		{"SHOW SESSION VARIABLES LIKE 'character_set_results'", true, ""},
-		{"SHOW VARIABLES", true, ""},
-		{"SHOW GLOBAL VARIABLES", true, ""},
-		{"SHOW GLOBAL VARIABLES WHERE Variable_name = 'autocommit'", true, ""},
-		{"SHOW STATUS", true, ""},
-		{"SHOW GLOBAL STATUS", true, ""},
-		{"SHOW SESSION STATUS", true, ""},
-		{`SHOW STATUS LIKE 'Up%'`, true, ""},
-		{`SHOW STATUS WHERE Variable_name LIKE 'Up%'`, true, ""},
-		{`SHOW FULL TABLES FROM icar_qa LIKE play_evolutions`, true, ""},
-		{`SHOW FULL TABLES WHERE Table_Type != 'VIEW'`, true, ""},
-		{`SHOW GRANTS`, true, ""},
-		{`SHOW GRANTS FOR 'test'@'localhost'`, true, ""},
-		{`SHOW GRANTS FOR current_user()`, true, ""},
-		{`SHOW GRANTS FOR current_user`, true, ""},
-		{`SHOW COLUMNS FROM City;`, true, ""},
-		{`SHOW COLUMNS FROM tv189.1_t_1_x;`, true, ""},
-		{`SHOW FIELDS FROM City;`, true, ""},
-		{`SHOW TRIGGERS LIKE 't'`, true, ""},
-		{`SHOW DATABASES LIKE 'test2'`, true, ""},
-		{`SHOW PROCEDURE STATUS WHERE Db='test'`, true, ""},
+		{"SHOW VARIABLES LIKE 'character_set_results'", true, "SHOW SESSION VARIABLES LIKE 'character_set_results'"},
+		{"SHOW GLOBAL VARIABLES LIKE 'character_set_results'", true, "SHOW GLOBAL VARIABLES LIKE 'character_set_results'"},
+		{"SHOW SESSION VARIABLES LIKE 'character_set_results'", true, "SHOW SESSION VARIABLES LIKE 'character_set_results'"},
+		{"SHOW VARIABLES", true, "SHOW SESSION VARIABLES"},
+		{"SHOW GLOBAL VARIABLES", true, "SHOW GLOBAL VARIABLES"},
+		{"SHOW GLOBAL VARIABLES WHERE Variable_name = 'autocommit'", true, "SHOW GLOBAL VARIABLES WHERE `Variable_name`='autocommit'"},
+		{"SHOW STATUS", true, "SHOW SESSION STATUS"},
+		{"SHOW GLOBAL STATUS", true, "SHOW GLOBAL STATUS"},
+		{"SHOW SESSION STATUS", true, "SHOW SESSION STATUS"},
+		{`SHOW STATUS LIKE 'Up%'`, true, "SHOW SESSION STATUS LIKE 'Up%'"},
+		{`SHOW STATUS WHERE Variable_name`, true, "SHOW SESSION STATUS WHERE `Variable_name`"},
+		{`SHOW STATUS WHERE Variable_name LIKE 'Up%'`, true, "SHOW SESSION STATUS WHERE `Variable_name` LIKE 'Up%'"},
+		{`SHOW FULL TABLES FROM icar_qa LIKE play_evolutions`, true, "SHOW FULL TABLES IN `icar_qa` LIKE `play_evolutions`"},
+		{`SHOW FULL TABLES WHERE Table_Type != 'VIEW'`, true, "SHOW FULL TABLES WHERE `Table_Type`!='VIEW'"},
+		{`SHOW GRANTS`, true, "SHOW GRANTS"},
+		{`SHOW GRANTS FOR 'test'@'localhost'`, true, "SHOW GRANTS FOR 'test'@'localhost'"},
+		{`SHOW GRANTS FOR current_user()`, true, "SHOW GRANTS FOR CURRENT_USER"},
+		{`SHOW GRANTS FOR current_user`, true, "SHOW GRANTS FOR CURRENT_USER"},
+		{`SHOW COLUMNS FROM City;`, true, "SHOW COLUMNS IN `City`"},
+		{`SHOW COLUMNS FROM tv189.1_t_1_x;`, true, "SHOW COLUMNS IN `tv189`.`1_t_1_x`"},
+		{`SHOW FIELDS FROM City;`, true, "SHOW COLUMNS IN `City`"},
+		{`SHOW TRIGGERS LIKE 't'`, true, "SHOW TRIGGERS LIKE 't'"},
+		{`SHOW DATABASES LIKE 'test2'`, true, "SHOW DATABASES LIKE 'test2'"},
+		// PROCEDURE and FUNCTION are currently not supported.
+		// And FUNCTION reuse show procedure status process logic.
+		{`SHOW PROCEDURE STATUS WHERE Db='test'`, true, "SHOW PROCEDURE STATUS WHERE `Db`='test'"},
 		{`SHOW FUNCTION STATUS WHERE Db='test'`, true, ""},
-		{`SHOW INDEX FROM t;`, true, ""},
-		{`SHOW KEYS FROM t;`, true, ""},
-		{`SHOW INDEX IN t;`, true, ""},
-		{`SHOW KEYS IN t;`, true, ""},
-		{`SHOW INDEXES IN t where true;`, true, ""},
-		{`SHOW KEYS FROM t FROM test where true;`, true, ""},
-		{`SHOW EVENTS FROM test_db WHERE definer = 'current_user'`, true, ""},
-		{`SHOW PLUGINS`, true, ""},
-		{`SHOW PROFILES`, true, ""},
-		{`SHOW MASTER STATUS`, true, ""},
-		{`SHOW PRIVILEGES`, true, ""},
+		{`SHOW INDEX FROM t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW KEYS FROM t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW INDEX IN t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW KEYS IN t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW INDEXES IN t where true;`, true, "SHOW INDEX IN `t` WHERE TRUE"},
+		{`SHOW KEYS FROM t FROM test where true;`, true, "SHOW INDEX IN `test`.`t` WHERE TRUE"},
+		{`SHOW EVENTS FROM test_db WHERE definer = 'current_user'`, true, "SHOW EVENTS IN `test_db` WHERE `definer`='current_user'"},
+		{`SHOW PLUGINS`, true, "SHOW PLUGINS"},
+		{`SHOW PROFILES`, true, "SHOW PROFILES"},
+		{`SHOW MASTER STATUS`, true, "SHOW MASTER STATUS"},
+		{`SHOW PRIVILEGES`, true, "SHOW PRIVILEGES"},
 		// for show character set
-		{"show character set;", true, ""},
-		{"show charset", true, ""},
+		{"show character set;", true, "SHOW CHARSET"},
+		{"show charset", true, "SHOW CHARSET"},
 		// for show collation
-		{"show collation", true, ""},
-		{`show collation like 'utf8%'`, true, ""},
-		{"show collation where Charset = 'utf8' and Collation = 'utf8_bin'", true, ""},
+		{"show collation", true, "SHOW COLLATION"},
+		{`show collation like 'utf8%'`, true, "SHOW COLLATION LIKE 'utf8%'"},
+		{"show collation where Charset = 'utf8' and Collation = 'utf8_bin'", true, "SHOW COLLATION WHERE `Charset`='utf8' AND `Collation`='utf8_bin'"},
 		// for show full columns
-		{"show columns in t;", true, ""},
-		{"show full columns in t;", true, ""},
+		{"show columns in t;", true, "SHOW COLUMNS IN `t`"},
+		{"show full columns in t;", true, "SHOW FULL COLUMNS IN `t`"},
 		// for show create table
-		{"show create table test.t", true, ""},
-		{"show create table t", true, ""},
+		{"show create table test.t", true, "SHOW CREATE TABLE `test`.`t`"},
+		{"show create table t", true, "SHOW CREATE TABLE `t`"},
 		// for show create view
 		{"show create view test.t", true, ""},
 		{"show create view t", true, ""},
 		// for show create database
-		{"show create database d1", true, ""},
-		{"show create database if not exists d1", true, ""},
+		{"show create database d1", true, "SHOW CREATE DATABASE `d1`"},
+		{"show create database if not exists d1", true, "SHOW CREATE DATABASE IF NOT EXISTS `d1`"},
 		// for show stats_meta.
-		{"show stats_meta", true, ""},
-		{"show stats_meta where table_name = 't'", true, ""},
+		{"show stats_meta", true, "SHOW STATS_META"},
+		{"show stats_meta where table_name = 't'", true, "SHOW STATS_META WHERE `table_name`='t'"},
 		// for show stats_histograms
-		{"show stats_histograms", true, ""},
-		{"show stats_histograms where col_name = 'a'", true, ""},
+		{"show stats_histograms", true, "SHOW STATS_HISTOGRAMS"},
+		{"show stats_histograms where col_name = 'a'", true, "SHOW STATS_HISTOGRAMS WHERE `col_name`='a'"},
 		// for show stats_buckets
-		{"show stats_buckets", true, ""},
-		{"show stats_buckets where col_name = 'a'", true, ""},
+		{"show stats_buckets", true, "SHOW STATS_BUCKETS"},
+		{"show stats_buckets where col_name = 'a'", true, "SHOW STATS_BUCKETS WHERE `col_name`='a'"},
 		// for show stats_healthy.
-		{"show stats_healthy", true, ""},
-		{"show stats_healthy where table_name = 't'", true, ""},
+		{"show stats_healthy", true, "SHOW STATS_HEALTHY"},
+		{"show stats_healthy where table_name = 't'", true, "SHOW STATS_HEALTHY WHERE `table_name`='t'"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
@@ -2363,18 +2366,18 @@ func (s *testParserSuite) TestBinding(c *C) {
 
 func (s *testParserSuite) TestView(c *C) {
 	table := []testCase{
-		{"create view v as select * from t", true, ""},
-		{"create or replace view v as select * from t", true, ""},
-		{"create or replace algorithm = undefined view v as select * from t", true, ""},
-		{"create or replace algorithm = merge view v as select * from t", true, ""},
-		{"create or replace algorithm = temptable view v as select * from t", true, ""},
-		{"create or replace algorithm = merge definer = 'root' view v as select * from t", true, ""},
-		{"create or replace algorithm = merge definer = 'root' sql security definer view v as select * from t", true, ""},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as select * from t", true, ""},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t", true, ""},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t with local check option", true, ""},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t with cascaded check option", true, ""},
-		{"create or replace algorithm = merge definer = current_user view v as select * from t", true, ""},
+		{"create view v as select * from t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = undefined view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = temptable view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = current_user view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
 	}
 	s.RunTest(c, table)
 
@@ -2768,12 +2771,17 @@ type windowFrameBoundChecker struct {
 	fb         *ast.FrameBound
 	exprRc     int
 	timeUnitRc int
+	c          *C
 }
 
 // Enter implements ast.Visitor interface.
 func (wfc *windowFrameBoundChecker) Enter(inNode ast.Node) (outNode ast.Node, skipChildren bool) {
 	if _, ok := inNode.(*ast.FrameBound); ok {
 		wfc.fb = inNode.(*ast.FrameBound)
+		if wfc.fb.Unit != nil {
+			_, ok := wfc.fb.Expr.(ast.ValueExpr)
+			wfc.c.Assert(ok, IsFalse)
+		}
 	}
 	return inNode, false
 }
@@ -2803,14 +2811,14 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 		exprRc     int
 		timeUnitRc int
 	}{
-		{`SELECT AVG(val) OVER (RANGE INTERVAL '2:30' MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
+		{`SELECT AVG(val) OVER (RANGE INTERVAL 1+3 MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
 		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, 0},
 		{`SELECT AVG(val) OVER () FROM t;`, 0, 0},
 	}
 	for _, t := range table {
 		stmt, err := parser.ParseOneStmt(t.s, "", "")
 		c.Assert(err, IsNil)
-		checker := windowFrameBoundChecker{}
+		checker := windowFrameBoundChecker{c: c}
 		stmt.Accept(&checker)
 		c.Assert(checker.exprRc, Equals, t.exprRc)
 		c.Assert(checker.timeUnitRc, Equals, t.timeUnitRc)
