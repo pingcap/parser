@@ -166,9 +166,11 @@ func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
 		isUnary = true
 		return
 	}
-	// '(-x' or '(+x' or ',-x' or ',+x' or '--x' or '+-x'
-	if last2[0].tok == 40 || last2[0].tok == 44 || last2[0].tok == 43 || last2[0].tok == 45 {
+	// '(-x' or ',-x' or ',+x' or '--x' or '+-x'
+	switch last2[0].tok {
+	case 40, 44, 43, 45, ge, is, le, eq, 60, 62:
 		isUnary = true
+	default:
 	}
 	// select -x or select +x
 	last2Lit := strings.ToLower(last2[0].lit)
