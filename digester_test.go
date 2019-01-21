@@ -35,6 +35,8 @@ func (s *testSQLDigestSuite) TestDigestText(c *C) {
 		{"select 1 from b order by 2", "select ? from b order by 2"},
 		{"select /*+ a hint */ 1", "select ?"},
 		{"select /* a hint */ 1", "select ?"},
+		{"select truncate(1, 2)", "select truncate ( ... )"},
+		{"select -1 + - 2 + b - c + 0.2 + (-2) from c where d in (1, -2, +3)", "select ? + ? + b - c + ? + ( ? ) from c where d in ( ... )"},
 	}
 	for _, test := range tests {
 		actual := parser.DigestText(test.input)
@@ -45,7 +47,7 @@ func (s *testSQLDigestSuite) TestDigestText(c *C) {
 func (s *testSQLDigestSuite) TestDigestHashEqForSimpleSQL(c *C) {
 	sqlGroups := [][]string{
 		{"select * from b where id = 1", "select * from b where id = '1'", "select * from b where id =2"},
-		{"select 2 from b, c where b.id = c.id where c.id > 1", "select 4 from b, c where b.id = c.id where c.id > 23"},
+		{"select 2 from b, c where c.id > 1", "select 4 from b, c where c.id > 23"},
 		{"Select 3", "select 1"},
 	}
 	for _, sqlGroup := range sqlGroups {

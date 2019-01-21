@@ -121,6 +121,11 @@ func (d *sqlDigester) reduceHint() {
 }
 
 func (d *sqlDigester) reduceLit(currTok token) token {
+	// "-x" or "+x" => "x"
+	if d.isPrefixByUnary(currTok.tok) {
+		d.tokens.popBack(1)
+	}
+
 	// "?, ?, ?, ?" => "..."
 	last2 := d.tokens.back(2)
 	if isGenericList(last2) {
@@ -142,6 +147,35 @@ func (d *sqlDigester) reduceLit(currTok token) token {
 	currTok.tok = genericSymbol
 	currTok.lit = "?"
 	return currTok
+}
+
+func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
+	if !isNumLit(currTok) {
+		return
+	}
+	last := d.tokens.back(1)
+	if last == nil {
+		return
+	}
+	// a[0] != '-' and a[0] != '+'
+	if last[0].tok != 43 && last[0].tok != 45 {
+		return
+	}
+	last2 := d.tokens.back(2)
+	if last2 == nil {
+		isUnary = true
+		return
+	}
+	// '(-x' or '(+x' or ',-x' or ',+x' or '--x' or '+-x'
+	if last2[0].tok == 40 || last2[0].tok == 44 || last2[0].tok == 43 || last2[0].tok == 45 {
+		isUnary = true
+	}
+	// select -x or select +x
+	last2Lit := strings.ToLower(last2[0].lit)
+	if last2Lit == "select" {
+		isUnary = true
+	}
+	return
 }
 
 func isGenericList(last2 []token) (generic bool) {
@@ -193,17 +227,24 @@ func (s *tokenDeque) popBack(n int) (t []token) {
 }
 
 func (s *tokenDeque) back(n int) (t []token) {
-	if len(*s)-2 < 0 {
+	if len(*s)-n < 0 {
 		return
 	}
-	t = (*s)[len(*s)-2:]
+	t = (*s)[len(*s)-n:]
 	return
 }
 
 func isLit(tok int) (beLit bool) {
-	switch tok {
-	case intLit, stringLit, decLit, floatLit, bitLit, hexLit:
+	if isNumLit(tok) || tok == stringLit || tok == bitLit {
 		beLit = true
+	}
+	return
+}
+
+func isNumLit(tok int) (beNum bool) {
+	switch tok {
+	case intLit, decLit, floatLit, hexLit:
+		beNum = true
 	default:
 	}
 	return

@@ -257,7 +257,8 @@ func (s *Scanner) scan() (tok int, pos Pos, lit string) {
 		}
 		node = node.childs[ch0]
 		if node.fn != nil {
-			return node.fn(s)
+			tok, pos, lit = node.fn(s)
+			return
 		}
 		s.r.inc()
 		ch0 = s.r.peek()
@@ -348,6 +349,7 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 		return
 	}
 	tok = int('-')
+	lit = "-"
 	s.r.inc()
 	return
 }
