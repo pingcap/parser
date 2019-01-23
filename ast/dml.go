@@ -1504,7 +1504,7 @@ func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("=")
 		assignment.Expr.Restore(ctx)
 
-		if ix != assignmentListLen - 1 {
+		if ix != assignmentListLen-1 {
 			ctx.WritePlain(", ")
 		}
 	}
