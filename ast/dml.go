@@ -1473,7 +1473,86 @@ type UpdateStmt struct {
 
 // Restore implements Node interface.
 func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	// Single table syntax
+	// UPDATE [LOW_PRIORITY] [IGNORE] table_reference
+	//    SET assignment_list
+	//    [WHERE where_condition]
+	//    [ORDER BY ...]
+	//    [LIMIT row_count]
+	//
+	//  value:
+	//    {expr | DEFAULT}
+	//
+	//  assignment:
+	//    col_name = value
+	//
+	//  assignment_list:
+	//    assignment [, assignment] ...
+	//
+	// Multi-Table Syntax
+	// UPDATE [LOW_PRIORITY] [IGNORE] table_references
+	//    SET assignment_list
+	//    [WHERE where_condition]
+	ctx.WriteKeyWord("UPDATE ")
+
+	if n.TableHints != nil && len(n.TableHints) != 0 {
+		ctx.WritePlain("/*+ ")
+		for i, tableHint := range n.TableHints {
+			if err := tableHint.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore UpdateStmt.TableHints[%d]", i)
+			}
+		}
+		ctx.WritePlain("*/ ")
+	}
+
+	switch n.Priority {
+	case mysql.LowPriority:
+		ctx.WriteKeyWord("LOW_PRIORITY ")
+	}
+	if n.IgnoreErr {
+		ctx.WriteKeyWord("IGNORE ")
+	}
+
+	if err := n.TableRefs.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occur while restore UpdateStmt.TableRefs")
+	}
+
+	ctx.WriteKeyWord(" SET ")
+	assignmentListLen := len(n.List)
+	for ix, assignment := range n.List {
+		assignment.Column.Restore(ctx)
+		ctx.WritePlain("=")
+		assignment.Expr.Restore(ctx)
+
+		if ix != assignmentListLen - 1 {
+			ctx.WritePlain(", ")
+		}
+	}
+
+	if n.Where != nil {
+		ctx.WriteKeyWord(" WHERE ")
+		if err := n.Where.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occur while restore UpdateStmt.Where")
+		}
+	}
+
+	if !n.MultipleTable {
+		if n.Order != nil {
+			ctx.WritePlain(" ")
+			if err := n.Order.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occur while restore UpdateStmt.Order")
+			}
+		}
+
+		if n.Limit != nil {
+			ctx.WritePlain(" ")
+			if err := n.Limit.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occur while restore UpdateStmt.Limit")
+			}
+		}
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
