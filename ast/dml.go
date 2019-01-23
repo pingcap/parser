@@ -1408,7 +1408,91 @@ type DeleteStmt struct {
 
 // Restore implements Node interface.
 func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DELETE ")
+	switch n.Priority {
+	case mysql.LowPriority:
+		ctx.WriteKeyWord("LOW_PRIORITY ")
+	}
+	if n.Quick {
+		ctx.WriteKeyWord("QUICK ")
+	}
+	if n.IgnoreErr {
+		ctx.WriteKeyWord("IGNORE ")
+	}
+
+	if n.IsMultiTable { // Multiple-Table Syntax
+		if n.BeforeFrom {
+			//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE]
+			//      tbl_name[.*] [, tbl_name[.*]] ...
+			//      FROM table_references
+			//      [WHERE where_condition]
+			if err := n.Tables.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
+			}
+
+			ctx.WriteKeyWord(" FROM ")
+			if err := n.TableRefs.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
+			}
+		} else {
+			//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE]
+			//      FROM tbl_name[.*] [, tbl_name[.*]] ...
+			//      USING table_references
+			//      [WHERE where_condition]
+			ctx.WriteKeyWord("FROM ")
+			if err := n.Tables.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
+			}
+
+			ctx.WriteKeyWord(" USING ")
+			if err := n.TableRefs.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
+			}
+		}
+
+		if n.Where != nil {
+			ctx.WriteKeyWord(" WHERE ")
+			if err := n.Where.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
+			}
+		}
+	} else { // Single-Table Syntax
+		//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE] FROM tbl_name
+		//      [PARTITION (partition_name [, partition_name] ...)]
+		//      [WHERE where_condition]
+		//      [ORDER BY ...]
+		//      [LIMIT row_count]
+		ctx.WriteKeyWord("FROM ")
+
+		if err := n.TableRefs.Restore(ctx); err != nil {
+			errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
+		}
+
+		// FIXME PARTITION: not support for now!
+
+		if n.Where != nil {
+			ctx.WriteKeyWord(" WHERE ")
+			if err := n.Where.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
+			}
+		}
+
+		if n.Order != nil {
+			ctx.WritePlain(" ")
+			if err := n.Order.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.Order")
+			}
+		}
+
+		if n.Limit != nil {
+			ctx.WritePlain(" ")
+			if err := n.Limit.Restore(ctx); err != nil {
+				errors.Annotate(err, "An error occurred while restore DeleteStmt.Limit")
+			}
+		}
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1425,11 +1509,13 @@ func (n *DeleteStmt) Accept(v Visitor) (Node, bool) {
 	}
 	n.TableRefs = node.(*TableRefsClause)
 
-	node, ok = n.Tables.Accept(v)
-	if !ok {
-		return n, false
+	if n.Tables != nil {
+		node, ok = n.Tables.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Tables = node.(*DeleteTableList)
 	}
-	n.Tables = node.(*DeleteTableList)
 
 	if n.Where != nil {
 		node, ok = n.Where.Accept(v)
