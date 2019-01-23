@@ -1409,6 +1409,17 @@ type DeleteStmt struct {
 // Restore implements Node interface.
 func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("DELETE ")
+
+	if n.TableHints != nil && len(n.TableHints) != 0 {
+		ctx.WritePlain("/*+ ")
+		for i, tableHint := range n.TableHints {
+			if err := tableHint.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore UpdateStmt.TableHints[%d]", i)
+			}
+		}
+		ctx.WritePlain("*/ ")
+	}
+
 	switch n.Priority {
 	case mysql.LowPriority:
 		ctx.WriteKeyWord("LOW_PRIORITY ")
@@ -1422,10 +1433,6 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 
 	if n.IsMultiTable { // Multiple-Table Syntax
 		if n.BeforeFrom {
-			//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE]
-			//      tbl_name[.*] [, tbl_name[.*]] ...
-			//      FROM table_references
-			//      [WHERE where_condition]
 			if err := n.Tables.Restore(ctx); err != nil {
 				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
 			}
@@ -1435,10 +1442,6 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 			}
 		} else {
-			//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE]
-			//      FROM tbl_name[.*] [, tbl_name[.*]] ...
-			//      USING table_references
-			//      [WHERE where_condition]
 			ctx.WriteKeyWord("FROM ")
 			if err := n.Tables.Restore(ctx); err != nil {
 				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
@@ -1457,18 +1460,11 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 			}
 		}
 	} else { // Single-Table Syntax
-		//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE] FROM tbl_name
-		//      [PARTITION (partition_name [, partition_name] ...)]
-		//      [WHERE where_condition]
-		//      [ORDER BY ...]
-		//      [LIMIT row_count]
 		ctx.WriteKeyWord("FROM ")
 
 		if err := n.TableRefs.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 		}
-
-		// FIXME PARTITION: not support for now!
 
 		if n.Where != nil {
 			ctx.WriteKeyWord(" WHERE ")
