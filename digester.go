@@ -24,6 +24,10 @@ import (
 )
 
 // DigestHash generates the digest of statements.
+// it will generate a hash on normalized form of statement text
+// which removes general property of a statement but keeps specific property.
+//
+// for example: both DigestHash('select 1') and DigestHash('SelEct 2') => e1c71d1661ae46e09b7aaec1c390957f0d6260410df4e4bc71b9c8d681021471
 func DigestHash(sql string) (result string) {
 	d := digesterPool.Get().(*sqlDigester)
 	result = d.doDigest(sql)
@@ -32,6 +36,10 @@ func DigestHash(sql string) (result string) {
 }
 
 // DigestText generates the normalized statements.
+// it will get normalized form of statement text
+// which removes general property of a statement but keeps specific property.
+//
+// for example: DigestText('select 1 from b where a = 1') => 'select ? from b where a = ?'
 func DigestText(sql string) (result string) {
 	d := digesterPool.Get().(*sqlDigester)
 	result = d.doDigestText(sql)
@@ -74,7 +82,13 @@ func (d *sqlDigester) doDigestText(sql string) (result string) {
 }
 
 const (
-	genericSymbol     = -1
+	// genericSymbol presents parameter holder ("?") in statement
+	// it can be any value as long as it is not repeated with other tokens.
+	genericSymbol = -1
+	// genericSymbolList presents parameter holder lists ("?, ?, ...") in statement
+	// it can be any value as long as it is not repeated with other tokens.
+
+	// it can be any value as long as it is not repeated with other tokens.
 	genericSymbolList = -2
 )
 
