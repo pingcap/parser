@@ -6348,7 +6348,7 @@ Statement:
 |	RollbackStmt
 |	RenameTableStmt
 |	ReplaceIntoStmt
-|   RestoreTableStmt
+|	RRestoreTableStmt
 |	RevokeStmt
 |	SelectStmt
 |	UnionStmt
