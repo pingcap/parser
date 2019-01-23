@@ -1427,12 +1427,12 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 			//      FROM table_references
 			//      [WHERE where_condition]
 			if err := n.Tables.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
 			}
 
 			ctx.WriteKeyWord(" FROM ")
 			if err := n.TableRefs.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 			}
 		} else {
 			//   DELETE [LOW_PRIORITY] [QUICK] [IGNORE]
@@ -1441,19 +1441,19 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 			//      [WHERE where_condition]
 			ctx.WriteKeyWord("FROM ")
 			if err := n.Tables.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Tables")
 			}
 
 			ctx.WriteKeyWord(" USING ")
 			if err := n.TableRefs.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 			}
 		}
 
 		if n.Where != nil {
 			ctx.WriteKeyWord(" WHERE ")
 			if err := n.Where.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
 			}
 		}
 	} else { // Single-Table Syntax
@@ -1465,7 +1465,7 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("FROM ")
 
 		if err := n.TableRefs.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
+			return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 		}
 
 		// FIXME PARTITION: not support for now!
@@ -1473,21 +1473,21 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 		if n.Where != nil {
 			ctx.WriteKeyWord(" WHERE ")
 			if err := n.Where.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
 			}
 		}
 
 		if n.Order != nil {
 			ctx.WritePlain(" ")
 			if err := n.Order.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.Order")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Order")
 			}
 		}
 
 		if n.Limit != nil {
 			ctx.WritePlain(" ")
 			if err := n.Limit.Restore(ctx); err != nil {
-				errors.Annotate(err, "An error occurred while restore DeleteStmt.Limit")
+				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Limit")
 			}
 		}
 	}
