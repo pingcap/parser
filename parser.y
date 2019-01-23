@@ -4753,7 +4753,7 @@ WindowFrameStart:
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewValueExpr($2), Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: ast.NewValueExpr($3),}
 	}
 |	"CURRENT" "ROW"
 	{
@@ -4785,7 +4785,7 @@ WindowFrameBound:
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewValueExpr($2), Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: ast.NewValueExpr($3),}
 	}
 
 OptWindowingClause:
@@ -5922,7 +5922,7 @@ ShowStmt:
 	{
 		stmt := $2.(*ast.ShowStmt)
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5934,6 +5934,13 @@ ShowStmt:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateTable,
+			Table:	$4.(*ast.TableName),
+		}
+	}
+|	"SHOW" "CREATE" "VIEW" TableName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowCreateView,
 			Table:	$4.(*ast.TableName),
 		}
 	}
@@ -5985,7 +5992,7 @@ ShowStmt:
 			Tp: ast.ShowStatsMeta,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5999,7 +6006,7 @@ ShowStmt:
 			Tp: ast.ShowStatsHistograms,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -6013,7 +6020,7 @@ ShowStmt:
 			Tp: ast.ShowStatsBuckets,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -6027,7 +6034,7 @@ ShowStmt:
 			Tp: ast.ShowStatsHealthy,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
