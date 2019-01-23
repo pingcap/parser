@@ -1473,26 +1473,6 @@ type UpdateStmt struct {
 
 // Restore implements Node interface.
 func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
-	// Single table syntax
-	// UPDATE [LOW_PRIORITY] [IGNORE] table_reference
-	//    SET assignment_list
-	//    [WHERE where_condition]
-	//    [ORDER BY ...]
-	//    [LIMIT row_count]
-	//
-	//  value:
-	//    {expr | DEFAULT}
-	//
-	//  assignment:
-	//    col_name = value
-	//
-	//  assignment_list:
-	//    assignment [, assignment] ...
-	//
-	// Multi-Table Syntax
-	// UPDATE [LOW_PRIORITY] [IGNORE] table_references
-	//    SET assignment_list
-	//    [WHERE where_condition]
 	ctx.WriteKeyWord("UPDATE ")
 
 	if n.TableHints != nil && len(n.TableHints) != 0 {
