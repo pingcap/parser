@@ -105,7 +105,7 @@ func (d *sqlDigester) normalize(sql string) {
 			continue
 		}
 		currTok := token{tok, strings.ToLower(lit)}
-		if isLit(currTok) {
+		if d.isLit(currTok) {
 			currTok = d.reduceLit(currTok)
 		}
 		d.tokens = append(d.tokens, currTok)
@@ -149,7 +149,7 @@ func (d *sqlDigester) reduceLit(currTok token) token {
 
 	// "?, ?, ?, ?" => "..."
 	last2 := d.tokens.back(2)
-	if isGenericList(last2) {
+	if d.isGenericList(last2) {
 		d.tokens.popBack(2)
 		currTok.tok = genericSymbolList
 		currTok.lit = "..."
@@ -170,7 +170,7 @@ func (d *sqlDigester) reduceLit(currTok token) token {
 }
 
 func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
-	if !isNumLit(currTok) {
+	if !d.isNumLit(currTok) {
 		return
 	}
 	last := d.tokens.back(1)
@@ -200,11 +200,11 @@ func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
 	return
 }
 
-func isGenericList(last2 []token) (generic bool) {
+func (d *sqlDigester) isGenericList(last2 []token) (generic bool) {
 	if len(last2) < 2 {
 		return false
 	}
-	if !isComma(last2[1]) {
+	if !d.isComma(last2[1]) {
 		return false
 	}
 	switch last2[0].tok {
@@ -226,7 +226,7 @@ func (d *sqlDigester) isOrderOrGroupBy() (orderOrGroupBy bool) {
 		if len(last) < 2 {
 			return false
 		}
-		if !isComma(last[1]) {
+		if !d.isComma(last[1]) {
 			break
 		}
 	}
@@ -251,7 +251,26 @@ func (d *sqlDigester) isStarParam() (starParam bool) {
 	return
 }
 
-func isComma(tok token) (isComma bool) {
+func (d *sqlDigester) isLit(t token) (beLit bool) {
+	tok := t.tok
+	if d.isNumLit(tok) || tok == stringLit || tok == bitLit {
+		beLit = true
+	} else if t.lit == "*" {
+		beLit = true
+	}
+	return
+}
+
+func (d *sqlDigester) isNumLit(tok int) (beNum bool) {
+	switch tok {
+	case intLit, decLit, floatLit, hexLit:
+		beNum = true
+	default:
+	}
+	return
+}
+
+func (d *sqlDigester) isComma(tok token) (isComma bool) {
 	isComma = tok.lit == ","
 	return
 }
@@ -268,6 +287,10 @@ func (s *tokenDeque) pushBack(t token) {
 }
 
 func (s *tokenDeque) popBack(n int) (t []token) {
+	if len(*s) < n {
+		t = nil
+		return
+	}
 	t = (*s)[len(*s)-n:]
 	*s = (*s)[:len(*s)-n]
 	return
@@ -278,24 +301,5 @@ func (s *tokenDeque) back(n int) (t []token) {
 		return
 	}
 	t = (*s)[len(*s)-n:]
-	return
-}
-
-func isLit(t token) (beLit bool) {
-	tok := t.tok
-	if isNumLit(tok) || tok == stringLit || tok == bitLit {
-		beLit = true
-	} else if t.lit == "*" {
-		beLit = true
-	}
-	return
-}
-
-func isNumLit(tok int) (beNum bool) {
-	switch tok {
-	case intLit, decLit, floatLit, hexLit:
-		beNum = true
-	default:
-	}
 	return
 }
