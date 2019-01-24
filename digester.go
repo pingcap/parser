@@ -35,12 +35,12 @@ func DigestHash(sql string) (result string) {
 	return
 }
 
-// DigestText generates the normalized statements.
+// Normalize generates the normalized statements.
 // it will get normalized form of statement text
 // which removes general property of a statement but keeps specific property.
 //
-// for example: DigestText('select 1 from b where a = 1') => 'select ? from b where a = ?'
-func DigestText(sql string) (result string) {
+// for example: Normalize('select 1 from b where a = 1') => 'select ? from b where a = ?'
+func Normalize(sql string) (result string) {
 	d := digesterPool.Get().(*sqlDigester)
 	result = d.doDigestText(sql)
 	digesterPool.Put(d)
@@ -56,7 +56,7 @@ var digesterPool = sync.Pool{
 	},
 }
 
-// sqlDigester is used to compute DigestHash or DigestText for sql.
+// sqlDigester is used to compute DigestHash or Normalize for sql.
 type sqlDigester struct {
 	buffer bytes.Buffer
 	lexer  *Scanner

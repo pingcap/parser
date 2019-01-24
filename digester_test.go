@@ -45,7 +45,7 @@ func (s *testSQLDigestSuite) TestDigestText(c *C) {
 		{"select count(*) from t", "select count ( ? ) from t"},
 	}
 	for _, test := range tests {
-		actual := parser.DigestText(test.input)
+		actual := parser.Normalize(test.input)
 		c.Assert(actual, Equals, test.expect)
 	}
 }
