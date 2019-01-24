@@ -1498,14 +1498,19 @@ func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	ctx.WriteKeyWord(" SET ")
-	assignmentListLen := len(n.List)
-	for ix, assignment := range n.List {
-		assignment.Column.Restore(ctx)
-		ctx.WritePlain("=")
-		assignment.Expr.Restore(ctx)
-
-		if ix != assignmentListLen-1 {
+	for i, assignment := range n.List {
+		if i != 0 {
 			ctx.WritePlain(", ")
+		}
+
+		if err := assignment.Column.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occur while restore UpdateStmt.List[%d].Column", i)
+		}
+
+		ctx.WritePlain("=")
+
+		if err := assignment.Expr.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occur while restore UpdateStmt.List[%d].Expr", i)
 		}
 	}
 
@@ -1516,19 +1521,17 @@ func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if !n.MultipleTable {
-		if n.Order != nil {
-			ctx.WritePlain(" ")
-			if err := n.Order.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occur while restore UpdateStmt.Order")
-			}
+	if n.Order != nil {
+		ctx.WritePlain(" ")
+		if err := n.Order.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occur while restore UpdateStmt.Order")
 		}
+	}
 
-		if n.Limit != nil {
-			ctx.WritePlain(" ")
-			if err := n.Limit.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occur while restore UpdateStmt.Limit")
-			}
+	if n.Limit != nil {
+		ctx.WritePlain(" ")
+		if err := n.Limit.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occur while restore UpdateStmt.Limit")
 		}
 	}
 
