@@ -1452,39 +1452,32 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 			}
 		}
-
-		if n.Where != nil {
-			ctx.WriteKeyWord(" WHERE ")
-			if err := n.Where.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
-			}
-		}
 	} else { // Single-Table Syntax
 		ctx.WriteKeyWord("FROM ")
 
 		if err := n.TableRefs.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore DeleteStmt.TableRefs")
 		}
+	}
 
-		if n.Where != nil {
-			ctx.WriteKeyWord(" WHERE ")
-			if err := n.Where.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
-			}
+	if n.Where != nil {
+		ctx.WriteKeyWord(" WHERE ")
+		if err := n.Where.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DeleteStmt.Where")
 		}
+	}
 
-		if n.Order != nil {
-			ctx.WritePlain(" ")
-			if err := n.Order.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Order")
-			}
+	if n.Order != nil {
+		ctx.WritePlain(" ")
+		if err := n.Order.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DeleteStmt.Order")
 		}
+	}
 
-		if n.Limit != nil {
-			ctx.WritePlain(" ")
-			if err := n.Limit.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore DeleteStmt.Limit")
-			}
+	if n.Limit != nil {
+		ctx.WritePlain(" ")
+		if err := n.Limit.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DeleteStmt.Limit")
 		}
 	}
 
