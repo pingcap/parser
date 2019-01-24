@@ -23,7 +23,7 @@ var _ = Suite(&testSQLDigestSuite{})
 type testSQLDigestSuite struct {
 }
 
-func (s *testSQLDigestSuite) TestDigestText(c *C) {
+func (s *testSQLDigestSuite) TestNormalize(c *C) {
 	tests := []struct {
 		input  string
 		expect string
