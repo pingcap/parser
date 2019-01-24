@@ -105,7 +105,7 @@ func (d *sqlDigester) normalize(sql string) {
 			continue
 		}
 		currTok := token{tok, strings.ToLower(lit)}
-		if isLit(tok) {
+		if isLit(currTok) {
 			currTok = d.reduceLit(currTok)
 		}
 		d.tokens = append(d.tokens, currTok)
@@ -133,6 +133,15 @@ func (d *sqlDigester) reduceHint() {
 }
 
 func (d *sqlDigester) reduceLit(currTok token) token {
+	// count(*) => count(?)
+	if currTok.lit == "*" {
+		if d.isStarParam() {
+			currTok.tok = genericSymbol
+			currTok.lit = "?"
+		}
+		return currTok
+	}
+
 	// "-x" or "+x" => "x"
 	if d.isPrefixByUnary(currTok.tok) {
 		d.tokens.popBack(1)
@@ -232,6 +241,16 @@ func (d *sqlDigester) isOrderOrGroupBy() (orderOrGroupBy bool) {
 	return
 }
 
+func (d *sqlDigester) isStarParam() (starParam bool) {
+	last := d.tokens.back(1)
+	if last == nil {
+		starParam = false
+		return
+	}
+	starParam = last[0].lit == "("
+	return
+}
+
 func isComma(tok token) (isComma bool) {
 	isComma = tok.lit == ","
 	return
@@ -262,8 +281,11 @@ func (s *tokenDeque) back(n int) (t []token) {
 	return
 }
 
-func isLit(tok int) (beLit bool) {
+func isLit(t token) (beLit bool) {
+	tok := t.tok
 	if isNumLit(tok) || tok == stringLit || tok == bitLit {
+		beLit = true
+	} else if t.lit == "*" {
 		beLit = true
 	}
 	return

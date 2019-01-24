@@ -42,7 +42,7 @@ func (s *testSQLDigestSuite) TestDigestText(c *C) {
 		{"select count(a), b, c from t group by 2, 3", "select count ( a ) , b , c from t group by 2 , 3"},
 		{"select count(a), b, c from t group by (2, 3)", "select count ( a ) , b , c from t group by ( 2 , 3 )"},
 		{"select a, b from t order by 1, 2", "select a , b from t order by 1 , 2"},
-		{"select count(*) from t", "select count ( * ) from t"},
+		{"select count(*) from t", "select count ( ? ) from t"},
 	}
 	for _, test := range tests {
 		actual := parser.DigestText(test.input)
