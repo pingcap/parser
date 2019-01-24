@@ -257,8 +257,7 @@ func (s *Scanner) scan() (tok int, pos Pos, lit string) {
 		}
 		node = node.childs[ch0]
 		if node.fn != nil {
-			tok, pos, lit = node.fn(s)
-			return
+			return node.fn(s)
 		}
 		s.r.inc()
 		ch0 = s.r.peek()

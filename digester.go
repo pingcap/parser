@@ -27,7 +27,7 @@ import (
 // it will generate a hash on normalized form of statement text
 // which removes general property of a statement but keeps specific property.
 //
-// for example: both DigestHash('select 1') and DigestHash('SelEct 2') => e1c71d1661ae46e09b7aaec1c390957f0d6260410df4e4bc71b9c8d681021471
+// for example: both DigestHash('select 1') and DigestHash('select 2') => e1c71d1661ae46e09b7aaec1c390957f0d6260410df4e4bc71b9c8d681021471
 func DigestHash(sql string) (result string) {
 	d := digesterPool.Get().(*sqlDigester)
 	result = d.doDigest(sql)
@@ -86,8 +86,6 @@ const (
 	// it can be any value as long as it is not repeated with other tokens.
 	genericSymbol = -1
 	// genericSymbolList presents parameter holder lists ("?, ?, ...") in statement
-	// it can be any value as long as it is not repeated with other tokens.
-
 	// it can be any value as long as it is not repeated with other tokens.
 	genericSymbolList = -2
 )
@@ -151,8 +149,7 @@ func (d *sqlDigester) reduceLit(currTok token) token {
 
 	// order by n => order by n
 	if currTok.tok == intLit {
-		last2 := d.tokens.back(2)
-		if isOrderBy(last2) {
+		if d.isOrderOrGroupBy() {
 			return currTok
 		}
 	}
@@ -172,7 +169,7 @@ func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
 		return
 	}
 	// a[0] != '-' and a[0] != '+'
-	if last[0].tok != 43 && last[0].tok != 45 {
+	if last[0].lit != "-" && last[0].lit != "+" {
 		return
 	}
 	last2 := d.tokens.back(2)
@@ -181,8 +178,8 @@ func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
 		return
 	}
 	// '(-x' or ',-x' or ',+x' or '--x' or '+-x'
-	switch last2[0].tok {
-	case 40, 44, 43, 45, ge, is, le, eq, 60, 62:
+	switch last2[0].lit {
+	case "(", ",", "+", "-", ">=", "is", "<=", "=", "<", ">":
 		isUnary = true
 	default:
 	}
@@ -198,7 +195,7 @@ func isGenericList(last2 []token) (generic bool) {
 	if len(last2) < 2 {
 		return false
 	}
-	if !isComma(last2[1].tok) {
+	if !isComma(last2[1]) {
 		return false
 	}
 	switch last2[0].tok {
@@ -209,19 +206,34 @@ func isGenericList(last2 []token) (generic bool) {
 	return
 }
 
-func isOrderBy(last2 []token) (orderBy bool) {
-	if len(last2) < 2 {
-		return false
+func (d *sqlDigester) isOrderOrGroupBy() (orderOrGroupBy bool) {
+	var (
+		last []token
+		n    int
+	)
+	// skip number item lists, e.g. "order by 1, 2, 3" should NOT convert to "order by ?, ?, ?"
+	for n = 2; ; n += 2 {
+		last = d.tokens.back(n)
+		if len(last) < 2 {
+			return false
+		}
+		if !isComma(last[1]) {
+			break
+		}
 	}
-	if last2[1].lit != "by" {
-		return false
+	// handle group by number item list surround by "()", e.g. "group by (1, 2)" should not convert to "group by (?, ?)"
+	if last[1].lit == "(" {
+		last = d.tokens.back(n + 1)
+		if len(last) < 2 {
+			return false
+		}
 	}
-	orderBy = last2[0].lit == "order"
+	orderOrGroupBy = (last[0].lit == "order" || last[0].lit == "group") && last[1].lit == "by"
 	return
 }
 
-func isComma(tok int) (isComma bool) {
-	isComma = tok == 44
+func isComma(tok token) (isComma bool) {
+	isComma = tok.lit == ","
 	return
 }
 

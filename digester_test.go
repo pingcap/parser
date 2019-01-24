@@ -37,7 +37,12 @@ func (s *testSQLDigestSuite) TestDigestText(c *C) {
 		{"select /* a hint */ 1", "select ?"},
 		{"select truncate(1, 2)", "select truncate ( ... )"},
 		{"select -1 + - 2 + b - c + 0.2 + (-2) from c where d in (1, -2, +3)", "select ? + ? + b - c + ? + ( ? ) from c where d in ( ... )"},
-		{"select * from t where a <= -1 and b < -2 and c = -3 and c > -4 and c >= -5", "select * from t where a <= ? and b < ? and c = ? and c > ? and c >= ?"},
+		{"select * from t where a <= -1 and b < -2 and c = -3 and c > -4 and c >= -5 and e is 1", "select * from t where a <= ? and b < ? and c = ? and c > ? and c >= ? and e is ?"},
+		{"select count(a), b from t group by 2", "select count ( a ) , b from t group by 2"},
+		{"select count(a), b, c from t group by 2, 3", "select count ( a ) , b , c from t group by 2 , 3"},
+		{"select count(a), b, c from t group by (2, 3)", "select count ( a ) , b , c from t group by ( 2 , 3 )"},
+		{"select a, b from t order by 1, 2", "select a , b from t order by 1 , 2"},
+		{"select count(*) from t", "select count ( * ) from t"},
 	}
 	for _, test := range tests {
 		actual := parser.DigestText(test.input)
