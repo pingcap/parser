@@ -3038,7 +3038,7 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 			}
 		}
 	case *ast.DeleteStmt:
-    for _, tableHint := range node.TableHints {
+		for _, tableHint := range node.TableHints {
 			tableHint.HintName.O = ""
 		}
 	case *ast.UpdateStmt:
