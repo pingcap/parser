@@ -188,7 +188,7 @@ import (
 	nvarcharType		"NVARCHAR"
 	on			"ON"
 	option			"OPTION"
-	optionally  "OPTIONALLY"
+	optionally		"OPTIONALLY"
 	or			"OR"
 	order			"ORDER"
 	outer			"OUTER"
@@ -7676,7 +7676,7 @@ LocalOpt:
 	}
 
 Fields:
-     	{
+    {
 		escape := "\\"
 		$$ = &ast.FieldsClause{
 			Terminated: "\t",
@@ -7725,13 +7725,13 @@ Enclosed:
 	{
 		$$ = ""
 	}
-|	"ENCLOSED" "BY" stringLit
-	{
-		$$ = $3
-	}
 |	"OPTIONALLY" "ENCLOSED" "BY" stringLit
 	{
 		$$ = $4
+	}
+|	"ENCLOSED" "BY" stringLit
+	{
+		$$ = $3
 	}
 
 Escaped:

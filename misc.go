@@ -372,6 +372,7 @@ var tokenMap = map[string]int{
 	"ON":                       on,
 	"ONLY":                     only,
 	"OPTION":                   option,
+	"OPTIONALLY":               optionally,
 	"OR":                       or,
 	"ORDER":                    order,
 	"OUTER":                    outer,
