@@ -7729,10 +7729,10 @@ Enclosed:
 	{
 		$$ = $3
 	}
-|   "OPTIONALLY" "ENCLOSED" "BY" stringLit
-    {
-        $$ = $4
-    }
+|	"OPTIONALLY" "ENCLOSED" "BY" stringLit
+	{
+		$$ = $4
+	}
 
 Escaped:
 	{
