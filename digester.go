@@ -100,14 +100,14 @@ func (d *sqlDigester) normalize(sql string) {
 		if pos.Offset == len(sql) {
 			break
 		}
-		if tok == hintEnd {
-			d.reduceHint()
+		currTok := token{tok, strings.ToLower(lit)}
+
+		if d.reduceOptimizerHint(&currTok) {
 			continue
 		}
-		currTok := token{tok, strings.ToLower(lit)}
-		if d.isLit(currTok) {
-			currTok = d.reduceLit(currTok)
-		}
+
+		d.reduceLit(&currTok)
+
 		d.tokens = append(d.tokens, currTok)
 	}
 	d.lexer.reset("")
@@ -120,26 +120,63 @@ func (d *sqlDigester) normalize(sql string) {
 	d.tokens = d.tokens[:0]
 }
 
-func (d *sqlDigester) reduceHint() {
-	for {
-		token := d.tokens.popBack(1)
-		if len(token) == 0 {
-			return
+func (d *sqlDigester) reduceOptimizerHint(tok *token) (reduced bool) {
+	// ignore /*+..*/
+	if tok.tok == hintBegin {
+		for {
+			tok, _, _ := d.lexer.scan()
+			if tok == 0 || (tok == unicode.ReplacementChar && d.lexer.r.eof()) {
+				break
+			}
+			if tok == hintEnd {
+				reduced = true
+				break
+			}
 		}
-		if token[0].tok == hintBegin {
-			return
+		return
+	}
+
+	// ignore force/use/ignore index(x)
+	if tok.lit == "index" {
+		toks := d.tokens.back(1)
+		if len(toks) > 0 {
+			switch strings.ToLower(toks[0].lit) {
+			case "force", "use", "ignore":
+				for {
+					tok, _, lit := d.lexer.scan()
+					if tok == 0 || (tok == unicode.ReplacementChar && d.lexer.r.eof()) {
+						break
+					}
+					if lit == ")" {
+						reduced = true
+						d.tokens.popBack(1)
+						break
+					}
+				}
+				return
+			}
 		}
 	}
+
+	// ignore straight_join
+	if tok.lit == "straight_join" {
+		tok.lit = "join"
+		return
+	}
+	return
 }
 
-func (d *sqlDigester) reduceLit(currTok token) token {
+func (d *sqlDigester) reduceLit(currTok *token) {
+	if !d.isLit(*currTok) {
+		return
+	}
 	// count(*) => count(?)
 	if currTok.lit == "*" {
 		if d.isStarParam() {
 			currTok.tok = genericSymbol
 			currTok.lit = "?"
 		}
-		return currTok
+		return
 	}
 
 	// "-x" or "+x" => "x"
@@ -153,20 +190,20 @@ func (d *sqlDigester) reduceLit(currTok token) token {
 		d.tokens.popBack(2)
 		currTok.tok = genericSymbolList
 		currTok.lit = "..."
-		return currTok
+		return
 	}
 
 	// order by n => order by n
 	if currTok.tok == intLit {
 		if d.isOrderOrGroupBy() {
-			return currTok
+			return
 		}
 	}
 
 	// 2 => ?
 	currTok.tok = genericSymbol
 	currTok.lit = "?"
-	return currTok
+	return
 }
 
 func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {

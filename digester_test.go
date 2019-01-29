@@ -43,6 +43,13 @@ func (s *testSQLDigestSuite) TestNormalize(c *C) {
 		{"select count(a), b, c from t group by (2, 3)", "select count ( a ) , b , c from t group by ( 2 , 3 )"},
 		{"select a, b from t order by 1, 2", "select a , b from t order by 1 , 2"},
 		{"select count(*) from t", "select count ( ? ) from t"},
+		{"select * from t Force Index(kk)", "select * from t"},
+		{"select * from t USE Index(kk)", "select * from t"},
+		{"select * from t Ignore Index(kk)", "select * from t"},
+		{"select * from t1 straight_join t2 on t1.id=t2.id", "select * from t1 join t2 on t1 . id = t2 . id"},
+		// test syntax error, it will be checked by parser, but it should not make normalize dead loop.
+		{"select * from t ignore index(", "select * from t ignore index"},
+		{"select /*+ ", "select "},
 	}
 	for _, test := range tests {
 		actual := parser.Normalize(test.input)
