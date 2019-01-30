@@ -886,6 +886,7 @@ const (
 	ErrUnsupportedOnGeneratedColumn                                 = 3106
 	ErrGeneratedColumnNonPrior                                      = 3107
 	ErrDependentByGeneratedColumn                                   = 3108
+	ErrGeneratedColumnRefAutoInc                                    = 3109
 	ErrInvalidJSONText                                              = 3140
 	ErrInvalidJSONPath                                              = 3143
 	ErrInvalidJSONData                                              = 3146
