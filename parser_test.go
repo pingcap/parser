@@ -28,7 +28,7 @@ import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/tidb/types"
-	"github.com/pingcap/tidb/types/parser_driver"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestT(t *testing.T) {
@@ -760,6 +760,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush tables tbl1, tbl2, tbl3 with read lock", true, ""},
 		{"flush privileges", true, ""},
 		{"flush status", true, ""},
+		{"flush logs", true, ""},
 	}
 	s.RunTest(c, table)
 }

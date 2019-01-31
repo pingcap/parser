@@ -412,6 +412,7 @@ const (
 	FlushTables
 	FlushPrivileges
 	FlushStatus
+	FlushLogs
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
