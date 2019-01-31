@@ -9734,7 +9734,7 @@ yynewstate:
 	case 827:
 		{
 			x := types.NewFieldType(mysql.TypeVarString)
-			x.Flen = yyS[yypt-0].item.(int) // TODO: Flen should be the flen of expression
+			x.Flen = yyS[yypt-0].item.(int64) // TODO: Flen should be the flen of expression
 			if x.Flen != types.UnspecifiedLength {
 				x.Tp = mysql.TypeString
 			}
@@ -9746,7 +9746,7 @@ yynewstate:
 	case 828:
 		{
 			x := types.NewFieldType(mysql.TypeVarString)
-			x.Flen = yyS[yypt-1].item.(int) // TODO: Flen should be the flen of expression
+			x.Flen = yyS[yypt-1].item.(int64) // TODO: Flen should be the flen of expression
 			x.Charset = yyS[yypt-0].item.(*ast.OptBinary).Charset
 			if yyS[yypt-0].item.(*ast.OptBinary).IsBinary {
 				x.Flag |= mysql.BinaryFlag
@@ -9769,9 +9769,9 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeDatetime)
 			x.Flen, _ = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDatetime)
-			x.Decimal = yyS[yypt-0].item.(int)
+			x.Decimal = yyS[yypt-0].item.(int64)
 			if x.Decimal > 0 {
-				x.Flen = x.Flen + 1 + x.Decimal
+				x.Flen = x.Flen + 1 + int64(x.Decimal)
 			}
 			x.Charset = charset.CharsetBin
 			x.Collate = charset.CollationBin
@@ -9793,9 +9793,9 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeDuration)
 			x.Flen, _ = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDuration)
-			x.Decimal = yyS[yypt-0].item.(int)
+			x.Decimal = yyS[yypt-0].item.(int64)
 			if x.Decimal > 0 {
-				x.Flen = x.Flen + 1 + x.Decimal
+				x.Flen = x.Flen + 1 + int64(x.Decimal)
 			}
 			x.Charset = charset.CharsetBin
 			x.Collate = charset.CollationBin
@@ -11777,7 +11777,7 @@ yynewstate:
 		{
 			// TODO: check flen 0
 			x := types.NewFieldType(yyS[yypt-2].item.(byte))
-			x.Flen = yyS[yypt-1].item.(int)
+			x.Flen = yyS[yypt-1].item.(int64)
 			for _, o := range yyS[yypt-0].item.([]*ast.TypeOpt) {
 				if o.IsUnsigned {
 					x.Flag |= mysql.UnsignedFlag
@@ -11843,7 +11843,7 @@ yynewstate:
 	case 1263:
 		{
 			x := types.NewFieldType(yyS[yypt-1].item.(byte))
-			x.Flen = yyS[yypt-0].item.(int)
+			x.Flen = yyS[yypt-0].item.(int64)
 			if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 				x.Flen = 1
 			} else if x.Flen > 64 {
@@ -11938,7 +11938,7 @@ yynewstate:
 	case 1287:
 		{
 			x := types.NewFieldType(mysql.TypeString)
-			x.Flen = yyS[yypt-2].item.(int)
+			x.Flen = yyS[yypt-2].item.(int64)
 			x.Charset = yyS[yypt-1].item.(*ast.OptBinary).Charset
 			x.Collate = yyS[yypt-0].item.(string)
 			if yyS[yypt-1].item.(*ast.OptBinary).IsBinary {
@@ -11959,7 +11959,7 @@ yynewstate:
 	case 1289:
 		{
 			x := types.NewFieldType(mysql.TypeString)
-			x.Flen = yyS[yypt-2].item.(int)
+			x.Flen = yyS[yypt-2].item.(int64)
 			x.Charset = yyS[yypt-1].item.(*ast.OptBinary).Charset
 			x.Collate = yyS[yypt-0].item.(string)
 			if yyS[yypt-1].item.(*ast.OptBinary).IsBinary {
@@ -11970,7 +11970,7 @@ yynewstate:
 	case 1290:
 		{
 			x := types.NewFieldType(mysql.TypeVarchar)
-			x.Flen = yyS[yypt-2].item.(int)
+			x.Flen = yyS[yypt-2].item.(int64)
 			x.Charset = yyS[yypt-1].item.(*ast.OptBinary).Charset
 			x.Collate = yyS[yypt-0].item.(string)
 			if yyS[yypt-1].item.(*ast.OptBinary).IsBinary {
@@ -11981,7 +11981,7 @@ yynewstate:
 	case 1291:
 		{
 			x := types.NewFieldType(mysql.TypeString)
-			x.Flen = yyS[yypt-0].item.(int)
+			x.Flen = yyS[yypt-0].item.(int64)
 			x.Charset = charset.CharsetBin
 			x.Collate = charset.CharsetBin
 			x.Flag |= mysql.BinaryFlag
@@ -11990,7 +11990,7 @@ yynewstate:
 	case 1292:
 		{
 			x := types.NewFieldType(mysql.TypeVarchar)
-			x.Flen = yyS[yypt-0].item.(int)
+			x.Flen = yyS[yypt-0].item.(int64)
 			x.Charset = charset.CharsetBin
 			x.Collate = charset.CharsetBin
 			x.Flag |= mysql.BinaryFlag
@@ -12046,7 +12046,7 @@ yynewstate:
 	case 1304:
 		{
 			x := types.NewFieldType(mysql.TypeBlob)
-			x.Flen = yyS[yypt-0].item.(int)
+			x.Flen = yyS[yypt-0].item.(int64)
 			parser.yyVAL.item = x
 		}
 	case 1305:
@@ -12068,7 +12068,7 @@ yynewstate:
 	case 1308:
 		{
 			x := types.NewFieldType(mysql.TypeBlob)
-			x.Flen = yyS[yypt-0].item.(int)
+			x.Flen = yyS[yypt-0].item.(int64)
 			parser.yyVAL.item = x
 		}
 	case 1309:
@@ -12095,9 +12095,9 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeDatetime)
 			x.Flen = mysql.MaxDatetimeWidthNoFsp
-			x.Decimal = yyS[yypt-0].item.(int)
+			x.Decimal = yyS[yypt-0].item.(int64)
 			if x.Decimal > 0 {
-				x.Flen = x.Flen + 1 + x.Decimal
+				x.Flen = x.Flen + 1 + int64(x.Decimal)
 			}
 			parser.yyVAL.item = x
 		}
@@ -12105,9 +12105,9 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeTimestamp)
 			x.Flen = mysql.MaxDatetimeWidthNoFsp
-			x.Decimal = yyS[yypt-0].item.(int)
+			x.Decimal = yyS[yypt-0].item.(int64)
 			if x.Decimal > 0 {
-				x.Flen = x.Flen + 1 + x.Decimal
+				x.Flen = x.Flen + 1 + int64(x.Decimal)
 			}
 			parser.yyVAL.item = x
 		}
@@ -12115,16 +12115,16 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeDuration)
 			x.Flen = mysql.MaxDurationWidthNoFsp
-			x.Decimal = yyS[yypt-0].item.(int)
+			x.Decimal = yyS[yypt-0].item.(int64)
 			if x.Decimal > 0 {
-				x.Flen = x.Flen + 1 + x.Decimal
+				x.Flen = x.Flen + 1 + int64(x.Decimal)
 			}
 			parser.yyVAL.item = x
 		}
 	case 1316:
 		{
 			x := types.NewFieldType(mysql.TypeYear)
-			x.Flen = yyS[yypt-1].item.(int)
+			x.Flen = yyS[yypt-1].item.(int64)
 			if x.Flen != types.UnspecifiedLength && x.Flen != 4 {
 				yylex.Errorf("Supports only YEAR or YEAR(4) column.")
 				return -1
@@ -12169,7 +12169,7 @@ yynewstate:
 		}
 	case 1326:
 		{
-			parser.yyVAL.item = &ast.FloatOpt{Flen: yyS[yypt-0].item.(int), Decimal: types.UnspecifiedLength}
+			parser.yyVAL.item = &ast.FloatOpt{Flen: yyS[yypt-0].item.(int64), Decimal: types.UnspecifiedLength}
 		}
 	case 1327:
 		{
@@ -12177,7 +12177,7 @@ yynewstate:
 		}
 	case 1328:
 		{
-			parser.yyVAL.item = &ast.FloatOpt{Flen: int(yyS[yypt-3].item.(uint64)), Decimal: int(yyS[yypt-1].item.(uint64))}
+			parser.yyVAL.item = &ast.FloatOpt{Flen: int64(yyS[yypt-3].item.(uint64)), Decimal: int64(yyS[yypt-1].item.(uint64))}
 		}
 	case 1329:
 		{

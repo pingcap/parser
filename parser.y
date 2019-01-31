@@ -4244,7 +4244,7 @@ CastType:
 	"BINARY" OptFieldLen
 	{
 		x := types.NewFieldType(mysql.TypeVarString)
-		x.Flen = $2.(int)  // TODO: Flen should be the flen of expression
+		x.Flen = $2.(int64)  // TODO: Flen should be the flen of expression
 		if x.Flen != types.UnspecifiedLength {
 			x.Tp = mysql.TypeString
 		}
@@ -4256,7 +4256,7 @@ CastType:
 |	"CHAR" OptFieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeVarString)
-		x.Flen = $2.(int)  // TODO: Flen should be the flen of expression
+		x.Flen = $2.(int64)  // TODO: Flen should be the flen of expression
 		x.Charset = $3.(*ast.OptBinary).Charset
 		if $3.(*ast.OptBinary).IsBinary{
 			x.Flag |= mysql.BinaryFlag
@@ -4279,9 +4279,9 @@ CastType:
 	{
 		x := types.NewFieldType(mysql.TypeDatetime)
 		x.Flen, _ = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDatetime)
-		x.Decimal = $2.(int)
+		x.Decimal = $2.(int64)
 		if x.Decimal > 0 {
-			x.Flen = x.Flen + 1 + x.Decimal
+			x.Flen = x.Flen + 1 + int64(x.Decimal)
 		}
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CollationBin
@@ -4303,9 +4303,9 @@ CastType:
 	{
 		x := types.NewFieldType(mysql.TypeDuration)
 		x.Flen, _ = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDuration)
-		x.Decimal = $2.(int)
+		x.Decimal = $2.(int64)
 		if x.Decimal > 0 {
-			x.Flen = x.Flen + 1 + x.Decimal
+			x.Flen = x.Flen + 1 + int64(x.Decimal)
 		}
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CollationBin
@@ -6638,7 +6638,7 @@ NumericType:
 	{
 		// TODO: check flen 0
 		x := types.NewFieldType($1.(byte))
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		for _, o := range $3.([]*ast.TypeOpt) {
 			if o.IsUnsigned {
 				x.Flag |= mysql.UnsignedFlag
@@ -6704,7 +6704,7 @@ NumericType:
 |	BitValueType OptFieldLen
 	{
 		x := types.NewFieldType($1.(byte))
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
 		} else if x.Flen > 64 {
@@ -6817,7 +6817,7 @@ StringType:
 	NationalOpt "CHAR" FieldLen OptBinary OptCollate
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $3.(int)
+		x.Flen = $3.(int64)
 		x.Charset = $4.(*ast.OptBinary).Charset
 		x.Collate = $5.(string)
 		if $4.(*ast.OptBinary).IsBinary {
@@ -6838,7 +6838,7 @@ StringType:
 |	"NATIONAL" "CHARACTER" FieldLen OptBinary OptCollate
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $3.(int)
+		x.Flen = $3.(int64)
 		x.Charset = $4.(*ast.OptBinary).Charset
 		x.Collate = $5.(string)
 		if $4.(*ast.OptBinary).IsBinary {
@@ -6849,7 +6849,7 @@ StringType:
 |	Varchar FieldLen OptBinary OptCollate
 	{
 		x := types.NewFieldType(mysql.TypeVarchar)
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		x.Charset = $3.(*ast.OptBinary).Charset
 		x.Collate = $4.(string)
 		if $3.(*ast.OptBinary).IsBinary {
@@ -6860,7 +6860,7 @@ StringType:
 |	"BINARY" OptFieldLen
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
 		x.Flag |= mysql.BinaryFlag
@@ -6869,7 +6869,7 @@ StringType:
 |	"VARBINARY" FieldLen
 	{
 		x := types.NewFieldType(mysql.TypeVarchar)
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
 		x.Flag |= mysql.BinaryFlag
@@ -6937,7 +6937,7 @@ BlobType:
 |	"BLOB" OptFieldLen
 	{
 		x := types.NewFieldType(mysql.TypeBlob)
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		$$ = x
 	}
 |	"MEDIUMBLOB"
@@ -6961,7 +6961,7 @@ TextType:
 |	"TEXT" OptFieldLen
 	{
 		x := types.NewFieldType(mysql.TypeBlob)
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		$$ = x
 	}
 |	"MEDIUMTEXT"
@@ -6991,9 +6991,9 @@ DateAndTimeType:
 	{
 		x := types.NewFieldType(mysql.TypeDatetime)
 		x.Flen = mysql.MaxDatetimeWidthNoFsp
-		x.Decimal = $2.(int)
+		x.Decimal = $2.(int64)
 		if x.Decimal > 0 {
-			x.Flen = x.Flen + 1 + x.Decimal
+			x.Flen = x.Flen + 1 + int64(x.Decimal)
 		}
 		$$ = x
 	}
@@ -7001,9 +7001,9 @@ DateAndTimeType:
 	{
 		x := types.NewFieldType(mysql.TypeTimestamp)
 		x.Flen = mysql.MaxDatetimeWidthNoFsp
-		x.Decimal = $2.(int)
+		x.Decimal = $2.(int64)
 		if x.Decimal > 0 {
-			x.Flen = x.Flen + 1 + x.Decimal
+			x.Flen = x.Flen + 1 + int64(x.Decimal)
 		}
 		$$ = x
 	}
@@ -7011,16 +7011,16 @@ DateAndTimeType:
 	{
 		x := types.NewFieldType(mysql.TypeDuration)
 		x.Flen = mysql.MaxDurationWidthNoFsp
-		x.Decimal = $2.(int)
+		x.Decimal = $2.(int64)
 		if x.Decimal > 0 {
-			x.Flen = x.Flen + 1 + x.Decimal
+			x.Flen = x.Flen + 1 + int64(x.Decimal)
 		}
 		$$ = x
 	}
 |	"YEAR" OptFieldLen FieldOpts
 	{
 		x := types.NewFieldType(mysql.TypeYear)
-		x.Flen = $2.(int)
+		x.Flen = $2.(int64)
 		if x.Flen != types.UnspecifiedLength && x.Flen != 4 {
 			yylex.Errorf("Supports only YEAR or YEAR(4) column.")
 			return -1
@@ -7072,7 +7072,7 @@ FloatOpt:
 	}
 |	FieldLen
 	{
-		$$ = &ast.FloatOpt{Flen: $1.(int), Decimal: types.UnspecifiedLength}
+		$$ = &ast.FloatOpt{Flen: $1.(int64), Decimal: types.UnspecifiedLength}
 	}
 |	Precision
 	{
@@ -7082,7 +7082,7 @@ FloatOpt:
 Precision:
 	'(' LengthNum ',' LengthNum ')'
 	{
-		$$ = &ast.FloatOpt{Flen: int($2.(uint64)), Decimal: int($4.(uint64))}
+		$$ = &ast.FloatOpt{Flen: int64($2.(uint64)), Decimal: int64($4.(uint64))}
 	}
 
 OptBinMod:

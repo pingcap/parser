@@ -95,7 +95,7 @@ func TypeToStr(tp byte, cs string) (r string) {
 }
 
 var (
-	dig2bytes = [10]int{0, 1, 1, 2, 2, 3, 3, 4, 4, 4}
+	dig2bytes = [10]int64{0, 1, 1, 2, 2, 3, 3, 4, 4, 4}
 )
 
 // constant values.

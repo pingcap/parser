@@ -80,8 +80,8 @@ type TypeOpt struct {
 // FloatOpt is used for parsing floating-point type option from SQL.
 // See http://dev.mysql.com/doc/refman/5.7/en/floating-point-types.html
 type FloatOpt struct {
-	Flen    int
-	Decimal int
+	Flen    int64
+	Decimal int64
 }
 
 // AuthOption is used for parsing create use statement.
