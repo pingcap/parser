@@ -286,7 +286,7 @@ func (n *ExecuteStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := val.Restore(ctx); err != nil {
-				return errors.Annotate(err, fmt.Sprintf("An error occurred while restore ExecuteStmt.UsingVars index %d", i))
+				return errors.Annotatef(err, "An error occurred while restore ExecuteStmt.UsingVars index %d", i)
 			}
 		}
 	}
