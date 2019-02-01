@@ -882,6 +882,7 @@ const (
 	ErrMustChangePasswordLogin                                      = 1862
 	ErrRowInWrongPartition                                          = 1863
 	ErrErrorLast                                                    = 1863
+	ErrGeneratedColumnFunctionIsNotAllowed                          = 3102
 	ErrBadGeneratedColumn                                           = 3105
 	ErrUnsupportedOnGeneratedColumn                                 = 3106
 	ErrGeneratedColumnNonPrior                                      = 3107
