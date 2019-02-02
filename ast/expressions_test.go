@@ -239,9 +239,8 @@ func (tc *testExpressionsSuite) TestPatternInExprRestore(c *C) {
 		{"'a' in ('b')", "'a' IN ('b')"},
 		{"2 in (0,3,7)", "2 IN (0,3,7)"},
 		{"2 not in (0,3,7)", "2 NOT IN (0,3,7)"},
-		// TODO: Test for subquery when it's implemented
-		// 2 in (select 2)
-		// 2 not in (select 2)
+		{"2 in (select 2)", "2 IN (SELECT 2)"},
+		{"2 not in (select 2)", "2 NOT IN (SELECT 2)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
@@ -325,6 +324,18 @@ func (tc *testExpressionsSuite) TestPositionExprRestore(c *C) {
 		return node.(*SelectStmt).OrderBy.Items[0]
 	}
 	RunNodeRestoreTest(c, testCases, "select * from t order by %s", extractNodeFunc)
+
+}
+
+func (tc *testExpressionsSuite) TestExistsSubqueryExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"EXISTS (SELECT 2)", "EXISTS (SELECT 2)"},
+		{"NOT EXISTS (SELECT 2)", "NOT EXISTS (SELECT 2)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Where
+	}
+	RunNodeRestoreTest(c, testCases, "select 1 from t1 where %s", extractNodeFunc)
 }
 
 func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
