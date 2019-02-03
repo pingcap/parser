@@ -385,7 +385,31 @@ type VariableAssignment struct {
 
 // Restore implements Node interface.
 func (n *VariableAssignment) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.IsSystem {
+		if n.IsGlobal {
+			ctx.WriteKeyWord("@@GLOBAL.")
+		} else {
+			ctx.WriteKeyWord("@@SESSION.")
+		}
+	} else if n.Name != SetNames {
+		ctx.WriteKeyWord("@")
+	}
+	if n.Name == SetNames {
+		ctx.WriteKeyWord("NAMES ")
+	} else {
+		ctx.WriteName(n.Name)
+		ctx.WritePlain("=")
+	}
+	if err := n.Value.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore VariableAssignment.Value")
+	}
+	if n.ExtendValue != nil {
+		ctx.WriteKeyWord(" COLLATE ")
+		if err := n.ExtendValue.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore VariableAssignment.ExtendValue")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node interface.
@@ -483,7 +507,16 @@ type SetStmt struct {
 
 // Restore implements Node interface.
 func (n *SetStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("SET ")
+	for i, v := range n.Variables {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore SetStmt.Variables[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -535,7 +568,16 @@ type SetPwdStmt struct {
 
 // Restore implements Node interface.
 func (n *SetPwdStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("SET PASSWORD")
+	if n.User != nil {
+		ctx.WriteKeyWord(" FOR ")
+		if err := n.User.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetPwdStmt.User")
+		}
+	}
+	ctx.WritePlain("=")
+	ctx.WriteString(n.Password)
+	return nil
 }
 
 // SecureText implements SensitiveStatement interface.
