@@ -605,7 +605,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAEzgNAAgAEgAEBAQEEgAA2QAEGggAAAAICAgCAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAA5gm5Mg==
-'/*!*/;`, true, ""},
+'/*!*/;`, true, `BINLOG '
+BxSFVw8JAAAA8QAAAPUAAAAAAAQANS41LjQ0LU1hcmlhREItbG9nAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAEzgNAAgAEgAEBAQEEgAA2QAEGggAAAAICAgCAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAA5gm5Mg==
+'`},
 
 		// for partition table dml
 		{"select * from t1 partition (p1)", true, ""},
@@ -749,17 +755,17 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, ""},
 
 		// for FLUSH statement
-		{"flush no_write_to_binlog tables tbl1 with read lock", true, ""},
-		{"flush table", true, ""},
-		{"flush tables", true, ""},
-		{"flush tables tbl1", true, ""},
-		{"flush no_write_to_binlog tables tbl1", true, ""},
-		{"flush local tables tbl1", true, ""},
-		{"flush table with read lock", true, ""},
-		{"flush tables tbl1, tbl2, tbl3", true, ""},
-		{"flush tables tbl1, tbl2, tbl3 with read lock", true, ""},
-		{"flush privileges", true, ""},
-		{"flush status", true, ""},
+		{"flush no_write_to_binlog tables tbl1 with read lock", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1` WITH READ LOCK"},
+		{"flush table", true, "FLUSH TABLES"},
+		{"flush tables", true, "FLUSH TABLES"},
+		{"flush tables tbl1", true, "FLUSH TABLES `tbl1`"},
+		{"flush no_write_to_binlog tables tbl1", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1`"},
+		{"flush local tables tbl1", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1`"},
+		{"flush table with read lock", true, "FLUSH TABLES WITH READ LOCK"},
+		{"flush tables tbl1, tbl2, tbl3", true, "FLUSH TABLES `tbl1`, `tbl2`, `tbl3`"},
+		{"flush tables tbl1, tbl2, tbl3 with read lock", true, "FLUSH TABLES `tbl1`, `tbl2`, `tbl3` WITH READ LOCK"},
+		{"flush privileges", true, "FLUSH PRIVILEGES"},
+		{"flush status", true, "FLUSH STATUS"},
 	}
 	s.RunTest(c, table)
 }
@@ -2517,14 +2523,14 @@ func (s *testParserSuite) TestSessionManage(c *C) {
 	table := []testCase{
 		// Kill statement.
 		// See https://dev.mysql.com/doc/refman/5.7/en/kill.html
-		{"kill 23123", true, ""},
-		{"kill connection 23123", true, ""},
-		{"kill query 23123", true, ""},
-		{"kill tidb 23123", true, ""},
-		{"kill tidb connection 23123", true, ""},
-		{"kill tidb query 23123", true, ""},
-		{"show processlist", true, ""},
-		{"show full processlist", true, ""},
+		{"kill 23123", true, "KILL 23123"},
+		{"kill connection 23123", true, "KILL 23123"},
+		{"kill query 23123", true, "KILL QUERY 23123"},
+		{"kill tidb 23123", true, "KILL TIDB 23123"},
+		{"kill tidb connection 23123", true, "KILL TIDB 23123"},
+		{"kill tidb query 23123", true, "KILL TIDB QUERY 23123"},
+		{"show processlist", true, "SHOW PROCESSLIST"},
+		{"show full processlist", true, "SHOW FULL PROCESSLIST"},
 	}
 	s.RunTest(c, table)
 }

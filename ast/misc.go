@@ -280,7 +280,9 @@ type BinlogStmt struct {
 
 // Restore implements Node interface.
 func (n *BinlogStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("BINLOG ")
+	ctx.WriteString(n.Str)
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -426,7 +428,32 @@ type FlushStmt struct {
 
 // Restore implements Node interface.
 func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("FLUSH ")
+	if n.NoWriteToBinLog {
+		ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+	}
+	switch n.Tp {
+	case FlushTables:
+		ctx.WriteKeyWord("TABLES")
+		for i, v := range n.Tables {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore FlushStmt.Tables[%d]", i)
+			}
+		}
+		if n.ReadLock {
+			ctx.WriteKeyWord(" WITH READ LOCK")
+		}
+	case FlushPrivileges:
+		ctx.WriteKeyWord("PRIVILEGES")
+	case FlushStatus:
+		ctx.WriteKeyWord("STATUS")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -461,7 +488,15 @@ type KillStmt struct {
 
 // Restore implements Node interface.
 func (n *KillStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("KILL")
+	if n.TiDBExtension {
+		ctx.WriteKeyWord(" TIDB")
+	}
+	if n.Query {
+		ctx.WriteKeyWord(" QUERY")
+	}
+	ctx.WritePlainf(" %d", n.ConnectionID)
+	return nil
 }
 
 // Accept implements Node Accept interface.
