@@ -789,7 +789,16 @@ type DoStmt struct {
 
 // Restore implements Node interface.
 func (n *DoStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DO ")
+	for i, v := range n.Exprs {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore DoStmt.Exprs[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -866,6 +875,30 @@ type ShowSlow struct {
 	Kind  ShowSlowKind
 }
 
+// Restore implements Node interface.
+func (n *ShowSlow) Restore(ctx *RestoreCtx) error {
+	switch n.Tp {
+	case ShowSlowRecent:
+		ctx.WriteKeyWord("RECENT ")
+	case ShowSlowTop:
+		ctx.WriteKeyWord("TOP ")
+		switch n.Kind {
+		case ShowSlowKindDefault:
+			// do nothing
+		case ShowSlowKindInternal:
+			ctx.WriteKeyWord("INTERNAL ")
+		case ShowSlowKindAll:
+			ctx.WriteKeyWord("ALL ")
+		default:
+			return errors.New("Unsupported kind of ShowSlowTop")
+		}
+	default:
+		return errors.New("Unsupported type of ShowSlow")
+	}
+	ctx.WritePlainf("%d", n.Count)
+	return nil
+}
+
 // AdminStmt is the struct for Admin statement.
 type AdminStmt struct {
 	stmtNode
@@ -882,7 +915,97 @@ type AdminStmt struct {
 
 // Restore implements Node interface.
 func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	restoreTables := func() error {
+		for i, v := range n.Tables {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AdminStmt.Tables[%d]", i)
+			}
+		}
+		return nil
+	}
+	restoreJobIDs := func() error {
+		for i, v := range n.JobIDs {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlainf("%d", v)
+		}
+		return nil
+	}
+
+	ctx.WriteKeyWord("ADMIN ")
+	switch n.Tp {
+	case AdminShowDDL:
+		ctx.WriteKeyWord("SHOW DDL")
+	case AdminShowDDLJobs:
+		ctx.WriteKeyWord("SHOW DDL JOBS")
+		if n.JobNumber != 0 {
+			ctx.WritePlainf(" %d", n.JobNumber)
+		}
+	case AdminShowNextRowID:
+		ctx.WriteKeyWord("SHOW ")
+		restoreTables()
+		ctx.WriteKeyWord(" NEXT_ROW_ID")
+	case AdminCheckTable:
+		ctx.WriteKeyWord("CHECK TABLE ")
+		restoreTables()
+	case AdminCheckIndex:
+		ctx.WriteKeyWord("CHECK INDEX ")
+		restoreTables()
+		ctx.WritePlainf(" %s", n.Index)
+	case AdminRecoverIndex:
+		ctx.WriteKeyWord("RECOVER INDEX ")
+		restoreTables()
+		ctx.WritePlainf(" %s", n.Index)
+	case AdminRestoreTable:
+		ctx.WriteKeyWord("RESTORE TABLE ")
+		if n.JobIDs != nil {
+			ctx.WriteKeyWord("BY JOB ")
+			restoreJobIDs()
+		} else {
+			restoreTables()
+			if n.JobNumber != 0 {
+				ctx.WritePlainf(" %d", n.JobNumber)
+			}
+		}
+	case AdminCleanupIndex:
+		ctx.WriteKeyWord("CLEANUP INDEX ")
+		restoreTables()
+		ctx.WritePlainf(" %s", n.Index)
+	case AdminCheckIndexRange:
+		ctx.WriteKeyWord("CHECK INDEX ")
+		restoreTables()
+		ctx.WritePlainf(" %s", n.Index)
+		if n.HandleRanges != nil {
+			ctx.WritePlain(" ")
+			for i, v := range n.HandleRanges {
+				if i != 0 {
+					ctx.WritePlain(", ")
+				}
+				ctx.WritePlainf("(%d,%d)", v.Begin, v.End)
+			}
+		}
+	case AdminChecksumTable:
+		ctx.WriteKeyWord("CHECKSUM TABLE ")
+		restoreTables()
+	case AdminCancelDDLJobs:
+		ctx.WriteKeyWord("CANCEL DDL JOBS ")
+		restoreJobIDs()
+	case AdminShowDDLJobQueries:
+		ctx.WriteKeyWord("SHOW DDL JOB QUERIES ")
+		restoreJobIDs()
+	case AdminShowSlow:
+		ctx.WriteKeyWord("SHOW SLOW ")
+		if err := n.ShowSlow.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AdminStmt.ShowSlow")
+		}
+	default:
+		return errors.New("Unsupported AdminStmt type")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
