@@ -386,11 +386,13 @@ type VariableAssignment struct {
 // Restore implements Node interface.
 func (n *VariableAssignment) Restore(ctx *RestoreCtx) error {
 	if n.IsSystem {
+		ctx.WritePlain("@@")
 		if n.IsGlobal {
-			ctx.WriteKeyWord("@@GLOBAL.")
+			ctx.WriteKeyWord("GLOBAL")
 		} else {
-			ctx.WriteKeyWord("@@SESSION.")
+			ctx.WriteKeyWord("SESSION")
 		}
+		ctx.WritePlain(".")
 	} else if n.Name != SetNames {
 		ctx.WriteKeyWord("@")
 	}
