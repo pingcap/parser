@@ -926,14 +926,13 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		}
 		return nil
 	}
-	restoreJobIDs := func() error {
+	restoreJobIDs := func() {
 		for i, v := range n.JobIDs {
 			if i != 0 {
 				ctx.WritePlain(", ")
 			}
 			ctx.WritePlainf("%d", v)
 		}
-		return nil
 	}
 
 	ctx.WriteKeyWord("ADMIN ")
@@ -947,18 +946,26 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		}
 	case AdminShowNextRowID:
 		ctx.WriteKeyWord("SHOW ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 		ctx.WriteKeyWord(" NEXT_ROW_ID")
 	case AdminCheckTable:
 		ctx.WriteKeyWord("CHECK TABLE ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 	case AdminCheckIndex:
 		ctx.WriteKeyWord("CHECK INDEX ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 		ctx.WritePlainf(" %s", n.Index)
 	case AdminRecoverIndex:
 		ctx.WriteKeyWord("RECOVER INDEX ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 		ctx.WritePlainf(" %s", n.Index)
 	case AdminRestoreTable:
 		ctx.WriteKeyWord("RESTORE TABLE ")
@@ -966,18 +973,24 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteKeyWord("BY JOB ")
 			restoreJobIDs()
 		} else {
-			restoreTables()
+			if err := restoreTables(); err != nil {
+				return err
+			}
 			if n.JobNumber != 0 {
 				ctx.WritePlainf(" %d", n.JobNumber)
 			}
 		}
 	case AdminCleanupIndex:
 		ctx.WriteKeyWord("CLEANUP INDEX ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 		ctx.WritePlainf(" %s", n.Index)
 	case AdminCheckIndexRange:
 		ctx.WriteKeyWord("CHECK INDEX ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 		ctx.WritePlainf(" %s", n.Index)
 		if n.HandleRanges != nil {
 			ctx.WritePlain(" ")
@@ -990,7 +1003,9 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		}
 	case AdminChecksumTable:
 		ctx.WriteKeyWord("CHECKSUM TABLE ")
-		restoreTables()
+		if err := restoreTables(); err != nil {
+			return err
+		}
 	case AdminCancelDDLJobs:
 		ctx.WriteKeyWord("CANCEL DDL JOBS ")
 		restoreJobIDs()
