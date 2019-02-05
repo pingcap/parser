@@ -682,7 +682,8 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("IF EXISTS ")
 	}
 	if n.CurrentAuth != nil {
-		ctx.WriteKeyWord("USER() ")
+		ctx.WriteKeyWord("USER")
+		ctx.WritePlain("() ")
 		if err := n.CurrentAuth.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterUserStmt.CurrentAuth")
 		}
