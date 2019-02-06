@@ -1925,6 +1925,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a bigint, b bigint as (a+1) not null);", true, "CREATE TABLE `t` (`a` BIGINT,`b` BIGINT GENERATED ALWAYS AS(`a`+1) NOT NULL)"},
 		{"create table t (a bigint, b bigint as (a+1) not null);", true, "CREATE TABLE `t` (`a` BIGINT,`b` BIGINT GENERATED ALWAYS AS(`a`+1) NOT NULL)"},
 		{"create table t (a bigint, b bigint as (a+1) not null comment 'ttt');", true, "CREATE TABLE `t` (`a` BIGINT,`b` BIGINT GENERATED ALWAYS AS(`a`+1) NOT NULL COMMENT 'ttt')"},
+		{"alter table t add column (f timestamp as (a+1) default '2019-01-01 11:11:11');", false, ""},
+		{"alter table t modify column f int as (a+1) default 55;", false, ""},
 	}
 	s.RunTest(c, table)
 }
