@@ -7439,7 +7439,11 @@ yynewstate:
 		}
 	case 79:
 		{
-			parser.yyVAL.item = &ast.ColumnDef{Name: yyS[yypt-2].item.(*ast.ColumnName), Tp: yyS[yypt-1].item.(*types.FieldType), Options: yyS[yypt-0].item.([]*ast.ColumnOption)}
+			colDef := &ast.ColumnDef{Name: yyS[yypt-2].item.(*ast.ColumnName), Tp: yyS[yypt-1].item.(*types.FieldType), Options: yyS[yypt-0].item.([]*ast.ColumnOption)}
+			if !colDef.Validate() {
+				yylex.Errorf("")
+			}
+			parser.yyVAL.item = colDef
 		}
 	case 80:
 		{

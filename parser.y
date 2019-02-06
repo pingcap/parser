@@ -1429,7 +1429,11 @@ ColumnDefList:
 ColumnDef:
 	ColumnName Type ColumnOptionListOpt
 	{
-		$$ = &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: $2.(*types.FieldType), Options: $3.([]*ast.ColumnOption)}
+		colDef := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: $2.(*types.FieldType), Options: $3.([]*ast.ColumnOption)}
+        if !colDef.Validate() {
+            yylex.Errorf("")
+        }
+        $$ = colDef
 	}
 
 ColumnName:
