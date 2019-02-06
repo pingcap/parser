@@ -357,8 +357,7 @@ var (
 	invalidOption4GeneratedColumn = map[ColumnOptionType]struct{}{
 		ColumnOptionAutoIncrement: {},
 		ColumnOptionOnUpdate:      {},
-		ColumnOptionFulltext:      {},
-		ColumnOptionReference:     {},
+		ColumnOptionDefaultValue:  {},
 	}
 )
 
