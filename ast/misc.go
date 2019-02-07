@@ -151,12 +151,10 @@ func (n *ExplainStmt) Restore(ctx *RestoreCtx) error {
 	if n.Analyze {
 		ctx.WriteKeyWord("ANALYZE ")
 	} else {
-		if strings.ToLower(n.Format) == ExplainFormatDOT {
-			ctx.WriteKeyWord("FORMAT ")
-			ctx.WritePlain("= ")
-			ctx.WriteString(ExplainFormatDOT)
-			ctx.WritePlain(" ")
-		}
+		ctx.WriteKeyWord("FORMAT ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.Format)
+		ctx.WritePlain(" ")
 	}
 	if err := n.Stmt.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore ExplainStmt.Stmt")
@@ -193,9 +191,6 @@ type PrepareStmt struct {
 // Restore implements Node interface.
 func (n *PrepareStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("PREPARE ")
-	if n.Name == "" {
-		return errors.New("An error occurred while restore PrepareStmt.Name")
-	}
 	ctx.WriteName(n.Name)
 	ctx.WriteKeyWord(" FROM ")
 	if n.SQLText != "" {
@@ -238,11 +233,7 @@ type DeallocateStmt struct {
 
 // Restore implements Node interface.
 func (n *DeallocateStmt) Restore(ctx *RestoreCtx) error {
-	if n.Name == "" {
-		return errors.New("An error occurred while restore DeallocateStmt.Name")
-	}
-	ctx.WriteKeyWord("DEALLOCATE ")
-	ctx.WriteKeyWord("PREPARE ")
+	ctx.WriteKeyWord("DEALLOCATE PREPARE ")
 	ctx.WriteName(n.Name)
 	return nil
 }
