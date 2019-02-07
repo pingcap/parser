@@ -452,6 +452,8 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("PRIVILEGES")
 	case FlushStatus:
 		ctx.WriteKeyWord("STATUS")
+	default:
+		return errors.New("Unsupported type of FlushTables")
 	}
 	return nil
 }
