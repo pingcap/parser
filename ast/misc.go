@@ -270,7 +270,7 @@ type ExecuteStmt struct {
 func (n *ExecuteStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("EXECUTE ")
 	ctx.WriteName(n.Name)
-	if n.UsingVars != nil && len(n.UsingVars) > 0 {
+	if len(n.UsingVars) > 0 {
 		ctx.WriteKeyWord(" USING ")
 		for i, val := range n.UsingVars {
 			if i != 0 {
