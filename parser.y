@@ -423,6 +423,8 @@ import (
 	value		"VALUE"
 	variables	"VARIABLES"
 	view		"VIEW"
+	binding		"BINDING"
+	bindings	"BINDINGS"
 	warnings	"WARNINGS"
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
@@ -573,6 +575,7 @@ import (
 	CreateUserStmt			"CREATE User statement"
 	CreateDatabaseStmt		"Create Database Statement"
 	CreateIndexStmt			"CREATE INDEX statement"
+	CreateBindingStmt		"CREATE BINDING  statement"
 	DoStmt				"Do statement"
 	DropDatabaseStmt		"DROP DATABASE statement"
 	DropIndexStmt			"DROP INDEX statement"
@@ -580,6 +583,7 @@ import (
 	DropTableStmt			"DROP TABLE statement"
 	DropUserStmt			"DROP USER"
 	DropViewStmt			"DROP VIEW statement"
+	DropBindingStmt		    	"DROP BINDING  statement"
 	DeallocateStmt			"Deallocate prepared statement"
 	DeleteFromStmt			"DELETE FROM statement"
 	EmptyStmt			"empty statement"
@@ -723,6 +727,7 @@ import (
 	PartitionDefinitionListOpt	"Partition definition list option"
 	PartitionOpt			"Partition option"
 	PartitionNameList		"Partition name list"
+	PartitionNameListOpt    "table partition names list optional"
 	PartitionNumOpt			"PARTITION NUM option"
 	PartDefValuesOpt		"VALUES {LESS THAN {(expr | value_list) | MAXVALUE} | IN {value_list}"
 	PartDefOptionsOpt		"PartDefOptionList option"
@@ -1084,7 +1089,7 @@ AlterTableSpec:
 			Tp: ast.AlterTableDropPartition,
 			Name: $3,
 		}
-	}	
+	}
 |	"TRUNCATE" "PARTITION" Identifier
 	{
 		$$ = &ast.AlterTableSpec{
@@ -2988,7 +2993,7 @@ UnReservedKeyword:
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
 | "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
-| "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "MODIFY" | "EVENTS" | "PARTITIONS"
+| "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER"
@@ -4358,6 +4363,10 @@ TableName:
 	{
 		$$ = &ast.TableName{Schema:model.NewCIStr($1),	Name:model.NewCIStr($3)}
 	}
+|	Identifier '.' '*'
+	{
+		$$ = &ast.TableName{Name:model.NewCIStr($1)}
+	}
 
 TableNameList:
 	TableName
@@ -4719,7 +4728,7 @@ WindowFrameStart:
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewValueExpr($2), Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: ast.NewValueExpr($3),}
 	}
 |	"CURRENT" "ROW"
 	{
@@ -4751,7 +4760,7 @@ WindowFrameBound:
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewValueExpr($2), Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: ast.NewValueExpr($3),}
 	}
 
 OptWindowingClause:
@@ -4937,11 +4946,12 @@ TableRef:
 	}
 
 TableFactor:
-	TableName TableAsNameOpt IndexHintListOpt
+	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
 	{
 		tn := $1.(*ast.TableName)
-		tn.IndexHints = $3.([]*ast.IndexHint)
-		$$ = &ast.TableSource{Source: tn, AsName: $2.(model.CIStr)}
+		tn.PartitionNames = $2.([]model.CIStr)
+		tn.IndexHints = $4.([]*ast.IndexHint)
+		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
 |	'(' SelectStmt ')' TableAsName
 	{
@@ -4958,6 +4968,16 @@ TableFactor:
 	{
 		$$ = $2
 	}
+
+PartitionNameListOpt:
+    /* empty */
+    {
+        $$ = []model.CIStr{}
+    }
+|    "PARTITION" '(' PartitionNameList ')'
+    {
+        $$ = $3
+    }
 
 TableAsNameOpt:
 	{
@@ -5764,11 +5784,26 @@ AdminStmt:
 			Index: string($5),
 		}
 	}
-|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NumList
+|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminRestoreTable,
-			JobIDs: $6.([]int64),
+			JobIDs: []int64{$6.(int64)},
+		}
+	}
+|	"ADMIN" "RESTORE" "TABLE" TableName
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
+		}
+	}
+|	"ADMIN" "RESTORE" "TABLE" TableName NUM
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminRestoreTable,
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
+		        JobNumber: $5.(int64),
 		}
 	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
@@ -5884,7 +5919,7 @@ ShowStmt:
 	{
 		stmt := $2.(*ast.ShowStmt)
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5896,6 +5931,13 @@ ShowStmt:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateTable,
+			Table:	$4.(*ast.TableName),
+		}
+	}
+|	"SHOW" "CREATE" "VIEW" TableName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowCreateView,
 			Table:	$4.(*ast.TableName),
 		}
 	}
@@ -5947,7 +5989,7 @@ ShowStmt:
 			Tp: ast.ShowStatsMeta,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5961,7 +6003,7 @@ ShowStmt:
 			Tp: ast.ShowStatsHistograms,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5975,7 +6017,7 @@ ShowStmt:
 			Tp: ast.ShowStatsBuckets,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5989,7 +6031,7 @@ ShowStmt:
 			Tp: ast.ShowStatsHealthy,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -6099,6 +6141,13 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{
 			Tp: ast.ShowStatus,
+			GlobalScope: $1.(bool),
+		}
+	}
+|	GlobalScope "BINDINGS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp: ast.ShowBindings,
 			GlobalScope: $1.(bool),
 		}
 	}
@@ -6277,6 +6326,7 @@ Statement:
 |	CreateTableStmt
 |	CreateViewStmt
 |	CreateUserStmt
+|	CreateBindingStmt
 |	DoStmt
 |	DropDatabaseStmt
 |	DropIndexStmt
@@ -6284,6 +6334,7 @@ Statement:
 |	DropViewStmt
 |	DropUserStmt
 |	DropStatsStmt
+|	DropBindingStmt
 |	FlushStmt
 |	GrantStmt
 |	InsertIntoStmt
@@ -7285,6 +7336,55 @@ HashString:
 		$$ = $1
 	}
 
+/*******************************************************************
+ *
+ *  Create Binding Statement
+ *
+ *  Example:
+ *      CREATE GLOBAL BINDING FOR select Col1,Col2 from table USING select Col1,Col2 from table use index(Col1)
+ *******************************************************************/
+CreateBindingStmt:
+	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
+    	{
+		startOffset := parser.startOffset(&yyS[yypt-2])
+        	endOffset := parser.startOffset(&yyS[yypt-1])
+        	selStmt := $5.(*ast.SelectStmt)
+        	selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+
+		startOffset = parser.startOffset(&yyS[yypt])
+		hintedSelStmt := $7.(*ast.SelectStmt)
+		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		x := &ast.CreateBindingStmt {
+			OriginSel:  selStmt,
+			HintedSel:  hintedSelStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+/*******************************************************************
+ *
+ *  Drop Binding Statement
+ *
+ *  Example:
+ *      DROP GLOBAL BINDING FOR select Col1,Col2 from table
+ *******************************************************************/
+DropBindingStmt:
+	"DROP" GlobalScope "BINDING" "FOR" SelectStmt
+	{
+		startOffset := parser.startOffset(&yyS[yypt])
+		selStmt := $5.(*ast.SelectStmt)
+		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		x := &ast.DropBindingStmt {
+			OriginSel:  selStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+
 /*************************************************************************************
  * Grant statement
  * See https://dev.mysql.com/doc/refman/5.7/en/grant.html
@@ -7450,11 +7550,11 @@ PrivType:
 	}
 |	"CREATE" "VIEW"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateViewPriv
 	}
 |	"SHOW" "VIEW"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.ShowViewPriv
 	}
 |	"CREATE" "ROUTINE"
 	{
