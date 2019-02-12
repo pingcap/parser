@@ -1386,8 +1386,10 @@ func (n *RevokeStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WriteKeyWord(" ON ")
-	if err := n.ObjectType.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore RevokeStmt.ObjectType")
+	if n.ObjectType != ObjectTypeNone {
+		if err := n.ObjectType.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore RevokeStmt.ObjectType")
+		}
 		ctx.WritePlain(" ")
 	}
 	if err := n.Level.Restore(ctx); err != nil {
@@ -1445,8 +1447,10 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WriteKeyWord(" ON ")
-	if err := n.ObjectType.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore GrantStmt.ObjectType")
+	if n.ObjectType != ObjectTypeNone {
+		if err := n.ObjectType.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore GrantStmt.ObjectType")
+		}
 		ctx.WritePlain(" ")
 	}
 	if err := n.Level.Restore(ctx); err != nil {
