@@ -634,7 +634,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{`SHOW FULL TABLES FROM icar_qa LIKE play_evolutions`, true, "SHOW FULL TABLES IN `icar_qa` LIKE `play_evolutions`"},
 		{`SHOW FULL TABLES WHERE Table_Type != 'VIEW'`, true, "SHOW FULL TABLES WHERE `Table_Type`!='VIEW'"},
 		{`SHOW GRANTS`, true, "SHOW GRANTS"},
-		{`SHOW GRANTS FOR 'test'@'localhost'`, true, "SHOW GRANTS FOR 'test'@'localhost'"},
+		{`SHOW GRANTS FOR 'test'@'localhost'`, true, "SHOW GRANTS FOR `test`@`localhost`"},
 		{`SHOW GRANTS FOR current_user()`, true, "SHOW GRANTS FOR CURRENT_USER"},
 		{`SHOW GRANTS FOR current_user`, true, "SHOW GRANTS FOR CURRENT_USER"},
 		{`SHOW COLUMNS FROM City;`, true, "SHOW COLUMNS IN `City`"},
@@ -2058,40 +2058,40 @@ func (s *testParserSuite) TestType(c *C) {
 func (s *testParserSuite) TestPrivilege(c *C) {
 	table := []testCase{
 		// for create user
-		{`CREATE USER 'test'`, true, ""},
-		{`CREATE USER test`, true, ""},
-		{"CREATE USER `test`", true, ""},
+		{`CREATE USER 'test'`, true, "CREATE USER `test`@`%`"},
+		{`CREATE USER test`, true, "CREATE USER `test`@`%`"},
+		{"CREATE USER `test`", true, "CREATE USER `test`@`%`"},
 		{"CREATE USER test-user", false, ""},
 		{"CREATE USER test.user", false, ""},
-		{"CREATE USER 'test-user'", true, ""},
-		{"CREATE USER `test-user`", true, ""},
+		{"CREATE USER 'test-user'", true, "CREATE USER `test-user`@`%`"},
+		{"CREATE USER `test-user`", true, "CREATE USER `test-user`@`%`"},
 		{"CREATE USER test.user", false, ""},
-		{"CREATE USER 'test.user'", true, ""},
-		{"CREATE USER `test.user`", true, ""},
-		{"CREATE USER uesr1@localhost", true, ""},
-		{"CREATE USER `uesr1`@localhost", true, ""},
-		{"CREATE USER uesr1@`localhost`", true, ""},
-		{"CREATE USER `uesr1`@`localhost`", true, ""},
-		{"CREATE USER 'uesr1'@localhost", true, ""},
-		{"CREATE USER uesr1@'localhost'", true, ""},
-		{"CREATE USER 'uesr1'@'localhost'", true, ""},
-		{"CREATE USER 'uesr1'@`localhost`", true, ""},
-		{"CREATE USER `uesr1`@'localhost'", true, ""},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, ""},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, ""},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password as 'hashstring'", true, ""},
-		{`CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`ALTER USER USER() IDENTIFIED BY 'new-password'`, true, ""},
-		{`ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'`, true, ""},
-		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, ""},
-		{`DROP USER IF EXISTS 'root'@'localhost'`, true, ""},
+		{"CREATE USER 'test.user'", true, "CREATE USER `test.user`@`%`"},
+		{"CREATE USER `test.user`", true, "CREATE USER `test.user`@`%`"},
+		{"CREATE USER uesr1@localhost", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER `uesr1`@localhost", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER uesr1@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER `uesr1`@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER 'uesr1'@localhost", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER uesr1@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER 'uesr1'@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER 'uesr1'@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER `uesr1`@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, "CREATE USER `bug19354014user`@`%`"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY 'new-password'"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password as 'hashstring'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "CREATE USER IF NOT EXISTS `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER USER() IDENTIFIED BY 'new-password'"},
+		{`ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'"},
+		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, "DROP USER `root`@`localhost`, `root1`@`localhost`"},
+		{`DROP USER IF EXISTS 'root'@'localhost'`, true, "DROP USER IF EXISTS `root`@`localhost`"},
 
 		// for grant statement
 		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost';", true, ""},
@@ -2381,13 +2381,47 @@ func (s *testParserSuite) TestInsertStatementMemoryAllocation(c *C) {
 
 func (s *testParserSuite) TestExplain(c *C) {
 	table := []testCase{
-		{"explain select c1 from t1", true, ""},
-		{"explain delete t1, t2 from t1 inner join t2 inner join t3 where t1.id=t2.id and t2.id=t3.id;", true, ""},
-		{"explain insert into t values (1), (2), (3)", true, ""},
-		{"explain replace into foo values (1 || 2)", true, ""},
-		{"explain update t set id = id + 1 order by id desc;", true, ""},
-		{"explain select c1 from t1 union (select c2 from t2) limit 1, 1", true, ""},
-		{`explain format = "row" select c1 from t1 union (select c2 from t2) limit 1, 1`, true, ""},
+		{"explain select c1 from t1", true, "EXPLAIN FORMAT = 'row' SELECT `c1` FROM `t1`"},
+		{"explain delete t1, t2 from t1 inner join t2 inner join t3 where t1.id=t2.id and t2.id=t3.id;", true, "EXPLAIN FORMAT = 'row' DELETE `t1`,`t2` FROM (`t1` JOIN `t2`) JOIN `t3` WHERE `t1`.`id`=`t2`.`id` AND `t2`.`id`=`t3`.`id`"},
+		{"explain insert into t values (1), (2), (3)", true, "EXPLAIN FORMAT = 'row' INSERT INTO `t` VALUES (1),(2),(3)"},
+		{"explain replace into foo values (1 || 2)", true, "EXPLAIN FORMAT = 'row' REPLACE INTO `foo` VALUES (1 OR 2)"},
+		{"explain update t set id = id + 1 order by id desc;", true, "EXPLAIN FORMAT = 'row' UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
+		{"explain select c1 from t1 union (select c2 from t2) limit 1, 1", true, "EXPLAIN FORMAT = 'row' SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{`explain format = "row" select c1 from t1 union (select c2 from t2) limit 1, 1`, true, "EXPLAIN FORMAT = 'row' SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{"DESC SCHE.TABL", true, "DESC `SCHE`.`TABL`"},
+		{"DESC SCHE.TABL COLUM", true, "DESC `SCHE`.`TABL` `COLUM`"},
+		{"DESCRIBE SCHE.TABL COLUM", true, "DESC `SCHE`.`TABL` `COLUM`"},
+		{"EXPLAIN ANALYZE SELECT 1", true, "EXPLAIN ANALYZE SELECT 1"},
+		{"EXPLAIN FORMAT = 'dot' SELECT 1", true, "EXPLAIN FORMAT = 'dot' SELECT 1"},
+		{"EXPLAIN FORMAT = 'row' SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+		{"EXPLAIN FORMAT = 'ROW' SELECT 1", true, "EXPLAIN FORMAT = 'ROW' SELECT 1"},
+		{"EXPLAIN SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestPrepare(c *C) {
+	table := []testCase{
+		{"PREPARE pname FROM 'SELECT ?'", true, "PREPARE `pname` FROM 'SELECT ?'"},
+		{"PREPARE pname FROM @test", true, "PREPARE `pname` FROM @`test`"},
+		{"PREPARE `` FROM @test", true, "PREPARE `` FROM @`test`"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestDeallocate(c *C) {
+	table := []testCase{
+		{"DEALLOCATE PREPARE test", true, "DEALLOCATE PREPARE `test`"},
+		{"DEALLOCATE PREPARE ``", true, "DEALLOCATE PREPARE ``"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestExecute(c *C) {
+	table := []testCase{
+		{"EXECUTE test", true, "EXECUTE `test`"},
+		{"EXECUTE test USING @var1,@var2", true, "EXECUTE `test` USING @`var1`,@`var2`"},
+		{"EXECUTE `` USING @var1,@var2", true, "EXECUTE `` USING @`var1`,@`var2`"},
 	}
 	s.RunTest(c, table)
 }
