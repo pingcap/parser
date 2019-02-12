@@ -993,6 +993,19 @@ const (
 	ObjectTypeTable
 )
 
+// Restore implements Node interface.
+func (n ObjectTypeType) Restore(ctx *RestoreCtx) error {
+	switch n {
+	case ObjectTypeNone:
+		// do nothing
+	case ObjectTypeTable:
+		ctx.WriteKeyWord("TABLE ")
+	default:
+		return errors.New("Unsupported object type")
+	}
+	return nil
+}
+
 // GrantLevelType is the type for grant level.
 type GrantLevelType int
 
@@ -1058,13 +1071,8 @@ func (n *RevokeStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WriteKeyWord(" ON ")
-	switch n.ObjectType {
-	case ObjectTypeNone:
-		// do nothing
-	case ObjectTypeTable:
-		ctx.WriteKeyWord("TABLE ")
-	default:
-		return errors.New("Unsupported object type of RevokeStmt")
+	if err := n.ObjectType.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore RevokeStmt.ObjectType")
 	}
 	if err := n.Level.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore RevokeStmt.Level")
@@ -1121,13 +1129,8 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WriteKeyWord(" ON ")
-	switch n.ObjectType {
-	case ObjectTypeNone:
-		// do nothing
-	case ObjectTypeTable:
-		ctx.WriteKeyWord("TABLE ")
-	default:
-		return errors.New("Unsupported object type of GrantStmt")
+	if err := n.ObjectType.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore GrantStmt.ObjectType")
 	}
 	if err := n.Level.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore GrantStmt.Level")
