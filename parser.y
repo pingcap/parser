@@ -7676,7 +7676,7 @@ LocalOpt:
 	}
 
 Fields:
-    {
+     	{
 		escape := "\\"
 		$$ = &ast.FieldsClause{
 			Terminated: "\t",
