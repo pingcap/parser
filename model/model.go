@@ -83,6 +83,7 @@ type ColumnInfo struct {
 	types.FieldType     `json:"type"`
 	State               SchemaState `json:"state"`
 	Comment             string      `json:"comment"`
+	ExplictedCollation  bool        `json:"explicted_collation"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
 	//              That is a bug if multiple TiDB servers in different system time zone.
@@ -100,6 +101,11 @@ func (c *ColumnInfo) Clone() *ColumnInfo {
 // IsGenerated returns true if the column is generated column.
 func (c *ColumnInfo) IsGenerated() bool {
 	return len(c.GeneratedExprString) != 0
+}
+
+// IsExplictedCollation returns true if the charset or collation are explicitly assigned
+func (c *ColumnInfo) IsExplictedCollation() bool {
+	return c.ExplictedCollation
 }
 
 // SetDefaultValue sets the default value.
