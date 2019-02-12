@@ -93,6 +93,18 @@ type AuthOption struct {
 	// TODO: support auth_plugin
 }
 
+// Restore implements Node interface.
+func (n *AuthOption) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("IDENTIFIED BY ")
+	if n.ByAuthString {
+		ctx.WriteString(n.AuthString)
+	} else {
+		ctx.WriteKeyWord("PASSWORD ")
+		ctx.WriteString(n.HashString)
+	}
+	return nil
+}
+
 // TraceStmt is a statement to trace what sql actually does at background.
 type TraceStmt struct {
 	stmtNode
@@ -134,7 +146,32 @@ type ExplainStmt struct {
 
 // Restore implements Node interface.
 func (n *ExplainStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if showStmt, ok := n.Stmt.(*ShowStmt); ok {
+		ctx.WriteKeyWord("DESC ")
+		if err := showStmt.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore ExplainStmt.ShowStmt.Table")
+		}
+		if showStmt.Column != nil {
+			ctx.WritePlain(" ")
+			if err := showStmt.Column.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore ExplainStmt.ShowStmt.Column")
+			}
+		}
+		return nil
+	}
+	ctx.WriteKeyWord("EXPLAIN ")
+	if n.Analyze {
+		ctx.WriteKeyWord("ANALYZE ")
+	} else {
+		ctx.WriteKeyWord("FORMAT ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.Format)
+		ctx.WritePlain(" ")
+	}
+	if err := n.Stmt.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore ExplainStmt.Stmt")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -165,7 +202,20 @@ type PrepareStmt struct {
 
 // Restore implements Node interface.
 func (n *PrepareStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("PREPARE ")
+	ctx.WriteName(n.Name)
+	ctx.WriteKeyWord(" FROM ")
+	if n.SQLText != "" {
+		ctx.WriteString(n.SQLText)
+		return nil
+	}
+	if n.SQLVar != nil {
+		if err := n.SQLVar.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore PrepareStmt.SQLVar")
+		}
+		return nil
+	}
+	return errors.New("An error occurred while restore PrepareStmt")
 }
 
 // Accept implements Node Accept interface.
@@ -195,7 +245,9 @@ type DeallocateStmt struct {
 
 // Restore implements Node interface.
 func (n *DeallocateStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DEALLOCATE PREPARE ")
+	ctx.WriteName(n.Name)
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -228,7 +280,20 @@ type ExecuteStmt struct {
 
 // Restore implements Node interface.
 func (n *ExecuteStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("EXECUTE ")
+	ctx.WriteName(n.Name)
+	if len(n.UsingVars) > 0 {
+		ctx.WriteKeyWord(" USING ")
+		for i, val := range n.UsingVars {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := val.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore ExecuteStmt.UsingVars index %d", i)
+			}
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -387,7 +452,33 @@ type VariableAssignment struct {
 
 // Restore implements Node interface.
 func (n *VariableAssignment) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.IsSystem {
+		ctx.WritePlain("@@")
+		if n.IsGlobal {
+			ctx.WriteKeyWord("GLOBAL")
+		} else {
+			ctx.WriteKeyWord("SESSION")
+		}
+		ctx.WritePlain(".")
+	} else if n.Name != SetNames {
+		ctx.WriteKeyWord("@")
+	}
+	if n.Name == SetNames {
+		ctx.WriteKeyWord("NAMES ")
+	} else {
+		ctx.WriteName(n.Name)
+		ctx.WritePlain("=")
+	}
+	if err := n.Value.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore VariableAssignment.Value")
+	}
+	if n.ExtendValue != nil {
+		ctx.WriteKeyWord(" COLLATE ")
+		if err := n.ExtendValue.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore VariableAssignment.ExtendValue")
+		}
+	}
+	return nil
 }
 
 // Accept implements Node interface.
@@ -520,7 +611,16 @@ type SetStmt struct {
 
 // Restore implements Node interface.
 func (n *SetStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("SET ")
+	for i, v := range n.Variables {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore SetStmt.Variables[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -572,7 +672,16 @@ type SetPwdStmt struct {
 
 // Restore implements Node interface.
 func (n *SetPwdStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("SET PASSWORD")
+	if n.User != nil {
+		ctx.WriteKeyWord(" FOR ")
+		if err := n.User.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetPwdStmt.User")
+		}
+	}
+	ctx.WritePlain("=")
+	ctx.WriteString(n.Password)
+	return nil
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -596,28 +705,42 @@ type UserSpec struct {
 	AuthOpt *AuthOption
 }
 
+// Restore implements Node interface.
+func (n *UserSpec) Restore(ctx *RestoreCtx) error {
+	if err := n.User.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore UserSpec.User")
+	}
+	if n.AuthOpt != nil {
+		ctx.WritePlain(" ")
+		if err := n.AuthOpt.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore UserSpec.AuthOpt")
+		}
+	}
+	return nil
+}
+
 // SecurityString formats the UserSpec without password information.
-func (u *UserSpec) SecurityString() string {
+func (n *UserSpec) SecurityString() string {
 	withPassword := false
-	if opt := u.AuthOpt; opt != nil {
+	if opt := n.AuthOpt; opt != nil {
 		if len(opt.AuthString) > 0 || len(opt.HashString) > 0 {
 			withPassword = true
 		}
 	}
 	if withPassword {
-		return fmt.Sprintf("{%s password = ***}", u.User)
+		return fmt.Sprintf("{%s password = ***}", n.User)
 	}
-	return u.User.String()
+	return n.User.String()
 }
 
 // EncodedPassword returns the encoded password (which is the real data mysql.user).
 // The boolean value indicates input's password format is legal or not.
-func (u *UserSpec) EncodedPassword() (string, bool) {
-	if u.AuthOpt == nil {
+func (n *UserSpec) EncodedPassword() (string, bool) {
+	if n.AuthOpt == nil {
 		return "", true
 	}
 
-	opt := u.AuthOpt
+	opt := n.AuthOpt
 	if opt.ByAuthString {
 		return auth.EncodePassword(opt.AuthString), true
 	}
@@ -640,7 +763,19 @@ type CreateUserStmt struct {
 
 // Restore implements Node interface.
 func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE USER ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
+	for i, v := range n.Specs {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.Specs[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -676,7 +811,26 @@ type AlterUserStmt struct {
 
 // Restore implements Node interface.
 func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ALTER USER ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	if n.CurrentAuth != nil {
+		ctx.WriteKeyWord("USER")
+		ctx.WritePlain("() ")
+		if err := n.CurrentAuth.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AlterUserStmt.CurrentAuth")
+		}
+	}
+	for i, v := range n.Specs {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.Specs[%d]", i)
+		}
+	}
+	return nil
 }
 
 // SecureText implements SensitiveStatement interface.
@@ -711,7 +865,19 @@ type DropUserStmt struct {
 
 // Restore implements Node interface.
 func (n *DropUserStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DROP USER ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	for i, v := range n.UserList {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore DropUserStmt.UserList[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
