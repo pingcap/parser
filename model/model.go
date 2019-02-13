@@ -103,8 +103,8 @@ func (c *ColumnInfo) IsGenerated() bool {
 	return len(c.GeneratedExprString) != 0
 }
 
-// IsExplictedCollation returns true if the charset or collation are explicitly assigned
-func (c *ColumnInfo) IsExplictedCollation() bool {
+// HasExplictedCollation returns true if the charset or collation are explicitly assigned
+func (c *ColumnInfo) HasExplictedCollation() bool {
 	return c.ExplictedCollation
 }
 
