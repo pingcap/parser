@@ -105,7 +105,7 @@ func (c *ColumnInfo) IsGenerated() bool {
 
 // HasExplictedCollation returns true if the charset or collation are explicitly assigned
 func (c *ColumnInfo) HasExplictedCollation() bool {
-	return c.ExplictedCollation
+	return c.ExplicitCollation
 }
 
 // SetDefaultValue sets the default value.
