@@ -6262,10 +6262,11 @@ FlushOption:
 			Tp: ast.FlushPrivileges,
 		}
 	}
-|	"STATUS"
+|	"STATUS" Identifier
 	{
 		$$ = &ast.FlushStmt{
 			Tp: ast.FlushStatus,
+			Plugin: $2,
 		}
 	}
 |	TableOrTables TableNameListOpt WithReadLockOpt

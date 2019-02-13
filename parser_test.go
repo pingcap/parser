@@ -767,7 +767,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush tables tbl1, tbl2, tbl3", true, "FLUSH TABLES `tbl1`, `tbl2`, `tbl3`"},
 		{"flush tables tbl1, tbl2, tbl3 with read lock", true, "FLUSH TABLES `tbl1`, `tbl2`, `tbl3` WITH READ LOCK"},
 		{"flush privileges", true, "FLUSH PRIVILEGES"},
-		{"flush status", true, "FLUSH STATUS"},
+		{"flush status plugin1", true, "FLUSH STATUS plugin1"},
 	}
 	s.RunTest(c, table)
 }
