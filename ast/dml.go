@@ -1760,7 +1760,7 @@ type ShowStmt struct {
 	User        *auth.UserIdentity // Used for show grants/create user.
 	IfNotExists bool               // Used for `show create database if not exists`
 
-	// GlobalScope is used by show variables
+	// GlobalScope is used by `show variables` and `show bindings`
 	GlobalScope bool
 	Pattern     *PatternLikeExpr
 	Where       ExprNode
@@ -1918,6 +1918,13 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 			restoreShowDatabaseNameOpt()
 		case ShowPlugins:
 			ctx.WriteKeyWord("PLUGINS")
+		case ShowBindings:
+			if n.GlobalScope {
+				ctx.WriteKeyWord("GLOBAL ")
+			} else {
+				ctx.WriteKeyWord("SESSION ")
+			}
+			ctx.WriteKeyWord("BINDINGS")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}

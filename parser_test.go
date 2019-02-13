@@ -15,8 +15,6 @@ package parser
 
 import (
 	"fmt"
-	"github.com/pingcap/tidb/types"
-	"github.com/pingcap/tidb/types/parser_driver"
 	"runtime"
 	"strings"
 	"testing"
@@ -29,6 +27,8 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"github.com/pingcap/tidb/types"
+	"github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestT(t *testing.T) {
@@ -2451,12 +2451,12 @@ func (s *testParserSuite) TestTrace(c *C) {
 
 func (s *testParserSuite) TestBinding(c *C) {
 	table := []testCase{
-		{"create global binding for select * from t using select * from t use index(a)", true, ""},
-		{"create session binding for select * from t using select * from t use index(a)", true, ""},
-		{"create global binding for select * from t using select * from t use index(a)", true, ""},
-		{"create session binding for select * from t using select * from t use index(a)", true, ""},
-		{"show global bindings", true, ""},
-		{"show session bindings", true, ""},
+		{"create global binding for select * from t using select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
+		{"create session binding for select * from t using select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
+		{"create global binding for select * from t using select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
+		{"create session binding for select * from t using select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
+		{"show global bindings", true, "SHOW GLOBAL BINDINGS"},
+		{"show session bindings", true, "SHOW SESSION BINDINGS"},
 	}
 	s.RunTest(c, table)
 

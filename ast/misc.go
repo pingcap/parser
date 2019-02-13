@@ -900,7 +900,21 @@ type CreateBindingStmt struct {
 }
 
 func (n *CreateBindingStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE ")
+	if n.GlobalScope {
+		ctx.WriteKeyWord("GLOBAL ")
+	} else {
+		ctx.WriteKeyWord("SESSION ")
+	}
+	ctx.WriteKeyWord("BINDING FOR ")
+	if err := n.OriginSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	ctx.WriteKeyWord(" USING ")
+	if err := n.HintedSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
