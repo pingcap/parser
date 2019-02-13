@@ -83,7 +83,7 @@ type ColumnInfo struct {
 	types.FieldType     `json:"type"`
 	State               SchemaState `json:"state"`
 	Comment             string      `json:"comment"`
-	ExplictedCollation  bool        `json:"explicted_collation"`
+	ExplicitCollation   bool        `json:"explicit_collation"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
 	//              That is a bug if multiple TiDB servers in different system time zone.
