@@ -1249,13 +1249,11 @@ func (n *InsertStmt) Restore(ctx *RestoreCtx) error {
 	} else {
 		ctx.WriteKeyWord("INSERT ")
 	}
-	switch n.Priority {
-	case mysql.LowPriority:
-		ctx.WriteKeyWord("LOW_PRIORITY ")
-	case mysql.HighPriority:
-		ctx.WriteKeyWord("HIGH_PRIORITY ")
-	case mysql.DelayedPriority:
-		ctx.WriteKeyWord("DELAYED ")
+	if err := n.Priority.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.Priority != mysql.NoPriority {
+		ctx.WritePlain(" ")
 	}
 	if n.IgnoreErr {
 		ctx.WriteKeyWord("IGNORE ")
@@ -1295,6 +1293,7 @@ func (n *InsertStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	if n.Select != nil {
+		ctx.WritePlain(" ")
 		switch v := n.Select.(type) {
 		case *SelectStmt, *UnionStmt:
 			if err := v.Restore(ctx); err != nil {
@@ -1420,9 +1419,11 @@ func (n *DeleteStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("*/ ")
 	}
 
-	switch n.Priority {
-	case mysql.LowPriority:
-		ctx.WriteKeyWord("LOW_PRIORITY ")
+	if err := n.Priority.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.Priority != mysql.NoPriority {
+		ctx.WritePlain(" ")
 	}
 	if n.Quick {
 		ctx.WriteKeyWord("QUICK ")
@@ -1560,9 +1561,11 @@ func (n *UpdateStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("*/ ")
 	}
 
-	switch n.Priority {
-	case mysql.LowPriority:
-		ctx.WriteKeyWord("LOW_PRIORITY ")
+	if err := n.Priority.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.Priority != mysql.NoPriority {
+		ctx.WritePlain(" ")
 	}
 	if n.IgnoreErr {
 		ctx.WriteKeyWord("IGNORE ")
