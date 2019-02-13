@@ -692,8 +692,9 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt ReferTable")
 		}
 	}
-
-	if lenCols := len(n.Cols); lenCols > 0 {
+	lenCols := len(n.Cols)
+	lenConstraints := len(n.Constraints)
+	if lenCols+lenConstraints > 0 {
 		ctx.WritePlain("(")
 		for i, col := range n.Cols {
 			if i > 0 {

@@ -1528,11 +1528,11 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{`select .78,.21`, true, "SELECT 0.78,0.21"},
 		{`select .78 , 123`, true, "SELECT 0.78,123"},
 		{`select .78.123`, false, ""},
-		{`select .78#123`, true, "SELECT 0.78"}, // select .78
+		{`select .78#123`, true, "SELECT 0.78"},
 		{`insert float_test values(.67, 'string');`, true, "INSERT INTO `float_test` VALUES (0.67,'string')"},
-		{`select .78'123'`, true, "SELECT 0.78 AS `123`"}, // select .78 as '123'
-		{"select .78`123`", true, "SELECT 0.78 AS `123`"}, // select .78 as `123`
-		{`select .78"123"`, true, "SELECT 0.78 AS `123`"}, // select .78 as "123"
+		{`select .78'123'`, true, "SELECT 0.78 AS `123`"},
+		{"select .78`123`", true, "SELECT 0.78 AS `123`"},
+		{`select .78"123"`, true, "SELECT 0.78 AS `123`"},
 	}
 	s.RunTest(c, table)
 }
@@ -1766,10 +1766,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table a select * from b", true, "CREATE TABLE `a`  AS SELECT * FROM `b`"},
 		{"create table a as select * from b", true, "CREATE TABLE `a`  AS SELECT * FROM `b`"},
 		{"create table a (m int, n datetime) as select * from b", true, "CREATE TABLE `a` (`m` INT,`n` DATETIME) AS SELECT * FROM `b`"},
-		{"create table a (unique(n)) as select n from b", true, ""},
-		{"create table a ignore as select n from b", true, ""},
-		{"create table a replace as select n from b", true, ""},
-		{"create table a (m int) replace as (select n as m from b union select n+1 as m from c group by 1 limit 2)", true, ""},
+		{"create table a (unique(n)) as select n from b", true, "CREATE TABLE `a` (UNIQUE(`n`)) AS SELECT `n` FROM `b`"},
+		{"create table a ignore as select n from b", true, "CREATE TABLE `a`  IGNORE AS SELECT `n` FROM `b`"},
+		{"create table a replace as select n from b", true, "CREATE TABLE `a`  REPLACE AS SELECT `n` FROM `b`"},
+		{"create table a (m int) replace as (select n as m from b union select n+1 as m from c group by 1 limit 2)", true, "CREATE TABLE `a` (`m` INT) REPLACE AS (SELECT `n` AS `m` FROM `b` UNION SELECT `n`+1 AS `m` FROM `c` GROUP BY 1 LIMIT 2)"},
 
 		// Create table with no option is valid for parser
 		{"create table a", true, "CREATE TABLE `a` "},
