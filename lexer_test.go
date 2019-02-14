@@ -127,7 +127,7 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"\\N", null},
 		{".*", int('.')},       // `.`, `*`
 		{".1_t_1_x", int('.')}, // `.`, `1_t_1_x`
-		{"9e9e", intLit},       // 9e9e = 9e9 + e
+		{"9e9e", floatLit},     // 9e9e = 9e9 + e
 		// Issue #3954
 		{".1e23", floatLit}, // `.1e23`
 		{".123", decLit},    // `.123`
@@ -235,6 +235,12 @@ func (s *testLexerSuite) TestIdentifier(c *C) {
 		{"0_x", "0_x"},
 		{replacementString, replacementString},
 		{"9e", "9e"},
+		{"0b", "0b"},
+		{"0b123", "0b123"},
+		{"0b1ab", "0b1ab"},
+		{"0x", "0x"},
+		{"0x7fz3", "0x7fz3"},
+		{"023a4", "023a4"},
 		{"9eTSs", "9eTSs"},
 		{fmt.Sprintf("t1%cxxx", 0), "t1"},
 	}
