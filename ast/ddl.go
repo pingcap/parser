@@ -1540,6 +1540,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableAlgorithm:
 		// TODO: not support
+		ctx.WriteKeyWord("ALGORITHM ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* AlterTableAlgorithm is not supported */ ")
 	case AlterTableRenameIndex:
 		ctx.WriteKeyWord("RENAME INDEX ")
@@ -1548,6 +1551,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteName(n.ToKey.O)
 	case AlterTableForce:
 		// TODO: not support
+		ctx.WriteKeyWord("FORCE")
 		ctx.WritePlain(" /* AlterTableForce is not supported */ ")
 	case AlterTableAddPartitions:
 		ctx.WriteKeyWord("ADD PARTITION")
