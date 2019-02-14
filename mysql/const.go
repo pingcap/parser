@@ -15,10 +15,10 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
 
 	. "github.com/pingcap/parser/format"
+	"github.com/pkg/errors"
 )
 
 func newInvalidModeErr(s string) error {
