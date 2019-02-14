@@ -127,6 +127,7 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"\\N", null},
 		{".*", int('.')},       // `.`, `*`
 		{".1_t_1_x", int('.')}, // `.`, `1_t_1_x`
+		{"9e9e", intLit},       // 9e9e = 9e9 + e
 		// Issue #3954
 		{".1e23", floatLit}, // `.1e23`
 		{".123", decLit},    // `.123`
