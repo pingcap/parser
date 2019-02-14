@@ -115,7 +115,17 @@ type TraceStmt struct {
 
 // Restore implements Node interface.
 func (n *TraceStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("TRACE ")
+	if n.Format != "json" {
+		ctx.WriteKeyWord("FORMAT")
+		ctx.WritePlain(" = ")
+		ctx.WriteString(n.Format)
+		ctx.WritePlain(" ")
+	}
+	if err := n.Stmt.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TraceStmt.Stmt")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -1326,7 +1336,7 @@ func (n ObjectTypeType) Restore(ctx *RestoreCtx) error {
 	case ObjectTypeNone:
 		// do nothing
 	case ObjectTypeTable:
-		ctx.WriteKeyWord("TABLE ")
+		ctx.WriteKeyWord("TABLE")
 	default:
 		return errors.New("Unsupported object type")
 	}
@@ -1398,8 +1408,11 @@ func (n *RevokeStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WriteKeyWord(" ON ")
-	if err := n.ObjectType.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore RevokeStmt.ObjectType")
+	if n.ObjectType != ObjectTypeNone {
+		if err := n.ObjectType.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore RevokeStmt.ObjectType")
+		}
+		ctx.WritePlain(" ")
 	}
 	if err := n.Level.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore RevokeStmt.Level")
@@ -1458,8 +1471,11 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WriteKeyWord(" ON ")
-	if err := n.ObjectType.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore GrantStmt.ObjectType")
+	if n.ObjectType != ObjectTypeNone {
+		if err := n.ObjectType.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore GrantStmt.ObjectType")
+		}
+		ctx.WritePlain(" ")
 	}
 	if err := n.Level.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore GrantStmt.Level")
