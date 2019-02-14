@@ -238,6 +238,7 @@ func (s *testLexerSuite) TestIdentifier(c *C) {
 		{"0b", "0b"},
 		{"0b123", "0b123"},
 		{"0b1ab", "0b1ab"},
+		{"0B01", "0B01"},
 		{"0x", "0x"},
 		{"0x7fz3", "0x7fz3"},
 		{"023a4", "023a4"},

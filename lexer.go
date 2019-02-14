@@ -662,8 +662,8 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 		case ch1 == '.':
 			return s.scanFloat(&pos)
 		case ch1 == 'B':
-			tok = unicode.ReplacementChar
-			return
+			s.r.incAsLongAs(isIdentChar)
+			return identifier, pos, s.r.data(&pos)
 		}
 	}
 
