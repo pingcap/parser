@@ -656,7 +656,13 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 	s.scanDigits()
 	ch0 = s.r.peek()
 	if ch0 == '.' || ch0 == 'e' || ch0 == 'E' {
-		return s.scanFloat(&pos)
+		s.r.inc()
+		ch1 := s.r.peek()
+		if isDigit(ch1) || ch1 == '+' || ch1 == '-' {
+			return s.scanFloat(&pos)
+		}
+		// 9eTSs is an identifier rather than number, fall through.
+		tok = identifier
 	}
 
 	// Identifiers may begin with a digit but unless quoted may not consist solely of digits.

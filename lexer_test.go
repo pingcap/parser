@@ -113,6 +113,7 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"132.313", decLit},
 		{"132.3e231", floatLit},
 		{"132.3e-231", floatLit},
+		{"001e-12", floatLit},
 		{"23416", intLit},
 		{"123test", identifier},
 		{"123" + string(unicode.ReplacementChar) + "xxx", identifier},
@@ -232,6 +233,8 @@ func (s *testLexerSuite) TestIdentifier(c *C) {
 		{"1_x", "1_x"},
 		{"0_x", "0_x"},
 		{replacementString, replacementString},
+		{"9e", "9e"},
+		{"9eTSs", "9eTSs"},
 		{fmt.Sprintf("t1%cxxx", 0), "t1"},
 	}
 	l := &Scanner{}
