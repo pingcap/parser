@@ -505,6 +505,7 @@ const (
 	FlushTables
 	FlushPrivileges
 	FlushStatus
+	FlushTiDBPlugin
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -544,6 +545,8 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("PRIVILEGES")
 	case FlushStatus:
 		ctx.WriteKeyWord("STATUS")
+	case FlushTiDBPlugin:
+		ctx.WriteKeyWord("TIDB_PLUGIN")
 		ctx.WritePlain(" " + n.Plugin)
 	default:
 		return errors.New("Unsupported type of FlushTables")
