@@ -117,7 +117,8 @@ type TraceStmt struct {
 func (n *TraceStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("TRACE ")
 	if n.Format != "json" {
-		ctx.WriteKeyWord("FORMAT = ")
+		ctx.WriteKeyWord("FORMAT")
+		ctx.WritePlain(" = ")
 		ctx.WriteString(n.Format)
 		ctx.WritePlain(" ")
 	}
