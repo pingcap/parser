@@ -1281,7 +1281,9 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		}
 	case TableOptionStatsPersistent:
 		// TODO: not support
-		ctx.WriteKeyWord("STATS_PERSISTENT = DEFAULT")
+		ctx.WriteKeyWord("STATS_PERSISTENT ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
@@ -1289,7 +1291,9 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
 		// TODO: not support
-		ctx.WriteKeyWord("PACK_KEYS = DEFAULT")
+		ctx.WriteKeyWord("PACK_KEYS ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* TableOptionPackKeys is not supported */ ")
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)

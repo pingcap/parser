@@ -1246,7 +1246,7 @@ type PrivElem struct {
 func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 	switch n.Priv {
 	case 0:
-		ctx.WritePlainf("/* UNSUPPORTED TYPE */")
+		ctx.WritePlain("/* UNSUPPORTED TYPE */")
 	case mysql.AllPriv:
 		ctx.WriteKeyWord("ALL")
 	case mysql.AlterPriv:
