@@ -486,7 +486,6 @@ import (
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
 	restore		"RESTORE"
-	tidbPlugin	"TIDB_PLUGIN"
 
 	builtinAddDate
 	builtinBitAnd
@@ -674,6 +673,7 @@ import (
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
+	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
 	FuncDatetimePrec		"Function datetime precision"
 	GlobalScope			"The scope of variable"
@@ -3003,7 +3003,7 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE" | "TIDB_PLUGIN"
+"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6256,6 +6256,16 @@ FlushStmt:
 		$$ = tmp
 	}
 
+PluginNameList:
+	Identifier
+	{
+		$$ = []string{$1}
+	}
+|	PluginNameList ',' Identifier
+	{
+		$$ = append($1.([]string), $3)
+	}
+
 FlushOption:
 	"PRIVILEGES"
 	{
@@ -6269,11 +6279,11 @@ FlushOption:
 			Tp: ast.FlushStatus,
 		}
 	}
-|	"TIDB_PLUGIN" Identifier
+|	"TIDB" "PLUGINS" PluginNameList
 	{
 		$$ = &ast.FlushStmt{
 			Tp: ast.FlushTiDBPlugin,
-			Plugin: $2,
+			Plugins: $3.([]string),
 		}
 	}
 |	TableOrTables TableNameListOpt WithReadLockOpt

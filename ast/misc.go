@@ -526,7 +526,7 @@ type FlushStmt struct {
 	NoWriteToBinLog bool
 	Tables          []*TableName // For FlushTableStmt, if Tables is empty, it means flush all tables.
 	ReadLock        bool
-	Plugin          string
+	Plugins         []string
 }
 
 // Restore implements Node interface.
@@ -556,8 +556,15 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 	case FlushStatus:
 		ctx.WriteKeyWord("STATUS")
 	case FlushTiDBPlugin:
-		ctx.WriteKeyWord("TIDB_PLUGIN")
-		ctx.WritePlain(" " + n.Plugin)
+		ctx.WriteKeyWord("TIDB PLUGINS")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
 	default:
 		return errors.New("Unsupported type of FlushTables")
 	}
