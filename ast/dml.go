@@ -2173,7 +2173,7 @@ type WindowSpec struct {
 
 // Restore implements Node interface.
 func (n *WindowSpec) Restore(ctx *RestoreCtx) error {
-	if name := n.Name.String(); name != "" {
+	if name := n.Name.String(); name != "" && name != "<unnamed window>" {
 		ctx.WriteName(name)
 		if n.OnlyAlias {
 			return nil

@@ -80,6 +80,21 @@ func (*testModelSuite) TestModelBasic(c *C) {
 		PKIsHandle:  true,
 	}
 
+	view := &TableInfo{
+		ID:          1,
+		Name:        NewCIStr("v"),
+		Charset:     "utf8",
+		Collate:     "utf8_bin",
+		Columns:     []*ColumnInfo{column},
+		Indices:     nil,
+		ForeignKeys: nil,
+		PKIsHandle:  true,
+		View: &ViewInfo{
+			SelectStmt:      "SELECT 1 AS `C` FROM `DUAL`",
+			SelectStmtQuote: "SELECT 1 AS \"C\" FROM \"DUAL\"",
+		},
+	}
+
 	dbInfo := &DBInfo{
 		ID:      1,
 		Name:    NewCIStr("test"),
@@ -124,6 +139,9 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	}
 	no := anIndex.HasPrefixIndex()
 	c.Assert(no, Equals, false)
+
+	c.Assert(view.View.SelectStmtBySQLMode(mysql.ModeNone), Equals, "SELECT 1 AS `C` FROM `DUAL`")
+	c.Assert(view.View.SelectStmtBySQLMode(mysql.ModeANSIQuotes), Equals, "SELECT 1 AS \"C\" FROM \"DUAL\"")
 }
 
 func (*testModelSuite) TestJobStartTime(c *C) {

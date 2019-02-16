@@ -537,7 +537,18 @@ type ViewInfo struct {
 	Security    ViewSecurity       `json:"view_security"`
 	SelectStmt  string             `json:"view_select"`
 	CheckOption ViewCheckOption    `json:"view_checkoption"`
-	Cols        []CIStr            `json:"view_cols"`
+	//todo Remove this attribute when upgrade to next release version
+	Cols            []CIStr `json:"view_cols"`
+	SelectStmtQuote string  `json:view_select_quote`
+}
+
+// SelectStmtByQuote provide SelectStmt with different quote
+func (v ViewInfo) SelectStmtBySQLMode(mode mysql.SQLMode) string {
+	if mode.HasANSIQuotesMode() {
+		return v.SelectStmtQuote
+	} else {
+		return v.SelectStmt
+	}
 }
 
 // PartitionType is the type for PartitionInfo
