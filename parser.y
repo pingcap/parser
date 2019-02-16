@@ -188,6 +188,7 @@ import (
 	nvarcharType		"NVARCHAR"
 	on			"ON"
 	option			"OPTION"
+	optionally		"OPTIONALLY"
 	or			"OR"
 	order			"ORDER"
 	outer			"OUTER"
@@ -5807,7 +5808,7 @@ AdminStmt:
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminRestoreTable,
 			Tables: []*ast.TableName{$4.(*ast.TableName)},
-		        JobNumber: $5.(int64),
+			JobNumber: $5.(int64),
 		}
 	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
@@ -7727,6 +7728,10 @@ FieldsTerminated:
 Enclosed:
 	{
 		$$ = ""
+	}
+|	"OPTIONALLY" "ENCLOSED" "BY" stringLit
+	{
+		$$ = $4
 	}
 |	"ENCLOSED" "BY" stringLit
 	{
