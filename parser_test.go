@@ -810,10 +810,10 @@ func (s *testParserSuite) TestExpression(c *C) {
 		{`select '\'a\'';`, true, "SELECT '''a'''"},
 		{`select "\"a\"";`, true, "SELECT '\"a\"'"},
 		{`select """a""";`, true, "SELECT '\"a\"'"},
-		{`select _utf8"string";`, true, "SELECT _utf8'string'"},
-		{`select _binary"string";`, true, "SELECT _binary'string'"},
-		{"select N'string'", true, "SELECT _utf8'string'"},
-		{"select n'string'", true, "SELECT _utf8'string'"},
+		{`select _utf8"string";`, true, "SELECT _UTF8'string'"},
+		{`select _binary"string";`, true, "SELECT _BINARY'string'"},
+		{"select N'string'", true, "SELECT _UTF8'string'"},
+		{"select n'string'", true, "SELECT _UTF8'string'"},
 		// for comparison
 		{"select 1 <=> 0, 1 <=> null, 1 = null", true, "SELECT 1<=>0,1<=>NULL,1=NULL"},
 		// for date literal
