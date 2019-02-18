@@ -379,6 +379,7 @@ import (
 	respect		"RESPECT"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
+	role        "ROLE"
 	rollback	"ROLLBACK"
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
@@ -575,6 +576,7 @@ import (
 	CreateTableStmt			"CREATE TABLE statement"
 	CreateViewStmt			"CREATE VIEW  stetement"
 	CreateUserStmt			"CREATE User statement"
+	CreateRoleStmt			"CREATE Role statement"
 	CreateDatabaseStmt		"Create Database Statement"
 	CreateIndexStmt			"CREATE INDEX statement"
 	CreateBindingStmt		"CREATE BINDING  statement"
@@ -584,6 +586,7 @@ import (
 	DropStatsStmt			"DROP STATS statement"
 	DropTableStmt			"DROP TABLE statement"
 	DropUserStmt			"DROP USER"
+	DropRoleStmt			"DROP ROLE"
 	DropViewStmt			"DROP VIEW statement"
 	DropBindingStmt		    	"DROP BINDING  statement"
 	DeallocateStmt			"Deallocate prepared statement"
@@ -750,6 +753,10 @@ import (
 	OnUpdateOpt			"optional ON UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
+	Rolename            "Rolename"
+	RolenameList            "RolenameList"
+	RoleSpec		"Rolename and auth option"
+    RoleSpecList		"Rolename and auth option list"
 	RowFormat			"Row format option"
 	RowValue			"Row value"
 	SelectLockOpt			"FOR UPDATE or LOCK IN SHARE MODE,"
@@ -2411,6 +2418,16 @@ DropUserStmt:
 		$$ = &ast.DropUserStmt{IfExists: true, UserList: $5.([]*auth.UserIdentity)}
 	}
 
+DropRoleStmt:
+	"DROP" "ROLE" RolenameList
+	{
+		$$ = &ast.DropUserStmt{IfExists: false, UserList: $3.([]*auth.UserIdentity)}
+	}
+|	"DROP" "ROLE" "IF" "EXISTS" RolenameList
+	{
+		$$ = &ast.DropUserStmt{IfExists: true, UserList: $5.([]*auth.UserIdentity)}
+	}
+
 DropStatsStmt:
 	"DROP" "STATS" TableName
 	{
@@ -3009,7 +3026,7 @@ UnReservedKeyword:
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
-| "ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken 
+| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
@@ -5758,6 +5775,30 @@ AuthString:
 		$$ = $1
 	}
 
+Rolename:
+	StringName
+	{
+		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: "%", IsRole: true}
+	}
+|	StringName '@' StringName
+	{
+		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: $3.(string), IsRole: true}
+	}
+|	StringName singleAtIdentifier
+	{
+		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@"), IsRole: true}
+	}
+
+RolenameList:
+	Rolename
+	{
+		$$ = []*auth.UserIdentity{$1.(*auth.UserIdentity)}
+	}
+|	RolenameList ',' Rolename
+	{
+		$$ = append($1.([]*auth.UserIdentity), $3.(*auth.UserIdentity))
+	}
+
 /****************************Admin Statement*******************************/
 AdminStmt:
 	"ADMIN" "SHOW" "DDL"
@@ -6364,6 +6405,7 @@ Statement:
 |	CreateTableStmt
 |	CreateViewStmt
 |	CreateUserStmt
+|   CreateRoleStmt
 |	CreateBindingStmt
 |	DoStmt
 |	DropDatabaseStmt
@@ -6371,6 +6413,7 @@ Statement:
 |	DropTableStmt
 |	DropViewStmt
 |	DropUserStmt
+|	DropRoleStmt
 |	DropStatsStmt
 |	DropBindingStmt
 |	FlushStmt
@@ -7290,6 +7333,16 @@ CreateUserStmt:
 		}
 	}
 
+CreateRoleStmt:
+    "CREATE" "ROLE" IfNotExists RoleSpecList
+	{
+ 		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
+		$$ = &ast.CreateUserStmt{
+			IfNotExists: $3.(bool),
+			Specs: $4.([]*ast.UserSpec),
+		}
+	}
+
 /* See http://dev.mysql.com/doc/refman/5.7/en/alter-user.html */
 AlterUserStmt:
 	"ALTER" "USER" IfExists UserSpecList
@@ -7372,6 +7425,26 @@ HashString:
 	stringLit
 	{
 		$$ = $1
+	}
+
+RoleSpec:
+	Rolename
+	{
+		roleSpec := &ast.UserSpec{
+			User: $1.(*auth.UserIdentity),
+		}
+		roleSpec.AuthOpt = nil
+		$$ = roleSpec
+	}
+
+RoleSpecList:
+	RoleSpec
+	{
+		$$ = []*ast.UserSpec{$1.(*ast.UserSpec)}
+	}
+|	RoleSpecList ',' RoleSpec
+	{
+		$$ = append($1.([]*ast.UserSpec), $3.(*ast.UserSpec))
 	}
 
 /*******************************************************************

@@ -417,6 +417,7 @@ var tokenMap = map[string]int{
 	"REVOKE":                   revoke,
 	"RIGHT":                    right,
 	"RLIKE":                    rlike,
+	"ROLE":                     role,
 	"ROLLBACK":                 rollback,
 	"ROUTINE":                  routine,
 	"ROW":                      row,
