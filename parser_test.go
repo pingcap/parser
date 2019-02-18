@@ -645,6 +645,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush tables tbl1, tbl2, tbl3 with read lock", true},
 		{"flush privileges", true},
 		{"flush status", true},
+		{"flush tidb plugins plugin1", true},
+		{"flush tidb plugins plugin1, plugin2", true},
 	}
 	s.RunTest(c, table)
 }

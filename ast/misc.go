@@ -350,6 +350,7 @@ const (
 	FlushTables
 	FlushPrivileges
 	FlushStatus
+	FlushTiDBPlugin
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -360,6 +361,7 @@ type FlushStmt struct {
 	NoWriteToBinLog bool
 	Tables          []*TableName // For FlushTableStmt, if Tables is empty, it means flush all tables.
 	ReadLock        bool
+	Plugins         []string
 }
 
 // Accept implements Node Accept interface.

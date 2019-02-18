@@ -669,6 +669,7 @@ import (
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
+	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
 	FuncDatetimePrec		"Function datetime precision"
 	GlobalScope			"The scope of variable"
@@ -6175,6 +6176,16 @@ FlushStmt:
 		$$ = tmp
 	}
 
+PluginNameList:
+	Identifier
+	{
+		$$ = []string{$1}
+	}
+|	PluginNameList ',' Identifier
+	{
+		$$ = append($1.([]string), $3)
+	}
+
 FlushOption:
 	"PRIVILEGES"
 	{
@@ -6186,6 +6197,13 @@ FlushOption:
 	{
 		$$ = &ast.FlushStmt{
 			Tp: ast.FlushStatus,
+		}
+	}
+|	"TIDB" "PLUGINS" PluginNameList
+	{
+		$$ = &ast.FlushStmt{
+			Tp: ast.FlushTiDBPlugin,
+			Plugins: $3.([]string),
 		}
 	}
 |	TableOrTables TableNameListOpt WithReadLockOpt
