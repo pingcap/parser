@@ -608,6 +608,7 @@ import (
 	RenameTableStmt         	"rename table statement"
 	ReplaceIntoStmt			"REPLACE INTO statement"
 	RevokeStmt			"Revoke statement"
+	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
@@ -6470,6 +6471,7 @@ Statement:
 |	RenameTableStmt
 |	ReplaceIntoStmt
 |	RevokeStmt
+|   RevokeRoleStmt
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
@@ -7780,6 +7782,11 @@ RevokeStmt:
 			Level: $5.(*ast.GrantLevel),
 			Users: $7.([]*ast.UserSpec),
 		}
+	 }
+
+RevokeRoleStmt:
+	 "REVOKE" RolenameList "FROM" UsernameList
+	 {
 	 }
 
 /**************************************LoadDataStmt*****************************************

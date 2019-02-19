@@ -2114,6 +2114,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, "DROP USER `root`@`localhost`, `root1`@`localhost`"},
 		{`DROP USER IF EXISTS 'root'@'localhost'`, true, "DROP USER IF EXISTS `root`@`localhost`"},
 		{`DROP ROLE 'role'@'localhost', 'role1'@'localhost'`, true, ""},
+		{`DROP ROLE 'administrator', 'developer';`, true, ""},
 		{`DROP ROLE IF EXISTS 'role'@'localhost'`, true, ""},
 
 		// for grant statement
@@ -2144,6 +2145,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"REVOKE SELECT, INSERT ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT, INSERT ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
 		{"REVOKE SELECT (col1), INSERT (col1,col2) ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT (`col1`), INSERT (`col1`,`col2`) ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
 		{"REVOKE all privileges on zabbix.* FROM 'zabbix'@'localhost' identified by 'password';", true, "REVOKE ALL ON `zabbix`.* FROM `zabbix`@`localhost` IDENTIFIED BY 'password'"},
+		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, ""},
 	}
 	s.RunTest(c, table)
 }
