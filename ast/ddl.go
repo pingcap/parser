@@ -1573,7 +1573,6 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableAlgorithm:
-		// TODO: not support
 		ctx.WriteKeyWord("ALGORITHM ")
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.Algorithm.String())
