@@ -1409,7 +1409,7 @@ const (
 	LockTypeExclusive
 )
 
-// AlterAlgorithm is the algorithm of the ddl operations.
+// AlterAlgorithm is the algorithm of the DDL operations.
 // See https://dev.mysql.com/doc/refman/8.0/en/alter-table.html#alter-table-performance.
 type AlterAlgorithm byte
 
