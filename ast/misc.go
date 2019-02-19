@@ -1535,38 +1535,6 @@ func (n *GrantStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-type GrantRoleStmt struct {
-	stmtNode
-
-	Roles     []*auth.UserIdentity
-	Users     []*auth.UserIdentity
-	WithGrant bool
-}
-
-func (n *GrantRoleStmt) SecureText() string {
-	text := n.text
-	// Filter "identified by xxx" because it would expose password information.
-	idx := strings.Index(strings.ToLower(text), "identified")
-	if idx > 0 {
-		text = text[:idx]
-	}
-	return text
-}
-
-func (n *GrantRoleStmt) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
-	n = newNode.(*GrantRoleStmt)
-	return v.Leave(n)
-}
-
-// Restore implements Node interface.
-func (n *GrantRoleStmt) Restore(ctx *RestoreCtx) error {
-	return nil
-}
-
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
