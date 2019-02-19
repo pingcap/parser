@@ -1188,7 +1188,7 @@ AlterTableSpec:
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableLock,
-			LockType:   	$1.(ast.LockType),
+			LockType:   $1.(ast.LockType),
 		}
 	}
 | "ALGORITHM" EqOpt AlterAlgorithm
