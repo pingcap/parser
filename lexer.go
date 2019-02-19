@@ -16,6 +16,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -50,6 +51,10 @@ type Scanner struct {
 	// It may break the compatibility when support those keywords,
 	// because some application may already use them as identifiers.
 	supportWindowFunc bool
+
+	// lastScanOffset indicates last offset returned by scan().
+	// It's used to substring sql in syntax error message.
+	lastScanOffset int
 }
 
 type specialCommentScanner interface {
@@ -123,11 +128,14 @@ func (s *Scanner) stmtText() string {
 // Scanner satisfies yyLexer interface which need this function.
 func (s *Scanner) Errorf(format string, a ...interface{}) {
 	str := fmt.Sprintf(format, a...)
-	val := s.r.s[s.r.pos().Offset:]
+	val := s.r.s[s.lastScanOffset:]
+	var lenStr = ""
 	if len(val) > 2048 {
+		lenStr = "(total length " + strconv.Itoa(len(val)) + ")"
 		val = val[:2048]
 	}
-	err := fmt.Errorf("line %d column %d near \"%s\"%s (total length %d)", s.r.p.Line, s.r.p.Col, val, str, len(s.r.s))
+	err := fmt.Errorf("line %d column %d near \"%s\"%s %s",
+		s.r.p.Line, s.r.p.Col, val, str, lenStr)
 	s.errs = append(s.errs, err)
 }
 
@@ -138,6 +146,7 @@ func (s *Scanner) Errorf(format string, a ...interface{}) {
 // return invalid tells parser that scanner meets illegal character.
 func (s *Scanner) Lex(v *yySymType) int {
 	tok, pos, lit := s.scan()
+	s.lastScanOffset = pos.Offset
 	v.offset = pos.Offset
 	v.ident = lit
 	if tok == identifier {
@@ -339,6 +348,7 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 		return
 	}
 	tok = int('-')
+	lit = "-"
 	s.r.inc()
 	return
 }
@@ -629,17 +639,31 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			s.scanOct()
 		case ch1 == 'x' || ch1 == 'X':
 			s.r.inc()
+			p1 := s.r.pos()
 			s.scanHex()
+			p2 := s.r.pos()
+			// 0x, 0x7fz3 are identifier
+			if p1 == p2 || isDigit(s.r.peek()) {
+				s.r.incAsLongAs(isIdentChar)
+				return identifier, pos, s.r.data(&pos)
+			}
 			tok = hexLit
 		case ch1 == 'b':
 			s.r.inc()
+			p1 := s.r.pos()
 			s.scanBit()
+			p2 := s.r.pos()
+			// 0b, 0b123, 0b1ab are identifier
+			if p1 == p2 || isDigit(s.r.peek()) {
+				s.r.incAsLongAs(isIdentChar)
+				return identifier, pos, s.r.data(&pos)
+			}
 			tok = bitLit
 		case ch1 == '.':
 			return s.scanFloat(&pos)
 		case ch1 == 'B':
-			tok = unicode.ReplacementChar
-			return
+			s.r.incAsLongAs(isIdentChar)
+			return identifier, pos, s.r.data(&pos)
 		}
 	}
 
@@ -707,11 +731,17 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 	if ch0 == 'e' || ch0 == 'E' {
 		s.r.inc()
 		ch0 = s.r.peek()
-		if ch0 == '-' || ch0 == '+' {
+		if ch0 == '-' || ch0 == '+' || isDigit(ch0) {
 			s.r.inc()
+			s.scanDigits()
+			tok = floatLit
+		} else {
+			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
+			// 9e9e = 9e9(float) + e(identifier)
+			// 9est = 9est(identifier)
+			s.r.incAsLongAs(isIdentChar)
+			tok = identifier
 		}
-		s.scanDigits()
-		tok = floatLit
 	} else {
 		tok = decLit
 	}

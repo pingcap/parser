@@ -16,6 +16,9 @@ package mysql
 import (
 	"fmt"
 	"strings"
+
+	. "github.com/pingcap/parser/format"
+	"github.com/pkg/errors"
 )
 
 func newInvalidModeErr(s string) error {
@@ -218,6 +221,10 @@ const (
 	ExecutePriv
 	// IndexPriv is the privilege to create/drop index.
 	IndexPriv
+	// CreateViewPriv is the privilege to create view.
+	CreateViewPriv
+	// ShowViewPriv is the privilege to show create view.
+	ShowViewPriv
 	// AllPriv is the privilege for all actions.
 	AllPriv
 )
@@ -277,6 +284,8 @@ var Priv2UserCol = map[PrivilegeType]string{
 	AlterPriv:      "Alter_priv",
 	ExecutePriv:    "Execute_priv",
 	IndexPriv:      "Index_priv",
+	CreateViewPriv: "Create_view_priv",
+	ShowViewPriv:   "Show_view_priv",
 }
 
 // Command2Str is the command information to command name.
@@ -333,10 +342,12 @@ var Col2PrivType = map[string]PrivilegeType{
 	"Alter_priv":       AlterPriv,
 	"Execute_priv":     ExecutePriv,
 	"Index_priv":       IndexPriv,
+	"Create_view_priv": CreateViewPriv,
+	"Show_view_priv":   ShowViewPriv,
 }
 
 // AllGlobalPrivs is all the privileges in global scope.
-var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv}
+var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv}
 
 // Priv2Str is the map for privilege to string.
 var Priv2Str = map[PrivilegeType]string{
@@ -356,38 +367,44 @@ var Priv2Str = map[PrivilegeType]string{
 	AlterPriv:      "Alter",
 	ExecutePriv:    "Execute",
 	IndexPriv:      "Index",
+	CreateViewPriv: "Create View",
+	ShowViewPriv:   "Show View",
 }
 
 // Priv2SetStr is the map for privilege to string.
 var Priv2SetStr = map[PrivilegeType]string{
-	CreatePriv:  "Create",
-	SelectPriv:  "Select",
-	InsertPriv:  "Insert",
-	UpdatePriv:  "Update",
-	DeletePriv:  "Delete",
-	DropPriv:    "Drop",
-	GrantPriv:   "Grant",
-	AlterPriv:   "Alter",
-	ExecutePriv: "Execute",
-	IndexPriv:   "Index",
+	CreatePriv:     "Create",
+	SelectPriv:     "Select",
+	InsertPriv:     "Insert",
+	UpdatePriv:     "Update",
+	DeletePriv:     "Delete",
+	DropPriv:       "Drop",
+	GrantPriv:      "Grant",
+	AlterPriv:      "Alter",
+	ExecutePriv:    "Execute",
+	IndexPriv:      "Index",
+	CreateViewPriv: "Create View",
+	ShowViewPriv:   "Show View",
 }
 
 // SetStr2Priv is the map for privilege set string to privilege type.
 var SetStr2Priv = map[string]PrivilegeType{
-	"Create":  CreatePriv,
-	"Select":  SelectPriv,
-	"Insert":  InsertPriv,
-	"Update":  UpdatePriv,
-	"Delete":  DeletePriv,
-	"Drop":    DropPriv,
-	"Grant":   GrantPriv,
-	"Alter":   AlterPriv,
-	"Execute": ExecutePriv,
-	"Index":   IndexPriv,
+	"Create":      CreatePriv,
+	"Select":      SelectPriv,
+	"Insert":      InsertPriv,
+	"Update":      UpdatePriv,
+	"Delete":      DeletePriv,
+	"Drop":        DropPriv,
+	"Grant":       GrantPriv,
+	"Alter":       AlterPriv,
+	"Execute":     ExecutePriv,
+	"Index":       IndexPriv,
+	"Create View": CreateViewPriv,
+	"Show View":   ShowViewPriv,
 }
 
 // AllDBPrivs is all the privileges in database scope.
-var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, ExecutePriv, IndexPriv}
+var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
 
 // AllTablePrivs is all the privileges in table scope.
 var AllTablePrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, IndexPriv}
@@ -399,7 +416,7 @@ var AllColumnPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv}
 const AllPrivilegeLiteral = "ALL PRIVILEGES"
 
 // DefaultSQLMode for GLOBAL_VARIABLES
-const DefaultSQLMode = "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+const DefaultSQLMode = "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 
 // DefaultLengthOfMysqlTypes is the map for default physical length of MySQL data types.
 // See http://dev.mysql.com/doc/refman/5.7/en/storage-requirements.html
@@ -511,6 +528,11 @@ func (m SQLMode) HasNoAutoCreateUserMode() bool {
 	return m&ModeNoAutoCreateUser == ModeNoAutoCreateUser
 }
 
+// HasAllowInvalidDatesMode detects if 'ALLOW_INVALID_DATES' mode is set in SQLMode
+func (m SQLMode) HasAllowInvalidDatesMode() bool {
+	return m&ModeAllowInvalidDates == ModeAllowInvalidDates
+}
+
 // consts for sql modes.
 const (
 	ModeNone        SQLMode = 0
@@ -546,6 +568,7 @@ const (
 	ModeHighNotPrecedence
 	ModeNoEngineSubstitution
 	ModePadCharToFullLength
+	ModeAllowInvalidDates
 )
 
 // FormatSQLModeStr re-format 'SQL_MODE' variable.
@@ -623,6 +646,7 @@ var Str2SQLMode = map[string]SQLMode{
 	"HIGH_NOT_PRECEDENCE":        ModeHighNotPrecedence,
 	"NO_ENGINE_SUBSTITUTION":     ModeNoEngineSubstitution,
 	"PAD_CHAR_TO_FULL_LENGTH":    ModePadCharToFullLength,
+	"ALLOW_INVALID_DATES":        ModeAllowInvalidDates,
 }
 
 // CombinationSQLMode is the special modes that provided as shorthand for combinations of mode values.
@@ -692,6 +716,23 @@ func Str2Priority(val string) PriorityEnum {
 	default:
 		return NoPriority
 	}
+}
+
+// Restore implements Node interface.
+func (n *PriorityEnum) Restore(ctx *RestoreCtx) error {
+	switch *n {
+	case NoPriority:
+		return nil
+	case LowPriority:
+		ctx.WriteKeyWord("LOW_PRIORITY")
+	case HighPriority:
+		ctx.WriteKeyWord("HIGH_PRIORITY")
+	case DelayedPriority:
+		ctx.WriteKeyWord("DELAYED")
+	default:
+		return errors.Errorf("undefined PriorityEnum Type[%d]", *n)
+	}
+	return nil
 }
 
 // PrimaryKeyName defines primary key name.

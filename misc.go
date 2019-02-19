@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/charset"
-	"github.com/pingcap/tidb/util/hack"
 )
 
 func isLetter(ch rune) bool {
@@ -373,6 +372,7 @@ var tokenMap = map[string]int{
 	"ON":                       on,
 	"ONLY":                     only,
 	"OPTION":                   option,
+	"OPTIONALLY":               optionally,
 	"OR":                       or,
 	"ORDER":                    order,
 	"OUTER":                    outer,
@@ -534,6 +534,8 @@ var tokenMap = map[string]int{
 	"YEAR":                     yearType,
 	"YEAR_MONTH":               yearMonth,
 	"ZEROFILL":                 zerofill,
+	"BINDING":                  binding,
+	"BINDINGS":                 bindings,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details
@@ -633,9 +635,9 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 			return tok
 		}
 	}
-	tok, ok := tokenMap[hack.String(data)]
+	tok, ok := tokenMap[string(data)]
 	if !ok && s.supportWindowFunc {
-		tok = windowFuncTokenMap[hack.String(data)]
+		tok = windowFuncTokenMap[string(data)]
 	}
 	return tok
 }

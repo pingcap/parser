@@ -16,8 +16,10 @@ package ast
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/pingcap/errors"
+	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
 )
@@ -339,15 +341,7 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord(" USING ")
 		ctx.WriteKeyWord(n.Args[1].GetType().Charset)
-	case "adddate":
-		if err := n.Args[0].Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
-		}
-		ctx.WritePlain(", ")
-		if err := n.Args[1].Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
-		}
-	case "date_add":
+	case "adddate", "subdate", "date_add", "date_sub":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 		}
@@ -411,6 +405,15 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 			if err := n.Args[0].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
 			}
+		}
+	case "timestampdiff", "timestampadd":
+		ctx.WriteKeyWord(n.Args[0].(ValueExpr).GetString())
+		for i := 1; i < len(n.Args); {
+			ctx.WritePlain(", ")
+			if err := n.Args[i].Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr")
+			}
+			i++
 		}
 	default:
 		for i, argv := range n.Args {
@@ -643,12 +646,28 @@ func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
 	if n.Distinct {
 		ctx.WriteKeyWord("DISTINCT ")
 	}
-	for i, argv := range n.Args {
-		if i != 0 {
-			ctx.WritePlain(", ")
+	switch strings.ToLower(n.F) {
+	case "group_concat":
+		for i := 0; i < len(n.Args)-1; i++ {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := n.Args[i].Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args[%d]", i)
+			}
 		}
-		if err := argv.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args %d", i)
+		ctx.WriteKeyWord(" SEPARATOR ")
+		if err := n.Args[len(n.Args)-1].Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore AggregateFuncExpr.Args SEPARATOR")
+		}
+	default:
+		for i, argv := range n.Args {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := argv.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args[%d]", i)
+			}
 		}
 	}
 	ctx.WritePlain(")")
@@ -725,7 +744,31 @@ type WindowFuncExpr struct {
 
 // Restore implements Node interface.
 func (n *WindowFuncExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord(n.F)
+	ctx.WritePlain("(")
+	for i, v := range n.Args {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		} else if n.Distinct {
+			ctx.WriteKeyWord("DISTINCT ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore WindowFuncExpr.Args[%d]", i)
+		}
+	}
+	ctx.WritePlain(")")
+	if n.FromLast {
+		ctx.WriteKeyWord(" FROM LAST")
+	}
+	if n.IgnoreNull {
+		ctx.WriteKeyWord(" IGNORE NULLS")
+	}
+	ctx.WriteKeyWord(" OVER ")
+	if err := n.Spec.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore WindowFuncExpr.Spec")
+	}
+
+	return nil
 }
 
 // Format formats the window function expression into a Writer.

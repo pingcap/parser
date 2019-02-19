@@ -47,7 +47,7 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"CONV('a',16,2)", "CONV('a', 16, 2)"},
 		{"COS(PI())", "COS(PI())"},
 		{"RAND()", "RAND()"},
-		{"ADDDATE('2000-01-01', 1)", "ADDDATE('2000-01-01', 1)"},
+		{"ADDDATE('2000-01-01', 1)", "ADDDATE('2000-01-01', INTERVAL 1 DAY)"},
 		{"DATE_ADD('2000-01-01', INTERVAL 1 DAY)", "DATE_ADD('2000-01-01', INTERVAL 1 DAY)"},
 		{"DATE_ADD('2000-01-01', INTERVAL '1 1:12:23.100000' DAY_MICROSECOND)", "DATE_ADD('2000-01-01', INTERVAL '1 1:12:23.100000' DAY_MICROSECOND)"},
 		{"EXTRACT(DAY FROM '2000-01-01')", "EXTRACT(DAY FROM '2000-01-01')"},
@@ -119,4 +119,23 @@ func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+}
+
+func (ts *testDMLSuite) TestWindowFuncExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"RANK() OVER w", "RANK() OVER (`w`)"},
+		{"RANK() OVER (PARTITION BY a)", "RANK() OVER (PARTITION BY `a`)"},
+		{"MAX(DISTINCT a) OVER (PARTITION BY a)", "MAX(DISTINCT `a`) OVER (PARTITION BY `a`)"},
+		{"MAX(DISTINCTROW a) OVER (PARTITION BY a)", "MAX(DISTINCT `a`) OVER (PARTITION BY `a`)"},
+		{"MAX(DISTINCT ALL a) OVER (PARTITION BY a)", "MAX(DISTINCT `a`) OVER (PARTITION BY `a`)"},
+		{"MAX(ALL a) OVER (PARTITION BY a)", "MAX(`a`) OVER (PARTITION BY `a`)"},
+		{"FIRST_VALUE(val) IGNORE NULLS OVER w", "FIRST_VALUE(`val`) IGNORE NULLS OVER (`w`)"},
+		{"FIRST_VALUE(val) RESPECT NULLS OVER w", "FIRST_VALUE(`val`) OVER (`w`)"},
+		{"NTH_VALUE(val, 233) FROM LAST IGNORE NULLS OVER w", "NTH_VALUE(`val`, 233) FROM LAST IGNORE NULLS OVER (`w`)"},
+		{"NTH_VALUE(val, 233) FROM FIRST IGNORE NULLS OVER w", "NTH_VALUE(`val`, 233) IGNORE NULLS OVER (`w`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s from t", extractNodeFunc)
 }

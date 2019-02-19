@@ -20,11 +20,11 @@ import (
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
-	driver "github.com/pingcap/tidb/types/parser_driver"
+	. "github.com/pingcap/parser/format"
+	"github.com/pingcap/tidb/types/parser_driver"
 )
 
 var _ = Suite(&testCacheableSuite{})
-var _ = Suite(&testRestoreCtxSuite{})
 
 type testCacheableSuite struct {
 }
@@ -66,6 +66,12 @@ type nodeTextCleaner struct {
 func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 	in.SetText("")
 	switch node := in.(type) {
+	case *Constraint:
+		if node.Option != nil {
+			if node.Option.KeyBlockSize == 0x0 && node.Option.Tp == 0 && node.Option.Comment == "" {
+				node.Option = nil
+			}
+		}
 	case *FuncCallExpr:
 		node.FnName.O = strings.ToLower(node.FnName.O)
 		switch node.FnName.L {
@@ -74,6 +80,14 @@ func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 		}
 	case *AggregateFuncExpr:
 		node.F = strings.ToLower(node.F)
+	case *FieldList:
+		for _, f := range node.Fields {
+			f.Offset = 0
+		}
+	case *AlterTableSpec:
+		for _, opt := range node.Options {
+			opt.StrValue = strings.ToLower(opt.StrValue)
+		}
 	}
 	return in, false
 }
@@ -81,43 +95,6 @@ func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 // Leave implements Visitor interface.
 func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
 	return in, true
-}
-
-type testRestoreCtxSuite struct {
-}
-
-func (s *testRestoreCtxSuite) TestRestoreCtx(c *C) {
-	testCases := []struct {
-		flag   RestoreFlags
-		expect string
-	}{
-		{0, "key`.'\"Word\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreStringSingleQuotes, "key`.'\"Word\\ 'str`.''\"ing\\' na`.'\"Me\\"},
-		{RestoreStringDoubleQuotes, "key`.'\"Word\\ \"str`.'\"\"ing\\\" na`.'\"Me\\"},
-		{RestoreStringEscapeBackslash, "key`.'\"Word\\ str`.'\"ing\\\\ na`.'\"Me\\"},
-		{RestoreKeyWordUppercase, "KEY`.'\"WORD\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreKeyWordLowercase, "key`.'\"word\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreNameUppercase, "key`.'\"Word\\ str`.'\"ing\\ NA`.'\"ME\\"},
-		{RestoreNameLowercase, "key`.'\"Word\\ str`.'\"ing\\ na`.'\"me\\"},
-		{RestoreNameDoubleQuotes, "key`.'\"Word\\ str`.'\"ing\\ \"na`.'\"\"Me\\\""},
-		{RestoreNameBackQuotes, "key`.'\"Word\\ str`.'\"ing\\ `na``.'\"Me\\`"},
-		{DefaultRestoreFlags, "KEY`.'\"WORD\\ 'str`.''\"ing\\' `na``.'\"Me\\`"},
-		{RestoreStringSingleQuotes | RestoreStringDoubleQuotes, "key`.'\"Word\\ 'str`.''\"ing\\' na`.'\"Me\\"},
-		{RestoreKeyWordUppercase | RestoreKeyWordLowercase, "KEY`.'\"WORD\\ str`.'\"ing\\ na`.'\"Me\\"},
-		{RestoreNameUppercase | RestoreNameLowercase, "key`.'\"Word\\ str`.'\"ing\\ NA`.'\"ME\\"},
-		{RestoreNameDoubleQuotes | RestoreNameBackQuotes, "key`.'\"Word\\ str`.'\"ing\\ \"na`.'\"\"Me\\\""},
-	}
-	var sb strings.Builder
-	for _, testCase := range testCases {
-		sb.Reset()
-		ctx := NewRestoreCtx(testCase.flag, &sb)
-		ctx.WriteKeyWord("key`.'\"Word\\")
-		ctx.WritePlain(" ")
-		ctx.WriteString("str`.'\"ing\\")
-		ctx.WritePlain(" ")
-		ctx.WriteName("na`.'\"Me\\")
-		c.Assert(sb.String(), Equals, testCase.expect, Commentf("case: %#v", testCase))
-	}
 }
 
 type NodeRestoreTestCase struct {
