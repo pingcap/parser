@@ -8356,14 +8356,6 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.DropUserStmt{IfExists: true, UserList: yyS[yypt-0].item.([]*auth.UserIdentity)}
 		}
-	case 235:
-		{
-			parser.yyVAL.statement = &ast.DropUserStmt{IfExists: false, UserList: yyS[yypt-0].item.([]*auth.UserIdentity)}
-		}
-	case 236:
-		{
-			parser.yyVAL.statement = &ast.DropUserStmt{IfExists: true, UserList: yyS[yypt-0].item.([]*auth.UserIdentity)}
-		}
 	case 237:
 		{
 			parser.yyVAL.statement = &ast.DropStatsStmt{Table: yyS[yypt-0].item.(*ast.TableName)}
@@ -12525,14 +12517,6 @@ yynewstate:
 			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1381:
-		{
-			// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
-			parser.yyVAL.statement = &ast.CreateUserStmt{
-				IfNotExists: yyS[yypt-1].item.(bool),
-				Specs:       yyS[yypt-0].item.([]*ast.UserSpec),
-			}
-		}
-	case 1382:
 		{
 			// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 			parser.yyVAL.statement = &ast.CreateUserStmt{

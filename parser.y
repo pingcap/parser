@@ -2425,11 +2425,9 @@ DropUserStmt:
 DropRoleStmt:
 	"DROP" "ROLE" RolenameList
 	{
-		$$ = &ast.DropUserStmt{IfExists: false, UserList: $3.([]*auth.UserIdentity)}
 	}
 |	"DROP" "ROLE" "IF" "EXISTS" RolenameList
 	{
-		$$ = &ast.DropUserStmt{IfExists: true, UserList: $5.([]*auth.UserIdentity)}
 	}
 
 DropStatsStmt:
@@ -7383,11 +7381,6 @@ CreateUserStmt:
 CreateRoleStmt:
     "CREATE" "ROLE" IfNotExists RoleSpecList
 	{
- 		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
-		$$ = &ast.CreateUserStmt{
-			IfNotExists: $3.(bool),
-			Specs: $4.([]*ast.UserSpec),
-		}
 	}
 
 /* See http://dev.mysql.com/doc/refman/5.7/en/alter-user.html */
