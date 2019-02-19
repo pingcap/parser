@@ -780,13 +780,18 @@ func (n *UserSpec) EncodedPassword() (string, bool) {
 type CreateUserStmt struct {
 	stmtNode
 
-	IfNotExists bool
-	Specs       []*UserSpec
+	isCreateRole bool
+	IfNotExists  bool
+	Specs        []*UserSpec
 }
 
 // Restore implements Node interface.
 func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CREATE USER ")
+	if n.isCreateRole {
+		ctx.WriteKeyWord("CREATE ROLE ")
+	} else {
+		ctx.WriteKeyWord("CREATE USER ")
+	}
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXISTS ")
 	}
