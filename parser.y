@@ -598,6 +598,7 @@ import (
 	ExplainableStmt			"explainable statement"
 	FlushStmt			"Flush statement"
 	GrantStmt			"Grant statement"
+	GrantRoleStmt			"Grant role statement"
 	InsertIntoStmt			"INSERT INTO statement"
 	KillStmt			"Kill statement"
 	LoadDataStmt			"Load data statement"
@@ -5824,11 +5825,11 @@ Rolename:
 	{
 		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: "%", IsRole: true}
 	}
-|	RoleNameString '@' StringName
+|	StringName '@' StringName
 	{
 		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: $3.(string), IsRole: true}
 	}
-|	RoleNameString singleAtIdentifier
+|	StringName singleAtIdentifier
 	{
 		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@")}
 	}
@@ -6462,6 +6463,7 @@ Statement:
 |	DropBindingStmt
 |	FlushStmt
 |	GrantStmt
+|	GrantRoleStmt
 |	InsertIntoStmt
 |	KillStmt
 |	LoadDataStmt
@@ -7555,6 +7557,11 @@ GrantStmt:
 			Users: $7.([]*ast.UserSpec),
 			WithGrant: $8.(bool),
 		}
+	 }
+
+GrantRoleStmt:
+	 "GRANT" RolenameList "TO" UsernameList
+	 {
 	 }
 
 WithGrantOptionOpt:
