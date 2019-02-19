@@ -119,6 +119,7 @@ import (
 	escaped 		"ESCAPED"
 	exists			"EXISTS"
 	explain			"EXPLAIN"
+	except          "EXCEPT"
 	falseKwd		"FALSE"
 	firstValue		"FIRST_VALUE"
 	floatType		"FLOAT"
@@ -757,6 +758,7 @@ import (
 	RolenameList            "RolenameList"
 	RoleSpec		"Rolename and auth option"
     RoleSpecList		"Rolename and auth option list"
+    RoleNameString      "role name string"
 	RowFormat			"Row format option"
 	RowValue			"Row value"
 	SelectLockOpt			"FOR UPDATE or LOCK IN SHARE MODE,"
@@ -5535,6 +5537,36 @@ SetStmt:
 		}
 		$$ = &ast.SetStmt{Variables: assigns}
 	}
+|   "SET" "ROLE" SetRoleOpt
+    {
+
+    }
+|   "SET" "DEFAULT" "ROLE" SetDefaultRoleOpt "TO" UsernameList
+    {
+    }
+
+SetDefaultRoleOpt:
+    "NONE"
+    {
+    }
+|   "ALL"
+    {
+    }
+|   RolenameList
+    {
+    }
+
+SetRoleOpt:
+|   "ALL" "EXCEPT" RolenameList
+    {
+    }
+|   SetDefaultRoleOpt
+    {
+    }
+|   "DEFAULT"
+    {
+    }
+
 
 TransactionChars:
 	TransactionChar
@@ -5775,18 +5807,29 @@ AuthString:
 		$$ = $1
 	}
 
+RoleNameString:
+    stringLit
+	{
+		$$ = $1
+	}
+|   identifier
+    {
+		$$ = $1
+	}
+
+
 Rolename:
-	StringName
+    RoleNameString
 	{
 		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: "%", IsRole: true}
 	}
-|	StringName '@' StringName
+|	RoleNameString '@' StringName
 	{
 		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: $3.(string), IsRole: true}
 	}
-|	StringName singleAtIdentifier
+|	RoleNameString singleAtIdentifier
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@"), IsRole: true}
+		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@")}
 	}
 
 RolenameList:

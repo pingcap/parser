@@ -250,6 +250,7 @@ var tokenMap = map[string]int{
 	"EVENT":                    event,
 	"EVENTS":                   events,
 	"EXCLUSIVE":                exclusive,
+	"EXCEPT":                   except,
 	"EXECUTE":                  execute,
 	"EXISTS":                   exists,
 	"EXPLAIN":                  explain,

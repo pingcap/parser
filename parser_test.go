@@ -753,6 +753,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"set names utf8", true, "SET NAMES 'utf8'"},
 		{"set names utf8 collate utf8_unicode_ci", true, "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'"},
 		{"set names binary", true, "SET NAMES 'binary'"},
+		{"set role `role1`", true, ""},
 		// for set names and set vars
 		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
@@ -2092,6 +2093,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"CREATE USER `uesr1`@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
 		{"CREATE ROLE `test-role`, `role1`@'localhost'", true, ""},
 		{"CREATE ROLE `test-role`", true, ""},
+		{"CREATE ROLE role1", true, ""},
 		{"CREATE ROLE `role1`@'localhost'", true, ""},
 		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, "CREATE USER `bug19354014user`@`%`"},
 		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY 'new-password'"},
