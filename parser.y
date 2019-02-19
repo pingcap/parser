@@ -119,7 +119,7 @@ import (
 	escaped 		"ESCAPED"
 	exists			"EXISTS"
 	explain			"EXPLAIN"
-	except          "EXCEPT"
+	except			"EXCEPT"
 	falseKwd		"FALSE"
 	firstValue		"FIRST_VALUE"
 	floatType		"FLOAT"
@@ -380,7 +380,7 @@ import (
 	respect		"RESPECT"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
-	role        "ROLE"
+	role		"ROLE"
 	rollback	"ROLLBACK"
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
@@ -759,8 +759,8 @@ import (
 	Rolename            "Rolename"
 	RolenameList            "RolenameList"
 	RoleSpec		"Rolename and auth option"
-    RoleSpecList		"Rolename and auth option list"
-    RoleNameString      "role name string"
+	RoleSpecList		"Rolename and auth option list"
+	RoleNameString      "role name string"
 	RowFormat			"Row format option"
 	RowValue			"Row value"
 	SelectLockOpt			"FOR UPDATE or LOCK IN SHARE MODE,"
@@ -5808,12 +5808,12 @@ AuthString:
 	}
 
 RoleNameString:
-    stringLit
+	stringLit
 	{
 		$$ = $1
 	}
-|   identifier
-    {
+|	identifier
+	{
 		$$ = $1
 	}
 
