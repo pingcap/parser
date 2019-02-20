@@ -11197,23 +11197,23 @@ yynewstate:
 		}
 	case 1079:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-0].item.(string), Hostname: "%", IsRole: true}
+			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-0].item.(string), Hostname: "%"}
 		}
 	case 1080:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-2].item.(string), Hostname: yyS[yypt-0].item.(string), IsRole: true}
+			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-2].item.(string), Hostname: yyS[yypt-0].item.(string)}
 		}
 	case 1081:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-1].item.(string), Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@"), IsRole: true}
+			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-1].item.(string), Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@")}
 		}
 	case 1082:
 		{
-			parser.yyVAL.item = []*auth.UserIdentity{yyS[yypt-0].item.(*auth.UserIdentity)}
+			parser.yyVAL.item = []*auth.RoleIdentity{yyS[yypt-0].item.(*auth.RoleIdentity)}
 		}
 	case 1083:
 		{
-			parser.yyVAL.item = append(yyS[yypt-2].item.([]*auth.UserIdentity), yyS[yypt-0].item.(*auth.UserIdentity))
+			parser.yyVAL.item = append(yyS[yypt-2].item.([]*auth.RoleIdentity), yyS[yypt-0].item.(*auth.RoleIdentity))
 		}
 	case 1084:
 		{
@@ -12600,10 +12600,14 @@ yynewstate:
 		}
 	case 1395:
 		{
+			role := yyS[yypt-0].item.(*auth.RoleIdentity)
 			roleSpec := &ast.UserSpec{
-				User: yyS[yypt-0].item.(*auth.UserIdentity),
+				User: &auth.UserIdentity{
+					Username: role.Username,
+					Hostname: role.Hostname,
+				},
+				IsRole: true,
 			}
-			roleSpec.AuthOpt = nil
 			parser.yyVAL.item = roleSpec
 		}
 	case 1396:

@@ -5821,25 +5821,25 @@ RoleNameString:
 Rolename:
     RoleNameString
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: "%", IsRole: true}
+		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: "%"}
 	}
 |	StringName '@' StringName
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: $3.(string), IsRole: true}
+		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: $3.(string)}
 	}
 |	StringName singleAtIdentifier
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@"), IsRole: true}
+		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@")}
 	}
 
 RolenameList:
 	Rolename
 	{
-		$$ = []*auth.UserIdentity{$1.(*auth.UserIdentity)}
+		$$ = []*auth.RoleIdentity{$1.(*auth.RoleIdentity)}
 	}
 |	RolenameList ',' Rolename
 	{
-		$$ = append($1.([]*auth.UserIdentity), $3.(*auth.UserIdentity))
+		$$ = append($1.([]*auth.RoleIdentity), $3.(*auth.RoleIdentity))
 	}
 
 /****************************Admin Statement*******************************/
@@ -7470,10 +7470,14 @@ HashString:
 RoleSpec:
 	Rolename
 	{
+		role := $1.(*auth.RoleIdentity)
 		roleSpec := &ast.UserSpec{
-			User: $1.(*auth.UserIdentity),
+			User: &auth.UserIdentity {
+				Username: role.Username,
+				Hostname: role.Hostname,
+			},
+			IsRole: true,
 		}
-		roleSpec.AuthOpt = nil
 		$$ = roleSpec
 	}
 
