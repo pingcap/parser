@@ -612,6 +612,8 @@ import (
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
+	SetRoleStmt				"Set active role statement"
+	SetDefaultRoleStmt			"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
@@ -774,6 +776,8 @@ import (
 	SelectStmtFromDualTable			"SELECT statement from dual table"
 	SelectStmtFromTable			"SELECT statement from table"
 	SelectStmtGroup			"SELECT statement optional GROUP BY clause"
+	SetRoleOpt				"Set role options"
+	SetDefaultRoleOpt				"Set default role options"
 	ShowTargetFilterable    	"Show target that can be filtered by WHERE or LIKE"
 	ShowDatabaseNameOpt		"Show tables/columns statement database name option"
 	ShowTableAliasOpt       	"Show table alias option"
@@ -5537,35 +5541,38 @@ SetStmt:
 		}
 		$$ = &ast.SetStmt{Variables: assigns}
 	}
-|   "SET" "ROLE" SetRoleOpt
-    {
 
-    }
-|   "SET" "DEFAULT" "ROLE" SetDefaultRoleOpt "TO" UsernameList
-    {
-    }
+SetRoleStmt:
+	"SET" "ROLE" SetRoleOpt
+	{
+	}
+
+SetDefaultRoleStmt:
+	"SET" "DEFAULT" "ROLE" SetDefaultRoleOpt "TO" UsernameList
+	{
+	}
 
 SetDefaultRoleOpt:
-    "NONE"
-    {
-    }
-|   "ALL"
-    {
-    }
-|   RolenameList
-    {
-    }
+	"NONE"
+	{
+	}
+|	"ALL"
+	{
+	}
+|	RolenameList
+	{
+	}
 
 SetRoleOpt:
-|   "ALL" "EXCEPT" RolenameList
-    {
-    }
-|   SetDefaultRoleOpt
-    {
-    }
-|   "DEFAULT"
-    {
-    }
+	"ALL" "EXCEPT" RolenameList
+	{
+	}
+|	SetDefaultRoleOpt
+	{
+	}
+|	"DEFAULT"
+	{
+	}
 
 
 TransactionChars:
@@ -6475,6 +6482,8 @@ Statement:
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
+|	SetRoleStmt
+|	SetDefaultRoleStmt
 |	ShowStmt
 |	SubSelect
 	{
