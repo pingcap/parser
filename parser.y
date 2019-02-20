@@ -6448,7 +6448,7 @@ Statement:
 |	CreateTableStmt
 |	CreateViewStmt
 |	CreateUserStmt
-|   CreateRoleStmt
+|	CreateRoleStmt
 |	CreateBindingStmt
 |	DoStmt
 |	DropDatabaseStmt
@@ -6471,7 +6471,7 @@ Statement:
 |	RenameTableStmt
 |	ReplaceIntoStmt
 |	RevokeStmt
-|   RevokeRoleStmt
+|	RevokeRoleStmt
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
