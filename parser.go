@@ -11205,7 +11205,7 @@ yynewstate:
 		}
 	case 1081:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-1].item.(string), Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@")}
+			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-1].item.(string), Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@"), IsRole: true}
 		}
 	case 1082:
 		{
