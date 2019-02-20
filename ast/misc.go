@@ -515,6 +515,7 @@ const (
 	FlushTables
 	FlushPrivileges
 	FlushStatus
+	FlushTiDBPlugin
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -525,6 +526,7 @@ type FlushStmt struct {
 	NoWriteToBinLog bool
 	Tables          []*TableName // For FlushTableStmt, if Tables is empty, it means flush all tables.
 	ReadLock        bool
+	Plugins         []string
 }
 
 // Restore implements Node interface.
@@ -553,6 +555,16 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("PRIVILEGES")
 	case FlushStatus:
 		ctx.WriteKeyWord("STATUS")
+	case FlushTiDBPlugin:
+		ctx.WriteKeyWord("TIDB PLUGINS")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
 	default:
 		return errors.New("Unsupported type of FlushTables")
 	}
@@ -910,7 +922,21 @@ type CreateBindingStmt struct {
 }
 
 func (n *CreateBindingStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE ")
+	if n.GlobalScope {
+		ctx.WriteKeyWord("GLOBAL ")
+	} else {
+		ctx.WriteKeyWord("SESSION ")
+	}
+	ctx.WriteKeyWord("BINDING FOR ")
+	if err := n.OriginSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	ctx.WriteKeyWord(" USING ")
+	if err := n.HintedSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
@@ -1232,9 +1258,7 @@ type PrivElem struct {
 func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 	switch n.Priv {
 	case 0:
-		// Do nothing for types that have no effect.
-		// Actually this should not happen since there is no way to determine its type.
-		return errors.New("Cannot determine privilege type")
+		ctx.WritePlain("/* UNSUPPORTED TYPE */")
 	case mysql.AllPriv:
 		ctx.WriteKeyWord("ALL")
 	case mysql.AlterPriv:
@@ -1274,7 +1298,7 @@ func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 	case mysql.ShowViewPriv:
 		ctx.WriteKeyWord("SHOW VIEW")
 	default:
-		return errors.New("Unsupported privilege type")
+		return errors.New("Undefined privilege type")
 	}
 	if n.Cols != nil {
 		ctx.WritePlain(" (")
@@ -1449,8 +1473,10 @@ type GrantStmt struct {
 func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("GRANT ")
 	for i, v := range n.Privs {
-		if i != 0 {
+		if i != 0 && v.Priv != 0 {
 			ctx.WritePlain(", ")
+		} else if v.Priv == 0 {
+			ctx.WritePlain(" ")
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore GrantStmt.Privs[%d]", i)
