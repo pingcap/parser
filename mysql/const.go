@@ -290,6 +290,8 @@ var Priv2UserCol = map[PrivilegeType]string{
 	IndexPriv:      "Index_priv",
 	CreateViewPriv: "Create_view_priv",
 	ShowViewPriv:   "Show_view_priv",
+	CreateRolePriv: "Create_role_priv",
+	DropRolePriv:   "Drop_role_priv",
 }
 
 // Command2Str is the command information to command name.
@@ -414,7 +416,7 @@ var SetStr2Priv = map[string]PrivilegeType{
 }
 
 // AllDBPrivs is all the privileges in database scope.
-var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv}
+var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
 
 // AllTablePrivs is all the privileges in table scope.
 var AllTablePrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, IndexPriv}
