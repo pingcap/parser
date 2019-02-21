@@ -11155,6 +11155,34 @@ yynewstate:
 			}
 			parser.yyVAL.statement = &ast.SetStmt{Variables: assigns}
 		}
+	case 1042:
+		{
+			parser.yyVAL.statement = yyS[yypt-0].item.(*ast.SetRoleStmt)
+		}
+	case 1044:
+		{
+			parser.yyVAL.item = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleNone, RoleList: nil}
+		}
+	case 1045:
+		{
+			parser.yyVAL.item = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAll, RoleList: nil}
+		}
+	case 1046:
+		{
+			parser.yyVAL.item = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleRegular, RoleList: yyS[yypt-0].item.([]*auth.RoleIdentity)}
+		}
+	case 1047:
+		{
+			parser.yyVAL.item = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAllExcept, RoleList: yyS[yypt-0].item.([]*auth.RoleIdentity)}
+		}
+	case 1048:
+		{
+			parser.yyVAL.item = yyS[yypt-0].item
+		}
+	case 1049:
+		{
+			parser.yyVAL.item = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleDefault, RoleList: nil}
+		}
 	case 1050:
 		{
 			if yyS[yypt-0].item != nil {
