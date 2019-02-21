@@ -468,8 +468,10 @@ import (
 	buckets		"BUCKETS"
 	cancel		"CANCEL"
 	ddl		"DDL"
+	drainer         "DRAINER"
 	jobs		"JOBS"
 	job		    "JOB"
+	pump            "PUMP"
 	stats		"STATS"
 	statsMeta       "STATS_META"
 	statsHistograms "STATS_HISTOGRAMS"
@@ -2956,7 +2958,7 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ"
+ "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6054,6 +6056,18 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt {
 			Tp: ast.ShowProcedureStatus,
+		}
+	}
+|	"PUMP" "STATUS"
+	{
+		$$ = &ast.ShowStmt {
+			Tp: ast.ShowPumpStatus,
+		}
+	}
+|	"DRAINER" "STATUS"
+	{
+		$$ = &ast.ShowStmt {
+			Tp: ast.ShowDrainerStatus,
 		}
 	}
 |	"FUNCTION" "STATUS"
