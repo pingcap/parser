@@ -12568,7 +12568,7 @@ yynewstate:
 		}
 	case 1387:
 		{
-			// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
+			// See https://dev.mysql.com/doc/refman/8.0/en/create-role.html
 			parser.yyVAL.statement = &ast.CreateUserStmt{
 				IsCreateRole: true,
 				IfNotExists:  yyS[yypt-1].item.(bool),
