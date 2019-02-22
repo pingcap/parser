@@ -1273,6 +1273,8 @@ func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("CREATE")
 	case mysql.CreateUserPriv:
 		ctx.WriteKeyWord("CREATE USER")
+	case mysql.CreateRolePriv:
+		ctx.WriteKeyWord("CREATE ROLE")
 	case mysql.TriggerPriv:
 		ctx.WriteKeyWord("TRIGGER")
 	case mysql.DeletePriv:
