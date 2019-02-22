@@ -7407,7 +7407,7 @@ CreateRoleStmt:
 	{
 		// See https://dev.mysql.com/doc/refman/8.0/en/create-role.html
 		$$ = &ast.CreateUserStmt{
-		    IsCreateRole: true,
+			IsCreateRole: true,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
 		}
