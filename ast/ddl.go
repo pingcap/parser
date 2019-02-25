@@ -407,6 +407,11 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption GENERATED ALWAYS Expr")
 		}
 		ctx.WritePlain(")")
+		if n.Stored {
+			ctx.WritePlain(" STORED")
+		} else {
+			ctx.WritePlain(" VIRTUAL")
+		}
 	case ColumnOptionReference:
 		if err := n.Refer.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
