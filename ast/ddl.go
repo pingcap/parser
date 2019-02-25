@@ -408,9 +408,9 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WritePlain(")")
 		if n.Stored {
-			ctx.WritePlain(" STORED")
+			ctx.WriteKeyWord(" STORED")
 		} else {
-			ctx.WritePlain(" VIRTUAL")
+			ctx.WriteKeyWord(" VIRTUAL")
 		}
 	case ColumnOptionReference:
 		if err := n.Refer.Restore(ctx); err != nil {
