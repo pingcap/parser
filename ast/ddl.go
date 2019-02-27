@@ -407,6 +407,11 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption GENERATED ALWAYS Expr")
 		}
 		ctx.WritePlain(")")
+		if n.Stored {
+			ctx.WriteKeyWord(" STORED")
+		} else {
+			ctx.WriteKeyWord(" VIRTUAL")
+		}
 	case ColumnOptionReference:
 		if err := n.Refer.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
@@ -692,8 +697,9 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing CreateTableStmt ReferTable")
 		}
 	}
-
-	if lenCols := len(n.Cols); lenCols > 0 {
+	lenCols := len(n.Cols)
+	lenConstraints := len(n.Constraints)
+	if lenCols+lenConstraints > 0 {
 		ctx.WritePlain("(")
 		for i, col := range n.Cols {
 			if i > 0 {
@@ -1280,6 +1286,9 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		}
 	case TableOptionStatsPersistent:
 		// TODO: not support
+		ctx.WriteKeyWord("STATS_PERSISTENT ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
@@ -1287,6 +1296,9 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionPackKeys:
 		// TODO: not support
+		ctx.WriteKeyWord("PACK_KEYS ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* TableOptionPackKeys is not supported */ ")
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
@@ -1402,6 +1414,35 @@ const (
 	LockTypeExclusive
 )
 
+// AlterAlgorithm is the algorithm of the DDL operations.
+// See https://dev.mysql.com/doc/refman/8.0/en/alter-table.html#alter-table-performance.
+type AlterAlgorithm byte
+
+// DDL alter algorithms.
+// For now, TiDB only supported inplace and instance algorithms. If the user specify `copy`,
+// will get an error.
+const (
+	AlterAlgorithmDefault AlterAlgorithm = iota
+	AlterAlgorithmCopy
+	AlterAlgorithmInplace
+	AlterAlgorithmInstant
+)
+
+func (a AlterAlgorithm) String() string {
+	switch a {
+	case AlterAlgorithmDefault:
+		return "DEFAULT"
+	case AlterAlgorithmCopy:
+		return "COPY"
+	case AlterAlgorithmInplace:
+		return "INPLACE"
+	case AlterAlgorithmInstant:
+		return "INSTANT"
+	default:
+		return "DEFAULT"
+	}
+}
+
 // AlterTableSpec represents alter table specification.
 type AlterTableSpec struct {
 	node
@@ -1415,6 +1456,7 @@ type AlterTableSpec struct {
 	OldColumnName   *ColumnName
 	Position        *ColumnPosition
 	LockType        LockType
+	Algorithm       AlterAlgorithm
 	Comment         string
 	FromKey         model.CIStr
 	ToKey           model.CIStr
@@ -1536,8 +1578,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableAlgorithm:
-		// TODO: not support
-		ctx.WritePlain(" /* AlterTableAlgorithm is not supported */ ")
+		ctx.WriteKeyWord("ALGORITHM ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord(n.Algorithm.String())
 	case AlterTableRenameIndex:
 		ctx.WriteKeyWord("RENAME INDEX ")
 		ctx.WriteName(n.FromKey.O)
@@ -1545,6 +1588,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteName(n.ToKey.O)
 	case AlterTableForce:
 		// TODO: not support
+		ctx.WriteKeyWord("FORCE")
 		ctx.WritePlain(" /* AlterTableForce is not supported */ ")
 	case AlterTableAddPartitions:
 		ctx.WriteKeyWord("ADD PARTITION")
@@ -1758,21 +1802,26 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 		return errors.Errorf("invalid model.PartitionType: %d", n.Tp)
 	}
 
-	ctx.WritePlain("(")
-	if err := n.Expr.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore PartitionOptions Expr")
-	}
-	ctx.WritePlain(") ")
-
-	for i, col := range n.ColumnNames {
-		if i > 0 {
-			ctx.WritePlain(",")
+	if n.Expr != nil {
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore PartitionOptions Expr")
 		}
-		if err := col.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while splicing PartitionOptions ColumnName: [%v]", i)
-		}
+		ctx.WritePlain(") ")
 	}
-
+	if len(n.ColumnNames) > 0 {
+		ctx.WriteKeyWord("COLUMNS")
+		ctx.WritePlain("(")
+		for i, col := range n.ColumnNames {
+			if i > 0 {
+				ctx.WritePlain(",")
+			}
+			if err := col.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing PartitionOptions ColumnName: [%v]", i)
+			}
+		}
+		ctx.WritePlain(") ")
+	}
 	if n.Num > 0 {
 		ctx.WriteKeyWord("PARTITIONS ")
 		ctx.WritePlainf("%d", n.Num)
