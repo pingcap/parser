@@ -159,7 +159,7 @@ const (
 	// ColumnInfoVersion1 means the table info version is 1.
 	// When we execute a change/modify column statement that does not specify a charset value for column,
 	// we set the charset of this column to the charset of table. This behavior is compatible with MySQL.
-	TableInfoVersion1= uint16(1)
+	TableInfoVersion1 = uint16(1)
 	// CurrLatestTableInfoVersion means the latest table info in the current TiDB.
 	CurrLatestTableInfoVersion = TableInfoVersion1
 )
