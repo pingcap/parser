@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/charset"
-	"github.com/pingcap/tidb/util/hack"
 )
 
 func isLetter(ch rune) bool {
@@ -235,6 +234,7 @@ var tokenMap = map[string]int{
 	"DIV":                      div,
 	"DO":                       do,
 	"DOUBLE":                   doubleType,
+	"DRAINER":                  drainer,
 	"DROP":                     drop,
 	"DUAL":                     dual,
 	"DUPLICATE":                duplicate,
@@ -251,6 +251,7 @@ var tokenMap = map[string]int{
 	"EVENT":                    event,
 	"EVENTS":                   events,
 	"EXCLUSIVE":                exclusive,
+	"EXCEPT":                   except,
 	"EXECUTE":                  execute,
 	"EXISTS":                   exists,
 	"EXPLAIN":                  explain,
@@ -293,6 +294,7 @@ var tokenMap = map[string]int{
 	"INFILE":                   infile,
 	"INNER":                    inner,
 	"INPLACE":                  inplace,
+	"INSTANT":                  instant,
 	"INSERT":                   insert,
 	"INT":                      intType,
 	"INT1":                     int1Type,
@@ -372,6 +374,7 @@ var tokenMap = map[string]int{
 	"ON":                       on,
 	"ONLY":                     only,
 	"OPTION":                   option,
+	"OPTIONALLY":               optionally,
 	"OR":                       or,
 	"ORDER":                    order,
 	"OUTER":                    outer,
@@ -390,6 +393,7 @@ var tokenMap = map[string]int{
 	"PROCESS":                  process,
 	"PROCESSLIST":              processlist,
 	"PROFILES":                 profiles,
+	"PUMP":                     pump,
 	"QUARTER":                  quarter,
 	"QUERY":                    query,
 	"QUERIES":                  queries,
@@ -416,6 +420,7 @@ var tokenMap = map[string]int{
 	"REVOKE":                   revoke,
 	"RIGHT":                    right,
 	"RLIKE":                    rlike,
+	"ROLE":                     role,
 	"ROLLBACK":                 rollback,
 	"ROUTINE":                  routine,
 	"ROW":                      row,
@@ -634,9 +639,9 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 			return tok
 		}
 	}
-	tok, ok := tokenMap[hack.String(data)]
+	tok, ok := tokenMap[string(data)]
 	if !ok && s.supportWindowFunc {
-		tok = windowFuncTokenMap[hack.String(data)]
+		tok = windowFuncTokenMap[string(data)]
 	}
 	return tok
 }
