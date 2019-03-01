@@ -7395,6 +7395,7 @@ CreateUserStmt:
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 		$$ = &ast.CreateUserStmt{
+			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
 		}
@@ -7403,6 +7404,12 @@ CreateUserStmt:
 CreateRoleStmt:
     "CREATE" "ROLE" IfNotExists RoleSpecList
 	{
+		// See https://dev.mysql.com/doc/refman/8.0/en/create-role.html
+		$$ = &ast.CreateUserStmt{
+			IsCreateRole: true,
+			IfNotExists: $3.(bool),
+			Specs: $4.([]*ast.UserSpec),
+		}
 	}
 
 /* See http://dev.mysql.com/doc/refman/5.7/en/alter-user.html */
