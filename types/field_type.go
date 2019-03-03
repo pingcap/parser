@@ -316,7 +316,7 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 			ctx.WriteKeyWord(" BINARY")
 		}
 		if ft.Charset != charset.CharsetBin {
-			ctx.WriteKeyWord(" CHARACTER SET ")
+			ctx.WriteKeyWord(" CHARSET ")
 			ctx.WritePlain(strings.ToLower(ft.Charset)) // charset always lower
 		}
 	case mysql.TypeDate:
