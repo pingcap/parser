@@ -18,6 +18,7 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	. "github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -84,6 +85,19 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
+		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)"},
+		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARACTER SET UtF8)"},
+		{"BINARY 'New York'", "BINARY 'New York'"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+}
+
+func (ts *testFunctionsSuite) TestFuncCastExprRestoreWithFlags(c *C) {
+	testCases := []NodeRestoreTestCase{
+		// {"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
 		{"CONVERT('Müller', CHAR(32) CHARSET utf8)", "CONVERT('Müller', CHAR(32) CHARSET utf8)"},
 		{"CAST('test' AS CHAR CHARSET utf8)", "CAST('test' AS CHAR CHARSET utf8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},
@@ -91,7 +105,8 @@ func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
-	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+	flags := format.DefaultRestoreFlags | format.RestoreCharacterSetAsCharset | format.RestoreLowerCharset
+	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags)
 }
 
 func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {

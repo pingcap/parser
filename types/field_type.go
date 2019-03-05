@@ -268,8 +268,16 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 			ctx.WriteKeyWord(" BINARY")
 		}
 		if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
-			ctx.WriteKeyWord(" CHARSET ")
-			ctx.WritePlain(strings.ToLower(ft.Charset))
+			if ctx.Flags.HasCharacterSetAsCharsetFlag() {
+				ctx.WriteKeyWord(" CHARSET ")
+			} else {
+				ctx.WriteKeyWord(" CHARACTER SET ")
+			}
+			if ctx.Flags.HasLowerCharsetFlag() {
+				ctx.WritePlain(strings.ToLower(ft.Charset))
+			} else {
+				ctx.WritePlain(ft.Charset)
+			}
 		}
 	case mysql.TypeDate:
 		ctx.WriteKeyWord("DATE")
