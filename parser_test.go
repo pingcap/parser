@@ -936,6 +936,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT USER();", true, "SELECT USER()"},
 		{"SELECT USER(1);", true, "SELECT USER(1)"},
 		{"SELECT CURRENT_USER();", true, "SELECT CURRENT_USER()"},
+		{"SELECT CURRENT_ROLE();", true, "SELECT CURRENT_ROLE()"},
 		{"SELECT CURRENT_USER;", true, "SELECT CURRENT_USER()"},
 		{"SELECT CONNECTION_ID();", true, "SELECT CONNECTION_ID()"},
 		{"SELECT VERSION();", true, "SELECT VERSION()"},

@@ -95,6 +95,7 @@ import (
 	currentTime 		"CURRENT_TIME"
 	currentTs		"CURRENT_TIMESTAMP"
 	currentUser		"CURRENT_USER"
+	currentRole		"CURRENT_ROLE"
 	database		"DATABASE"
 	databases		"DATABASES"
 	dayHour			"DAY_HOUR"
@@ -3730,6 +3731,7 @@ OptionalBraces:
 FunctionNameOptionalBraces:
 	"CURRENT_USER"
 |	"CURRENT_DATE"
+|	"CURRENT_ROLE"
 |	"UTC_DATE"
 
 FunctionNameDatetimePrecision:
