@@ -79,7 +79,7 @@ func (role *RoleIdentity) Restore(ctx *RestoreCtx) error {
 // String converts UserIdentity to the format user@host.
 func (role *RoleIdentity) String() string {
 	// TODO: Escape username and hostname.
-	return fmt.Sprintf("%s@%s", role.Username, role.Hostname)
+	return fmt.Sprintf("`%s`@`%s`", role.Username, role.Hostname)
 }
 
 // CheckScrambledPassword check scrambled password received from client.
