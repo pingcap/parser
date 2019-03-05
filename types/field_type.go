@@ -252,58 +252,10 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
-// FormatAsCastType is used for write AST back to string.
-func (ft *FieldType) FormatAsCastType(w io.Writer) {
-	switch ft.Tp {
-	case mysql.TypeVarString:
-		if ft.Charset == charset.CharsetBin && ft.Collate == charset.CollationBin {
-			fmt.Fprint(w, "BINARY")
-		} else {
-			fmt.Fprint(w, "CHAR")
-		}
-		if ft.Flen != UnspecifiedLength {
-			fmt.Fprintf(w, "(%d)", ft.Flen)
-		}
-		if ft.Flag&mysql.BinaryFlag != 0 {
-			fmt.Fprint(w, " BINARY")
-		}
-		if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
-			fmt.Fprintf(w, " CHARACTER SET %s", ft.Charset)
-		}
-	case mysql.TypeDate:
-		fmt.Fprint(w, "DATE")
-	case mysql.TypeDatetime:
-		fmt.Fprint(w, "DATETIME")
-		if ft.Decimal > 0 {
-			fmt.Fprintf(w, "(%d)", ft.Decimal)
-		}
-	case mysql.TypeNewDecimal:
-		fmt.Fprint(w, "DECIMAL")
-		if ft.Flen > 0 && ft.Decimal > 0 {
-			fmt.Fprintf(w, "(%d, %d)", ft.Flen, ft.Decimal)
-		} else if ft.Flen > 0 {
-			fmt.Fprintf(w, "(%d)", ft.Flen)
-		}
-	case mysql.TypeDuration:
-		fmt.Fprint(w, "TIME")
-		if ft.Decimal > 0 {
-			fmt.Fprintf(w, "(%d)", ft.Decimal)
-		}
-	case mysql.TypeLonglong:
-		if ft.Flag&mysql.UnsignedFlag != 0 {
-			fmt.Fprint(w, "UNSIGNED")
-		} else {
-			fmt.Fprint(w, "SIGNED")
-		}
-	case mysql.TypeJSON:
-		fmt.Fprint(w, "JSON")
-	}
-}
-
 // RestoreAsCastType is used for write AST back to string.
 func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 	switch ft.Tp {
-	case mysql.TypeVarString, mysql.TypeString:
+	case mysql.TypeVarString:
 		if ft.Charset == charset.CharsetBin && ft.Collate == charset.CollationBin {
 			ctx.WriteKeyWord("BINARY")
 		} else {
@@ -315,9 +267,9 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 		if ft.Flag&mysql.BinaryFlag != 0 {
 			ctx.WriteKeyWord(" BINARY")
 		}
-		if ft.Charset != charset.CharsetBin {
+		if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
 			ctx.WriteKeyWord(" CHARSET ")
-			ctx.WritePlain(strings.ToLower(ft.Charset)) // charset always lower
+			ctx.WritePlain(strings.ToLower(ft.Charset))
 		}
 	case mysql.TypeDate:
 		ctx.WriteKeyWord("DATE")
@@ -347,6 +299,14 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 	case mysql.TypeJSON:
 		ctx.WriteKeyWord("JSON")
 	}
+}
+
+// FormatAsCastType is used for write AST back to string.
+func (ft *FieldType) FormatAsCastType(w io.Writer) {
+	var sb strings.Builder
+	restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
+	ft.RestoreAsCastType(restoreCtx)
+	fmt.Fprint(w, sb.String())
 }
 
 // VarStorageLen indicates this column is a variable length column.
