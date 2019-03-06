@@ -115,7 +115,17 @@ type TraceStmt struct {
 
 // Restore implements Node interface.
 func (n *TraceStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("TRACE ")
+	if n.Format != "json" {
+		ctx.WriteKeyWord("FORMAT")
+		ctx.WritePlain(" = ")
+		ctx.WriteString(n.Format)
+		ctx.WritePlain(" ")
+	}
+	if err := n.Stmt.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TraceStmt.Stmt")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -505,6 +515,7 @@ const (
 	FlushTables
 	FlushPrivileges
 	FlushStatus
+	FlushTiDBPlugin
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -515,6 +526,7 @@ type FlushStmt struct {
 	NoWriteToBinLog bool
 	Tables          []*TableName // For FlushTableStmt, if Tables is empty, it means flush all tables.
 	ReadLock        bool
+	Plugins         []string
 }
 
 // Restore implements Node interface.
@@ -543,6 +555,16 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("PRIVILEGES")
 	case FlushStatus:
 		ctx.WriteKeyWord("STATUS")
+	case FlushTiDBPlugin:
+		ctx.WriteKeyWord("TIDB PLUGINS")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
 	default:
 		return errors.New("Unsupported type of FlushTables")
 	}
@@ -703,6 +725,7 @@ func (n *SetPwdStmt) Accept(v Visitor) (Node, bool) {
 type UserSpec struct {
 	User    *auth.UserIdentity
 	AuthOpt *AuthOption
+	IsRole  bool
 }
 
 // Restore implements Node interface.
@@ -757,13 +780,18 @@ func (n *UserSpec) EncodedPassword() (string, bool) {
 type CreateUserStmt struct {
 	stmtNode
 
-	IfNotExists bool
-	Specs       []*UserSpec
+	IsCreateRole bool
+	IfNotExists  bool
+	Specs        []*UserSpec
 }
 
 // Restore implements Node interface.
 func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CREATE USER ")
+	if n.IsCreateRole {
+		ctx.WriteKeyWord("CREATE ROLE ")
+	} else {
+		ctx.WriteKeyWord("CREATE USER ")
+	}
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXISTS ")
 	}
@@ -900,7 +928,21 @@ type CreateBindingStmt struct {
 }
 
 func (n *CreateBindingStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("CREATE ")
+	if n.GlobalScope {
+		ctx.WriteKeyWord("GLOBAL ")
+	} else {
+		ctx.WriteKeyWord("SESSION ")
+	}
+	ctx.WriteKeyWord("BINDING FOR ")
+	if err := n.OriginSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	ctx.WriteKeyWord(" USING ")
+	if err := n.HintedSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
@@ -1222,9 +1264,7 @@ type PrivElem struct {
 func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 	switch n.Priv {
 	case 0:
-		// Do nothing for types that have no effect.
-		// Actually this should not happen since there is no way to determine its type.
-		return errors.New("Cannot determine privilege type")
+		ctx.WritePlain("/* UNSUPPORTED TYPE */")
 	case mysql.AllPriv:
 		ctx.WriteKeyWord("ALL")
 	case mysql.AlterPriv:
@@ -1233,6 +1273,8 @@ func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("CREATE")
 	case mysql.CreateUserPriv:
 		ctx.WriteKeyWord("CREATE USER")
+	case mysql.CreateRolePriv:
+		ctx.WriteKeyWord("CREATE ROLE")
 	case mysql.TriggerPriv:
 		ctx.WriteKeyWord("TRIGGER")
 	case mysql.DeletePriv:
@@ -1264,7 +1306,7 @@ func (n *PrivElem) Restore(ctx *RestoreCtx) error {
 	case mysql.ShowViewPriv:
 		ctx.WriteKeyWord("SHOW VIEW")
 	default:
-		return errors.New("Unsupported privilege type")
+		return errors.New("Undefined privilege type")
 	}
 	if n.Cols != nil {
 		ctx.WritePlain(" (")
@@ -1439,8 +1481,10 @@ type GrantStmt struct {
 func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("GRANT ")
 	for i, v := range n.Privs {
-		if i != 0 {
+		if i != 0 && v.Priv != 0 {
 			ctx.WritePlain(", ")
+		} else if v.Priv == 0 {
+			ctx.WritePlain(" ")
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore GrantStmt.Privs[%d]", i)
