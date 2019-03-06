@@ -267,15 +267,14 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 		if ft.Flag&mysql.BinaryFlag != 0 {
 			ctx.WriteKeyWord(" BINARY")
 		}
-		if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
-			if ctx.Flags.HasCharacterSetAsCharsetFlag() {
+		if ctx.Flags.HasForGeneratedColumnFlag() {
+			if ft.Charset != charset.CharsetBin {
 				ctx.WriteKeyWord(" CHARSET ")
-			} else {
-				ctx.WriteKeyWord(" CHARACTER SET ")
-			}
-			if ctx.Flags.HasLowerCharsetFlag() {
 				ctx.WritePlain(strings.ToLower(ft.Charset))
-			} else {
+			}
+		} else {
+			if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
+				ctx.WriteKeyWord(" CHARACTER SET ")
 				ctx.WritePlain(ft.Charset)
 			}
 		}

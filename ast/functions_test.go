@@ -97,7 +97,7 @@ func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 
 func (ts *testFunctionsSuite) TestFuncCastExprRestoreWithFlags(c *C) {
 	testCases := []NodeRestoreTestCase{
-		// {"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
+		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
 		{"CONVERT('Müller', CHAR(32) CHARSET utf8)", "CONVERT('Müller', CHAR(32) CHARSET utf8)"},
 		{"CAST('test' AS CHAR CHARSET utf8)", "CAST('test' AS CHAR CHARSET utf8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},
@@ -105,7 +105,7 @@ func (ts *testFunctionsSuite) TestFuncCastExprRestoreWithFlags(c *C) {
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
-	flags := format.DefaultRestoreFlags | format.RestoreCharacterSetAsCharset | format.RestoreLowerCharset
+	flags := format.DefaultRestoreFlags | format.RestoreForGeneratedColumn
 	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags)
 }
 

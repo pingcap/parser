@@ -218,8 +218,7 @@ const (
 	RestoreNameBackQuotes
 
 	RestoreSpacesAroundBinaryOperation
-	RestoreCharacterSetAsCharset
-	RestoreLowerCharset
+	RestoreForGeneratedColumn
 )
 
 const (
@@ -280,14 +279,9 @@ func (rf RestoreFlags) HasSpacesAroundBinaryOperationFlag() bool {
 	return rf.has(RestoreSpacesAroundBinaryOperation)
 }
 
-// HasCharacterSetAsCharsetFlag returns a boolean indicating whether `rf` has `RestoreCharacterSetAsCharset` flag.
-func (rf RestoreFlags) HasCharacterSetAsCharsetFlag() bool {
-	return rf.has(RestoreCharacterSetAsCharset)
-}
-
-// HasLowerCharsetFlag returns a boolean indicating whether `rf` has `RestoreLowerCharset` flag.
-func (rf RestoreFlags) HasLowerCharsetFlag() bool {
-	return rf.has(RestoreLowerCharset)
+// HasForGeneratedColumnFlag returns a boolean indicating whether `rf` has `RestoreForGeneratedColumn` flag.
+func (rf RestoreFlags) HasForGeneratedColumnFlag() bool {
+	return rf.has(RestoreForGeneratedColumn)
 }
 
 // RestoreCtx is `Restore` context to hold flags and writer.
