@@ -270,12 +270,12 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 		if ctx.Flags.HasForGeneratedColumnFlag() {
 			if ft.Charset != charset.CharsetBin {
 				ctx.WriteKeyWord(" CHARSET ")
-				ctx.WritePlain(strings.ToLower(ft.Charset))
+				ctx.WriteKeyWord(ft.Charset)
 			}
 		} else {
 			if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
 				ctx.WriteKeyWord(" CHARACTER SET ")
-				ctx.WritePlain(ft.Charset)
+				ctx.WriteKeyWord(ft.Charset)
 			}
 		}
 	case mysql.TypeDate:
