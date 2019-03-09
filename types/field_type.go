@@ -267,16 +267,9 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 		if ft.Flag&mysql.BinaryFlag != 0 {
 			ctx.WriteKeyWord(" BINARY")
 		}
-		if ctx.Flags.HasForGeneratedColumnFlag() {
-			if ft.Charset != charset.CharsetBin {
-				ctx.WriteKeyWord(" CHARSET ")
-				ctx.WriteKeyWord(ft.Charset)
-			}
-		} else {
-			if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
-				ctx.WriteKeyWord(" CHARACTER SET ")
-				ctx.WriteKeyWord(ft.Charset)
-			}
+		if ft.Charset != charset.CharsetBin && ft.Charset != mysql.DefaultCharset {
+			ctx.WriteKeyWord(" CHARSET ")
+			ctx.WriteKeyWord(ft.Charset)
 		}
 	case mysql.TypeDate:
 		ctx.WriteKeyWord("DATE")

@@ -85,28 +85,14 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
-		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARACTER SET UTF8)"},
-		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARACTER SET UTF8)"},
+		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARSET UTF8)"},
+		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARSET UTF8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
-}
-
-func (ts *testFunctionsSuite) TestFuncCastExprRestoreWithFlags(c *C) {
-	testCases := []NodeRestoreTestCase{
-		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
-		{"CONVERT('Müller', CHAR(32) CHARSET utf8)", "CONVERT('Müller', CHAR(32) CHARSET UTF8)"},
-		{"CAST('test' AS CHAR CHARSET utf8)", "CAST('test' AS CHAR CHARSET UTF8)"},
-		{"BINARY 'New York'", "BINARY 'New York'"},
-	}
-	extractNodeFunc := func(node Node) Node {
-		return node.(*SelectStmt).Fields.Fields[0].Expr
-	}
-	flags := format.DefaultRestoreFlags | format.RestoreForGeneratedColumn
-	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags)
 }
 
 func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {
