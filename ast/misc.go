@@ -516,6 +516,8 @@ const (
 	FlushPrivileges
 	FlushStatus
 	FlushTiDBPlugin
+	FlushHosts
+	FlushLogs
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -565,8 +567,12 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WritePlain(v)
 		}
+	case FlushHosts:
+		ctx.WriteKeyWord("HOSTS")
+	case FlushLogs:
+		ctx.WriteKeyWord("LOGS")
 	default:
-		return errors.New("Unsupported type of FlushTables")
+		return errors.New("Unsupported type of FlushStmt")
 	}
 	return nil
 }
