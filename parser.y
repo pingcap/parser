@@ -119,6 +119,7 @@ import (
 	escaped 		"ESCAPED"
 	exists			"EXISTS"
 	explain			"EXPLAIN"
+	except			"EXCEPT"
 	falseKwd		"FALSE"
 	firstValue		"FIRST_VALUE"
 	floatType		"FLOAT"
@@ -379,6 +380,7 @@ import (
 	respect		"RESPECT"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
+	role		"ROLE"
 	rollback	"ROLLBACK"
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
@@ -447,6 +449,7 @@ import (
 	groupConcat		"GROUP_CONCAT"
 	next_row_id		"NEXT_ROW_ID"
 	inplace 		"INPLACE"
+	instant			"INSTANT"
 	internal		"INTERNAL"
 	min			"MIN"
 	max			"MAX"
@@ -463,6 +466,14 @@ import (
 	substring		"SUBSTRING"
 	timestampAdd		"TIMESTAMPADD"
 	timestampDiff		"TIMESTAMPDIFF"
+	tokudbDefault	"TOKUDB_DEFAULT"
+	tokudbFast	"TOKUDB_FAST"
+	tokudbLzma	"TOKUDB_LZMA"
+	tokudbQuickLZ	"TOKUDB_QUICKLZ"
+	tokudbSnappy	"TOKUDB_SNAPPY"
+	tokudbSmall	"TOKUDB_SMALL"
+	tokudbUncompressed	"TOKUDB_UNCOMPRESSED"
+	tokudbZlib	"TOKUDB_ZLIB"
 	top			"TOP"
 	trim			"TRIM"
 	variance		"VARIANCE"
@@ -474,8 +485,10 @@ import (
 	buckets		"BUCKETS"
 	cancel		"CANCEL"
 	ddl		"DDL"
+	drainer         "DRAINER"
 	jobs		"JOBS"
 	job		    "JOB"
+	pump            "PUMP"
 	stats		"STATS"
 	statsMeta       "STATS_META"
 	statsHistograms "STATS_HISTOGRAMS"
@@ -574,6 +587,7 @@ import (
 	CreateTableStmt			"CREATE TABLE statement"
 	CreateViewStmt			"CREATE VIEW  stetement"
 	CreateUserStmt			"CREATE User statement"
+	CreateRoleStmt			"CREATE Role statement"
 	CreateDatabaseStmt		"Create Database Statement"
 	CreateIndexStmt			"CREATE INDEX statement"
 	CreateBindingStmt		"CREATE BINDING  statement"
@@ -583,6 +597,7 @@ import (
 	DropStatsStmt			"DROP STATS statement"
 	DropTableStmt			"DROP TABLE statement"
 	DropUserStmt			"DROP USER"
+	DropRoleStmt			"DROP ROLE"
 	DropViewStmt			"DROP VIEW statement"
 	DropBindingStmt		    	"DROP BINDING  statement"
 	DeallocateStmt			"Deallocate prepared statement"
@@ -593,6 +608,7 @@ import (
 	ExplainableStmt			"explainable statement"
 	FlushStmt			"Flush statement"
 	GrantStmt			"Grant statement"
+	GrantRoleStmt			"Grant role statement"
 	InsertIntoStmt			"INSERT INTO statement"
 	KillStmt			"Kill statement"
 	LoadDataStmt			"Load data statement"
@@ -603,8 +619,11 @@ import (
 	RenameTableStmt         	"rename table statement"
 	ReplaceIntoStmt			"REPLACE INTO statement"
 	RevokeStmt			"Revoke statement"
+	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
+	SetRoleStmt				"Set active role statement"
+	SetDefaultRoleStmt			"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
@@ -617,7 +636,8 @@ import (
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
-	AlterTableOptionListOpt		"alter table option list opt"
+	AlterAlgorithm			"Alter table algorithm"
+	AlterTableOptionListOpt		"Alter table option list opt"
 	AlterTableSpec			"Alter table specification"
 	AlterTableSpecList		"Alter table specification list"
 	AnyOrAll			"Any or All for subquery"
@@ -673,6 +693,7 @@ import (
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
+	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
 	FuncDatetimePrec		"Function datetime precision"
 	GlobalScope			"The scope of variable"
@@ -747,6 +768,11 @@ import (
 	OnUpdateOpt			"optional ON UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
+	Rolename            "Rolename"
+	RolenameList            "RolenameList"
+	RoleSpec		"Rolename and auth option"
+	RoleSpecList		"Rolename and auth option list"
+	RoleNameString      "role name string"
 	RowFormat			"Row format option"
 	RowValue			"Row value"
 	SelectLockOpt			"FOR UPDATE or LOCK IN SHARE MODE,"
@@ -760,6 +786,8 @@ import (
 	SelectStmtFromDualTable			"SELECT statement from dual table"
 	SelectStmtFromTable			"SELECT statement from table"
 	SelectStmtGroup			"SELECT statement optional GROUP BY clause"
+	SetRoleOpt				"Set role options"
+	SetDefaultRoleOpt				"Set default role options"
 	ShowTargetFilterable    	"Show target that can be filtered by WHERE or LIKE"
 	ShowDatabaseNameOpt		"Show tables/columns statement database name option"
 	ShowTableAliasOpt       	"Show table alias option"
@@ -1200,6 +1228,7 @@ AlterTableSpec:
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableAlgorithm,
+			Algorithm:	$3.(ast.AlterAlgorithm),
 		}
 	}
 | "FORCE"
@@ -1212,7 +1241,23 @@ AlterTableSpec:
 
 
 AlterAlgorithm:
-	"DEFAULT" | "INPLACE" | "COPY"
+	"DEFAULT"
+	{
+		$$ = ast.AlterAlgorithmDefault
+	}
+| 	"COPY"
+	{
+		$$ = ast.AlterAlgorithmCopy
+	}
+| 	"INPLACE"
+	{
+		$$ = ast.AlterAlgorithmInplace
+	}
+|	"INSTANT"
+	{
+		$$ = ast.AlterAlgorithmInstant
+	}
+
 
 LockClauseOpt:
 	{}
@@ -1745,7 +1790,7 @@ NowSymOptionFraction:
 	}
 |	NowSymFunc '(' NUM ')'
 	{
-		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr("CURRENT_TIMESTAMP")}
+		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr("CURRENT_TIMESTAMP"), Args: []ast.ExprNode{ast.NewValueExpr($3)}}
 	}
 
 /*
@@ -2391,6 +2436,14 @@ DropUserStmt:
 		$$ = &ast.DropUserStmt{IfExists: true, UserList: $5.([]*auth.UserIdentity)}
 	}
 
+DropRoleStmt:
+	"DROP" "ROLE" RolenameList
+	{
+	}
+|	"DROP" "ROLE" "IF" "EXISTS" RolenameList
+	{
+	}
+
 DropStatsStmt:
 	"DROP" "STATS" TableName
 	{
@@ -2989,7 +3042,7 @@ UnReservedKeyword:
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
-| "ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken 
+| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
@@ -3002,13 +3055,13 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "JOBS" | "JOB" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
+"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
-| "INPLACE" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
+| "INPLACE" | "INSTANT" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
 | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" | "VARIANCE" | "VAR_POP" | "VAR_SAMP"
-| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" | "NEXT_ROW_ID"
+| "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOKUDB_DEFAULT" | "TOKUDB_FAST" | "TOKUDB_LZMA" | "TOKUDB_QUICKLZ" | "TOKUDB_SNAPPY" | "TOKUDB_SMALL" | "TOKUDB_UNCOMPRESSED" | "TOKUDB_ZLIB" | "TOP" | "TRIM" | "NEXT_ROW_ID"
 
 /************************************************************************************
  *
@@ -5499,6 +5552,39 @@ SetStmt:
 		$$ = &ast.SetStmt{Variables: assigns}
 	}
 
+SetRoleStmt:
+	"SET" "ROLE" SetRoleOpt
+	{
+	}
+
+SetDefaultRoleStmt:
+	"SET" "DEFAULT" "ROLE" SetDefaultRoleOpt "TO" UsernameList
+	{
+	}
+
+SetDefaultRoleOpt:
+	"NONE"
+	{
+	}
+|	"ALL"
+	{
+	}
+|	RolenameList
+	{
+	}
+
+SetRoleOpt:
+	"ALL" "EXCEPT" RolenameList
+	{
+	}
+|	SetDefaultRoleOpt
+	{
+	}
+|	"DEFAULT"
+	{
+	}
+
+
 TransactionChars:
 	TransactionChar
 	{
@@ -5736,6 +5822,41 @@ AuthString:
 	stringLit
 	{
 		$$ = $1
+	}
+
+RoleNameString:
+	stringLit
+	{
+		$$ = $1
+	}
+|	identifier
+	{
+		$$ = $1
+	}
+
+
+Rolename:
+    RoleNameString
+	{
+		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: "%"}
+	}
+|	StringName '@' StringName
+	{
+		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: $3.(string)}
+	}
+|	StringName singleAtIdentifier
+	{
+		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@")}
+	}
+
+RolenameList:
+	Rolename
+	{
+		$$ = []*auth.RoleIdentity{$1.(*auth.RoleIdentity)}
+	}
+|	RolenameList ',' Rolename
+	{
+		$$ = append($1.([]*auth.RoleIdentity), $3.(*auth.RoleIdentity))
 	}
 
 /****************************Admin Statement*******************************/
@@ -6171,6 +6292,18 @@ ShowTargetFilterable:
 			Tp: ast.ShowProcedureStatus,
 		}
 	}
+|	"PUMP" "STATUS"
+	{
+		$$ = &ast.ShowStmt {
+			Tp: ast.ShowPumpStatus,
+		}
+	}
+|	"DRAINER" "STATUS"
+	{
+		$$ = &ast.ShowStmt {
+			Tp: ast.ShowDrainerStatus,
+		}
+	}
 |	"FUNCTION" "STATUS"
 	{
 		// This statement is similar to SHOW PROCEDURE STATUS but for stored functions.
@@ -6255,6 +6388,16 @@ FlushStmt:
 		$$ = tmp
 	}
 
+PluginNameList:
+	Identifier
+	{
+		$$ = []string{$1}
+	}
+|	PluginNameList ',' Identifier
+	{
+		$$ = append($1.([]string), $3)
+	}
+
 FlushOption:
 	"PRIVILEGES"
 	{
@@ -6266,6 +6409,13 @@ FlushOption:
 	{
 		$$ = &ast.FlushStmt{
 			Tp: ast.FlushStatus,
+		}
+	}
+|	"TIDB" "PLUGINS" PluginNameList
+	{
+		$$ = &ast.FlushStmt{
+			Tp: ast.FlushTiDBPlugin,
+			Plugins: $3.([]string),
 		}
 	}
 |	TableOrTables TableNameListOpt WithReadLockOpt
@@ -6327,6 +6477,7 @@ Statement:
 |	CreateTableStmt
 |	CreateViewStmt
 |	CreateUserStmt
+|	CreateRoleStmt
 |	CreateBindingStmt
 |	DoStmt
 |	DropDatabaseStmt
@@ -6334,10 +6485,12 @@ Statement:
 |	DropTableStmt
 |	DropViewStmt
 |	DropUserStmt
+|	DropRoleStmt
 |	DropStatsStmt
 |	DropBindingStmt
 |	FlushStmt
 |	GrantStmt
+|	GrantRoleStmt
 |	InsertIntoStmt
 |	KillStmt
 |	LoadDataStmt
@@ -6347,9 +6500,12 @@ Statement:
 |	RenameTableStmt
 |	ReplaceIntoStmt
 |	RevokeStmt
+|	RevokeRoleStmt
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
+|	SetRoleStmt
+|	SetDefaultRoleStmt
 |	ShowStmt
 |	SubSelect
 	{
@@ -6621,6 +6777,38 @@ RowFormat:
 |	"ROW_FORMAT" EqOpt "COMPACT"
 	{
 		$$ = ast.RowFormatCompact
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_DEFAULT"
+	{
+		$$ = ast.TokuDBRowFormatDefault
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_FAST"
+	{
+		$$ = ast.TokuDBRowFormatFast
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_SMALL"
+	{
+		$$ = ast.TokuDBRowFormatSmall
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_ZLIB"
+	{
+		$$ = ast.TokuDBRowFormatZlib
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_QUICKLZ"
+	{
+		$$ = ast.TokuDBRowFormatQuickLZ
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_LZMA"
+	{
+		$$ = ast.TokuDBRowFormatLzma
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_SNAPPY"
+	{
+		$$ = ast.TokuDBRowFormatSnappy
+	}
+|	"ROW_FORMAT" EqOpt "TOKUDB_UNCOMPRESSED"
+	{
+		$$ = ast.TokuDBRowFormatUncompressed
 	}
 
 /*************************************Type Begin***************************************/
@@ -7248,6 +7436,18 @@ CreateUserStmt:
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 		$$ = &ast.CreateUserStmt{
+			IsCreateRole: false,
+			IfNotExists: $3.(bool),
+			Specs: $4.([]*ast.UserSpec),
+		}
+	}
+
+CreateRoleStmt:
+    "CREATE" "ROLE" IfNotExists RoleSpecList
+	{
+		// See https://dev.mysql.com/doc/refman/8.0/en/create-role.html
+		$$ = &ast.CreateUserStmt{
+			IsCreateRole: true,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
 		}
@@ -7337,6 +7537,30 @@ HashString:
 		$$ = $1
 	}
 
+RoleSpec:
+	Rolename
+	{
+		role := $1.(*auth.RoleIdentity)
+		roleSpec := &ast.UserSpec{
+			User: &auth.UserIdentity {
+				Username: role.Username,
+				Hostname: role.Hostname,
+			},
+			IsRole: true,
+		}
+		$$ = roleSpec
+	}
+
+RoleSpecList:
+	RoleSpec
+	{
+		$$ = []*ast.UserSpec{$1.(*ast.UserSpec)}
+	}
+|	RoleSpecList ',' RoleSpec
+	{
+		$$ = append($1.([]*ast.UserSpec), $3.(*ast.UserSpec))
+	}
+
 /*******************************************************************
  *
  *  Create Binding Statement
@@ -7400,6 +7624,11 @@ GrantStmt:
 			Users: $7.([]*ast.UserSpec),
 			WithGrant: $8.(bool),
 		}
+	 }
+
+GrantRoleStmt:
+	 "GRANT" RolenameList "TO" UsernameList
+	 {
 	 }
 
 WithGrantOptionOpt:
@@ -7557,6 +7786,14 @@ PrivType:
 	{
 		$$ = mysql.ShowViewPriv
 	}
+|	"CREATE" "ROLE"
+	{
+		$$ = mysql.CreateRolePriv
+	}
+|	"DROP" "ROLE"
+	{
+		$$ = mysql.DropRolePriv
+	}
 |	"CREATE" "ROUTINE"
 	{
 		$$ = mysql.PrivilegeType(0)
@@ -7627,6 +7864,11 @@ RevokeStmt:
 			Level: $5.(*ast.GrantLevel),
 			Users: $7.([]*ast.UserSpec),
 		}
+	 }
+
+RevokeRoleStmt:
+	 "REVOKE" RolenameList "FROM" UsernameList
+	 {
 	 }
 
 /**************************************LoadDataStmt*****************************************
