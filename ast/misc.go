@@ -721,6 +721,74 @@ func (n *SetPwdStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type ChangePumpStmt struct {
+	stmtNode
+
+	StateName string
+	State     string
+	IpAndPort string
+}
+
+// Restore implements Node interface.
+func (n *ChangePumpStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("CHANGE PUMP TO")
+	ctx.WriteString("PUMP_STATE")
+	ctx.WritePlain("=")
+	ctx.WriteString(n.State)
+	ctx.WriteKeyWord("FOR NodeID")
+	ctx.WriteKeyWord(n.IpAndPort)
+	return nil
+}
+
+// SecureText implements SensitiveStatement interface.
+func (n *ChangePumpStmt) SecureText() string {
+	return fmt.Sprintf("change pump to pump_state='paused' for NodeID '%s'", n.IpAndPort)
+}
+
+// Accept implements Node Accept interface.
+func (n *ChangePumpStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ChangePumpStmt)
+	return v.Leave(n)
+}
+
+type ChangeDrainerStmt struct {
+	stmtNode
+
+	StateName string
+	State     string
+	IpAndPort string
+}
+
+// Restore implements Node interface.
+func (n *ChangeDrainerStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("CHANGE DRAINER TO")
+	ctx.WriteString("PUMP_STATE")
+	ctx.WritePlain("=")
+	ctx.WriteString(n.State)
+	ctx.WriteKeyWord("FOR NodeID")
+	ctx.WriteKeyWord(n.IpAndPort)
+	return nil
+}
+
+// SecureText implements SensitiveStatement interface.
+func (n *ChangeDrainerStmt) SecureText() string {
+	return fmt.Sprintf("change drainer to drainer_state='paused' for NodeID '%s'", n.IpAndPort)
+}
+
+// Accept implements Node Accept interface.
+func (n *ChangeDrainerStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ChangeDrainerStmt)
+	return v.Leave(n)
+}
+
 // UserSpec is used for parsing create user statement.
 type UserSpec struct {
 	User    *auth.UserIdentity
