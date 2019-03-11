@@ -621,7 +621,8 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SetStmt				"Set variable statement"
+	SetStmt				"Update Pump or Drainer's status"
+	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
 	SetDefaultRoleStmt			"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
@@ -5525,6 +5526,24 @@ UnionSelect:
 UnionOpt:
 DefaultTrueDistinctOpt
 
+/********************Change Statement*******************************/
+ChangeStmt:
+|	"CHANGE" "PUMP" "TO" StateName eq State "FOR" "NODEID" '"' IpAndPort '"'
+	{
+		$$ = &ast.ChangePumpStmt{
+			StateName: $4.(string),
+			State: $6.(string),
+			IpAndPort: $10.(string),
+		}
+	}
+|	"CHANGE" "DRAINER" "TO" StateName eq State "FOR" "NODEID" '"' IpAndPort '"'
+	{
+		$$ = &ast.ChangeDrainerStmt{
+			StateName: $4.(string),
+			State: $6.(string),
+			IpAndPort: $10.(string),
+		}
+	}
 
 /********************Set Statement*******************************/
 SetStmt:
@@ -6516,6 +6535,7 @@ Statement:
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
+|	ChangeStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
 |	ShowStmt
