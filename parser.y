@@ -112,6 +112,7 @@ import (
 	distinctRow		"DISTINCTROW"
 	div 			"DIV"
 	doubleType		"DOUBLE"
+	drainer_state		"DRAINER_STATE"
 	drop			"DROP"
 	dual 			"DUAL"
 	elseKwd			"ELSE"
@@ -180,6 +181,7 @@ import (
 	minuteMicrosecond	"MINUTE_MICROSECOND"
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
+	NodeID			"NODEID"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
 	nthValue		"NTH_VALUE"
@@ -200,6 +202,7 @@ import (
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
+	PUMP_STATE		"PUMP_STATE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
@@ -5516,14 +5519,14 @@ DefaultTrueDistinctOpt
 
 /********************Change Statement*******************************/
 ChangeStmt:
-|	"CHANGE" "PUMP" "TO" "PUMP_STATE" eq stringLit "FOR" "NODEID" stringLit
+|	"CHANGE" "PUMP" to "PUMP_STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangePumpStmt{
 			State: $6.(string),
 			IpAndPort: $9.(string),
 		}
 	}
-|	"CHANGE" "DRAINER" "TO" "DRAINER_STATE" eq stringLit "FOR" "NODEID" stringLit
+|	"CHANGE" "DRAINER" to "DRAINER_STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeDrainerStmt{
 			State: $6.(string),
@@ -6489,6 +6492,7 @@ Statement:
 |	DeleteFromStmt
 |	ExecuteStmt
 |	ExplainStmt
+|	ChangeStmt
 |	CreateDatabaseStmt
 |	CreateIndexStmt
 |	CreateTableStmt
@@ -6521,7 +6525,6 @@ Statement:
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
-|	ChangeStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
 |	ShowStmt
