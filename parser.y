@@ -6553,7 +6553,6 @@ Statement:
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
-|	ChangeStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
 |	ShowStmt
