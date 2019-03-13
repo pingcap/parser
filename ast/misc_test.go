@@ -126,6 +126,17 @@ load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by
 		stmt.Accept(visitor1{})
 	}
 }
+func (ts *testMiscSuite) TestChangeStmt(c *C) {
+	sql := `change pump to pump_state='paused' for NodeID "127.0.0.1:8249";`
+
+	p := parser.New()
+	stmts, _, err := p.Parse(sql, "", "")
+	c.Assert(err, IsNil)
+	for _, stmt := range stmts {
+		stmt.Accept(visitor{})
+		stmt.Accept(visitor1{})
+	}
+}
 
 func (ts *testMiscSuite) TestSensitiveStatement(c *C) {
 	positive := []StmtNode{
