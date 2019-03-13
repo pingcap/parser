@@ -5558,7 +5558,7 @@ ChangeStmt:
 	{
 		$$ = &ast.ChangeDrainerStmt{
 			State: $6.(string),
-			IpAndPort: $9.(string),
+			IpAndPort: $10.(string),
 		}
 	}
 
@@ -6553,6 +6553,7 @@ Statement:
 |	SelectStmt
 |	UnionStmt
 |	SetStmt
+|	ChangeStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
 |	ShowStmt
