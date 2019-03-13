@@ -2431,19 +2431,31 @@ DropViewStmt:
 DropUserStmt:
 	"DROP" "USER" UsernameList
 	{
-		$$ = &ast.DropUserStmt{IfExists: false, UserList: $3.([]*auth.UserIdentity)}
+		$$ = &ast.DropUserStmt{IsDropRole: false, IfExists: false, UserList: $3.([]*auth.UserIdentity)}
 	}
 |	"DROP" "USER" "IF" "EXISTS" UsernameList
 	{
-		$$ = &ast.DropUserStmt{IfExists: true, UserList: $5.([]*auth.UserIdentity)}
+		$$ = &ast.DropUserStmt{IsDropRole: false, IfExists: true, UserList: $5.([]*auth.UserIdentity)}
 	}
 
 DropRoleStmt:
 	"DROP" "ROLE" RolenameList
 	{
+		tmp := make([]*auth.UserIdentity, 0, 10)
+		roleList := $3.([]*auth.RoleIdentity)
+		for _, r := range roleList {
+			tmp = append(tmp, &auth.UserIdentity{Username:r.Username, Hostname: r.Hostname})
+		}
+		$$ = &ast.DropUserStmt{IsDropRole: true, IfExists: false, UserList: tmp}
 	}
 |	"DROP" "ROLE" "IF" "EXISTS" RolenameList
 	{
+		tmp := make([]*auth.UserIdentity, 0, 10)
+		roleList := $5.([]*auth.RoleIdentity)
+		for _, r := range roleList {
+			tmp = append(tmp, &auth.UserIdentity{Username:r.Username, Hostname: r.Hostname})
+		}
+		$$ = &ast.DropUserStmt{IsDropRole: true, IfExists: true, UserList: tmp}
 	}
 
 DropStatsStmt:
@@ -4838,7 +4850,7 @@ WindowingClause:
 WindowNameOrSpec:
 	WindowName
 	{
-		$$ = ast.WindowSpec{Ref: $1.(model.CIStr)}
+		$$ = ast.WindowSpec{Name: $1.(model.CIStr), OnlyAlias: true,}
 	}
 |	WindowSpec
 	{
