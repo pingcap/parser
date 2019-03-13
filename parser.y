@@ -5544,20 +5544,18 @@ DefaultTrueDistinctOpt
 
 /********************Change Statement*******************************/
 ChangeStmt:
-|	"CHANGE" "PUMP" "TO" StateName eq State "FOR" "NODEID" '"' IpAndPort '"'
+|	"CHANGE" "PUMP" "TO" "PUMP_STATE" eq stringLit "FOR" "NODEID" stringLit
 	{
 		$$ = &ast.ChangePumpStmt{
-			StateName: $4.(string),
 			State: $6.(string),
-			IpAndPort: $10.(string),
+			IpAndPort: $9.(string),
 		}
 	}
-|	"CHANGE" "DRAINER" "TO" StateName eq State "FOR" "NODEID" '"' IpAndPort '"'
+|	"CHANGE" "DRAINER" "TO" "DRAINER_STATE" eq stringLit "FOR" "NODEID" stringLit
 	{
 		$$ = &ast.ChangeDrainerStmt{
-			StateName: $4.(string),
 			State: $6.(string),
-			IpAndPort: $10.(string),
+			IpAndPort: $9.(string),
 		}
 	}
 
