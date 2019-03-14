@@ -721,71 +721,37 @@ func (n *SetPwdStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-type ChangePumpStmt struct {
+type ChangeStmt struct {
 	stmtNode
 
-	StateName string
+	NodeType  string
 	State     string
 	IpAndPort string
 }
 
 // Restore implements Node interface.
-func (n *ChangePumpStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CHANGE PUMP TO")
-	ctx.WriteString("PUMP_STATE")
+func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord(fmt.Sprintf("CHANGE %s TO", strings.ToUpper(n.NodeType)))
+	ctx.WriteKeyWord(fmt.Sprintf("%s_STATE", strings.ToUpper(n.NodeType)))
 	ctx.WritePlain("=")
 	ctx.WriteString(n.State)
 	ctx.WriteKeyWord("FOR NodeID")
-	ctx.WriteKeyWord(n.IpAndPort)
+	ctx.WriteString(n.IpAndPort)
 	return nil
 }
 
 // SecureText implements SensitiveStatement interface.
-func (n *ChangePumpStmt) SecureText() string {
-	return fmt.Sprintf("change pump to pump_state='paused' for NodeID '%s'", n.IpAndPort)
+func (n *ChangeStmt) SecureText() string {
+	return fmt.Sprintf("change %s to %s_state='%s' for NodeID '%s'", strings.ToLower(n.NodeType), strings.ToLower(n.NodeType), n.State, n.IpAndPort)
 }
 
 // Accept implements Node Accept interface.
-func (n *ChangePumpStmt) Accept(v Visitor) (Node, bool) {
+func (n *ChangeStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
-	n = newNode.(*ChangePumpStmt)
-	return v.Leave(n)
-}
-
-type ChangeDrainerStmt struct {
-	stmtNode
-
-	StateName string
-	State     string
-	IpAndPort string
-}
-
-// Restore implements Node interface.
-func (n *ChangeDrainerStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CHANGE DRAINER TO")
-	ctx.WriteString("PUMP_STATE")
-	ctx.WritePlain("=")
-	ctx.WriteString(n.State)
-	ctx.WriteKeyWord("FOR NodeID")
-	ctx.WriteKeyWord(n.IpAndPort)
-	return nil
-}
-
-// SecureText implements SensitiveStatement interface.
-func (n *ChangeDrainerStmt) SecureText() string {
-	return fmt.Sprintf("change drainer to drainer_state='paused' for NodeID '%s'", n.IpAndPort)
-}
-
-// Accept implements Node Accept interface.
-func (n *ChangeDrainerStmt) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
-	n = newNode.(*ChangeDrainerStmt)
+	n = newNode.(*ChangeStmt)
 	return v.Leave(n)
 }
 

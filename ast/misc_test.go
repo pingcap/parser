@@ -127,7 +127,7 @@ load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by
 	}
 }
 func (ts *testMiscSuite) TestChangeStmt(c *C) {
-	sql := `change pump to pump_state='paused' for NodeID "127.0.0.1:8249";`
+	sql := `change pump to pump_state='paused' for NodeID '127.0.0.1:8249';`
 
 	p := parser.New()
 	stmts, _, err := p.Parse(sql, "", "")

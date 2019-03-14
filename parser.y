@@ -202,7 +202,7 @@ import (
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
-	PUMP_STATE		"PUMP_STATE"
+	pump_state		"PUMP_STATE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
@@ -624,7 +624,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SetStmt				"Update Pump or Drainer's status"
+	SetStmt				"Set variable statement"
 	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
 	SetDefaultRoleStmt			"Set default statement for some user"
@@ -5519,18 +5519,20 @@ DefaultTrueDistinctOpt
 
 /********************Change Statement*******************************/
 ChangeStmt:
-|	"CHANGE" "PUMP" to "PUMP_STATE" eq stringLit forKwd "NODEID" stringLit
+	"CHANGE" "PUMP" "TO" "PUMP_STATE" eq stringLit forKwd "NODEID" stringLit
 	{
-		$$ = &ast.ChangePumpStmt{
-			State: $6.(string),
-			IpAndPort: $9.(string),
+		$$ = &ast.ChangeStmt{
+			NodeType: "PUMP",
+			State: $6,
+			IpAndPort: $9,
 		}
 	}
-|	"CHANGE" "DRAINER" to "DRAINER_STATE" eq stringLit forKwd "NODEID" stringLit
+|	"CHANGE" "DRAINER" "TO" "DRAINER_STATE" eq stringLit forKwd "NODEID" stringLit
 	{
-		$$ = &ast.ChangeDrainerStmt{
-			State: $6.(string),
-			IpAndPort: $9.(string),
+		$$ = &ast.ChangeStmt{
+			NodeType: "DRAINER",
+			State: $6,
+			IpAndPort: $9,
 		}
 	}
 
