@@ -139,3 +139,18 @@ func DecodePassword(pwd string) ([]byte, error) {
 	}
 	return x, nil
 }
+
+func (role *RoleIdentity) Restore(ctx *RestoreCtx) error {
+	ctx.WriteName(role.Username)
+	if role.Hostname != "" {
+		ctx.WritePlain("@")
+		ctx.WriteName(role.Hostname)
+	}
+	return nil
+}
+
+// String converts UserIdentity to the format user@host.
+func (role *RoleIdentity) String() string {
+	// TODO: Escape username and hostname.
+	return fmt.Sprintf("`%s`@`%s`", role.Username, role.Hostname)
+}
