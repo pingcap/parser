@@ -126,6 +126,8 @@ load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by
 		stmt.Accept(visitor1{})
 	}
 }
+
+// test Change Pump or drainer status sql parser
 func (ts *testMiscSuite) TestChangeStmt(c *C) {
 	sql := `change pump to pump_state='paused' for NodeID '127.0.0.1:8249';`
 
