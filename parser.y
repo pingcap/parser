@@ -112,6 +112,7 @@ import (
 	distinctRow		"DISTINCTROW"
 	div 			"DIV"
 	doubleType		"DOUBLE"
+	drainer_state		"DRAINER_STATE"
 	drop			"DROP"
 	dual 			"DUAL"
 	elseKwd			"ELSE"
@@ -180,6 +181,7 @@ import (
 	minuteMicrosecond	"MINUTE_MICROSECOND"
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
+	NodeID			"NODEID"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
 	nthValue		"NTH_VALUE"
@@ -200,6 +202,7 @@ import (
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
+	PUMP_STATE		"PUMP_STATE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
@@ -621,7 +624,8 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SetStmt				"Set variable statement"
+	SetStmt				"Update Pump or Drainer's status"
+	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
 	SetDefaultRoleStmt			"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
@@ -5513,6 +5517,22 @@ UnionSelect:
 UnionOpt:
 DefaultTrueDistinctOpt
 
+/********************Change Statement*******************************/
+ChangeStmt:
+|	"CHANGE" "PUMP" to "PUMP_STATE" eq stringLit forKwd "NODEID" stringLit
+	{
+		$$ = &ast.ChangePumpStmt{
+			State: $6.(string),
+			IpAndPort: $9.(string),
+		}
+	}
+|	"CHANGE" "DRAINER" to "DRAINER_STATE" eq stringLit forKwd "NODEID" stringLit
+	{
+		$$ = &ast.ChangeDrainerStmt{
+			State: $6.(string),
+			IpAndPort: $9.(string),
+		}
+	}
 
 /********************Set Statement*******************************/
 SetStmt:
@@ -6472,6 +6492,7 @@ Statement:
 |	DeleteFromStmt
 |	ExecuteStmt
 |	ExplainStmt
+|	ChangeStmt
 |	CreateDatabaseStmt
 |	CreateIndexStmt
 |	CreateTableStmt
