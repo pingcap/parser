@@ -732,7 +732,7 @@ type ChangeStmt struct {
 // Restore implements Node interface.
 func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(fmt.Sprintf("CHANGE %s TO", strings.ToUpper(n.NodeType)))
-	ctx.WriteKeyWord(fmt.Sprintf("%s_STATE", strings.ToUpper(n.NodeType)))
+	ctx.WriteKeyWord("STATE")
 	ctx.WritePlain("=")
 	ctx.WriteString(n.State)
 	ctx.WriteKeyWord("FOR NodeID")
@@ -742,7 +742,7 @@ func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
 
 // SecureText implements SensitiveStatement interface.
 func (n *ChangeStmt) SecureText() string {
-	return fmt.Sprintf("change %s to %s_state='%s' for NodeID '%s'", strings.ToLower(n.NodeType), strings.ToLower(n.NodeType), n.State, n.IpAndPort)
+	return fmt.Sprintf("change %s to state='%s' for NodeID '%s'", strings.ToLower(n.NodeType), n.State, n.IpAndPort)
 }
 
 // Accept implements Node Accept interface.
