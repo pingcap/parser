@@ -181,6 +181,7 @@ import (
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
 	NodeID			"NODEID"
+	node_state		"NODE_STATE"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
 	nthValue		"NTH_VALUE"
@@ -226,7 +227,6 @@ import (
 	sql			"SQL"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
 	starting		"STARTING"
-	state			"STATE"
 	straightJoin		"STRAIGHT_JOIN"
 	tableKwd		"TABLE"
 	stored			"STORED"
@@ -5530,7 +5530,7 @@ DefaultTrueDistinctOpt
 
 /********************Change Statement*******************************/
 ChangeStmt:
-	"CHANGE" "PUMP" "TO" "STATE" eq stringLit forKwd "NODEID" stringLit
+	"CHANGE" "PUMP" "TO" "NODE_STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
 			NodeType: ast.PumpType,
@@ -5538,7 +5538,7 @@ ChangeStmt:
 			IpAndPort: $9,
 		}
 	}
-|	"CHANGE" "DRAINER" "TO" "STATE" eq stringLit forKwd "NODEID" stringLit
+|	"CHANGE" "DRAINER" "TO" "NODE_STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
 			NodeType: ast.DrainerType,
