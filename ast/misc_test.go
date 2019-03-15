@@ -14,7 +14,6 @@
 package ast_test
 
 import (
-	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 	. "github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/auth"
@@ -127,9 +126,20 @@ load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by
 	}
 }
 
-// test Change Pump or drainer status sql parser
-func (ts *testMiscSuite) TestChangeStmt(c *C) {
+// test Change Pump  status sql parser
+func (ts *testMiscSuite) TestChangePumpStmt(c *C) {
 	sql := `change pump to pump_state='paused' for NodeID '127.0.0.1:8249';`
+
+	p := parser.New()
+	stmts, _, err := p.Parse(sql, "", "")
+	c.Assert(err, IsNil)
+	for _, stmt := range stmts {
+		stmt.Accept(visitor{})
+		stmt.Accept(visitor1{})
+	}
+} // test Change  drainer status sql parser
+func (ts *testMiscSuite) TestChangeDrainerStmt(c *C) {
+	sql := `change drainer to drainer_state='paused' for NodeID '127.0.0.1:8249';`
 
 	p := parser.New()
 	stmts, _, err := p.Parse(sql, "", "")
