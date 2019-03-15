@@ -5533,7 +5533,7 @@ ChangeStmt:
 	"CHANGE" "PUMP" "TO" "STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
-			NodeType: "PUMP",
+			NodeType: ast.PumpType,
 			State: $6,
 			IpAndPort: $9,
 		}
@@ -5541,7 +5541,7 @@ ChangeStmt:
 |	"CHANGE" "DRAINER" "TO" "STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
-			NodeType: "DRAINER",
+			NodeType: ast.DrainerType,
 			State: $6,
 			IpAndPort: $9,
 		}
@@ -6605,6 +6605,7 @@ Constraint:
 TableElement:
 	ColumnDef
 	{
+		$$ = $1.(*ast.ColumnDef)
 		$$ = $1.(*ast.ColumnDef)
 	}
 |	Constraint

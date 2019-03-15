@@ -61,6 +61,8 @@ const (
 	// Valid formats for explain statement.
 	ExplainFormatROW = "row"
 	ExplainFormatDOT = "dot"
+	PumpType         = "PUMP"
+	DrainerType      = "DRAINER"
 )
 
 var (
