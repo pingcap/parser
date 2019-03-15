@@ -5535,7 +5535,7 @@ ChangeStmt:
 		$$ = &ast.ChangeStmt{
 			NodeType: ast.PumpType,
 			State: $6,
-			IpAndPort: $9,
+			NodeID: $9,
 		}
 	}
 |	"CHANGE" "DRAINER" "TO" "NODE_STATE" eq stringLit forKwd "NODE_ID" stringLit
@@ -5543,7 +5543,7 @@ ChangeStmt:
 		$$ = &ast.ChangeStmt{
 			NodeType: ast.DrainerType,
 			State: $6,
-			IpAndPort: $9,
+			NodeID: $9,
 		}
 	}
 

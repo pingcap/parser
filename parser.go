@@ -11084,17 +11084,17 @@ yynewstate:
 	case 1032:
 		{
 			parser.yyVAL.statement = &ast.ChangeStmt{
-				NodeType:  ast.PumpType,
-				State:     yyS[yypt-3].ident,
-				IpAndPort: yyS[yypt-0].ident,
+				NodeType: ast.PumpType,
+				State:    yyS[yypt-3].ident,
+				NodeID:   yyS[yypt-0].ident,
 			}
 		}
 	case 1033:
 		{
 			parser.yyVAL.statement = &ast.ChangeStmt{
-				NodeType:  ast.DrainerType,
-				State:     yyS[yypt-3].ident,
-				IpAndPort: yyS[yypt-0].ident,
+				NodeType: ast.DrainerType,
+				State:    yyS[yypt-3].ident,
+				NodeID:   yyS[yypt-0].ident,
 			}
 		}
 	case 1034:
