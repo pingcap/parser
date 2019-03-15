@@ -363,7 +363,7 @@ var tokenMap = map[string]int{
 	"NEXT_ROW_ID":              next_row_id,
 	"NO":                       no,
 	"NO_WRITE_TO_BINLOG":       noWriteToBinLog,
-	"NODEID":                   NodeID,
+	"NODE_ID":                  node_id,
 	"NODE_STATE":               node_state,
 	"NONE":                     none,
 	"NOT":                      not,

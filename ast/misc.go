@@ -737,14 +737,14 @@ func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("NODE_STATE")
 	ctx.WritePlain("=")
 	ctx.WriteString(n.State)
-	ctx.WriteKeyWord("FOR NodeID")
+	ctx.WriteKeyWord("FOR NODE_ID")
 	ctx.WriteString(n.IpAndPort)
 	return nil
 }
 
 // SecureText implements SensitiveStatement interface.
 func (n *ChangeStmt) SecureText() string {
-	return fmt.Sprintf("change %s to node_state='%s' for NodeID '%s'", strings.ToLower(n.NodeType), n.State, n.IpAndPort)
+	return fmt.Sprintf("change %s to node_state='%s' for node_id '%s'", strings.ToLower(n.NodeType), n.State, n.IpAndPort)
 }
 
 // Accept implements Node Accept interface.

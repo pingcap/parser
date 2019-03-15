@@ -57,7 +57,6 @@ type yyXError struct {
 const (
 	yyDefault                  = 57849
 	yyEOFCode                  = 57344
-	NodeID                     = 57474
 	action                     = 57558
 	add                        = 57359
 	addDate                    = 57726
@@ -360,6 +359,7 @@ const (
 	next_row_id                = 57739
 	no                         = 57648
 	noWriteToBinLog            = 57477
+	node_id                    = 57474
 	node_state                 = 57475
 	none                       = 57649
 	not                        = 57476
@@ -1264,8 +1264,8 @@ var (
 		58033: 693, // LoadStatsStmt (2x)
 		58037: 694, // LockTablesStmt (2x)
 		58040: 695, // MaxValueOrExpression (2x)
-		57475: 696, // node_state (2x)
-		57474: 697, // NodeID (2x)
+		57474: 696, // node_id (2x)
+		57475: 697, // node_state (2x)
 		58046: 698, // NowSym (2x)
 		58047: 699, // NowSymFunc (2x)
 		58048: 700, // NowSymOptionFraction (2x)
@@ -2192,8 +2192,8 @@ var (
 		"LoadStatsStmt",
 		"LockTablesStmt",
 		"MaxValueOrExpression",
+		"node_id",
 		"node_state",
-		"NodeID",
 		"NowSym",
 		"NowSymFunc",
 		"NowSymOptionFraction",
@@ -6002,21 +6002,21 @@ var (
 		{479, 479, 6: 3198},
 		{409: 3237},
 		{409: 3230},
-		{696: 3231},
+		{697: 3231},
 		// 1715
 		{261: 3232},
 		{237: 3233},
 		{251: 3234},
-		{697: 3235},
+		{696: 3235},
 		{237: 3236},
 		// 1720
 		{483, 483},
-		{696: 3238},
+		{697: 3238},
 		{261: 3239},
 		{237: 3240},
 		{251: 3241},
 		// 1725
-		{697: 3242},
+		{696: 3242},
 		{237: 3243},
 		{484, 484},
 		{235: 822, 401: 822, 485: 2413, 506: 2411, 2412, 515: 3245, 3246, 785: 3248, 881: 3247},

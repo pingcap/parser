@@ -180,7 +180,7 @@ import (
 	minuteMicrosecond	"MINUTE_MICROSECOND"
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
-	NodeID			"NODEID"
+	node_id			"NODE_ID"
 	node_state		"NODE_STATE"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
@@ -5530,7 +5530,7 @@ DefaultTrueDistinctOpt
 
 /********************Change Statement*******************************/
 ChangeStmt:
-	"CHANGE" "PUMP" "TO" "NODE_STATE" eq stringLit forKwd "NODEID" stringLit
+	"CHANGE" "PUMP" "TO" "NODE_STATE" eq stringLit forKwd "NODE_ID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
 			NodeType: ast.PumpType,
@@ -5538,7 +5538,7 @@ ChangeStmt:
 			IpAndPort: $9,
 		}
 	}
-|	"CHANGE" "DRAINER" "TO" "NODE_STATE" eq stringLit forKwd "NODEID" stringLit
+|	"CHANGE" "DRAINER" "TO" "NODE_STATE" eq stringLit forKwd "NODE_ID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
 			NodeType: ast.DrainerType,
