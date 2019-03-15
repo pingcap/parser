@@ -744,7 +744,7 @@ func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
 
 // SecureText implements SensitiveStatement interface.
 func (n *ChangeStmt) SecureText() string {
-	return fmt.Sprintf("change %s to state='%s' for NodeID '%s'", strings.ToLower(n.NodeType), n.State, n.IpAndPort)
+	return fmt.Sprintf("change %s to node_state='%s' for NodeID '%s'", strings.ToLower(n.NodeType), n.State, n.IpAndPort)
 }
 
 // Accept implements Node Accept interface.
