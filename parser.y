@@ -6606,7 +6606,6 @@ TableElement:
 	ColumnDef
 	{
 		$$ = $1.(*ast.ColumnDef)
-		$$ = $1.(*ast.ColumnDef)
 	}
 |	Constraint
 	{
