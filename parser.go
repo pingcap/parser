@@ -11966,7 +11966,6 @@ yynewstate:
 	case 1257:
 		{
 			parser.yyVAL.item = yyS[yypt-0].item.(*ast.ColumnDef)
-			parser.yyVAL.item = yyS[yypt-0].item.(*ast.ColumnDef)
 		}
 	case 1258:
 		{
