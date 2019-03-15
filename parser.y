@@ -112,7 +112,6 @@ import (
 	distinctRow		"DISTINCTROW"
 	div 			"DIV"
 	doubleType		"DOUBLE"
-	drainer_state		"DRAINER_STATE"
 	drop			"DROP"
 	dual 			"DUAL"
 	elseKwd			"ELSE"
@@ -202,7 +201,6 @@ import (
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
-	pump_state		"PUMP_STATE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
@@ -228,6 +226,7 @@ import (
 	sql			"SQL"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
 	starting		"STARTING"
+	state			"STATE"
 	straightJoin		"STRAIGHT_JOIN"
 	tableKwd		"TABLE"
 	stored			"STORED"
@@ -5531,7 +5530,7 @@ DefaultTrueDistinctOpt
 
 /********************Change Statement*******************************/
 ChangeStmt:
-	"CHANGE" "PUMP" "TO" "PUMP_STATE" eq stringLit forKwd "NODEID" stringLit
+	"CHANGE" "PUMP" "TO" "STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
 			NodeType: "PUMP",
@@ -5539,7 +5538,7 @@ ChangeStmt:
 			IpAndPort: $9,
 		}
 	}
-|	"CHANGE" "DRAINER" "TO" "DRAINER_STATE" eq stringLit forKwd "NODEID" stringLit
+|	"CHANGE" "DRAINER" "TO" "STATE" eq stringLit forKwd "NODEID" stringLit
 	{
 		$$ = &ast.ChangeStmt{
 			NodeType: "DRAINER",
