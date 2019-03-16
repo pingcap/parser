@@ -733,11 +733,14 @@ type ChangeStmt struct {
 
 // Restore implements Node interface.
 func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord(fmt.Sprintf("CHANGE %s TO", strings.ToUpper(n.NodeID)))
+	ctx.WriteKeyWord("CHANGE")
+	ctx.WriteKeyWord(strings.ToUpper(n.NodeID))
+	ctx.WriteKeyWord("TO")
 	ctx.WriteKeyWord("NODE_STATE")
 	ctx.WritePlain("=")
 	ctx.WriteString(n.State)
-	ctx.WriteKeyWord("FOR NODE_ID")
+	ctx.WriteKeyWord("FOR")
+	ctx.WriteKeyWord("NODE_ID")
 	ctx.WriteString(n.NodeID)
 	return nil
 }
