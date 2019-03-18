@@ -1994,6 +1994,8 @@ PartitionOpt:
 			tmp.Num = getUint64FromNUM($8)
 		}
 		if $3 != "" {
+			yylex.Errorf("linear is not supported, ignore partition")
+			parser.lastErrorAsWarn()
 			tmp = nil
 		}
 		$$ = tmp

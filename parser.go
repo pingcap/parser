@@ -8105,6 +8105,8 @@ yynewstate:
 				tmp.Num = getUint64FromNUM(yyS[yypt-0].item)
 			}
 			if yyS[yypt-5].ident != "" {
+				yylex.Errorf("linear is not supported, ignore partition")
+				parser.lastErrorAsWarn()
 				tmp = nil
 			}
 			parser.yyVAL.item = tmp
