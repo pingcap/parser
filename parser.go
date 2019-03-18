@@ -8467,7 +8467,7 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.DropUserStmt{IsDropRole: false, IfExists: true, UserList: yyS[yypt-0].item.([]*auth.UserIdentity)}
 		}
-	case 235:
+	case 237:
 		{
 			tmp := make([]*auth.UserIdentity, 0, 10)
 			roleList := yyS[yypt-0].item.([]*auth.RoleIdentity)
@@ -8476,7 +8476,7 @@ yynewstate:
 			}
 			parser.yyVAL.statement = &ast.DropUserStmt{IsDropRole: true, IfExists: false, UserList: tmp}
 		}
-	case 236:
+	case 238:
 		{
 			tmp := make([]*auth.UserIdentity, 0, 10)
 			roleList := yyS[yypt-0].item.([]*auth.RoleIdentity)
