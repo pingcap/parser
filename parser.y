@@ -166,6 +166,7 @@ import (
 	like			"LIKE"
 	limit			"LIMIT"
 	lines 			"LINES"
+	linear			"LINEAR"
 	load			"LOAD"
 	localTime		"LOCALTIME"
 	localTs			"LOCALTIMESTAMP"
@@ -180,6 +181,8 @@ import (
 	minuteMicrosecond	"MINUTE_MICROSECOND"
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
+	node_id			"NODE_ID"
+	node_state		"NODE_STATE"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
 	nthValue		"NTH_VALUE"
@@ -622,6 +625,7 @@ import (
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
 	SetStmt				"Set variable statement"
+	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
 	SetDefaultRoleStmt			"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
@@ -941,6 +945,7 @@ import (
 	LockType		"Table locks type"
 	logAnd			"logical and operator"
 	logOr			"logical or operator"
+	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
 	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
 
@@ -1980,16 +1985,21 @@ PartitionOpt:
 	{
 		$$ = nil
 	}
-|	"PARTITION" "BY" "HASH" '(' Expression ')' PartitionNumOpt
+|	"PARTITION" "BY" LinearOpt "HASH" '(' Expression ')' PartitionNumOpt
 	{
 		tmp := &ast.PartitionOptions{
 			Tp: model.PartitionTypeHash,
-			Expr: $5.(ast.ExprNode),
+			Expr: $6.(ast.ExprNode),
 			// If you do not include a PARTITIONS clause, the number of partitions defaults to 1
 			Num: 1,
 		}
-		if $7 != nil {
-			tmp.Num = getUint64FromNUM($7)
+		if $8 != nil {
+			tmp.Num = getUint64FromNUM($8)
+		}
+		if $3 != "" {
+			yylex.Errorf("linear is not supported, ignore partition")
+			parser.lastErrorAsWarn()
+			tmp = nil
 		}
 		$$ = tmp
 	}
@@ -2016,6 +2026,15 @@ PartitionOpt:
 			ColumnNames:	$6.([]*ast.ColumnName),
 			Definitions:	defs,
 		}
+	}
+
+LinearOpt:
+	{
+		$$ = ""
+	}
+| "LINEAR"
+	{
+		$$ = $1
 	}
 
 SubPartitionOpt:
@@ -2429,19 +2448,31 @@ DropViewStmt:
 DropUserStmt:
 	"DROP" "USER" UsernameList
 	{
-		$$ = &ast.DropUserStmt{IfExists: false, UserList: $3.([]*auth.UserIdentity)}
+		$$ = &ast.DropUserStmt{IsDropRole: false, IfExists: false, UserList: $3.([]*auth.UserIdentity)}
 	}
 |	"DROP" "USER" "IF" "EXISTS" UsernameList
 	{
-		$$ = &ast.DropUserStmt{IfExists: true, UserList: $5.([]*auth.UserIdentity)}
+		$$ = &ast.DropUserStmt{IsDropRole: false, IfExists: true, UserList: $5.([]*auth.UserIdentity)}
 	}
 
 DropRoleStmt:
 	"DROP" "ROLE" RolenameList
 	{
+		tmp := make([]*auth.UserIdentity, 0, 10)
+		roleList := $3.([]*auth.RoleIdentity)
+		for _, r := range roleList {
+			tmp = append(tmp, &auth.UserIdentity{Username:r.Username, Hostname: r.Hostname})
+		}
+		$$ = &ast.DropUserStmt{IsDropRole: true, IfExists: false, UserList: tmp}
 	}
 |	"DROP" "ROLE" "IF" "EXISTS" RolenameList
 	{
+		tmp := make([]*auth.UserIdentity, 0, 10)
+		roleList := $5.([]*auth.RoleIdentity)
+		for _, r := range roleList {
+			tmp = append(tmp, &auth.UserIdentity{Username:r.Username, Hostname: r.Hostname})
+		}
+		$$ = &ast.DropUserStmt{IsDropRole: true, IfExists: true, UserList: tmp}
 	}
 
 DropStatsStmt:
@@ -4836,7 +4867,7 @@ WindowingClause:
 WindowNameOrSpec:
 	WindowName
 	{
-		$$ = ast.WindowSpec{Ref: $1.(model.CIStr)}
+		$$ = ast.WindowSpec{Name: $1.(model.CIStr), OnlyAlias: true,}
 	}
 |	WindowSpec
 	{
@@ -5513,6 +5544,24 @@ UnionSelect:
 UnionOpt:
 DefaultTrueDistinctOpt
 
+/********************Change Statement*******************************/
+ChangeStmt:
+	"CHANGE" "PUMP" "TO" "NODE_STATE" eq stringLit forKwd "NODE_ID" stringLit
+	{
+		$$ = &ast.ChangeStmt{
+			NodeType: ast.PumpType,
+			State: $6,
+			NodeID: $9,
+		}
+	}
+|	"CHANGE" "DRAINER" "TO" "NODE_STATE" eq stringLit forKwd "NODE_ID" stringLit
+	{
+		$$ = &ast.ChangeStmt{
+			NodeType: ast.DrainerType,
+			State: $6,
+			NodeID: $9,
+		}
+	}
 
 /********************Set Statement*******************************/
 SetStmt:
@@ -6472,6 +6521,7 @@ Statement:
 |	DeleteFromStmt
 |	ExecuteStmt
 |	ExplainStmt
+|	ChangeStmt
 |	CreateDatabaseStmt
 |	CreateIndexStmt
 |	CreateTableStmt
