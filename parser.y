@@ -167,7 +167,6 @@ import (
 	like			"LIKE"
 	limit			"LIMIT"
 	lines 			"LINES"
-	linear			"LINEAR"
 	load			"LOAD"
 	localTime		"LOCALTIME"
 	localTs			"LOCALTIMESTAMP"
@@ -946,7 +945,6 @@ import (
 	LockType		"Table locks type"
 	logAnd			"logical and operator"
 	logOr			"logical or operator"
-	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
 	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
 
@@ -1986,21 +1984,16 @@ PartitionOpt:
 	{
 		$$ = nil
 	}
-|	"PARTITION" "BY" LinearOpt "HASH" '(' Expression ')' PartitionNumOpt
+|	"PARTITION" "BY" "HASH" '(' Expression ')' PartitionNumOpt
 	{
 		tmp := &ast.PartitionOptions{
 			Tp: model.PartitionTypeHash,
-			Expr: $6.(ast.ExprNode),
+			Expr: $5.(ast.ExprNode),
 			// If you do not include a PARTITIONS clause, the number of partitions defaults to 1
 			Num: 1,
 		}
-		if $8 != nil {
-			tmp.Num = getUint64FromNUM($8)
-		}
-		if $3 != "" {
-			yylex.Errorf("linear is not supported, ignore partition")
-			parser.lastErrorAsWarn()
-			tmp = nil
+		if $7 != nil {
+			tmp.Num = getUint64FromNUM($7)
 		}
 		$$ = tmp
 	}
@@ -2027,15 +2020,6 @@ PartitionOpt:
 			ColumnNames:	$6.([]*ast.ColumnName),
 			Definitions:	defs,
 		}
-	}
-
-LinearOpt:
-	{
-		$$ = ""
-	}
-| "LINEAR"
-	{
-		$$ = $1
 	}
 
 SubPartitionOpt:
@@ -5558,7 +5542,7 @@ ChangeStmt:
 	{
 		$$ = &ast.ChangeDrainerStmt{
 			State: $6.(string),
-			IpAndPort: $10.(string),
+			IpAndPort: $9.(string),
 		}
 	}
 
