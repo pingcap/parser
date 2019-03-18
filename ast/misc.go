@@ -790,16 +790,14 @@ func (n *SetRoleStmt) Restore(ctx *RestoreCtx) error {
 	case SetRoleAllExcept:
 		ctx.WriteKeyWord(" ALL EXCEPT")
 	}
-	if len(n.RoleList) > 0 {
-		for i, role := range n.RoleList {
-			ctx.WritePlain(" ")
-			err := role.Restore(ctx)
-			if err != nil {
-				return errors.Annotate(err, "An error occurred while restore SetRoleStmt.RoleList")
-			}
-			if i != len(n.RoleList)-1 {
-				ctx.WritePlain(",")
-			}
+	for i, role := range n.RoleList {
+		ctx.WritePlain(" ")
+		err := role.Restore(ctx)
+		if err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetRoleStmt.RoleList")
+		}
+		if i != len(n.RoleList)-1 {
+			ctx.WritePlain(",")
 		}
 	}
 	return nil
