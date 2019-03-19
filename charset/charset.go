@@ -169,6 +169,8 @@ const (
 	CharsetLatin1 = "latin1"
 	// CollationLatin1 is the default collation for CharsetLatin1.
 	CollationLatin1 = "latin1_bin"
+	// NULL is for the NULL type, such as TypeDate, TypeDateTIme, etc.
+	NULL = "NULL"
 )
 
 var collations = []*Collation{
