@@ -753,11 +753,11 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"set names utf8", true, "SET NAMES 'utf8'"},
 		{"set names utf8 collate utf8_unicode_ci", true, "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'"},
 		{"set names binary", true, "SET NAMES 'binary'"},
-		{"set role `role1`", true, ""},
-		{"SET ROLE DEFAULT;", true, ""},
-		{"SET ROLE ALL;", true, ""},
-		{"SET ROLE ALL EXCEPT 'role1', 'role2';", true, ""},
-		{"SET DEFAULT ROLE administrator, developer TO 'joe'@'10.0.0.1';", true, ""},
+		{"set role `role1`", true, "SET ROLE `role1`@`%`"},
+		{"SET ROLE DEFAULT", true, "SET ROLE DEFAULT"},
+		{"SET ROLE ALL", true, "SET ROLE ALL"},
+		{"SET ROLE ALL EXCEPT `role1`, `role2`", true, "SET ROLE ALL EXCEPT `role1`@`%`, `role2`@`%`"},
+		{"SET DEFAULT ROLE administrator, developer TO 'joe'@'10.0.0.1'", true, ""},
 		// for set names and set vars
 		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
@@ -936,6 +936,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT USER();", true, "SELECT USER()"},
 		{"SELECT USER(1);", true, "SELECT USER(1)"},
 		{"SELECT CURRENT_USER();", true, "SELECT CURRENT_USER()"},
+		{"SELECT CURRENT_ROLE();", true, "SELECT CURRENT_ROLE()"},
 		{"SELECT CURRENT_USER;", true, "SELECT CURRENT_USER()"},
 		{"SELECT CONNECTION_ID();", true, "SELECT CONNECTION_ID()"},
 		{"SELECT VERSION();", true, "SELECT VERSION()"},
@@ -2761,6 +2762,13 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 		    partition by range (id)
 		    subpartition by hash (id)
 		    (partition p0 values less than (42))`, true, "CREATE TABLE `t` (`id` INT) PARTITION BY RANGE (`id`) (PARTITION `p0` VALUES LESS THAN (42))"},
+		{`create table t1 (a varchar(5), b int signed, c varchar(10), d datetime)
+		partition by range columns(b,c)
+		subpartition by hash(to_seconds(d))
+		( partition p0 values less than (2, 'b'),
+		  partition p1 values less than (4, 'd'),
+		  partition p2 values less than (10, 'za'));`, true,
+			"CREATE TABLE `t1` (`a` VARCHAR(5),`b` INT,`c` VARCHAR(10),`d` DATETIME) PARTITION BY RANGE COLUMNS(`b`,`c`) (PARTITION `p0` VALUES LESS THAN (2, 'b'),PARTITION `p1` VALUES LESS THAN (4, 'd'),PARTITION `p2` VALUES LESS THAN (10, 'za'))"},
 		{`CREATE TABLE t1 (a INT, b TIMESTAMP DEFAULT '0000-00-00 00:00:00')
 ENGINE=INNODB PARTITION BY LINEAR HASH (a) PARTITIONS 1;`, true, "CREATE TABLE `t1` (`a` INT,`b` TIMESTAMP DEFAULT '0000-00-00 00:00:00') ENGINE = INNODB"},
 	}
