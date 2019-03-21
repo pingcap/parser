@@ -7696,6 +7696,10 @@ GrantStmt:
 GrantRoleStmt:
 	 "GRANT" RolenameList "TO" UsernameList
 	 {
+		$$ = &ast.GrantRoleStmt {
+			Roles: $2.([]*auth.RoleIdentity),
+			Users: $4.([]*auth.UserIdentity),
+		}
 	 }
 
 WithGrantOptionOpt:
