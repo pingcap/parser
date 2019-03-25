@@ -479,18 +479,6 @@ type ChangeStmt struct {
 	NodeID   string
 }
 
-// Restore implements Node interface.
-func (n *ChangeStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CHANGE ")
-	ctx.WriteKeyWord(n.NodeType)
-	ctx.WriteKeyWord(" TO NODE_STATE ")
-	ctx.WritePlain("=")
-	ctx.WriteString(n.State)
-	ctx.WriteKeyWord(" FOR NODE_ID ")
-	ctx.WriteString(n.NodeID)
-	return nil
-}
-
 // SecureText implements SensitiveStatement interface.
 func (n *ChangeStmt) SecureText() string {
 	return fmt.Sprintf("change %s to node_state='%s' for node_id '%s'", strings.ToLower(n.NodeType), n.State, n.NodeID)

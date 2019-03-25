@@ -202,14 +202,3 @@ func (ts *testMiscSuite) TestUserSpec(c *C) {
 	c.Assert(ok, IsTrue)
 	c.Assert(pwd, Equals, "")
 }
-
-func (ts *testMiscSuite) TestChangeStmtRestore(c *C) {
-	testCases := []NodeRestoreTestCase{
-		{"CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:9090'", "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:9090'"},
-		{"CHANGE DRAINER TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:9090'", "CHANGE DRAINER TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:9090'"},
-	}
-	extractNodeFunc := func(node Node) Node {
-		return node.(*ChangeStmt)
-	}
-	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
-}
