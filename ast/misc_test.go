@@ -203,20 +203,6 @@ func (ts *testMiscSuite) TestUserSpec(c *C) {
 	c.Assert(pwd, Equals, "")
 }
 
-func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
-	testCases := []NodeRestoreTestCase{
-		{"TIDB_SMJ(`t1`)", "TIDB_SMJ(`t1`)"},
-		{"TIDB_SMJ(t1)", "TIDB_SMJ(`t1`)"},
-		{"TIDB_SMJ(t1,t2)", "TIDB_SMJ(`t1`, `t2`)"},
-		{"TIDB_INLJ(t1,t2)", "TIDB_INLJ(`t1`, `t2`)"},
-		{"TIDB_HJ(t1,t2)", "TIDB_HJ(`t1`, `t2`)"},
-		{"MAX_EXECUTION_TIME(3000)", "MAX_EXECUTION_TIME(3000)"},
-	}
-	extractNodeFunc := func(node Node) Node {
-		return node.(*SelectStmt).TableHints[0]
-	}
-	RunNodeRestoreTest(c, testCases, "select /*+ %s */ * from t1 join t2", extractNodeFunc)
-}
 func (ts *testMiscSuite) TestChangeStmtRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:9090'", "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:9090'"},
