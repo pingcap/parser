@@ -127,6 +127,20 @@ load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by
 	}
 }
 
+// test Change Pump or drainer status sql parser
+func (ts *testMiscSuite) TestChangeStmt(c *C) {
+	sql := `change pump to node_state='paused' for node_id '127.0.0.1:8249';
+change drainer to node_state='paused' for node_id '127.0.0.1:8249';`
+
+	p := parser.New()
+	stmts, _, err := p.Parse(sql, "", "")
+	c.Assert(err, IsNil)
+	for _, stmt := range stmts {
+		stmt.Accept(visitor{})
+		stmt.Accept(visitor1{})
+	}
+}
+
 func (ts *testMiscSuite) TestSensitiveStatement(c *C) {
 	positive := []StmtNode{
 		&SetPwdStmt{},
