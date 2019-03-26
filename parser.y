@@ -1501,18 +1501,7 @@ ColumnDefList:
 ColumnDef:
 	ColumnName Type ColumnOptionListOpt
 	{
-		def := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: $2.(*types.FieldType)}
-		opts := make([]*ast.ColumnOption, 0)
-		for _, opt := range $3.([]*ast.ColumnOption) {
-			// ColumnOptionCollate is only used to set FieldType.Collate
-			if opt.Tp == ast.ColumnOptionCollate {
-				def.Tp.Collate = opt.StrValue
-			} else {
-				opts = append(opts, opt)
-			}
-		}
-		def.Options = opts
-		$$ = def
+		$$ = &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: $2.(*types.FieldType), Options: $3.([]*ast.ColumnOption)}
 	}
 
 ColumnName:

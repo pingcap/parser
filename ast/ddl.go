@@ -419,7 +419,11 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
 		}
 	case ColumnOptionCollate:
-		// Do nothing, we should never see a ColumnOptionCollate after parsing
+		if n.StrValue == "" {
+			return errors.New("Empty ColumnOption COLLATE")
+		}
+		ctx.WriteKeyWord("COLLATE ")
+		ctx.WritePlain(n.StrValue)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}

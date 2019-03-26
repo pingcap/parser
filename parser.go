@@ -15806,18 +15806,7 @@ yynewstate:
 		}
 	case 80:
 		{
-			def := &ast.ColumnDef{Name: yyS[yypt-2].item.(*ast.ColumnName), Tp: yyS[yypt-1].item.(*types.FieldType)}
-			opts := make([]*ast.ColumnOption, 0)
-			for _, opt := range yyS[yypt-0].item.([]*ast.ColumnOption) {
-				// ColumnOptionCollate is only used to set FieldType.Collate
-				if opt.Tp == ast.ColumnOptionCollate {
-					def.Tp.Collate = opt.StrValue
-				} else {
-					opts = append(opts, opt)
-				}
-			}
-			def.Options = opts
-			parser.yyVAL.item = def
+			parser.yyVAL.item = &ast.ColumnDef{Name: yyS[yypt-2].item.(*ast.ColumnName), Tp: yyS[yypt-1].item.(*types.FieldType), Options: yyS[yypt-0].item.([]*ast.ColumnOption)}
 		}
 	case 81:
 		{
