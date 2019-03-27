@@ -182,7 +182,6 @@ import (
 	minuteMicrosecond	"MINUTE_MICROSECOND"
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
-	
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
 	nthValue		"NTH_VALUE"
@@ -447,6 +446,7 @@ import (
 	curTime			"CURTIME"
 	dateAdd			"DATE_ADD"
 	dateSub			"DATE_SUB"
+	drainer         "DRAINER"
 	extract			"EXTRACT"
 	getFormat		"GET_FORMAT"
 	groupConcat		"GROUP_CONCAT"
@@ -457,8 +457,11 @@ import (
 	min			"MIN"
 	max			"MAX"
 	maxExecutionTime	"MAX_EXECUTION_TIME"
-	now			"NOW"
+	node_id			"NODE_ID"
+	node_state		"NODE_STATE"
+	now			    "NOW"
 	position		"POSITION"
+	pump            "PUMP"
 	recent			"RECENT"
 	std	            "STD"
 	stddev			"STDDEV"
@@ -482,21 +485,14 @@ import (
 	variance		"VARIANCE"
 	varPop			"VAR_POP"
 	varSamp			"VAR_SAMP"
-	pump            "PUMP"
-	drainer         "DRAINER"
-	node_id			"NODE_ID"
-	node_state		"NODE_STATE"
-
 
 	/* The following tokens belong to TiDBKeyword. */
 	admin		"ADMIN"
 	buckets		"BUCKETS"
 	cancel		"CANCEL"
-	ddl		"DDL"
-	
+	ddl		    "DDL"
 	jobs		"JOBS"
 	job		    "JOB"
-	
 	stats		"STATS"
 	statsMeta       "STATS_META"
 	statsHistograms "STATS_HISTOGRAMS"

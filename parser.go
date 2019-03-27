@@ -196,7 +196,7 @@ const (
 	do                         = 57599
 	doubleAtIdentifier         = 57350
 	doubleType                 = 57406
-	drainer                    = 57772
+	drainer                    = 57736
 	drop                       = 57407
 	dual                       = 57408
 	duplicate                  = 57600
@@ -220,7 +220,7 @@ const (
 	execute                    = 57611
 	exists                     = 57412
 	explain                    = 57413
-	extract                    = 57736
+	extract                    = 57737
 	falseKwd                   = 57415
 	fields                     = 57612
 	first                      = 57613
@@ -240,12 +240,12 @@ const (
 	function                   = 57619
 	ge                         = 57825
 	generated                  = 57423
-	getFormat                  = 57737
+	getFormat                  = 57738
 	global                     = 57699
 	grant                      = 57424
 	grants                     = 57620
 	group                      = 57425
-	groupConcat                = 57738
+	groupConcat                = 57739
 	groups                     = 57426
 	hash                       = 57621
 	having                     = 57427
@@ -268,10 +268,10 @@ const (
 	indexes                    = 57625
 	infile                     = 57436
 	inner                      = 57437
-	inplace                    = 57740
+	inplace                    = 57741
 	insert                     = 57442
 	insertValues               = 57841
-	instant                    = 57741
+	instant                    = 57742
 	int1Type                   = 57444
 	int2Type                   = 57445
 	int3Type                   = 57446
@@ -280,7 +280,7 @@ const (
 	intLit                     = 57819
 	intType                    = 57443
 	integerType                = 57438
-	internal                   = 57742
+	internal                   = 57743
 	interval                   = 57439
 	into                       = 57440
 	invalid                    = 57351
@@ -330,9 +330,9 @@ const (
 	lowerThanStringLitToken    = 57838
 	lsh                        = 57829
 	master                     = 57633
-	max                        = 57744
+	max                        = 57745
 	maxConnectionsPerHour      = 57640
-	maxExecutionTime           = 57745
+	maxExecutionTime           = 57746
 	maxQueriesPerHour          = 57641
 	maxRows                    = 57639
 	maxUpdatesPerHour          = 57642
@@ -343,7 +343,7 @@ const (
 	mediumtextType             = 57472
 	merge                      = 57644
 	microsecond                = 57634
-	min                        = 57743
+	min                        = 57744
 	minRows                    = 57645
 	minute                     = 57635
 	minuteMicrosecond          = 57473
@@ -358,15 +358,15 @@ const (
 	neg                        = 57848
 	neq                        = 57830
 	neqSynonym                 = 57831
-	next_row_id                = 57739
+	next_row_id                = 57740
 	no                         = 57648
 	noWriteToBinLog            = 57477
-	node_id                    = 57773
-	node_state                 = 57774
+	node_id                    = 57747
+	node_state                 = 57748
 	none                       = 57649
 	not                        = 57476
 	not2                       = 57835
-	now                        = 57746
+	now                        = 57749
 	nthValue                   = 57478
 	ntile                      = 57479
 	null                       = 57480
@@ -395,7 +395,7 @@ const (
 	pipes                      = 57355
 	pipesAsOr                  = 57655
 	plugins                    = 57656
-	position                   = 57747
+	position                   = 57750
 	preceding                  = 57657
 	precisionType              = 57493
 	prepare                    = 57658
@@ -405,7 +405,7 @@ const (
 	process                    = 57660
 	processlist                = 57661
 	profiles                   = 57662
-	pump                       = 57771
+	pump                       = 57751
 	quarter                    = 57663
 	queries                    = 57665
 	query                      = 57664
@@ -414,7 +414,7 @@ const (
 	rank                       = 57498
 	read                       = 57499
 	realType                   = 57500
-	recent                     = 57748
+	recent                     = 57752
 	recover                    = 57667
 	redundant                  = 57668
 	references                 = 57501
@@ -473,18 +473,18 @@ const (
 	statsMeta                  = 57782
 	statsPersistent            = 57693
 	status                     = 57694
-	std                        = 57749
-	stddev                     = 57750
-	stddevPop                  = 57751
-	stddevSamp                 = 57752
+	std                        = 57753
+	stddev                     = 57754
+	stddevPop                  = 57755
+	stddevSamp                 = 57756
 	stored                     = 57523
 	straightJoin               = 57521
 	stringLit                  = 57348
-	subDate                    = 57753
+	subDate                    = 57757
 	subpartition               = 57695
 	subpartitions              = 57696
-	substring                  = 57755
-	sum                        = 57754
+	substring                  = 57759
+	sum                        = 57758
 	super                      = 57697
 	tableKwd                   = 57522
 	tableRefPriority           = 57845
@@ -501,28 +501,28 @@ const (
 	tidbINLJ                   = 57789
 	tidbSMJ                    = 57788
 	timeType                   = 57706
-	timestampAdd               = 57756
-	timestampDiff              = 57757
+	timestampAdd               = 57760
+	timestampDiff              = 57761
 	timestampType              = 57707
 	tinyIntType                = 57527
 	tinyblobType               = 57526
 	tinytextType               = 57528
 	to                         = 57529
-	tokudbDefault              = 57758
-	tokudbFast                 = 57759
-	tokudbLzma                 = 57760
-	tokudbQuickLZ              = 57761
-	tokudbSmall                = 57763
-	tokudbSnappy               = 57762
-	tokudbUncompressed         = 57764
-	tokudbZlib                 = 57765
-	top                        = 57766
+	tokudbDefault              = 57762
+	tokudbFast                 = 57763
+	tokudbLzma                 = 57764
+	tokudbQuickLZ              = 57765
+	tokudbSmall                = 57767
+	tokudbSnappy               = 57766
+	tokudbUncompressed         = 57768
+	tokudbZlib                 = 57769
+	top                        = 57770
 	trace                      = 57708
 	trailing                   = 57530
 	transaction                = 57709
 	trigger                    = 57531
 	triggers                   = 57710
-	trim                       = 57767
+	trim                       = 57771
 	trueKwd                    = 57532
 	truncate                   = 57711
 	unbounded                  = 57712
@@ -544,12 +544,12 @@ const (
 	utcTimestamp               = 57542
 	value                      = 57717
 	values                     = 57544
-	varPop                     = 57769
-	varSamp                    = 57770
+	varPop                     = 57773
+	varSamp                    = 57774
 	varbinaryType              = 57547
 	varcharType                = 57546
 	variables                  = 57718
-	variance                   = 57768
+	variance                   = 57772
 	view                       = 57719
 	virtual                    = 57548
 	warnings                   = 57722
@@ -611,7 +611,7 @@ var (
 		57596: 38,  // definer (973x)
 		57612: 39,  // fields (973x)
 		57623: 40,  // identified (973x)
-		57745: 41,  // maxExecutionTime (973x)
+		57746: 41,  // maxExecutionTime (973x)
 		57671: 42,  // respect (973x)
 		57787: 43,  // tidbHJ (973x)
 		57789: 44,  // tidbINLJ (973x)
@@ -642,7 +642,7 @@ var (
 		57611: 69,  // execute (968x)
 		57699: 70,  // global (968x)
 		57627: 71,  // jsonType (968x)
-		57739: 72,  // next_row_id (968x)
+		57740: 72,  // next_row_id (968x)
 		57661: 73,  // processlist (968x)
 		57664: 74,  // query (968x)
 		57683: 75,  // session (968x)
@@ -661,22 +661,22 @@ var (
 		57595: 88,  // deallocate (967x)
 		57598: 89,  // disable (967x)
 		57599: 90,  // do (967x)
-		57772: 91,  // drainer (967x)
+		57736: 91,  // drainer (967x)
 		57601: 92,  // dynamic (967x)
 		57602: 93,  // enable (967x)
 		57614: 94,  // fixed (967x)
 		57615: 95,  // flush (967x)
-		57740: 96,  // inplace (967x)
-		57741: 97,  // instant (967x)
+		57741: 96,  // inplace (967x)
+		57742: 97,  // instant (967x)
 		57780: 98,  // job (967x)
 		57779: 99,  // jobs (967x)
 		57637: 100, // modify (967x)
 		57648: 101, // no (967x)
-		57773: 102, // node_id (967x)
-		57774: 103, // node_state (967x)
+		57747: 102, // node_id (967x)
+		57748: 103, // node_state (967x)
 		57650: 104, // nulls (967x)
 		57656: 105, // plugins (967x)
-		57771: 106, // pump (967x)
+		57751: 106, // pump (967x)
 		57668: 107, // redundant (967x)
 		57675: 108, // rollback (967x)
 		57676: 109, // routine (967x)
@@ -685,14 +685,14 @@ var (
 		57781: 112, // stats (967x)
 		57696: 113, // subpartitions (967x)
 		57707: 114, // timestampType (967x)
-		57758: 115, // tokudbDefault (967x)
-		57759: 116, // tokudbFast (967x)
-		57760: 117, // tokudbLzma (967x)
-		57761: 118, // tokudbQuickLZ (967x)
-		57763: 119, // tokudbSmall (967x)
-		57762: 120, // tokudbSnappy (967x)
-		57764: 121, // tokudbUncompressed (967x)
-		57765: 122, // tokudbZlib (967x)
+		57762: 115, // tokudbDefault (967x)
+		57763: 116, // tokudbFast (967x)
+		57764: 117, // tokudbLzma (967x)
+		57765: 118, // tokudbQuickLZ (967x)
+		57767: 119, // tokudbSmall (967x)
+		57766: 120, // tokudbSnappy (967x)
+		57768: 121, // tokudbUncompressed (967x)
+		57769: 122, // tokudbZlib (967x)
 		57708: 123, // trace (967x)
 		57558: 124, // action (966x)
 		57560: 125, // always (966x)
@@ -720,7 +720,7 @@ var (
 		57620: 147, // grants (966x)
 		57723: 148, // identSQLErrors (966x)
 		57625: 149, // indexes (966x)
-		57742: 150, // internal (966x)
+		57743: 150, // internal (966x)
 		57626: 151, // invoker (966x)
 		57630: 152, // last (966x)
 		57631: 153, // less (966x)
@@ -738,7 +738,7 @@ var (
 		57660: 165, // process (966x)
 		57662: 166, // profiles (966x)
 		57665: 167, // queries (966x)
-		57748: 168, // recent (966x)
+		57752: 168, // recent (966x)
 		57667: 169, // recover (966x)
 		57669: 170, // reload (966x)
 		57670: 171, // repeatable (966x)
@@ -758,7 +758,7 @@ var (
 		57703: 185, // temptable (966x)
 		57704: 186, // textType (966x)
 		57705: 187, // than (966x)
-		57766: 188, // top (966x)
+		57770: 188, // top (966x)
 		57709: 189, // transaction (966x)
 		57710: 190, // triggers (966x)
 		57713: 191, // uncommitted (966x)
@@ -778,15 +778,15 @@ var (
 		57734: 205, // dateAdd (965x)
 		57735: 206, // dateSub (965x)
 		57609: 207, // escape (965x)
-		57736: 208, // extract (965x)
-		57737: 209, // getFormat (965x)
-		57738: 210, // groupConcat (965x)
+		57737: 208, // extract (965x)
+		57738: 209, // getFormat (965x)
+		57739: 210, // groupConcat (965x)
 		57346: 211, // identifier (965x)
-		57744: 212, // max (965x)
-		57743: 213, // min (965x)
+		57745: 212, // max (965x)
+		57744: 213, // min (965x)
 		57646: 214, // names (965x)
-		57746: 215, // now (965x)
-		57747: 216, // position (965x)
+		57749: 215, // now (965x)
+		57750: 216, // position (965x)
 		57666: 217, // quick (965x)
 		57673: 218, // reverse (965x)
 		57677: 219, // rowCount (965x)
@@ -794,19 +794,19 @@ var (
 		57698: 221, // some (965x)
 		57690: 222, // sqlCache (965x)
 		57691: 223, // sqlNoCache (965x)
-		57749: 224, // std (965x)
-		57750: 225, // stddev (965x)
-		57751: 226, // stddevPop (965x)
-		57752: 227, // stddevSamp (965x)
-		57753: 228, // subDate (965x)
-		57755: 229, // substring (965x)
-		57754: 230, // sum (965x)
-		57756: 231, // timestampAdd (965x)
-		57757: 232, // timestampDiff (965x)
-		57767: 233, // trim (965x)
-		57768: 234, // variance (965x)
-		57769: 235, // varPop (965x)
-		57770: 236, // varSamp (965x)
+		57753: 224, // std (965x)
+		57754: 225, // stddev (965x)
+		57755: 226, // stddevPop (965x)
+		57756: 227, // stddevSamp (965x)
+		57757: 228, // subDate (965x)
+		57759: 229, // substring (965x)
+		57758: 230, // sum (965x)
+		57760: 231, // timestampAdd (965x)
+		57761: 232, // timestampDiff (965x)
+		57771: 233, // trim (965x)
+		57772: 234, // variance (965x)
+		57773: 235, // varPop (965x)
+		57774: 236, // varSamp (965x)
 		40:    237, // '(' (828x)
 		57483: 238, // on (805x)
 		57348: 239, // stringLit (787x)
