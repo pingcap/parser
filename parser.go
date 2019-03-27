@@ -361,8 +361,8 @@ const (
 	next_row_id                = 57739
 	no                         = 57648
 	noWriteToBinLog            = 57477
-	node_id                    = 57778
-	node_state                 = 57779
+	nodeID                     = 57778
+	nodeState                  = 57779
 	none                       = 57649
 	not                        = 57476
 	not2                       = 57835
@@ -672,8 +672,8 @@ var (
 		57776: 99,  // jobs (967x)
 		57637: 100, // modify (967x)
 		57648: 101, // no (967x)
-		57778: 102, // node_id (967x)
-		57779: 103, // node_state (967x)
+		57778: 102, // nodeID (967x)
+		57779: 103, // nodeState (967x)
 		57650: 104, // nulls (967x)
 		57656: 105, // plugins (967x)
 		57780: 106, // pump (967x)
@@ -1603,8 +1603,8 @@ var (
 		"jobs",
 		"modify",
 		"no",
-		"node_id",
-		"node_state",
+		"nodeID",
+		"nodeState",
 		"nulls",
 		"plugins",
 		"pump",
