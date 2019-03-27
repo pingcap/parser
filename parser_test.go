@@ -573,6 +573,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show stats_healthy.
 		{"show stats_healthy", true},
 		{"show stats_healthy where table_name = 't'", true},
+		// for show pump/drainer status.
+		{"show pump status", true},
+		{"show drainer status", true},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true},
@@ -647,6 +650,10 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush status", true},
 		{"flush tidb plugins plugin1", true},
 		{"flush tidb plugins plugin1, plugin2", true},
+
+		// for change statement
+		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true},
+		{"change drainer to node_state ='paused' for node_id '127.0.0.1:8249'", true},
 	}
 	s.RunTest(c, table)
 }
@@ -1432,6 +1439,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (a.b, b);", false},
 		{"CREATE TABLE foo (a, b.c);", false},
 		{"CREATE TABLE (name CHAR(50) BINARY)", false},
+		// test use key word as column name
+		{"CREATE TABLE foo (pump varchar(50), b int);", true},
+		{"CREATE TABLE foo (drainer varchar(50), b int);", true},
+		{"CREATE TABLE foo (node_id varchar(50), b int);", true},
+		{"CREATE TABLE foo (node_state varchar(50), b int);", true},
 		// for table option
 		{"create table t (c int) avg_row_length = 3", true},
 		{"create table t (c int) avg_row_length 3", true},
