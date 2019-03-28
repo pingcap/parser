@@ -651,7 +651,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush tidb plugins plugin1", true},
 		{"flush tidb plugins plugin1, plugin2", true},
 
-		// for change statement
+		// for change pump/drainer status statement
 		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true},
 		{"change drainer to node_state ='paused' for node_id '127.0.0.1:8249'", true},
 	}
