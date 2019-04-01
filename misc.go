@@ -132,6 +132,7 @@ func init() {
 }
 
 var tokenMap = map[string]int{
+	"ACCOUNT":                  account,
 	"ACTION":                   action,
 	"ADD":                      add,
 	"ADDDATE":                  addDate,
@@ -256,6 +257,7 @@ var tokenMap = map[string]int{
 	"EXCEPT":                   except,
 	"EXECUTE":                  execute,
 	"EXISTS":                   exists,
+	"EXPIRE":                   expire,
 	"EXPLAIN":                  explain,
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
@@ -364,6 +366,7 @@ var tokenMap = map[string]int{
 	"NAMES":                    names,
 	"NATIONAL":                 national,
 	"NATURAL":                  natural,
+	"NEVER":                    never,
 	"NEXT_ROW_ID":              next_row_id,
 	"NO":                       no,
 	"NO_WRITE_TO_BINLOG":       noWriteToBinLog,
