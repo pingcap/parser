@@ -324,7 +324,8 @@ func (ft *FieldType) StorageLength() int {
 // statements(like `SHOW CREATE TABLE`) from attaching a CHARACTER SET clause to the column.
 func HasCharset(ft *FieldType) bool {
 	switch ft.Tp {
-	case mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString, mysql.TypeBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
+	case mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString, mysql.TypeBlob,
+		mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeLongBlob:
 		return !mysql.HasBinaryFlag(ft.Flag)
 	case mysql.TypeEnum, mysql.TypeSet:
 		return true
