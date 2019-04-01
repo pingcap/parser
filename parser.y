@@ -212,6 +212,7 @@ import (
 	rename         		"RENAME"
 	repeat			"REPEAT"
 	replace			"REPLACE"
+	require			"REQUIRE"
 	restrict		"RESTRICT"
 	revoke			"REVOKE"
 	right			"RIGHT"
@@ -226,6 +227,7 @@ import (
 	smallIntType		"SMALLINT"
 	sql			"SQL"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
+	ssl	            "SSL"
 	starting		"STARTING"
 	straightJoin		"STRAIGHT_JOIN"
 	tableKwd		"TABLE"
@@ -285,6 +287,7 @@ import (
 	cascaded	"CASCADED"
 	charsetKwd	"CHARSET"
 	checksum	"CHECKSUM"
+	cipher	"CIPHER"
 	cleanup		"CLEANUP"
 	client		"CLIENT"
 	coalesce	"COALESCE"
@@ -333,6 +336,7 @@ import (
 	hour		"HOUR"
 	identified	"IDENTIFIED"
 	isolation	"ISOLATION"
+	issuer	"ISSUER"
 	indexes		"INDEXES"
 	invoker		"INVOKER"
 	jsonType	"JSON"
@@ -403,6 +407,7 @@ import (
 	start		"START"
 	statsPersistent	"STATS_PERSISTENT"
 	status		"STATUS"
+	subject	"SUBJECT"
 	subpartition	"SUBPARTITION"
 	subpartitions	"SUBPARTITIONS"
 	super		"SUPER"
@@ -434,6 +439,7 @@ import (
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
 	yearType	"YEAR"
+	x509	"X509"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
@@ -683,6 +689,7 @@ import (
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
 	Enclosed			"Enclosed by"
+	EncryptConnOpt		"Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
 	Escaped				"Escaped by"
@@ -773,6 +780,8 @@ import (
 	OnUpdateOpt			"optional ON UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
+	RequireList			"require list"
+	RequireListElement			"require list element"
 	Rolename            "Rolename"
 	RolenameList            "RolenameList"
 	RoleSpec		"Rolename and auth option"
@@ -7500,7 +7509,7 @@ CommaOpt:
  *  https://dev.mysql.com/doc/refman/5.7/en/account-management-sql.html
  ************************************************************************************/
 CreateUserStmt:
-	"CREATE" "USER" IfNotExists UserSpecList
+	"CREATE" "USER" IfNotExists UserSpecList EncryptConnOpt
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 		$$ = &ast.CreateUserStmt{
@@ -7563,6 +7572,51 @@ UserSpecList:
 	{
 		$$ = append($1.([]*ast.UserSpec), $3.(*ast.UserSpec))
 	}
+
+EncryptConnOpt:
+	{
+		$$ = nil
+    }
+|	"REQUIRE" "NONE"
+	{
+		$$ = nil
+    }
+|	"REQUIRE" "SSL"
+	{
+		$$ = nil
+    }
+|	"REQUIRE" "X509"
+	{
+		$$ = nil
+    }
+|	"REQUIRE" RequireList
+	{
+		$$ = nil
+    }
+
+RequireList:
+	RequireListElement
+	{
+		$$ = nil
+    }
+|	RequireListElement "AND" RequireList
+	{
+		$$ = nil
+    }
+
+RequireListElement:
+	"ISSUER" StringLiteral
+	{
+		$$ = nil
+    }
+|	"SUBJECT" StringLiteral
+	{
+		$$ = nil
+    }
+|	"CIPHER" StringLiteral
+	{
+		$$ = nil
+    }
 
 AuthOption:
 	{
