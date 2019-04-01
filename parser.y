@@ -7586,7 +7586,7 @@ UserSpecList:
 	}
 
 ConnectionOptions:
-    {
+	{
 		$$ = nil
 	}
 |	"WITH" ConnectionOptionList
@@ -7688,23 +7688,23 @@ PasswordOrLockOptionList:
 
 PasswordOrLockOption:
 	"ACCOUNT" "UNLOCK"
-    {
+	{
 		$$ = nil
 	}
 |	"ACCOUNT" "LOCK"
-    {
+	{
 		$$ = nil
 	}
 |	PasswordExpire
-    {
+	{
 		$$ = nil
 	}
 |	PasswordExpire "INTERVAL" NUM "DAY"
-    {
+	{
 		$$ = nil
 	}
 |	PasswordExpire "NEVER"
-    {
+	{
 		$$ = nil
 	}
 |	PasswordExpire "DEFAULT"
