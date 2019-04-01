@@ -543,22 +543,6 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show ddl jobs 20;", true, "ADMIN SHOW DDL JOBS 20"},
 		{"admin show ddl jobs -1;", false, ""},
 
-		{"admin show ddl job queries 1", true, ""},
-		{"admin show ddl job queries 1, 2, 3, 4", true, ""},
-		{"admin show t1 next_row_id", true, ""},
-		{"admin check table t1, t2;", true, ""},
-		{"admin check index tableName idxName;", true, ""},
-		{"admin check index tableName idxName (1, 2), (4, 5);", true, ""},
-		{"admin checksum table t1, t2;", true, ""},
-		{"admin cancel ddl jobs 1", true, ""},
-		{"admin cancel ddl jobs 1, 2", true, ""},
-		{"admin recover index t1 idx_a", true, ""},
-		{"admin cleanup index t1 idx_a", true, ""},
-		{"admin show slow top 3", true, ""},
-		{"admin show slow top internal 7", true, ""},
-		{"admin show slow top all 9", true, ""},
-		{"admin show slow recent 11", true, ""},
-
 		{"admin show ddl job queries 1", true, "ADMIN SHOW DDL JOB QUERIES 1"},
 		{"admin show ddl job queries 1, 2, 3, 4", true, "ADMIN SHOW DDL JOB QUERIES 1, 2, 3, 4"},
 		{"admin show t1 next_row_id", true, "ADMIN SHOW `t1` NEXT_ROW_ID"},
@@ -1977,13 +1961,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE bar (m INT) REPLACE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) REPLACE AS SELECT `n` FROM `foo`"},
 
 		// for recover table
-		{"recover table by job 11", true, "RESTORE TABLE BY JOB 11"},
+		{"recover table by job 11", true, "RECOVER TABLE BY JOB 11"},
 		{"recover table by job 11,12,13", false, ""},
 		{"recover table by job", false, ""},
-		{"recover table t1", true, "RESTORE TABLE `t1`"},
+		{"recover table t1", true, "RECOVER TABLE `t1`"},
 		{"recover table t1,t2", false, ""},
 		{"recover table ", false, ""},
-		{"recover table t1 100", true, "RESTORE TABLE `t1` 100"},
+		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
 	}
 	s.RunTest(c, table)

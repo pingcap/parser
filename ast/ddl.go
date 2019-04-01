@@ -1881,7 +1881,7 @@ type RecoverTableStmt struct {
 
 // Restore implements Node interface.
 func (n *RecoverTableStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("RESTORE TABLE ")
+	ctx.WriteKeyWord("RECOVER TABLE ")
 	if n.JobID != 0 {
 		ctx.WriteKeyWord("BY JOB ")
 		ctx.WritePlainf("%d", n.JobID)

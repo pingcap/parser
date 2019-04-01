@@ -1273,19 +1273,6 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 			return err
 		}
 		ctx.WritePlainf(" %s", n.Index)
-	case AdminRestoreTable:
-		ctx.WriteKeyWord("RESTORE TABLE ")
-		if n.JobIDs != nil {
-			ctx.WriteKeyWord("BY JOB ")
-			restoreJobIDs()
-		} else {
-			if err := restoreTables(); err != nil {
-				return err
-			}
-			if n.JobNumber != 0 {
-				ctx.WritePlainf(" %d", n.JobNumber)
-			}
-		}
 	case AdminCleanupIndex:
 		ctx.WriteKeyWord("CLEANUP INDEX ")
 		if err := restoreTables(); err != nil {
