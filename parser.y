@@ -776,9 +776,9 @@ import (
 	PartDefOption			"COMMENT [=] xxx | TABLESPACE [=] tablespace_name | ENGINE [=] xxx"
 	PasswordExpire			"Single password option for create user statement"
 	PasswordOpt			"Password option"
-	PasswordOrLockOption "Single password or lock option for create user statement"
-	PasswordOrLockOptionList "Password or lock options for create user statement"
-	PasswordOrLockOptions "Optional password or lock options for create user statement"
+	PasswordOrLockOption		"Single password or lock option for create user statement"
+	PasswordOrLockOptionList	"Password or lock options for create user statement"
+	PasswordOrLockOptions		"Optional password or lock options for create user statement"
 	ColumnPosition			"Column position [First|After ColumnName]"
 	PrepareSQL			"Prepare statement sql string"
 	PriorityOpt			"Statement priority option"
@@ -7586,23 +7586,23 @@ UserSpecList:
 	}
 
 ConnectionOptions:
-	{
+    {
 		$$ = nil
-    }
+	}
 |	"WITH" ConnectionOptionList
 	{
 		$$ = nil
-    }
+	}
 
 ConnectionOptionList:
 	ConnectionOption
 	{
 		$$ = nil
-    }
+	}
 |	ConnectionOptionList ConnectionOption
 	{
 		$$ = nil
-    }
+	}
 
 ConnectionOption:
 	"MAX_QUERIES_PER_HOUR" NUM
@@ -7625,88 +7625,88 @@ ConnectionOption:
 RequireClause:
 	{
 		$$ = nil
-    }
+	}
 |	"REQUIRE" "NONE"
 	{
 		$$ = nil
-    }
+	}
 |	"REQUIRE" "SSL"
 	{
 		$$ = nil
-    }
+	}
 |	"REQUIRE" "X509"
 	{
 		$$ = nil
-    }
+	}
 |	"REQUIRE" RequireList
 	{
 		$$ = nil
-    }
+	}
 
 RequireList:
 	RequireListElement
 	{
 		$$ = nil
-    }
+	}
 |	RequireListElement "AND" RequireList
 	{
 		$$ = nil
-    }
+	}
 
 RequireListElement:
 	"ISSUER" StringLiteral
 	{
 		$$ = nil
-    }
+	}
 |	"SUBJECT" StringLiteral
 	{
 		$$ = nil
-    }
+	}
 |	"CIPHER" StringLiteral
 	{
 		$$ = nil
-    }
+	}
 
 PasswordOrLockOptions:
 	{
 		$$ = nil
-    }
+	}
 |	PasswordOrLockOptionList
 	{
 		$$ = nil
-    }
+	}
 
 PasswordOrLockOptionList:
 	PasswordOrLockOption
 	{
 		$$ = nil
-    }
+	}
 |	PasswordOrLockOptionList PasswordOrLockOption
 	{
 		$$ = nil
-    }
+	}
 
 PasswordOrLockOption:
 	"ACCOUNT" "UNLOCK"
     {
 		$$ = nil
-    }
+	}
 |	"ACCOUNT" "LOCK"
     {
 		$$ = nil
-    }
+	}
 |	PasswordExpire
     {
 		$$ = nil
-    }
+	}
 |	PasswordExpire "INTERVAL" NUM "DAY"
     {
 		$$ = nil
-    }
+	}
 |	PasswordExpire "NEVER"
     {
 		$$ = nil
-    }
+	}
 |	PasswordExpire "DEFAULT"
 
 PasswordExpire:
@@ -7718,7 +7718,7 @@ PasswordExpire:
 ClearPasswordExpireOptions:
 	{
 		$$ = nil
-    }
+	}
 
 AuthOption:
 	{
