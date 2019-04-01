@@ -227,7 +227,7 @@ import (
 	smallIntType		"SMALLINT"
 	sql			"SQL"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
-	ssl	            "SSL"
+	ssl	            	"SSL"
 	starting		"STARTING"
 	straightJoin		"STRAIGHT_JOIN"
 	tableKwd		"TABLE"
@@ -268,7 +268,7 @@ import (
 	natural			"NATURAL"
 
 	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
-	account     "ACCOUNT"
+	account		"ACCOUNT"
 	action		"ACTION"
 	after		"AFTER"
 	always		"ALWAYS"
@@ -288,7 +288,7 @@ import (
 	cascaded	"CASCADED"
 	charsetKwd	"CHARSET"
 	checksum	"CHECKSUM"
-	cipher	"CIPHER"
+	cipher		"CIPHER"
 	cleanup		"CLEANUP"
 	client		"CLIENT"
 	coalesce	"COALESCE"
@@ -338,7 +338,7 @@ import (
 	hour		"HOUR"
 	identified	"IDENTIFIED"
 	isolation	"ISOLATION"
-	issuer	"ISSUER"
+	issuer		"ISSUER"
 	indexes		"INDEXES"
 	invoker		"INVOKER"
 	jsonType	"JSON"
@@ -410,7 +410,7 @@ import (
 	start		"START"
 	statsPersistent	"STATS_PERSISTENT"
 	status		"STATUS"
-	subject	"SUBJECT"
+	subject		"SUBJECT"
 	subpartition	"SUBPARTITION"
 	subpartitions	"SUBPARTITIONS"
 	super		"SUPER"
@@ -442,7 +442,7 @@ import (
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
 	yearType	"YEAR"
-	x509	"X509"
+	x509		"X509"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
