@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/charset"
-	"github.com/pingcap/tidb/util/hack"
 )
 
 func isLetter(ch rune) bool {
@@ -205,6 +204,7 @@ var tokenMap = map[string]int{
 	"CURRENT_TIME":             currentTime,
 	"CURRENT_TIMESTAMP":        currentTs,
 	"CURRENT_USER":             currentUser,
+	"CURRENT_ROLE":             currentRole,
 	"CURTIME":                  curTime,
 	"DATA":                     data,
 	"DATABASE":                 database,
@@ -235,6 +235,7 @@ var tokenMap = map[string]int{
 	"DIV":                      div,
 	"DO":                       do,
 	"DOUBLE":                   doubleType,
+	"DRAINER":                  drainer,
 	"DROP":                     drop,
 	"DUAL":                     dual,
 	"DUPLICATE":                duplicate,
@@ -251,6 +252,7 @@ var tokenMap = map[string]int{
 	"EVENT":                    event,
 	"EVENTS":                   events,
 	"EXCLUSIVE":                exclusive,
+	"EXCEPT":                   except,
 	"EXECUTE":                  execute,
 	"EXISTS":                   exists,
 	"EXPLAIN":                  explain,
@@ -293,6 +295,7 @@ var tokenMap = map[string]int{
 	"INFILE":                   infile,
 	"INNER":                    inner,
 	"INPLACE":                  inplace,
+	"INSTANT":                  instant,
 	"INSERT":                   insert,
 	"INT":                      intType,
 	"INT1":                     int1Type,
@@ -323,6 +326,7 @@ var tokenMap = map[string]int{
 	"LIKE":                     like,
 	"LIMIT":                    limit,
 	"LINES":                    lines,
+	"LINEAR":                   linear,
 	"LOAD":                     load,
 	"LOCAL":                    local,
 	"LOCALTIME":                localTime,
@@ -361,6 +365,8 @@ var tokenMap = map[string]int{
 	"NEXT_ROW_ID":              next_row_id,
 	"NO":                       no,
 	"NO_WRITE_TO_BINLOG":       noWriteToBinLog,
+	"NODE_ID":                  nodeID,
+	"NODE_STATE":               nodeState,
 	"NONE":                     none,
 	"NOT":                      not,
 	"NOW":                      now,
@@ -372,6 +378,7 @@ var tokenMap = map[string]int{
 	"ON":                       on,
 	"ONLY":                     only,
 	"OPTION":                   option,
+	"OPTIONALLY":               optionally,
 	"OR":                       or,
 	"ORDER":                    order,
 	"OUTER":                    outer,
@@ -390,6 +397,7 @@ var tokenMap = map[string]int{
 	"PROCESS":                  process,
 	"PROCESSLIST":              processlist,
 	"PROFILES":                 profiles,
+	"PUMP":                     pump,
 	"QUARTER":                  quarter,
 	"QUERY":                    query,
 	"QUERIES":                  queries,
@@ -416,6 +424,7 @@ var tokenMap = map[string]int{
 	"REVOKE":                   revoke,
 	"RIGHT":                    right,
 	"RLIKE":                    rlike,
+	"ROLE":                     role,
 	"ROLLBACK":                 rollback,
 	"ROUTINE":                  routine,
 	"ROW":                      row,
@@ -487,6 +496,14 @@ var tokenMap = map[string]int{
 	"TINYINT":                  tinyIntType,
 	"TINYTEXT":                 tinytextType,
 	"TO":                       to,
+	"TOKUDB_DEFAULT":           tokudbDefault,
+	"TOKUDB_FAST":              tokudbFast,
+	"TOKUDB_LZMA":              tokudbLzma,
+	"TOKUDB_QUICKLZ":           tokudbQuickLZ,
+	"TOKUDB_SNAPPY":            tokudbSnappy,
+	"TOKUDB_SMALL":             tokudbSmall,
+	"TOKUDB_UNCOMPRESSED":      tokudbUncompressed,
+	"TOKUDB_ZLIB":              tokudbZlib,
 	"TOP":                      top,
 	"TRACE":                    trace,
 	"TRAILING":                 trailing,
@@ -634,9 +651,9 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 			return tok
 		}
 	}
-	tok, ok := tokenMap[hack.String(data)]
+	tok, ok := tokenMap[string(data)]
 	if !ok && s.supportWindowFunc {
-		tok = windowFuncTokenMap[hack.String(data)]
+		tok = windowFuncTokenMap[string(data)]
 	}
 	return tok
 }

@@ -155,6 +155,8 @@ func (ft *FieldType) CompactStr() string {
 	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
 		// Flen is always shown.
 		suffix = fmt.Sprintf("(%d)", displayFlen)
+	case mysql.TypeYear:
+		suffix = fmt.Sprintf("(%d)", ft.Flen)
 	}
 	return ts + suffix
 }
@@ -221,7 +223,7 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 		if ft.Flen > 0 && ft.Decimal > 0 {
 			ctx.WritePlainf("(%d,%d)", ft.Flen, ft.Decimal)
 		}
-	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
+	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeBlob, mysql.TypeLongBlob, mysql.TypeYear:
 		if ft.Flen > 0 {
 			ctx.WritePlainf("(%d)", ft.Flen)
 		}

@@ -126,7 +126,7 @@ func (s *Scanner) stmtText() string {
 
 // Errorf tells scanner something is wrong.
 // Scanner satisfies yyLexer interface which need this function.
-func (s *Scanner) Errorf(format string, a ...interface{}) {
+func (s *Scanner) Errorf(format string, a ...interface{}) (err error) {
 	str := fmt.Sprintf(format, a...)
 	val := s.r.s[s.lastScanOffset:]
 	var lenStr = ""
@@ -134,8 +134,17 @@ func (s *Scanner) Errorf(format string, a ...interface{}) {
 		lenStr = "(total length " + strconv.Itoa(len(val)) + ")"
 		val = val[:2048]
 	}
-	err := fmt.Errorf("line %d column %d near \"%s\"%s %s",
+	err = fmt.Errorf("line %d column %d near \"%s\"%s %s",
 		s.r.p.Line, s.r.p.Col, val, str, lenStr)
+	return
+}
+
+// AppendError sets error into scanner.
+// Scanner satisfies yyLexer interface which need this function.
+func (s *Scanner) AppendError(err error) {
+	if err == nil {
+		return
+	}
 	s.errs = append(s.errs, err)
 }
 
@@ -348,6 +357,7 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 		return
 	}
 	tok = int('-')
+	lit = "-"
 	s.r.inc()
 	return
 }
@@ -638,17 +648,31 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			s.scanOct()
 		case ch1 == 'x' || ch1 == 'X':
 			s.r.inc()
+			p1 := s.r.pos()
 			s.scanHex()
+			p2 := s.r.pos()
+			// 0x, 0x7fz3 are identifier
+			if p1 == p2 || isDigit(s.r.peek()) {
+				s.r.incAsLongAs(isIdentChar)
+				return identifier, pos, s.r.data(&pos)
+			}
 			tok = hexLit
 		case ch1 == 'b':
 			s.r.inc()
+			p1 := s.r.pos()
 			s.scanBit()
+			p2 := s.r.pos()
+			// 0b, 0b123, 0b1ab are identifier
+			if p1 == p2 || isDigit(s.r.peek()) {
+				s.r.incAsLongAs(isIdentChar)
+				return identifier, pos, s.r.data(&pos)
+			}
 			tok = bitLit
 		case ch1 == '.':
 			return s.scanFloat(&pos)
 		case ch1 == 'B':
-			tok = unicode.ReplacementChar
-			return
+			s.r.incAsLongAs(isIdentChar)
+			return identifier, pos, s.r.data(&pos)
 		}
 	}
 
@@ -716,11 +740,17 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 	if ch0 == 'e' || ch0 == 'E' {
 		s.r.inc()
 		ch0 = s.r.peek()
-		if ch0 == '-' || ch0 == '+' {
+		if ch0 == '-' || ch0 == '+' || isDigit(ch0) {
 			s.r.inc()
+			s.scanDigits()
+			tok = floatLit
+		} else {
+			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
+			// 9e9e = 9e9(float) + e(identifier)
+			// 9est = 9est(identifier)
+			s.r.incAsLongAs(isIdentChar)
+			tok = identifier
 		}
-		s.scanDigits()
-		tok = floatLit
 	} else {
 		tok = decLit
 	}

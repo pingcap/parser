@@ -883,6 +883,8 @@ var MySQLErrName = map[uint16]string{
 	ErrUnsupportedOnGeneratedColumn:                          "'%s' is not supported for generated columns.",
 	ErrGeneratedColumnNonPrior:                               "Generated column can refer only to generated columns defined prior to it.",
 	ErrDependentByGeneratedColumn:                            "Column '%s' has a generated column dependency.",
+	ErrGeneratedColumnFunctionIsNotAllowed:                   "Expression of generated column '%s' contains a disallowed function.",
+	ErrGeneratedColumnRefAutoInc:                             "Generated column '%s' cannot refer to auto-increment column.",
 	ErrInvalidJSONText:                                       "Invalid JSON text: %-.192s",
 	ErrInvalidJSONPath:                                       "Invalid JSON path expression %s.",
 	ErrInvalidJSONData:                                       "Invalid data type for JSON data",
@@ -910,6 +912,7 @@ var MySQLErrName = map[uint16]string{
 	ErrWindowNoGroupOrderUnused:                              "ASC or DESC with GROUP BY isn't allowed with window functions; put ASC or DESC in ORDER BY",
 	ErrWindowExplainJson:                                     "To get information about window functions use EXPLAIN FORMAT=JSON",
 	ErrWindowFunctionIgnoresFrame:                            "Window function '%s' ignores the frame clause of window '%s' and aggregates over the whole partition",
+	ErrRoleNotGranted:                                        "%s is is not granted to %s",
 
 	// TiDB errors.
 	ErrMemExceedThreshold: "%s holds %dB memory, exceeds threshold %dB.%s",
