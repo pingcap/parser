@@ -2571,6 +2571,20 @@ ExplainStmt:
 			Format: "row",
 		}
 	}
+|   ExplainSym "FOR" NUM
+    {
+        $$ = &ast.ExplainForStmt{
+            Format:       "row",
+            ConnectionID: getUint64FromNUM($3),
+        }
+    }
+|   ExplainSym "FORMAT" "=" stringLit "FOR" NUM
+    {
+        $$ = &ast.ExplainForStmt{
+            Format:       $4,
+            ConnectionID: getUint64FromNUM($6),
+        }
+    }
 |	ExplainSym "FORMAT" "=" stringLit ExplainableStmt
 	{
 		$$ = &ast.ExplainStmt{
