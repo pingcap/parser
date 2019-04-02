@@ -537,7 +537,7 @@ type ViewInfo struct {
 	Security    ViewSecurity       `json:"view_security"`
 	SelectStmt  string             `json:"view_select"`
 	CheckOption ViewCheckOption    `json:"view_checkoption"`
-	//todo Remove this attribute when upgrade to next release version
+	// TODO: Remove this attribute when upgrade to next release version
 	Cols            []CIStr `json:"view_cols"`
 	SelectStmtQuote string  `json:view_select_quote`
 }
