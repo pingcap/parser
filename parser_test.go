@@ -2006,6 +2006,9 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 	c.Assert(err.Error(), Equals, "line 1 column 31 near \"t1.a = t2.a;\" ")
 	_, _, err = parser.Parse("select * from t1 join t2 on t1.a >>> t2.a;", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 36 near \"> t2.a;\" ")
+
+	_, _, err = parser.Parse("create table t(f_year year(5))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1818]Supports only YEAR or YEAR(4) column")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -2108,6 +2111,13 @@ func (s *testParserSuite) TestType(c *C) {
 func (s *testParserSuite) TestPrivilege(c *C) {
 	table := []testCase{
 		// for create user
+		{`CREATE USER 'ttt' REQUIRE X509;`, true, "CREATE USER `ttt`@`%`"},
+		{`CREATE USER 'ttt' REQUIRE SSL;`, true, "CREATE USER `ttt`@`%`"},
+		{`CREATE USER 'ttt' REQUIRE NONE;`, true, "CREATE USER `ttt`@`%`"},
+		{`CREATE USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';`, true, "CREATE USER `ttt`@`%`"},
+		{`CREATE USER 'ttt' WITH MAX_QUERIES_PER_HOUR 1;`, true, "CREATE USER `ttt`@`%`"},
+		{`CREATE USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;`, true, "CREATE USER `ttt`@`localhost`"},
+		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED BY PASSWORD ''"},
 		{`CREATE USER 'test'`, true, "CREATE USER `test`@`%`"},
 		{`CREATE USER test`, true, "CREATE USER `test`@`%`"},
 		{"CREATE USER `test`", true, "CREATE USER `test`@`%`"},
@@ -2198,6 +2208,16 @@ func (s *testParserSuite) TestComment(c *C) {
 		{"/*comment*/ /*comment*/ select c /* this is a comment */ from t;", true, "SELECT `c` FROM `t`"},
 		// for unclosed comment
 		{"delete from t where a = 7 or 1=1/*' and b = 'p'", false, ""},
+
+		{"create table t (ssl int)", false, ""},
+		{"create table t (require int)", false, ""},
+		{"create table t (account int)", true, "CREATE TABLE `t` (`account` INT)"},
+		{"create table t (expire int)", true, "CREATE TABLE `t` (`expire` INT)"},
+		{"create table t (cipher int)", true, "CREATE TABLE `t` (`cipher` INT)"},
+		{"create table t (issuer int)", true, "CREATE TABLE `t` (`issuer` INT)"},
+		{"create table t (never int)", true, "CREATE TABLE `t` (`never` INT)"},
+		{"create table t (subject int)", true, "CREATE TABLE `t` (`subject` INT)"},
+		{"create table t (x509 int)", true, "CREATE TABLE `t` (`x509` INT)"},
 	}
 	s.RunTest(c, table)
 }
