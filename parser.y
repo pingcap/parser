@@ -2575,14 +2575,14 @@ ExplainStmt:
     {
         $$ = &ast.ExplainForStmt{
             Format:       "row",
-            ConnectionID: getUint64FromNUM($3),
+            ConnectionID: getUint64FromNUM($4),
         }
     }
 |   ExplainSym "FORMAT" "=" stringLit "FOR" "CONNECTION" NUM
     {
         $$ = &ast.ExplainForStmt{
             Format:       $4,
-            ConnectionID: getUint64FromNUM($6),
+            ConnectionID: getUint64FromNUM($7),
         }
     }
 |	ExplainSym "FORMAT" "=" stringLit ExplainableStmt
@@ -3376,7 +3376,7 @@ StringLiteral:
 		strLit := valExpr.GetString()
 		expr := ast.NewValueExpr(strLit+$2)
 		// Fix #4239, use first string literal as projection name.
-		if valExpr.GetProjectionOffset() >= 0 {
+		if valExpr.GetProjectionOffset() >= 0 { 
 			expr.SetProjectionOffset(valExpr.GetProjectionOffset())
 		} else {
 			expr.SetProjectionOffset(len(strLit))

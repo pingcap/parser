@@ -8741,14 +8741,14 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.ExplainForStmt{
 				Format:       "row",
-				ConnectionID: getUint64FromNUM(yyS[yypt-1].ident),
+				ConnectionID: getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
 	case 257:
 		{
 			parser.yyVAL.statement = &ast.ExplainForStmt{
 				Format:       yyS[yypt-3].ident,
-				ConnectionID: getUint64FromNUM(yyS[yypt-1].ident),
+				ConnectionID: getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
 	case 258:
