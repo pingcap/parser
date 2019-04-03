@@ -165,6 +165,7 @@ func (n *ExplainForStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteString(n.Format)
 	ctx.WritePlain(" ")
 	ctx.WriteKeyWord("FOR ")
+	ctx.WriteKeyWord("CONNECTION ")
 	ctx.WritePlain(strconv.FormatUint(n.ConnectionID, 10))
 	return nil
 }
