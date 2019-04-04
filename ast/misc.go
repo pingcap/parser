@@ -40,6 +40,7 @@ var (
 	_ StmtNode = &PrepareStmt{}
 	_ StmtNode = &RollbackStmt{}
 	_ StmtNode = &SetPwdStmt{}
+	_ StmtNode = &SetRoleStmt{}
 	_ StmtNode = &SetStmt{}
 	_ StmtNode = &UseStmt{}
 	_ StmtNode = &FlushStmt{}
@@ -755,6 +756,60 @@ func (n *ChangeStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*ChangeStmt)
+	return v.Leave(n)
+}
+
+// SetRoleStmtType is the type for FLUSH statement.
+type SetRoleStmtType int
+
+// SetRole statement types.
+const (
+	SetRoleDefault SetRoleStmtType = iota
+	SetRoleNone
+	SetRoleAll
+	SetRoleAllExcept
+	SetRoleRegular
+)
+
+type SetRoleStmt struct {
+	stmtNode
+
+	SetRoleOpt SetRoleStmtType
+	RoleList   []*auth.RoleIdentity
+}
+
+func (n *SetRoleStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("SET ROLE")
+	switch n.SetRoleOpt {
+	case SetRoleDefault:
+		ctx.WriteKeyWord(" DEFAULT")
+	case SetRoleNone:
+		ctx.WriteKeyWord(" NONE")
+	case SetRoleAll:
+		ctx.WriteKeyWord(" ALL")
+	case SetRoleAllExcept:
+		ctx.WriteKeyWord(" ALL EXCEPT")
+	}
+	for i, role := range n.RoleList {
+		ctx.WritePlain(" ")
+		err := role.Restore(ctx)
+		if err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetRoleStmt.RoleList")
+		}
+		if i != len(n.RoleList)-1 {
+			ctx.WritePlain(",")
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *SetRoleStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*SetRoleStmt)
 	return v.Leave(n)
 }
 
@@ -1583,6 +1638,60 @@ func (n *GrantStmt) Accept(v Visitor) (Node, bool) {
 		n.Privs[i] = node.(*PrivElem)
 	}
 	return v.Leave(n)
+}
+
+// GrantRoleStmt is the struct for GRANT TO statement.
+type GrantRoleStmt struct {
+	stmtNode
+
+	Roles []*auth.RoleIdentity
+	Users []*auth.UserIdentity
+}
+
+// Accept implements Node Accept interface.
+func (n *GrantRoleStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*GrantRoleStmt)
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *GrantRoleStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("GRANT ")
+	if len(n.Roles) > 0 {
+		for i, role := range n.Roles {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := role.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore GrantRoleStmt.Roles[%d]", i)
+			}
+		}
+	}
+	ctx.WriteKeyWord(" TO ")
+	for i, v := range n.Users {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore GrantStmt.Users[%d]", i)
+		}
+	}
+	return nil
+}
+
+// SecureText implements SensitiveStatement interface.
+func (n *GrantRoleStmt) SecureText() string {
+	text := n.text
+	// Filter "identified by xxx" because it would expose password information.
+	idx := strings.Index(strings.ToLower(text), "identified")
+	if idx > 0 {
+		text = text[:idx]
+	}
+	return text
 }
 
 // Ident is the table identifier composed of schema name and table name.

@@ -64,7 +64,7 @@ import (
 	odbcTimeType			"t"
 	odbcTimestampType		"ts"
 
-	/* The following tokens belong to ReservedKeyword. */
+	/* The following tokens belong to ReservedKeyword. Notice: make sure these tokens are contained in ReservedKeyword. */
 	add			"ADD"
 	all 			"ALL"
 	alter			"ALTER"
@@ -95,6 +95,7 @@ import (
 	currentTime 		"CURRENT_TIME"
 	currentTs		"CURRENT_TIMESTAMP"
 	currentUser		"CURRENT_USER"
+	currentRole		"CURRENT_ROLE"
 	database		"DATABASE"
 	databases		"DATABASES"
 	dayHour			"DAY_HOUR"
@@ -181,8 +182,6 @@ import (
 	minuteMicrosecond	"MINUTE_MICROSECOND"
 	minuteSecond 		"MINUTE_SECOND"
 	mod 			"MOD"
-	node_id			"NODE_ID"
-	node_state		"NODE_STATE"
 	not			"NOT"
 	noWriteToBinLog 	"NO_WRITE_TO_BINLOG"
 	nthValue		"NTH_VALUE"
@@ -213,6 +212,7 @@ import (
 	rename         		"RENAME"
 	repeat			"REPEAT"
 	replace			"REPLACE"
+	require			"REQUIRE"
 	restrict		"RESTRICT"
 	revoke			"REVOKE"
 	right			"RIGHT"
@@ -227,6 +227,7 @@ import (
 	smallIntType		"SMALLINT"
 	sql			"SQL"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
+	ssl	            	"SSL"
 	starting		"STARTING"
 	straightJoin		"STRAIGHT_JOIN"
 	tableKwd		"TABLE"
@@ -266,7 +267,8 @@ import (
 	zerofill		"ZEROFILL"
 	natural			"NATURAL"
 
-	/* The following tokens belong to UnReservedKeyword. */
+	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
+	account		"ACCOUNT"
 	action		"ACTION"
 	after		"AFTER"
 	always		"ALWAYS"
@@ -286,6 +288,7 @@ import (
 	cascaded	"CASCADED"
 	charsetKwd	"CHARSET"
 	checksum	"CHECKSUM"
+	cipher		"CIPHER"
 	cleanup		"CLEANUP"
 	client		"CLIENT"
 	coalesce	"COALESCE"
@@ -321,6 +324,7 @@ import (
 	escape 		"ESCAPE"
 	exclusive       "EXCLUSIVE"
 	execute		"EXECUTE"
+	expire		"EXPIRE"
 	fields		"FIELDS"
 	first		"FIRST"
 	fixed		"FIXED"
@@ -334,6 +338,7 @@ import (
 	hour		"HOUR"
 	identified	"IDENTIFIED"
 	isolation	"ISOLATION"
+	issuer		"ISSUER"
 	indexes		"INDEXES"
 	invoker		"INVOKER"
 	jsonType	"JSON"
@@ -357,6 +362,7 @@ import (
 	minRows		"MIN_ROWS"
 	names		"NAMES"
 	national	"NATIONAL"
+	never		"NEVER"
 	no		"NO"
 	none		"NONE"
 	nulls		"NULLS"
@@ -404,6 +410,7 @@ import (
 	start		"START"
 	statsPersistent	"STATS_PERSISTENT"
 	status		"STATUS"
+	subject		"SUBJECT"
 	subpartition	"SUBPARTITION"
 	subpartitions	"SUBPARTITIONS"
 	super		"SUPER"
@@ -435,8 +442,9 @@ import (
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
 	yearType	"YEAR"
+	x509		"X509"
 
-	/* The following tokens belong to NotKeywordToken. */
+	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
 	bitAnd			"BIT_AND"
 	bitOr			"BIT_OR"
@@ -483,15 +491,17 @@ import (
 	varPop			"VAR_POP"
 	varSamp			"VAR_SAMP"
 
-	/* The following tokens belong to TiDBKeyword. */
+	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin		"ADMIN"
 	buckets		"BUCKETS"
 	cancel		"CANCEL"
 	ddl		"DDL"
-	drainer         "DRAINER"
+	drainer		"DRAINER"
 	jobs		"JOBS"
-	job		    "JOB"
-	pump            "PUMP"
+	job		"JOB"
+	nodeID		"NODE_ID"
+	nodeState	"NODE_STATE"
+	pump		"PUMP"
 	stats		"STATS"
 	statsMeta       "STATS_META"
 	statsHistograms "STATS_HISTOGRAMS"
@@ -587,6 +597,9 @@ import (
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
 	BinlogStmt			"Binlog base64 statement"
 	CommitStmt			"COMMIT statement"
+	ConnectionOption		"single connection options"
+	ConnectionOptionList		"connection options for CREATE USER statement"
+	ConnectionOptions		"optional connection options for CREATE USER statement"
 	CreateTableStmt			"CREATE TABLE statement"
 	CreateViewStmt			"CREATE VIEW  stetement"
 	CreateUserStmt			"CREATE User statement"
@@ -653,6 +666,7 @@ import (
 	OptionalBraces			"optional braces"
 	CastType			"Cast function target type"
 	CharsetName			"Character set name"
+	ClearPasswordExpireOptions	"Clear password expire options"
 	ColumnDef			"table column definition"
 	ColumnDefList			"table column definition list"
 	ColumnName			"column name"
@@ -682,6 +696,7 @@ import (
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
 	Enclosed			"Enclosed by"
+	RequireClause			"Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
 	Escaped				"Escaped by"
@@ -759,7 +774,11 @@ import (
 	PartDefOptionsOpt		"PartDefOptionList option"
 	PartDefOptionList		"PartDefOption list"
 	PartDefOption			"COMMENT [=] xxx | TABLESPACE [=] tablespace_name | ENGINE [=] xxx"
+	PasswordExpire			"Single password option for create user statement"
 	PasswordOpt			"Password option"
+	PasswordOrLockOption		"Single password or lock option for create user statement"
+	PasswordOrLockOptionList	"Password or lock options for create user statement"
+	PasswordOrLockOptions		"Optional password or lock options for create user statement"
 	ColumnPosition			"Column position [First|After ColumnName]"
 	PrepareSQL			"Prepare statement sql string"
 	PriorityOpt			"Statement priority option"
@@ -772,6 +791,8 @@ import (
 	OnUpdateOpt			"optional ON UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
+	RequireList			"require list"
+	RequireListElement		"require list element"
 	Rolename            "Rolename"
 	RolenameList            "RolenameList"
 	RoleSpec		"Rolename and auth option"
@@ -2836,7 +2857,7 @@ PredicateExpr:
 	{
 		escape := $4.(string)
 		if len(escape) > 1 {
-			yylex.Errorf("Incorrect arguments %s to ESCAPE", escape)
+			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ESCAPE", escape))
 			return 1
 		} else if len(escape) == 0 {
 			escape = "\\"
@@ -3081,12 +3102,14 @@ UnReservedKeyword:
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
-| "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER"
+| "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT"
+
 
 
 
 TiDBKeyword:
-"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ" | "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
+ "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
+| "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -3306,7 +3329,7 @@ Literal:
 		// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
 		co, err := charset.GetDefaultCollation($1)
 		if err != nil {
-			yylex.Errorf("Get collation error for charset: %s", $1)
+			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
 		}
 		expr := ast.NewValueExpr($2)
@@ -3630,7 +3653,7 @@ SimpleExpr:
 			FunctionType: ast.CastConvertFunction,
 		}
 	}
-|	"CONVERT" '(' Expression "USING" StringName ')'
+|	"CONVERT" '(' Expression "USING" CharsetName ')'
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/cast-functions.html#function_convert
 		charset1 := ast.NewValueExpr($5)
@@ -3730,6 +3753,7 @@ OptionalBraces:
 FunctionNameOptionalBraces:
 	"CURRENT_USER"
 |	"CURRENT_DATE"
+|	"CURRENT_ROLE"
 |	"UTC_DATE"
 
 FunctionNameDatetimePrecision:
@@ -3774,7 +3798,7 @@ FunctionCallKeyword:
 			Args: append(args, nilVal),
 		}
 	}
-|	"CHAR" '(' ExpressionList "USING" StringName ')'
+|	"CHAR" '(' ExpressionList "USING" CharsetName ')'
 	{
 		charset1 := ast.NewValueExpr($5)
 		args := $3.([]ast.ExprNode)
@@ -5604,6 +5628,7 @@ SetStmt:
 SetRoleStmt:
 	"SET" "ROLE" SetRoleOpt
 	{
+		$$ = $3.(*ast.SetRoleStmt)
 	}
 
 SetDefaultRoleStmt:
@@ -5614,23 +5639,29 @@ SetDefaultRoleStmt:
 SetDefaultRoleOpt:
 	"NONE"
 	{
+		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleNone, RoleList: nil}
 	}
 |	"ALL"
 	{
+		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAll, RoleList: nil}
 	}
 |	RolenameList
 	{
+		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleRegular, RoleList: $1.([]*auth.RoleIdentity)}
 	}
 
 SetRoleOpt:
 	"ALL" "EXCEPT" RolenameList
 	{
+		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAllExcept, RoleList: $3.([]*auth.RoleIdentity)}
 	}
 |	SetDefaultRoleOpt
 	{
+		$$ = $1
 	}
 |	"DEFAULT"
 	{
+		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleDefault, RoleList: nil}
 	}
 
 
@@ -5779,6 +5810,14 @@ VariableAssignment:
 CharsetName:
 	StringName
 	{
+		// Validate input charset name to keep the same behavior as parser of MySQL.
+		_, _, err := charset.GetCharsetInfo($1.(string))
+		if err != nil {
+			yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs($1))
+			return 1
+		}
+		// Use $1 instead of charset name returned from charset.GetCharsetInfo(),
+		// to keep upper-lower case of input for restore.
 		$$ = $1
 	}
 |	binaryType
@@ -6951,7 +6990,7 @@ NumericType:
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
 		} else if x.Flen > 64 {
-			yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen)
+			yylex.AppendError(yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen))
 		}
 		$$ = x
 	}
@@ -7265,7 +7304,7 @@ DateAndTimeType:
 		x := types.NewFieldType(mysql.TypeYear)
 		x.Flen = $2.(int)
 		if x.Flen != types.UnspecifiedLength && x.Flen != 4 {
-			yylex.Errorf("Supports only YEAR or YEAR(4) column.")
+			yylex.AppendError(ErrInvalidYearColumnLength.GenWithStackByArgs())
 			return -1
 		}
 		$$ = x
@@ -7482,7 +7521,7 @@ CommaOpt:
  *  https://dev.mysql.com/doc/refman/5.7/en/account-management-sql.html
  ************************************************************************************/
 CreateUserStmt:
-	"CREATE" "USER" IfNotExists UserSpecList
+	"CREATE" "USER" IfNotExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 		$$ = &ast.CreateUserStmt{
@@ -7544,6 +7583,141 @@ UserSpecList:
 |	UserSpecList ',' UserSpec
 	{
 		$$ = append($1.([]*ast.UserSpec), $3.(*ast.UserSpec))
+	}
+
+ConnectionOptions:
+	{
+		$$ = nil
+	}
+|	"WITH" ConnectionOptionList
+	{
+		$$ = nil
+	}
+
+ConnectionOptionList:
+	ConnectionOption
+	{
+		$$ = nil
+	}
+|	ConnectionOptionList ConnectionOption
+	{
+		$$ = nil
+	}
+
+ConnectionOption:
+	"MAX_QUERIES_PER_HOUR" NUM
+	{
+		$$ = nil
+	}
+|	"MAX_UPDATES_PER_HOUR" NUM
+	{
+		$$ = nil
+	}
+|	"MAX_CONNECTIONS_PER_HOUR" NUM
+	{
+		$$ = nil
+	}
+|	"MAX_USER_CONNECTIONS" NUM
+	{
+		$$ = nil
+	}
+
+RequireClause:
+	{
+		$$ = nil
+	}
+|	"REQUIRE" "NONE"
+	{
+		$$ = nil
+	}
+|	"REQUIRE" "SSL"
+	{
+		$$ = nil
+	}
+|	"REQUIRE" "X509"
+	{
+		$$ = nil
+	}
+|	"REQUIRE" RequireList
+	{
+		$$ = nil
+	}
+
+RequireList:
+	RequireListElement
+	{
+		$$ = nil
+	}
+|	RequireListElement "AND" RequireList
+	{
+		$$ = nil
+	}
+
+RequireListElement:
+	"ISSUER" StringLiteral
+	{
+		$$ = nil
+	}
+|	"SUBJECT" StringLiteral
+	{
+		$$ = nil
+	}
+|	"CIPHER" StringLiteral
+	{
+		$$ = nil
+	}
+
+PasswordOrLockOptions:
+	{
+		$$ = nil
+	}
+|	PasswordOrLockOptionList
+	{
+		$$ = nil
+	}
+
+PasswordOrLockOptionList:
+	PasswordOrLockOption
+	{
+		$$ = nil
+	}
+|	PasswordOrLockOptionList PasswordOrLockOption
+	{
+		$$ = nil
+	}
+
+PasswordOrLockOption:
+	"ACCOUNT" "UNLOCK"
+	{
+		$$ = nil
+	}
+|	"ACCOUNT" "LOCK"
+	{
+		$$ = nil
+	}
+|	PasswordExpire
+	{
+		$$ = nil
+	}
+|	PasswordExpire "INTERVAL" NUM "DAY"
+	{
+		$$ = nil
+	}
+|	PasswordExpire "NEVER"
+	{
+		$$ = nil
+	}
+|	PasswordExpire "DEFAULT"
+
+PasswordExpire:
+	"PASSWORD" "EXPIRE" ClearPasswordExpireOptions
+	{
+		$$ = nil
+	}
+
+ClearPasswordExpireOptions:
+	{
+		$$ = nil
 	}
 
 AuthOption:
@@ -7679,6 +7853,10 @@ GrantStmt:
 GrantRoleStmt:
 	 "GRANT" RolenameList "TO" UsernameList
 	 {
+		$$ = &ast.GrantRoleStmt {
+			Roles: $2.([]*auth.RoleIdentity),
+			Users: $4.([]*auth.UserIdentity),
+		}
 	 }
 
 WithGrantOptionOpt:
@@ -7979,13 +8157,13 @@ Fields:
 	{
 		escape := $4.(string)
 		if escape != "\\" && len(escape) > 1 {
-			yylex.Errorf("Incorrect arguments %s to ESCAPE", escape)
+			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ESCAPE", escape))
 			return 1
 		}
 		var enclosed byte
 		str := $3.(string)
 		if len(str) > 1 {
-			yylex.Errorf("Incorrect arguments %s to ENCLOSED", escape)
+			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ENCLOSED", escape))
 			return 1
 		}else if len(str) != 0 {
 			enclosed = str[0]
