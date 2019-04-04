@@ -856,7 +856,7 @@ import (
 	UserSpec		"Username and auth option"
 	UserSpecList		"Username and auth option list"
 	UserVariableList	"User defined variable name list"
-	UsingRoles			"UsingRoles is role option for SHOW GRANT"
+	UsingRoles	"UsingRoles is role option for SHOW GRANT"
 	Values			"values"
 	ValuesList		"values list"
 	ValuesOpt		"values optional"
