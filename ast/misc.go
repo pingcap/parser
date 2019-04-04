@@ -864,7 +864,6 @@ func (n *SetDefaultRoleStmt) Restore(ctx *RestoreCtx) error {
 	case SetRoleAll:
 		ctx.WriteKeyWord(" ALL")
 	default:
-		ctx.WriteKeyWord("")
 	}
 	for i, role := range n.RoleList {
 		ctx.WritePlain(" ")
