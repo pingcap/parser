@@ -17,7 +17,7 @@ import "unicode"
 
 // CharsetNameToID maps charset name to its default collation ID.
 func CharsetNameToID(charset string) uint8 {
-	// Use quick path for TiDB to avoid access charsetIDs map
+	// Use quick path for TiDB to avoid access CharsetIDs map
 	// "SHOW CHARACTER SET;" to see all the supported character sets.
 	if charset == "utf8mb4" {
 		return 45
@@ -30,12 +30,12 @@ func CharsetNameToID(charset string) uint8 {
 	} else if charset == "latin1" {
 		return 8
 	} else {
-		return charsetIDs[charset]
+		return CharsetIDs[charset]
 	}
 }
 
-// charsetIDs maps charset name to its default collation ID.
-var charsetIDs = map[string]uint8{
+// CharsetIDs maps charset name to its default collation ID.
+var CharsetIDs = map[string]uint8{
 	"big5":     1,
 	"dec8":     3,
 	"cp850":    4,
