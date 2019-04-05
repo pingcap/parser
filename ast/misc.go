@@ -901,14 +901,114 @@ func (n *UserSpec) EncodedPassword() (string, bool) {
 	return opt.HashString, true
 }
 
+const (
+	TslNone = iota
+	Ssl
+	X509
+	Cipher
+	Issuer
+	Subject
+)
+
+type TslOption struct {
+	Type  int
+	Value string
+}
+
+func (t *TslOption) Restore(ctx *RestoreCtx) error {
+	switch t.Type {
+	case TslNone:
+		ctx.WriteKeyWord("NONE")
+	case Ssl:
+		ctx.WriteKeyWord("SSL")
+	case X509:
+		ctx.WriteKeyWord("X509")
+	case Cipher:
+		ctx.WriteKeyWord("CIPHER ")
+		ctx.WriteString(t.Value)
+	case Issuer:
+		ctx.WriteKeyWord("ISSUER ")
+		ctx.WriteString(t.Value)
+	case Subject:
+		ctx.WriteKeyWord("CIPHER")
+		ctx.WriteString(t.Value)
+	}
+	return nil
+}
+
+const (
+	MaxQueriesPerHour = iota + 1
+	MaxUpdatesPerHour
+	MaxConnectionsPerHour
+	MaxUserConnections
+)
+
+type ResourceOption struct {
+	Type  int
+	Count int64
+}
+
+func (r *ResourceOption) Restore(ctx *RestoreCtx) error {
+	switch r.Type {
+	case MaxQueriesPerHour:
+		ctx.WritePlain("MAX_QUERIES_PER_HOUR ")
+	case MaxUpdatesPerHour:
+		ctx.WritePlain("MAX_UPDATES_PER_HOUR ")
+	case MaxConnectionsPerHour:
+		ctx.WritePlain("MAX_CONNECTIONS_PER_HOUR ")
+	case MaxUserConnections:
+		ctx.WritePlain("MAX_USER_CONNECTIONS ")
+	}
+	ctx.WritePlainf("%d", r.Count)
+	return nil
+}
+
+const (
+	PasswordExpire = iota + 1
+	PasswordExpireDefault
+	PasswordExpireNever
+	PasswordExpireInterval
+	Lock
+	Unlock
+)
+
+type PasswordOrLockOption struct {
+	Type  int
+	Count int64
+}
+
+func (p *PasswordOrLockOption) Restore(ctx *RestoreCtx) error {
+	switch p.Type {
+	case PasswordExpire:
+		ctx.WritePlain("PASSWORD EXPIRE")
+	case PasswordExpireDefault:
+		ctx.WritePlain("PASSWORD EXPIRE ")
+		ctx.WriteKeyWord("DEFAULT")
+	case PasswordExpireNever:
+		ctx.WritePlain("PASSWORD EXPIRE NEVER")
+	case PasswordExpireInterval:
+		ctx.WritePlainf("PASSWORD EXPIRE NEVER %d DAY", p.Count)
+	case Lock:
+		ctx.WritePlain("ACCOUNT ")
+		ctx.WriteKeyWord("LOCK")
+	case Unlock:
+		ctx.WritePlain("ACCOUNT ")
+		ctx.WriteKeyWord("UNLOCK")
+	}
+	return nil
+}
+
 // CreateUserStmt creates user account.
 // See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 type CreateUserStmt struct {
 	stmtNode
 
-	IsCreateRole bool
-	IfNotExists  bool
-	Specs        []*UserSpec
+	IsCreateRole          bool
+	IfNotExists           bool
+	Specs                 []*UserSpec
+	TslOptions            []*TslOption
+	ResourceOptions       []*ResourceOption
+	PasswordOrLockOptions []*PasswordOrLockOption
 }
 
 // Restore implements Node interface.
@@ -927,6 +1027,42 @@ func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.Specs[%d]", i)
+		}
+	}
+
+	tslOptionLen := len(n.TslOptions)
+
+	if tslOptionLen != 0 {
+		ctx.WriteKeyWord(" REQUIRE ")
+	}
+
+	// Restore `tslOptions` reversely to keep order the same with original sql
+	for i := tslOptionLen; i > 0; i-- {
+		if i != tslOptionLen {
+			ctx.WriteKeyWord(" AND ")
+		}
+		if err := n.TslOptions[i-1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TslOptions[%d]", i)
+		}
+	}
+
+	if len(n.ResourceOptions) != 0 {
+		ctx.WriteKeyWord(" WITH ")
+	}
+
+	for i, v := range n.ResourceOptions {
+		if i != 0 {
+			ctx.WritePlain(" ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.ResourceOptions[%d]", i)
+		}
+	}
+
+	for i, v := range n.PasswordOrLockOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.PasswordOrLockOptions[%d]", i)
 		}
 	}
 	return nil
