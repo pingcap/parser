@@ -953,13 +953,15 @@ type ResourceOption struct {
 func (r *ResourceOption) Restore(ctx *RestoreCtx) error {
 	switch r.Type {
 	case MaxQueriesPerHour:
-		ctx.WritePlain("MAX_QUERIES_PER_HOUR ")
+		ctx.WriteKeyWord("MAX_QUERIES_PER_HOUR ")
 	case MaxUpdatesPerHour:
-		ctx.WritePlain("MAX_UPDATES_PER_HOUR ")
+		ctx.WriteKeyWord("MAX_UPDATES_PER_HOUR ")
 	case MaxConnectionsPerHour:
-		ctx.WritePlain("MAX_CONNECTIONS_PER_HOUR ")
+		ctx.WriteKeyWord("MAX_CONNECTIONS_PER_HOUR ")
 	case MaxUserConnections:
-		ctx.WritePlain("MAX_USER_CONNECTIONS ")
+		ctx.WriteKeyWord("MAX_USER_CONNECTIONS ")
+	default:
+		return errors.Errorf("Unsupported ResourceOption.Type %d", r.Type)
 	}
 	ctx.WritePlainf("%d", r.Count)
 	return nil
@@ -982,20 +984,21 @@ type PasswordOrLockOption struct {
 func (p *PasswordOrLockOption) Restore(ctx *RestoreCtx) error {
 	switch p.Type {
 	case PasswordExpire:
-		ctx.WritePlain("PASSWORD EXPIRE")
+		ctx.WriteKeyWord("PASSWORD EXPIRE")
 	case PasswordExpireDefault:
-		ctx.WritePlain("PASSWORD EXPIRE ")
-		ctx.WriteKeyWord("DEFAULT")
+		ctx.WriteKeyWord("PASSWORD EXPIRE DEFAULT")
 	case PasswordExpireNever:
-		ctx.WritePlain("PASSWORD EXPIRE NEVER")
+		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
 	case PasswordExpireInterval:
-		ctx.WritePlainf("PASSWORD EXPIRE NEVER %d DAY", p.Count)
+		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
+		ctx.WritePlainf(" %d", p.Count)
+		ctx.WriteKeyWord(" DAY")
 	case Lock:
-		ctx.WritePlain("ACCOUNT ")
-		ctx.WriteKeyWord("LOCK")
+		ctx.WriteKeyWord("ACCOUNT LOCK")
 	case Unlock:
-		ctx.WritePlain("ACCOUNT ")
-		ctx.WriteKeyWord("UNLOCK")
+		ctx.WriteKeyWord("ACCOUNT UNLOCK")
+	default:
+		return errors.Errorf("Unsupported PasswordOrLockOption.Type %d", p.Type)
 	}
 	return nil
 }
@@ -1053,8 +1056,7 @@ func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	for i, v := range n.ResourceOptions {
-			ctx.WritePlain(" ")
-		}
+		ctx.WritePlain(" ")
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.ResourceOptions[%d]", i)
 		}
