@@ -932,6 +932,8 @@ func (t *TslOption) Restore(ctx *RestoreCtx) error {
 	case Subject:
 		ctx.WriteKeyWord("CIPHER")
 		ctx.WriteString(t.Value)
+	default:
+		return errors.Errorf("Unsupported TslOption.Type %d", t.Type)
 	}
 	return nil
 }
@@ -1047,11 +1049,10 @@ func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	if len(n.ResourceOptions) != 0 {
-		ctx.WriteKeyWord(" WITH ")
+		ctx.WriteKeyWord(" WITH")
 	}
 
 	for i, v := range n.ResourceOptions {
-		if i != 0 {
 			ctx.WritePlain(" ")
 		}
 		if err := v.Restore(ctx); err != nil {
