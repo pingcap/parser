@@ -833,7 +833,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInternal:                                              "Internal : %s",
 	ErrInnodbImport:                                          "ALTER TABLE '%-.192s' IMPORT TABLESPACE failed with error %d : '%s'",
 	ErrInnodbIndexCorrupt:                                    "Index corrupt: %s",
-	ErrInvalidYearColumnLength:                               "YEAR(%d) column type is deprecated. Creating YEAR(4) column instead.",
+	ErrInvalidYearColumnLength:                               "Supports only YEAR or YEAR(4) column",
 	ErrNotValidPassword:                                      "Your password does not satisfy the current policy requirements",
 	ErrMustChangePassword:                                    "You must SET PASSWORD before executing this statement",
 	ErrFkNoIndexChild:                                        "Failed to add the foreign key constaint. Missing index for constraint '%s' in the foreign table '%s'",
@@ -912,6 +912,7 @@ var MySQLErrName = map[uint16]string{
 	ErrWindowNoGroupOrderUnused:                              "ASC or DESC with GROUP BY isn't allowed with window functions; put ASC or DESC in ORDER BY",
 	ErrWindowExplainJson:                                     "To get information about window functions use EXPLAIN FORMAT=JSON",
 	ErrWindowFunctionIgnoresFrame:                            "Window function '%s' ignores the frame clause of window '%s' and aggregates over the whole partition",
+	ErrRoleNotGranted:                                        "%s is is not granted to %s",
 
 	// TiDB errors.
 	ErrMemExceedThreshold: "%s holds %dB memory, exceeds threshold %dB.%s",
