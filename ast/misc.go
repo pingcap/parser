@@ -16,6 +16,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/errors"
@@ -143,6 +144,39 @@ func (n *TraceStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Stmt = node.(DMLNode)
+	return v.Leave(n)
+}
+
+// ExplainForStmt is a statement to provite information about how is SQL statement executeing
+// in connection #ConnectionID
+// See https://dev.mysql.com/doc/refman/5.7/en/explain.html
+type ExplainForStmt struct {
+	stmtNode
+
+	Format       string
+	ConnectionID uint64
+}
+
+// Restore implements Node interface.
+func (n *ExplainForStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("EXPLAIN ")
+	ctx.WriteKeyWord("FORMAT ")
+	ctx.WritePlain("= ")
+	ctx.WriteString(n.Format)
+	ctx.WritePlain(" ")
+	ctx.WriteKeyWord("FOR ")
+	ctx.WriteKeyWord("CONNECTION ")
+	ctx.WritePlain(strconv.FormatUint(n.ConnectionID, 10))
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *ExplainForStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ExplainForStmt)
 	return v.Leave(n)
 }
 
@@ -1546,6 +1580,47 @@ func (n *RevokeStmt) Accept(v Visitor) (Node, bool) {
 		}
 		n.Privs[i] = node.(*PrivElem)
 	}
+	return v.Leave(n)
+}
+
+// RevokeStmt is the struct for REVOKE statement.
+type RevokeRoleStmt struct {
+	stmtNode
+
+	Roles []*auth.RoleIdentity
+	Users []*auth.UserIdentity
+}
+
+// Restore implements Node interface.
+func (n *RevokeRoleStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("REVOKE ")
+	for i, role := range n.Roles {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := role.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore RevokeRoleStmt.Roles[%d]", i)
+		}
+	}
+	ctx.WriteKeyWord(" FROM ")
+	for i, v := range n.Users {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore RevokeRoleStmt.Users[%d]", i)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *RevokeRoleStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*RevokeRoleStmt)
 	return v.Leave(n)
 }
 
