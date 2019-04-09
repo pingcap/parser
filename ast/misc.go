@@ -1176,7 +1176,6 @@ const (
 	AdminChecksumTable
 	AdminShowSlow
 	AdminShowNextRowID
-	AdminRestoreTable
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1308,19 +1307,6 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 			return err
 		}
 		ctx.WritePlainf(" %s", n.Index)
-	case AdminRestoreTable:
-		ctx.WriteKeyWord("RESTORE TABLE ")
-		if n.JobIDs != nil {
-			ctx.WriteKeyWord("BY JOB ")
-			restoreJobIDs()
-		} else {
-			if err := restoreTables(); err != nil {
-				return err
-			}
-			if n.JobNumber != 0 {
-				ctx.WritePlainf(" %d", n.JobNumber)
-			}
-		}
 	case AdminCleanupIndex:
 		ctx.WriteKeyWord("CLEANUP INDEX ")
 		if err := restoreTables(); err != nil {
@@ -1594,6 +1580,47 @@ func (n *RevokeStmt) Accept(v Visitor) (Node, bool) {
 		}
 		n.Privs[i] = node.(*PrivElem)
 	}
+	return v.Leave(n)
+}
+
+// RevokeStmt is the struct for REVOKE statement.
+type RevokeRoleStmt struct {
+	stmtNode
+
+	Roles []*auth.RoleIdentity
+	Users []*auth.UserIdentity
+}
+
+// Restore implements Node interface.
+func (n *RevokeRoleStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("REVOKE ")
+	for i, role := range n.Roles {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := role.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore RevokeRoleStmt.Roles[%d]", i)
+		}
+	}
+	ctx.WriteKeyWord(" FROM ")
+	for i, v := range n.Users {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore RevokeRoleStmt.Users[%d]", i)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *RevokeRoleStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*RevokeRoleStmt)
 	return v.Leave(n)
 }
 
