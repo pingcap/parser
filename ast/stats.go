@@ -35,7 +35,8 @@ type AnalyzeTableStmt struct {
 	MaxNumBuckets  uint64
 
 	// IndexFlag is true when we only analyze indices for a table.
-	IndexFlag bool
+	IndexFlag   bool
+	Incremental bool
 }
 
 // Restore implements Node interface.
