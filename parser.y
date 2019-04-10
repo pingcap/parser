@@ -695,11 +695,9 @@ import (
 	DefaultFalseDistinctOpt		"Distinct option which defaults to false"
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
-	Enclosed			"Enclosed by"
 	RequireClause			"Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
-	Escaped				"Escaped by"
 	ExpressionList			"expression list"
 	MaxValueOrExpressionList	"maxvalue or expression list"
 	ExpressionListOpt		"expression list opt"
@@ -707,13 +705,14 @@ import (
 	FuncDatetimePrecList	        "Function datetime precision list"
 	Field				"field expression"
 	Fields				"Fields clause"
-	FieldsTerminated		"Fields terminated by"
 	FieldAsName			"Field alias name"
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
 	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
+	FieldItem			"Field item for load data clause"
+	FieldItemList			"Field items for load data clause"
 	FuncDatetimePrec		"Function datetime precision"
 	GlobalScope			"The scope of variable"
 	GroupByClause			"GROUP BY clause"
@@ -747,6 +746,9 @@ import (
 	LimitOption			"Limit option could be integer or parameter marker."
 	Lines				"Lines clause"
 	LinesTerminated			"Lines terminated by"
+	LoadDataSetSpecOpt		"Optional load data specification"
+	LoadDataSetList			"Load data specifications"
+	LoadDataSetItem			"Single load data specification"
 	LocalOpt			"Local opt"
 	LockClause         		"Alter table lock clause"
 	MaxNumBuckets			"Max number of buckets"
@@ -2903,7 +2905,7 @@ PredicateExpr:
 	{
 		escape := $4.(string)
 		if len(escape) > 1 {
-			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ESCAPE", escape))
+			yylex.AppendError(ErrWrongArguments.GenWithStackByArgs("ESCAPE"))
 			return 1
 		} else if len(escape) == 0 {
 			escape = "\\"
@@ -7021,7 +7023,7 @@ NumericType:
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
 		} else if x.Flen > 64 {
-			yylex.AppendError(yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen))
+			yylex.AppendError(ErrTooBigDisplayWidth.GenWithStackByArgs(x.Flen))
 		}
 		$$ = x
 	}
@@ -8189,7 +8191,7 @@ RevokeRoleStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/load-data.html
  *******************************************************************************************/
 LoadDataStmt:
-	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets
+	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets LoadDataSetSpecOpt
 	{
 		x := &ast.LoadDataStmt{
 			Path:       $5,
@@ -8239,64 +8241,93 @@ Fields:
 			Escaped:    escape[0],
 		}
 	}
-|	FieldsOrColumns FieldsTerminated Enclosed Escaped
+|	FieldsOrColumns FieldItemList
 	{
-		escape := $4.(string)
-		if escape != "\\" && len(escape) > 1 {
-			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ESCAPE", escape))
-			return 1
+		fieldsClause := &ast.FieldsClause{
+			Terminated: "\t",
+			Escaped:    []byte("\\")[0],
 		}
-		var enclosed byte
-		str := $3.(string)
-		if len(str) > 1 {
-			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ENCLOSED", escape))
-			return 1
-		}else if len(str) != 0 {
-			enclosed = str[0]
+		fieldItems := $2.([]*ast.FieldItem)
+		for _, item := range fieldItems {
+			switch item.Type {
+			case ast.Terminated:
+				fieldsClause.Terminated = item.Value
+			case ast.Enclosed:
+				var enclosed byte
+				if len(item.Value) > 0 {
+					enclosed = item.Value[0]
+				}
+				fieldsClause.Enclosed = enclosed
+			case ast.Escaped:
+				var escaped byte
+				if len(item.Value) > 0 {
+					escaped = item.Value[0]
+				}
+				fieldsClause.Escaped = escaped
+			}
 		}
-		var escaped byte
-		if len(escape) > 0 {
-			escaped = escape[0]
-		}
-		$$ = &ast.FieldsClause{
-			Terminated: $2.(string),
-			Enclosed:   enclosed,
-			Escaped:    escaped,
-		}
+		$$ = fieldsClause
 	}
 
 FieldsOrColumns:
 "FIELDS" | "COLUMNS"
 
-FieldsTerminated:
+FieldItemList:
+	FieldItemList FieldItem
 	{
-		$$ = "\t"
+		fieldItems := $1.([]*ast.FieldItem)
+		$$ = append(fieldItems, $2.(*ast.FieldItem))
 	}
-|	"TERMINATED" "BY" stringLit
+|	FieldItem
 	{
-		$$ = $3
+		fieldItems := make([]*ast.FieldItem, 1, 1)
+		fieldItems[0] = $1.(*ast.FieldItem)
+		$$ = fieldItems
 	}
 
-Enclosed:
+FieldItem:
+	"TERMINATED" "BY" stringLit
 	{
-		$$ = ""
+		$$ = &ast.FieldItem{
+			Type:    ast.Terminated,
+			Value:   $3,
+		}
 	}
 |	"OPTIONALLY" "ENCLOSED" "BY" stringLit
 	{
-		$$ = $4
+		str := $4
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Enclosed,
+			Value:   str,
+		}
 	}
 |	"ENCLOSED" "BY" stringLit
 	{
-		$$ = $3
-	}
-
-Escaped:
-	{
-		$$ = "\\"
+		str := $3
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Enclosed,
+			Value:   str,
+		}
 	}
 |	"ESCAPED" "BY" stringLit
 	{
-		$$ = $3
+		str := $3
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Escaped,
+			Value:   str,
+		}
 	}
 
 Lines:
@@ -8325,6 +8356,33 @@ LinesTerminated:
 	{
 		$$ = $3
 	}
+
+LoadDataSetSpecOpt:
+	{
+		$$ = nil
+	}
+|	"SET" LoadDataSetList
+	{
+		$$ = nil
+	}
+
+LoadDataSetList:
+	LoadDataSetList ',' LoadDataSetItem
+	{
+		$$ = nil
+	}
+|	LoadDataSetItem
+	{
+		$$ = nil
+	}
+
+LoadDataSetItem:
+	SimpleIdent "=" ExprOrDefault
+	{
+		$$ = nil
+	}
+
+
 
 
 /*********************************************************************
