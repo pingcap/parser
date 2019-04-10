@@ -339,6 +339,7 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 		return
 	}
 	tok = int('-')
+	lit = "-"
 	s.r.inc()
 	return
 }
