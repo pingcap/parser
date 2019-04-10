@@ -5682,6 +5682,12 @@ SetRoleStmt:
 SetDefaultRoleStmt:
 	"SET" "DEFAULT" "ROLE" SetDefaultRoleOpt "TO" UsernameList
 	{
+		tmp := $4.(*ast.SetRoleStmt)
+		$$ = &ast.SetDefaultRoleStmt{
+			SetRoleOpt: tmp.SetRoleOpt,
+			RoleList: tmp.RoleList,
+			UserList: $6.([]*auth.UserIdentity),
+		}
 	}
 
 SetDefaultRoleOpt:
