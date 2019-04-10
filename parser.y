@@ -7023,7 +7023,7 @@ NumericType:
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
 		} else if x.Flen > 64 {
-			yylex.AppendError(ErrTooBigDisplayWidth.GenWithStackByArgs(x.Flen))
+			yylex.AppendError(yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen))
 		}
 		$$ = x
 	}
