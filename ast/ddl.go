@@ -351,6 +351,7 @@ const (
 	ColumnOptionComment
 	ColumnOptionGenerated
 	ColumnOptionReference
+	ColumnOptionCollate
 )
 
 // ColumnOption is used for parsing column constraint info from SQL.
@@ -365,7 +366,8 @@ type ColumnOption struct {
 	// Stored is only for ColumnOptionGenerated, default is false.
 	Stored bool
 	// Refer is used for foreign key.
-	Refer *ReferenceDef
+	Refer    *ReferenceDef
+	StrValue string
 }
 
 // Restore implements Node interface.
@@ -416,6 +418,12 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		if err := n.Refer.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
 		}
+	case ColumnOptionCollate:
+		if n.StrValue == "" {
+			return errors.New("Empty ColumnOption COLLATE")
+		}
+		ctx.WriteKeyWord("COLLATE ")
+		ctx.WritePlain(n.StrValue)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
@@ -1868,4 +1876,48 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 	}
 
 	return nil
+}
+
+// RecoverTableStmt is a statement to recover dropped table.
+type RecoverTableStmt struct {
+	ddlNode
+
+	JobID  int64
+	Table  *TableName
+	JobNum int64
+}
+
+// Restore implements Node interface.
+func (n *RecoverTableStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("RECOVER TABLE ")
+	if n.JobID != 0 {
+		ctx.WriteKeyWord("BY JOB ")
+		ctx.WritePlainf("%d", n.JobID)
+	} else {
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing RecoverTableStmt Table")
+		}
+		if n.JobNum > 0 {
+			ctx.WritePlainf(" %d", n.JobNum)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *RecoverTableStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	n = newNode.(*RecoverTableStmt)
+	if n.Table != nil {
+		node, ok := n.Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Table = node.(*TableName)
+	}
+	return v.Leave(n)
 }

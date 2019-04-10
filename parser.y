@@ -511,7 +511,6 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
-	restore		"RESTORE"
 
 	builtinAddDate
 	builtinBitAnd
@@ -634,6 +633,7 @@ import (
 	SelectStmt			"SELECT statement"
 	RenameTableStmt         	"rename table statement"
 	ReplaceIntoStmt			"REPLACE INTO statement"
+	RecoverTableStmt                "recover table statement"
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
@@ -695,11 +695,9 @@ import (
 	DefaultFalseDistinctOpt		"Distinct option which defaults to false"
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
-	Enclosed			"Enclosed by"
 	RequireClause			"Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
-	Escaped				"Escaped by"
 	ExpressionList			"expression list"
 	MaxValueOrExpressionList	"maxvalue or expression list"
 	ExpressionListOpt		"expression list opt"
@@ -707,13 +705,14 @@ import (
 	FuncDatetimePrecList	        "Function datetime precision list"
 	Field				"field expression"
 	Fields				"Fields clause"
-	FieldsTerminated		"Fields terminated by"
 	FieldAsName			"Field alias name"
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
 	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
+	FieldItem			"Field item for load data clause"
+	FieldItemList			"Field items for load data clause"
 	FuncDatetimePrec		"Function datetime precision"
 	GlobalScope			"The scope of variable"
 	GroupByClause			"GROUP BY clause"
@@ -747,6 +746,9 @@ import (
 	LimitOption			"Limit option could be integer or parameter marker."
 	Lines				"Lines clause"
 	LinesTerminated			"Lines terminated by"
+	LoadDataSetSpecOpt		"Optional load data specification"
+	LoadDataSetList			"Load data specifications"
+	LoadDataSetItem			"Single load data specification"
 	LocalOpt			"Local opt"
 	LockClause         		"Alter table lock clause"
 	MaxNumBuckets			"Max number of buckets"
@@ -1407,7 +1409,35 @@ TableToTable:
 			NewTable: $3.(*ast.TableName),
 		}
 	}
-
+/*******************************************************************
+ *
+ *  Recover Table Statement
+ *
+ *  Example:
+ *      RECOVER TABLE t1;
+ *      RECOVER TABLE BY JOB 100;
+ *
+ *******************************************************************/
+RecoverTableStmt:
+	"RECOVER" "TABLE" "BY" "JOB" NUM
+    {
+        $$ = &ast.RecoverTableStmt{
+            JobID: $5.(int64),
+        }
+    }
+|	"RECOVER" "TABLE" TableName
+    {
+        $$ = &ast.RecoverTableStmt{
+            Table: $3.(*ast.TableName),
+        }
+    }
+|	"RECOVER" "TABLE" TableName NUM
+    {
+        $$ = &ast.RecoverTableStmt{
+            Table: $3.(*ast.TableName),
+            JobNum: $4.(int64),
+        }
+    }
 
 /*******************************************************************************************/
 
@@ -1624,6 +1654,10 @@ ColumnOption:
 			Tp: ast.ColumnOptionReference,
 			Refer: $1.(*ast.ReferenceDef),
 		}
+	}
+|	"COLLATE" StringName
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2.(string)}
 	}
 
 GeneratedAlways: | "GENERATED" "ALWAYS"
@@ -2571,6 +2605,20 @@ ExplainStmt:
 			Format: "row",
 		}
 	}
+|   ExplainSym "FOR" "CONNECTION" NUM
+    {
+        $$ = &ast.ExplainForStmt{
+            Format:       "row",
+            ConnectionID: getUint64FromNUM($4),
+        }
+    }
+|   ExplainSym "FORMAT" "=" stringLit "FOR" "CONNECTION" NUM
+    {
+        $$ = &ast.ExplainForStmt{
+            Format:       $4,
+            ConnectionID: getUint64FromNUM($7),
+        }
+    }
 |	ExplainSym "FORMAT" "=" stringLit ExplainableStmt
 	{
 		$$ = &ast.ExplainStmt{
@@ -3109,7 +3157,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "RESTORE"
+| "TIDB_SMJ" | "TIDB_INLJ"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -5634,6 +5682,12 @@ SetRoleStmt:
 SetDefaultRoleStmt:
 	"SET" "DEFAULT" "ROLE" SetDefaultRoleOpt "TO" UsernameList
 	{
+		tmp := $4.(*ast.SetRoleStmt)
+		$$ = &ast.SetDefaultRoleStmt{
+			SetRoleOpt: tmp.SetRoleOpt,
+			RoleList: tmp.RoleList,
+			UserList: $6.([]*auth.UserIdentity),
+		}
 	}
 
 SetDefaultRoleOpt:
@@ -5992,28 +6046,6 @@ AdminStmt:
 			Tp: ast.AdminRecoverIndex,
 			Tables: []*ast.TableName{$4.(*ast.TableName)},
 			Index: string($5),
-		}
-	}
-|	"ADMIN" "RESTORE" "TABLE" "BY" "JOB" NUM
-	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminRestoreTable,
-			JobIDs: []int64{$6.(int64)},
-		}
-	}
-|	"ADMIN" "RESTORE" "TABLE" TableName
-	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminRestoreTable,
-			Tables: []*ast.TableName{$4.(*ast.TableName)},
-		}
-	}
-|	"ADMIN" "RESTORE" "TABLE" TableName NUM
-	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminRestoreTable,
-			Tables: []*ast.TableName{$4.(*ast.TableName)},
-			JobNumber: $5.(int64),
 		}
 	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
@@ -6588,6 +6620,7 @@ Statement:
 |	RollbackStmt
 |	RenameTableStmt
 |	ReplaceIntoStmt
+|	RecoverTableStmt
 |	RevokeStmt
 |	RevokeRoleStmt
 |	SelectStmt
@@ -7096,44 +7129,40 @@ BitValueType:
 	}
 
 StringType:
-	NationalOpt "CHAR" FieldLen OptBinary OptCollate
+	NationalOpt "CHAR" FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
 		x.Flen = $3.(int)
 		x.Charset = $4.(*ast.OptBinary).Charset
-		x.Collate = $5.(string)
 		if $4.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
-|	NationalOpt "CHAR" OptBinary OptCollate
+|	NationalOpt "CHAR" OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
 		x.Charset = $3.(*ast.OptBinary).Charset
-		x.Collate = $4.(string)
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
-|	"NATIONAL" "CHARACTER" FieldLen OptBinary OptCollate
+|	"NATIONAL" "CHARACTER" FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
 		x.Flen = $3.(int)
 		x.Charset = $4.(*ast.OptBinary).Charset
-		x.Collate = $5.(string)
 		if $4.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
-|	Varchar FieldLen OptBinary OptCollate
+|	Varchar FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeVarchar)
 		x.Flen = $2.(int)
 		x.Charset = $3.(*ast.OptBinary).Charset
-		x.Collate = $4.(string)
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
@@ -7165,30 +7194,27 @@ StringType:
 		x.Flag |= mysql.BinaryFlag
 		$$ = $1.(*types.FieldType)
 	}
-|	TextType OptBinary OptCollate
+|	TextType OptBinary
 	{
 		x := $1.(*types.FieldType)
 		x.Charset = $2.(*ast.OptBinary).Charset
-		x.Collate = $3.(string)
 		if $2.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
-|	"ENUM" '(' StringList ')' OptCharset OptCollate
+|	"ENUM" '(' StringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
 		x.Charset = $5.(string)
-		x.Collate = $6.(string)
 		$$ = x
 	}
-|	"SET" '(' StringList ')' OptCharset OptCollate
+|	"SET" '(' StringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
 		x.Charset = $5.(string)
-		x.Collate = $6.(string)
 		$$ = x
 	}
 |	"JSON"
@@ -8097,13 +8123,17 @@ RevokeStmt:
 RevokeRoleStmt:
 	 "REVOKE" RolenameList "FROM" UsernameList
 	 {
+		$$ = &ast.RevokeRoleStmt {
+			Roles: $2.([]*auth.RoleIdentity),
+			Users: $4.([]*auth.UserIdentity),
+		}
 	 }
 
 /**************************************LoadDataStmt*****************************************
  * See https://dev.mysql.com/doc/refman/5.7/en/load-data.html
  *******************************************************************************************/
 LoadDataStmt:
-	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets
+	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets LoadDataSetSpecOpt
 	{
 		x := &ast.LoadDataStmt{
 			Path:       $5,
@@ -8153,64 +8183,93 @@ Fields:
 			Escaped:    escape[0],
 		}
 	}
-|	FieldsOrColumns FieldsTerminated Enclosed Escaped
+|	FieldsOrColumns FieldItemList
 	{
-		escape := $4.(string)
-		if escape != "\\" && len(escape) > 1 {
-			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
-			return 1
+		fieldsClause := &ast.FieldsClause{
+			Terminated: "\t",
+			Escaped:    []byte("\\")[0],
 		}
-		var enclosed byte
-		str := $3.(string)
-		if len(str) > 1 {
-			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
-			return 1
-		}else if len(str) != 0 {
-			enclosed = str[0]
+		fieldItems := $2.([]*ast.FieldItem)
+		for _, item := range fieldItems {
+			switch item.Type {
+			case ast.Terminated:
+				fieldsClause.Terminated = item.Value
+			case ast.Enclosed:
+				var enclosed byte
+				if len(item.Value) > 0 {
+					enclosed = item.Value[0]
+				}
+				fieldsClause.Enclosed = enclosed
+			case ast.Escaped:
+				var escaped byte
+				if len(item.Value) > 0 {
+					escaped = item.Value[0]
+				}
+				fieldsClause.Escaped = escaped
+			}
 		}
-		var escaped byte
-		if len(escape) > 0 {
-			escaped = escape[0]
-		}
-		$$ = &ast.FieldsClause{
-			Terminated: $2.(string),
-			Enclosed:   enclosed,
-			Escaped:    escaped,
-		}
+		$$ = fieldsClause
 	}
 
 FieldsOrColumns:
 "FIELDS" | "COLUMNS"
 
-FieldsTerminated:
+FieldItemList:
+	FieldItemList FieldItem
 	{
-		$$ = "\t"
+		fieldItems := $1.([]*ast.FieldItem)
+		$$ = append(fieldItems, $2.(*ast.FieldItem))
 	}
-|	"TERMINATED" "BY" stringLit
+|	FieldItem
 	{
-		$$ = $3
+		fieldItems := make([]*ast.FieldItem, 1, 1)
+		fieldItems[0] = $1.(*ast.FieldItem)
+		$$ = fieldItems
 	}
 
-Enclosed:
+FieldItem:
+	"TERMINATED" "BY" stringLit
 	{
-		$$ = ""
+		$$ = &ast.FieldItem{
+			Type:    ast.Terminated,
+			Value:   $3,
+		}
 	}
 |	"OPTIONALLY" "ENCLOSED" "BY" stringLit
 	{
-		$$ = $4
+		str := $4
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Enclosed,
+			Value:   str,
+		}
 	}
 |	"ENCLOSED" "BY" stringLit
 	{
-		$$ = $3
-	}
-
-Escaped:
-	{
-		$$ = "\\"
+		str := $3
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Enclosed,
+			Value:   str,
+		}
 	}
 |	"ESCAPED" "BY" stringLit
 	{
-		$$ = $3
+		str := $3
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Escaped,
+			Value:   str,
+		}
 	}
 
 Lines:
@@ -8239,6 +8298,33 @@ LinesTerminated:
 	{
 		$$ = $3
 	}
+
+LoadDataSetSpecOpt:
+	{
+		$$ = nil
+	}
+|	"SET" LoadDataSetList
+	{
+		$$ = nil
+	}
+
+LoadDataSetList:
+	LoadDataSetList ',' LoadDataSetItem
+	{
+		$$ = nil
+	}
+|	LoadDataSetItem
+	{
+		$$ = nil
+	}
+
+LoadDataSetItem:
+	SimpleIdent "=" ExprOrDefault
+	{
+		$$ = nil
+	}
+
+
 
 
 /*********************************************************************

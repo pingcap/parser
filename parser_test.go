@@ -456,6 +456,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
 
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b' SET b = CAST(CONV(MID(@var1, 3, LENGTH(@var1)-3), 2, 10) AS UNSIGNED);", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+
 		// select for update
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
 		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` LOCK IN SHARE MODE"},
@@ -557,14 +561,6 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top internal 7", true, "ADMIN SHOW SLOW TOP INTERNAL 7"},
 		{"admin show slow top all 9", true, "ADMIN SHOW SLOW TOP ALL 9"},
 		{"admin show slow recent 11", true, "ADMIN SHOW SLOW RECENT 11"},
-		{"admin restore table by job 11", true, "ADMIN RESTORE TABLE BY JOB 11"},
-		{"admin restore table by job 11,12,13", false, ""},
-		{"admin restore table by job", false, ""},
-		{"admin restore table t1", true, "ADMIN RESTORE TABLE `t1`"},
-		{"admin restore table t1,t2", false, ""},
-		{"admin restore table ", false, ""},
-		{"admin restore table t1 100", true, "ADMIN RESTORE TABLE `t1` 100"},
-		{"admin restore table t1 abc", false, ""},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -779,7 +775,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"SET ROLE DEFAULT", true, "SET ROLE DEFAULT"},
 		{"SET ROLE ALL", true, "SET ROLE ALL"},
 		{"SET ROLE ALL EXCEPT `role1`, `role2`", true, "SET ROLE ALL EXCEPT `role1`@`%`, `role2`@`%`"},
-		{"SET DEFAULT ROLE administrator, developer TO 'joe'@'10.0.0.1'", true, ""},
+		{"SET DEFAULT ROLE administrator, developer TO `joe`@`10.0.0.1`", true, "SET DEFAULT ROLE `administrator`@`%`, `developer`@`%` TO `joe`@`10.0.0.1`"},
 		// for set names and set vars
 		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
@@ -1597,6 +1593,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 BINARY)", true, "CREATE TABLE `foo` (`name` CHAR(50) BINARY CHARACTER SET UTF8)"},
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 BINARY CHARACTER set utf8)", false, ""},
 		{"CREATE TABLE foo (name CHAR(50) BINARY CHARACTER SET utf8 COLLATE utf8_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) BINARY CHARACTER SET UTF8 COLLATE utf8_bin)"},
+		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 COLLATE utf8_bin COLLATE ascii_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) CHARACTER SET UTF8 COLLATE utf8_bin COLLATE ascii_bin)"},
+		{"CREATE TABLE foo (name CHAR(50) COLLATE ascii_bin COLLATE latin1_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) COLLATE ascii_bin COLLATE latin1_bin)"},
+		{"CREATE TABLE foo (name CHAR(50) COLLATE ascii_bin PRIMARY KEY COLLATE latin1_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) COLLATE ascii_bin PRIMARY KEY COLLATE latin1_bin)"},
 		{"CREATE TABLE foo (a.b, b);", false, ""},
 		{"CREATE TABLE foo (a, b.c);", false, ""},
 		{"CREATE TABLE (name CHAR(50) BINARY)", false, ""},
@@ -1966,6 +1965,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE bar (m INT)  SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) AS SELECT `n` FROM `foo`"},
 		{"CREATE TABLE bar (m INT) IGNORE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) IGNORE AS SELECT `n` FROM `foo`"},
 		{"CREATE TABLE bar (m INT) REPLACE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) REPLACE AS SELECT `n` FROM `foo`"},
+
+		// for recover table
+		{"recover table by job 11", true, "RECOVER TABLE BY JOB 11"},
+		{"recover table by job 11,12,13", false, ""},
+		{"recover table by job", false, ""},
+		{"recover table t1", true, "RECOVER TABLE `t1`"},
+		{"recover table t1,t2", false, ""},
+		{"recover table ", false, ""},
+		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
+		{"recover table t1 abc", false, ""},
 	}
 	s.RunTest(c, table)
 }
@@ -2203,7 +2212,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"REVOKE SELECT, INSERT ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT, INSERT ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
 		{"REVOKE SELECT (col1), INSERT (col1,col2) ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT (`col1`), INSERT (`col1`,`col2`) ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
 		{"REVOKE all privileges on zabbix.* FROM 'zabbix'@'localhost' identified by 'password';", true, "REVOKE ALL ON `zabbix`.* FROM `zabbix`@`localhost` IDENTIFIED BY 'password'"},
-		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, ""},
+		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, "REVOKE `role1`@`%`, `role2`@`%` FROM `user1`@`localhost`, `user2`@`localhost`"},
 	}
 	s.RunTest(c, table)
 }
@@ -2490,6 +2499,10 @@ func (s *testParserSuite) TestExplain(c *C) {
 		{"EXPLAIN FORMAT = 'row' SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
 		{"EXPLAIN FORMAT = 'ROW' SELECT 1", true, "EXPLAIN FORMAT = 'ROW' SELECT 1"},
 		{"EXPLAIN SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+		{"EXPLAIN FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
+		{"EXPLAIN FOR connection 42", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 42"},
+		{"EXPLAIN FORMAT = 'dot' FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'dot' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = 'row' FOR connection 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
 	}
 	s.RunTest(c, table)
 }
@@ -2704,6 +2717,37 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 		c.Assert(colDef.Tp.Collate, Equals, charset.CollationBin)
 		c.Assert(mysql.HasBinaryFlag(colDef.Tp.Flag), IsTrue)
 	}
+	// Test set collate for all column types
+	createTableStr = `CREATE TABLE t (
+		c_int int collate utf8_bin,
+		c_real real collate utf8_bin,
+		c_float float collate utf8_bin,
+		c_bool bool collate utf8_bin,
+		c_char char collate utf8_bin,
+		c_binary binary collate utf8_bin,
+		c_varchar varchar(2) collate utf8_bin,
+		c_year year collate utf8_bin,
+		c_date date collate utf8_bin,
+		c_time time collate utf8_bin,
+		c_datetime datetime collate utf8_bin,
+		c_timestamp timestamp collate utf8_bin,
+		c_tinyblob tinyblob collate utf8_bin,
+		c_blob blob collate utf8_bin,
+		c_mediumblob mediumblob collate utf8_bin,
+		c_longblob longblob collate utf8_bin,
+		c_bit bit collate utf8_bin,
+		c_long_varchar long varchar collate utf8_bin,
+		c_tinytext tinytext collate utf8_bin,
+		c_text text collate utf8_bin,
+		c_mediumtext mediumtext collate utf8_bin,
+		c_longtext longtext collate utf8_bin,
+		c_decimal decimal collate utf8_bin,
+		c_numeric numeric collate utf8_bin,
+		c_enum enum('1') collate utf8_bin,
+		c_set set('1') collate utf8_bin,
+		c_json json collate utf8_bin)`
+	stmts, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestAnalyze(c *C) {
