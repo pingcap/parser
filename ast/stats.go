@@ -41,7 +41,11 @@ type AnalyzeTableStmt struct {
 
 // Restore implements Node interface.
 func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("ANALYZE TABLE ")
+	if n.Incremental {
+		ctx.WriteKeyWord("ANALYZE INCREMENTAL TABLE ")
+	} else {
+		ctx.WriteKeyWord("ANALYZE TABLE ")
+	}
 	for i, table := range n.TableNames {
 		if i != 0 {
 			ctx.WritePlain(",")
