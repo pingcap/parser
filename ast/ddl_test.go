@@ -98,7 +98,7 @@ func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C) {
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Constraints[1].Refer.OnUpdate
 	}
-	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) ON DELETE CASCADE %s )", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s )", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestDDLIndexOption(c *C) {

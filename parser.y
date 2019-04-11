@@ -1788,6 +1788,25 @@ ReferDef:
 			OnUpdate: onUpdateOpt,
 		}
 	}
+|	"REFERENCES" TableName '(' IndexColNameList ')' OnUpdateOpt OnDeleteOpt
+	{
+		var onDeleteOpt *ast.OnDeleteOpt
+		if $7 != nil {
+			onDeleteOpt = $7.(*ast.OnDeleteOpt)
+		}
+		var onUpdateOpt *ast.OnUpdateOpt
+		if $6 != nil {
+			onUpdateOpt = $6.(*ast.OnUpdateOpt)
+		}
+		$$ = &ast.ReferenceDef{
+			Table: $2.(*ast.TableName),
+			IndexColNames: $4.([]*ast.IndexColName),
+			OnDelete: onDeleteOpt,
+			OnUpdate: onUpdateOpt,
+		}
+	}
+
+
 
 OnDeleteOpt:
 	{
