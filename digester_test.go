@@ -23,6 +23,10 @@ var _ = Suite(&testSQLDigestSuite{})
 type testSQLDigestSuite struct {
 }
 
+func (s *testSQLDigestSuite) TestNormalize2(c *C) {
+
+}
+
 func (s *testSQLDigestSuite) TestNormalize(c *C) {
 	tests := []struct {
 		input  string
@@ -56,6 +60,7 @@ func (s *testSQLDigestSuite) TestNormalize(c *C) {
 		c.Assert(actual, Equals, test.expect)
 	}
 }
+
 
 func (s *testSQLDigestSuite) TestNormalizeDigest(c *C) {
 	tests := []struct {
