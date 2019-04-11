@@ -18,7 +18,6 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	. "github.com/pingcap/parser/ast"
-	"github.com/pingcap/parser/format"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -133,7 +132,7 @@ func (ts *testFunctionsSuite) TestConvert(c *C) {
 		ErrorMessage string
 	}{
 		{`SELECT CONVERT("abc" USING "latin1")`, "latin1", ""},
-		{`SELECT CONVERT("abc" USING laTiN1)`, "laTiN1", ""},
+		{`SELECT CONVERT("abc" USING laTiN1)`, "latin1", ""},
 		{`SELECT CONVERT("abc" USING "binary")`, "binary", ""},
 		{`SELECT CONVERT("abc" USING biNaRy)`, "binary", ""},
 		{`SELECT CONVERT(a USING a)`, "", `[parser:1115]Unknown character set: 'a'`}, // TiDB issue #4436.
@@ -162,7 +161,7 @@ func (ts *testFunctionsSuite) TestChar(c *C) {
 		ErrorMessage string
 	}{
 		{`SELECT CHAR("abc" USING "latin1")`, "latin1", ""},
-		{`SELECT CHAR("abc" USING laTiN1)`, "laTiN1", ""},
+		{`SELECT CHAR("abc" USING laTiN1)`, "latin1", ""},
 		{`SELECT CHAR("abc" USING "binary")`, "binary", ""},
 		{`SELECT CHAR("abc" USING binary)`, "binary", ""},
 		{`SELECT CHAR(a USING a)`, "", `[parser:1115]Unknown character set: 'a'`},
