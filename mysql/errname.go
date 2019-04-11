@@ -833,7 +833,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInternal:                                              "Internal : %s",
 	ErrInnodbImport:                                          "ALTER TABLE '%-.192s' IMPORT TABLESPACE failed with error %d : '%s'",
 	ErrInnodbIndexCorrupt:                                    "Index corrupt: %s",
-	ErrInvalidYearColumnLength:                               "YEAR(%d) column type is deprecated. Creating YEAR(4) column instead.",
+	ErrInvalidYearColumnLength:                               "Supports only YEAR or YEAR(4) column",
 	ErrNotValidPassword:                                      "Your password does not satisfy the current policy requirements",
 	ErrMustChangePassword:                                    "You must SET PASSWORD before executing this statement",
 	ErrFkNoIndexChild:                                        "Failed to add the foreign key constaint. Missing index for constraint '%s' in the foreign table '%s'",
@@ -936,6 +936,7 @@ var MySQLErrName = map[uint16]string{
 	ErrResolveLockTimeout: "Resolve lock timeout",
 	ErrRegionUnavailable:  "Region is unavailable",
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
+	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictTS=%d, key=%s",
 
 	ErrTxnTooLarge: "Transaction is too large",
 }

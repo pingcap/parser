@@ -1185,6 +1185,17 @@ func (n *LoadDataStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+const (
+	Terminated = iota
+	Enclosed
+	Escaped
+)
+
+type FieldItem struct {
+	Type  int
+	Value string
+}
+
 // FieldsClause represents fields references clause in load data statement.
 type FieldsClause struct {
 	Terminated string
@@ -2011,7 +2022,7 @@ type WindowSpec struct {
 	Frame       *FrameClause
 
 	// OnlyAlias will set to true of the first following case.
-	// To make compatiable with MySQL, we need to distinguish `select func over w` from `select func over (w)`.
+	// To make compatible with MySQL, we need to distinguish `select func over w` from `select func over (w)`.
 	OnlyAlias bool
 }
 
