@@ -6210,10 +6210,10 @@ ShowStmt:
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
 		if $5 != nil {
 			$$ = &ast.ShowStmt{
-            	Tp:	ast.ShowGrants,
-            	User:	$4.(*auth.UserIdentity),
-            	Roles:  $5.([]*auth.RoleIdentity),
-            }
+				Tp:	ast.ShowGrants,
+				User:	$4.(*auth.UserIdentity),
+				Roles:  $5.([]*auth.RoleIdentity),
+			}
 		} else {
 			$$ = &ast.ShowStmt{
 				Tp:	ast.ShowGrants,

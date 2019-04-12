@@ -1866,7 +1866,7 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 					return errors.Annotate(err, "An error occurred while restore ShowStmt.User")
 				}
 				if i != len(n.Roles)-1 {
-					ctx.WriteKeyWord(", ")
+					ctx.WritePlain(", ")
 				}
 			}
 		}
