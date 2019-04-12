@@ -203,7 +203,7 @@ import (
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
-	preSplitResions		"PRE_SPLIT_REGIONS"
+	preSplitRegions		"PRE_SPLIT_REGIONS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
 	read			"READ"
