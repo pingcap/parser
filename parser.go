@@ -401,7 +401,7 @@ const (
 	pipesAsOr                  = 57663
 	plugins                    = 57664
 	position                   = 57757
-	preSplitResions            = 57497
+	preSplitRegions            = 57497
 	preceding                  = 57665
 	precisionType              = 57493
 	prepare                    = 57666
@@ -993,7 +993,7 @@ var (
 		57375: 411, // character (332x)
 		57491: 412, // partition (308x)
 		57490: 413, // packKeys (298x)
-		57497: 414, // preSplitResions (298x)
+		57497: 414, // preSplitRegions (298x)
 		57496: 415, // shardRowIDBits (298x)
 		57836: 416, // jss (278x)
 		57837: 417, // juss (278x)
@@ -1948,7 +1948,7 @@ var (
 		"character",
 		"partition",
 		"packKeys",
-		"preSplitResions",
+		"preSplitRegions",
 		"shardRowIDBits",
 		"jss",
 		"juss",
