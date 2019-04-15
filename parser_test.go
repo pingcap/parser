@@ -456,6 +456,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
 
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b' SET b = CAST(CONV(MID(@var1, 3, LENGTH(@var1)-3), 2, 10) AS UNSIGNED);", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+
 		// select for update
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
 		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` LOCK IN SHARE MODE"},
@@ -557,14 +561,6 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top internal 7", true, "ADMIN SHOW SLOW TOP INTERNAL 7"},
 		{"admin show slow top all 9", true, "ADMIN SHOW SLOW TOP ALL 9"},
 		{"admin show slow recent 11", true, "ADMIN SHOW SLOW RECENT 11"},
-		{"admin restore table by job 11", true, "ADMIN RESTORE TABLE BY JOB 11"},
-		{"admin restore table by job 11,12,13", false, ""},
-		{"admin restore table by job", false, ""},
-		{"admin restore table t1", true, "ADMIN RESTORE TABLE `t1`"},
-		{"admin restore table t1,t2", false, ""},
-		{"admin restore table ", false, ""},
-		{"admin restore table t1 100", true, "ADMIN RESTORE TABLE `t1` 100"},
-		{"admin restore table t1 abc", false, ""},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -665,6 +661,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{`SHOW GRANTS FOR 'test'@'localhost'`, true, "SHOW GRANTS FOR `test`@`localhost`"},
 		{`SHOW GRANTS FOR current_user()`, true, "SHOW GRANTS FOR CURRENT_USER"},
 		{`SHOW GRANTS FOR current_user`, true, "SHOW GRANTS FOR CURRENT_USER"},
+		{`SHOW GRANTS FOR 'u1'@'localhost' USING 'r1'`, true, "SHOW GRANTS FOR `u1`@`localhost` USING `r1`@`%`"},
+		{`SHOW GRANTS FOR 'u1'@'localhost' USING 'r1', 'r2'`, true, "SHOW GRANTS FOR `u1`@`localhost` USING `r1`@`%`, `r2`@`%`"},
 		{`SHOW COLUMNS FROM City;`, true, "SHOW COLUMNS IN `City`"},
 		{`SHOW COLUMNS FROM tv189.1_t_1_x;`, true, "SHOW COLUMNS IN `tv189`.`1_t_1_x`"},
 		{`SHOW FIELDS FROM City;`, true, "SHOW COLUMNS IN `City`"},
@@ -779,7 +777,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"SET ROLE DEFAULT", true, "SET ROLE DEFAULT"},
 		{"SET ROLE ALL", true, "SET ROLE ALL"},
 		{"SET ROLE ALL EXCEPT `role1`, `role2`", true, "SET ROLE ALL EXCEPT `role1`@`%`, `role2`@`%`"},
-		{"SET DEFAULT ROLE administrator, developer TO 'joe'@'10.0.0.1'", true, ""},
+		{"SET DEFAULT ROLE administrator, developer TO `joe`@`10.0.0.1`", true, "SET DEFAULT ROLE `administrator`@`%`, `developer`@`%` TO `joe`@`10.0.0.1`"},
 		// for set names and set vars
 		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
@@ -1969,6 +1967,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE bar (m INT)  SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) AS SELECT `n` FROM `foo`"},
 		{"CREATE TABLE bar (m INT) IGNORE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) IGNORE AS SELECT `n` FROM `foo`"},
 		{"CREATE TABLE bar (m INT) REPLACE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) REPLACE AS SELECT `n` FROM `foo`"},
+
+		// for recover table
+		{"recover table by job 11", true, "RECOVER TABLE BY JOB 11"},
+		{"recover table by job 11,12,13", false, ""},
+		{"recover table by job", false, ""},
+		{"recover table t1", true, "RECOVER TABLE `t1`"},
+		{"recover table t1,t2", false, ""},
+		{"recover table ", false, ""},
+		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
+		{"recover table t1 abc", false, ""},
 	}
 	s.RunTest(c, table)
 }
@@ -2012,6 +2020,18 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("create table t(f_year year(5))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;", "", "")
 	c.Assert(err.Error(), Equals, "[parser:1818]Supports only YEAR or YEAR(4) column")
+
+	_, _, err = parser.Parse("select ifnull(a,0) & ifnull(a,0) like '55' ESCAPE '\\\\a' from t;", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1210]Incorrect arguments to ESCAPE")
+
+	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Enclosed by '\\\\b';", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
+
+	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Escaped by '\\\\b';", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
+
+	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Enclosed by '\\\\b' Escaped by '\\\\b' ;", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -2114,13 +2134,13 @@ func (s *testParserSuite) TestType(c *C) {
 func (s *testParserSuite) TestPrivilege(c *C) {
 	table := []testCase{
 		// for create user
-		{`CREATE USER 'ttt' REQUIRE X509;`, true, "CREATE USER `ttt`@`%`"},
-		{`CREATE USER 'ttt' REQUIRE SSL;`, true, "CREATE USER `ttt`@`%`"},
-		{`CREATE USER 'ttt' REQUIRE NONE;`, true, "CREATE USER `ttt`@`%`"},
-		{`CREATE USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';`, true, "CREATE USER `ttt`@`%`"},
-		{`CREATE USER 'ttt' WITH MAX_QUERIES_PER_HOUR 1;`, true, "CREATE USER `ttt`@`%`"},
-		{`CREATE USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;`, true, "CREATE USER `ttt`@`localhost`"},
-		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED BY PASSWORD ''"},
+		{`CREATE USER 'ttt' REQUIRE X509;`, true, "CREATE USER `ttt`@`%` REQUIRE X509"},
+		{`CREATE USER 'ttt' REQUIRE SSL;`, true, "CREATE USER `ttt`@`%` REQUIRE SSL"},
+		{`CREATE USER 'ttt' REQUIRE NONE;`, true, "CREATE USER `ttt`@`%` REQUIRE NONE"},
+		{`CREATE USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';`, true, "CREATE USER `ttt`@`%` REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA'"},
+		{`CREATE USER 'ttt' WITH MAX_QUERIES_PER_HOUR 2;`, true, "CREATE USER `ttt`@`%` WITH MAX_QUERIES_PER_HOUR 2"},
+		{`CREATE USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;`, true, "CREATE USER `ttt`@`localhost` REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
+		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED BY PASSWORD '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
 		{`CREATE USER 'test'`, true, "CREATE USER `test`@`%`"},
 		{`CREATE USER test`, true, "CREATE USER `test`@`%`"},
 		{"CREATE USER `test`", true, "CREATE USER `test`@`%`"},
