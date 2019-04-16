@@ -203,6 +203,7 @@ import (
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
+	preSplitRegions		"PRE_SPLIT_REGIONS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
 	read			"READ"
@@ -596,9 +597,6 @@ import (
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
 	BinlogStmt			"Binlog base64 statement"
 	CommitStmt			"COMMIT statement"
-	ConnectionOption		"single connection options"
-	ConnectionOptionList		"connection options for CREATE USER statement"
-	ConnectionOptions		"optional connection options for CREATE USER statement"
 	CreateTableStmt			"CREATE TABLE statement"
 	CreateViewStmt			"CREATE VIEW  stetement"
 	CreateUserStmt			"CREATE User statement"
@@ -644,7 +642,7 @@ import (
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
-	TraceableStmt			"traceable statment"
+	TraceableStmt			"traceable statement"
 	TruncateTableStmt		"TRUNCATE TABLE statement"
 	UnlockTablesStmt		"Unlock tables statement"
 	UpdateStmt			"UPDATE statement"
@@ -681,6 +679,9 @@ import (
 	ColumnOptionList		"column definition option list"
 	VirtualOrStored			"indicate generated column is stored or not"
 	ColumnOptionListOpt		"optional column definition option list"
+	ConnectionOption		"single connection options"
+	ConnectionOptionList		"connection options for CREATE USER statement"
+	ConnectionOptions		"optional connection options for CREATE USER statement"
 	Constraint			"table constraint"
 	ConstraintElem			"table constraint element"
 	ConstraintKeywordOpt		"Constraint Keyword or empty"
@@ -695,11 +696,9 @@ import (
 	DefaultFalseDistinctOpt		"Distinct option which defaults to false"
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
-	Enclosed			"Enclosed by"
 	RequireClause			"Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
-	Escaped				"Escaped by"
 	ExpressionList			"expression list"
 	MaxValueOrExpressionList	"maxvalue or expression list"
 	ExpressionListOpt		"expression list opt"
@@ -707,13 +706,14 @@ import (
 	FuncDatetimePrecList	        "Function datetime precision list"
 	Field				"field expression"
 	Fields				"Fields clause"
-	FieldsTerminated		"Fields terminated by"
 	FieldAsName			"Field alias name"
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
 	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
+	FieldItem			"Field item for load data clause"
+	FieldItemList			"Field items for load data clause"
 	FuncDatetimePrec		"Function datetime precision"
 	GlobalScope			"The scope of variable"
 	GroupByClause			"GROUP BY clause"
@@ -747,6 +747,9 @@ import (
 	LimitOption			"Limit option could be integer or parameter marker."
 	Lines				"Lines clause"
 	LinesTerminated			"Lines terminated by"
+	LoadDataSetSpecOpt		"Optional load data specification"
+	LoadDataSetList			"Load data specifications"
+	LoadDataSetItem			"Single load data specification"
 	LocalOpt			"Local opt"
 	LockClause         		"Alter table lock clause"
 	MaxNumBuckets			"Max number of buckets"
@@ -854,6 +857,7 @@ import (
 	UserSpec		"Username and auth option"
 	UserSpecList		"Username and auth option list"
 	UserVariableList	"User defined variable name list"
+	UsingRoles	"UsingRoles is role option for SHOW GRANT"
 	Values			"values"
 	ValuesList		"values list"
 	ValuesOpt		"values optional"
@@ -2903,7 +2907,7 @@ PredicateExpr:
 	{
 		escape := $4.(string)
 		if len(escape) > 1 {
-			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ESCAPE", escape))
+			yylex.AppendError(ErrWrongArguments.GenWithStackByArgs("ESCAPE"))
 			return 1
 		} else if len(escape) == 0 {
 			escape = "\\"
@@ -6202,12 +6206,21 @@ ShowStmt:
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
 		$$ = &ast.ShowStmt{Tp: ast.ShowGrants}
 	}
-|	"SHOW" "GRANTS" "FOR" Username
+|	"SHOW" "GRANTS" "FOR" Username UsingRoles
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
-		$$ = &ast.ShowStmt{
-			Tp:	ast.ShowGrants,
-			User:	$4.(*auth.UserIdentity),
+		if $5 != nil {
+			$$ = &ast.ShowStmt{
+				Tp:	ast.ShowGrants,
+				User:	$4.(*auth.UserIdentity),
+				Roles:  $5.([]*auth.RoleIdentity),
+			}
+		} else {
+			$$ = &ast.ShowStmt{
+				Tp:	ast.ShowGrants,
+				User:	$4.(*auth.UserIdentity),
+				Roles:  nil,
+			}
 		}
 	}
 |	"SHOW" "MASTER" "STATUS"
@@ -6304,6 +6317,15 @@ ShowStmt:
 			}
 		}
 		$$ = stmt
+	}
+
+UsingRoles:
+	{
+		$$ = nil
+	}
+|	"USING" RolenameList
+	{
+		$$ = $2.([]*auth.RoleIdentity)
 	}
 
 ShowIndexKwd:
@@ -6838,6 +6860,10 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionShardRowID, UintValue: $3.(uint64)}
 	}
+|	"PRE_SPLIT_REGIONS" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPreSplitRegion, UintValue: $3.(uint64)}
+	}
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
 		// Parse it but will ignore it.
@@ -7035,7 +7061,7 @@ NumericType:
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
 		} else if x.Flen > 64 {
-			yylex.AppendError(yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen))
+			yylex.AppendError(ErrTooBigDisplayWidth.GenWithStackByArgs(x.Flen))
 		}
 		$$ = x
 	}
@@ -7566,6 +7592,9 @@ CreateUserStmt:
 			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
+			TslOptions: $5.([]*ast.TslOption),
+			ResourceOptions: $6.([]*ast.ResourceOption),
+			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
 	}
 
@@ -7625,127 +7654,182 @@ UserSpecList:
 
 ConnectionOptions:
 	{
-		$$ = nil
+		l := []*ast.ResourceOption{}
+		$$ = l
 	}
 |	"WITH" ConnectionOptionList
 	{
-		$$ = nil
+		$$ = $2
 	}
 
 ConnectionOptionList:
 	ConnectionOption
 	{
-		$$ = nil
+		$$ = []*ast.ResourceOption{$1.(*ast.ResourceOption)}
 	}
 |	ConnectionOptionList ConnectionOption
 	{
-		$$ = nil
+		l := $1.([]*ast.ResourceOption)
+		l = append(l, $2.(*ast.ResourceOption))
+		$$ = l
 	}
 
 ConnectionOption:
 	"MAX_QUERIES_PER_HOUR" NUM
 	{
-		$$ = nil
+		$$ = &ast.ResourceOption {
+			Type: ast.MaxQueriesPerHour,
+			Count: $2.(int64),
+		}
 	}
 |	"MAX_UPDATES_PER_HOUR" NUM
 	{
-		$$ = nil
+		$$ = &ast.ResourceOption {
+			Type: ast.MaxUpdatesPerHour,
+			Count: $2.(int64),
+		}
 	}
 |	"MAX_CONNECTIONS_PER_HOUR" NUM
 	{
-		$$ = nil
+		$$ = &ast.ResourceOption {
+			Type: ast.MaxConnectionsPerHour,
+			Count: $2.(int64),
+		}
 	}
 |	"MAX_USER_CONNECTIONS" NUM
 	{
-		$$ = nil
+		$$ = &ast.ResourceOption {
+			Type: ast.MaxUserConnections,
+			Count: $2.(int64),
+		}
 	}
 
 RequireClause:
 	{
-		$$ = nil
+		l := []*ast.TslOption{}
+		$$ = l
 	}
 |	"REQUIRE" "NONE"
 	{
-		$$ = nil
+		t := &ast.TslOption {
+			Type: ast.TslNone,
+		}
+		$$ = []*ast.TslOption{t}
 	}
 |	"REQUIRE" "SSL"
 	{
-		$$ = nil
+		t := &ast.TslOption {
+			Type: ast.Ssl,
+		}
+		$$ = []*ast.TslOption{t}
 	}
 |	"REQUIRE" "X509"
 	{
-		$$ = nil
+		t := &ast.TslOption {
+			Type: ast.X509,
+		}
+		$$ = []*ast.TslOption{t}
 	}
 |	"REQUIRE" RequireList
 	{
-		$$ = nil
+		$$ = $2
 	}
 
 RequireList:
 	RequireListElement
 	{
-		$$ = nil
+		$$ = []*ast.TslOption{$1.(*ast.TslOption)}
 	}
 |	RequireListElement "AND" RequireList
 	{
-		$$ = nil
+		l := $3.([]*ast.TslOption)
+		l = append(l, $1.(*ast.TslOption))
+		$$ = l
 	}
 
 RequireListElement:
-	"ISSUER" StringLiteral
+	"ISSUER" stringLit
 	{
-		$$ = nil
+		$$ = &ast.TslOption {
+			Type: ast.Issuer,
+			Value: $2,
+		}
 	}
-|	"SUBJECT" StringLiteral
+|	"SUBJECT" stringLit
 	{
-		$$ = nil
+		$$ = &ast.TslOption {
+			Type: ast.Subject,
+			Value: $2,
+		}
 	}
-|	"CIPHER" StringLiteral
+|	"CIPHER" stringLit
 	{
-		$$ = nil
+		$$ = &ast.TslOption {
+			Type: ast.Cipher,
+			Value: $2,
+		}
 	}
 
 PasswordOrLockOptions:
 	{
-		$$ = nil
+		l := []*ast.PasswordOrLockOption{}
+		$$ = l
 	}
 |	PasswordOrLockOptionList
 	{
-		$$ = nil
+		$$ = $1
 	}
 
 PasswordOrLockOptionList:
 	PasswordOrLockOption
 	{
-		$$ = nil
+		$$ = []*ast.PasswordOrLockOption{$1.(*ast.PasswordOrLockOption)}
 	}
 |	PasswordOrLockOptionList PasswordOrLockOption
 	{
-		$$ = nil
+		l := $1.([]*ast.PasswordOrLockOption)
+		l = append(l, $2.(*ast.PasswordOrLockOption))
+		$$ = l
 	}
 
 PasswordOrLockOption:
 	"ACCOUNT" "UNLOCK"
 	{
-		$$ = nil
+		$$ = &ast.PasswordOrLockOption {
+			Type: ast.Unlock,
+		}
 	}
 |	"ACCOUNT" "LOCK"
 	{
-		$$ = nil
+		$$ = &ast.PasswordOrLockOption {
+			Type: ast.Lock,
+		}
 	}
 |	PasswordExpire
 	{
-		$$ = nil
+		$$ = &ast.PasswordOrLockOption {
+			Type: ast.PasswordExpire,
+		}
 	}
 |	PasswordExpire "INTERVAL" NUM "DAY"
 	{
-		$$ = nil
+		$$ = &ast.PasswordOrLockOption {
+			Type: ast.PasswordExpireInterval,
+			Count: $3.(int64),
+		}
 	}
 |	PasswordExpire "NEVER"
 	{
-		$$ = nil
+		$$ = &ast.PasswordOrLockOption {
+			Type: ast.PasswordExpireNever,
+		}
 	}
 |	PasswordExpire "DEFAULT"
+	{
+		$$ = &ast.PasswordOrLockOption {
+			Type: ast.PasswordExpireDefault,
+		}
+	}
 
 PasswordExpire:
 	"PASSWORD" "EXPIRE" ClearPasswordExpireOptions
@@ -8145,7 +8229,7 @@ RevokeRoleStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/load-data.html
  *******************************************************************************************/
 LoadDataStmt:
-	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets
+	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets LoadDataSetSpecOpt
 	{
 		x := &ast.LoadDataStmt{
 			Path:       $5,
@@ -8195,64 +8279,93 @@ Fields:
 			Escaped:    escape[0],
 		}
 	}
-|	FieldsOrColumns FieldsTerminated Enclosed Escaped
+|	FieldsOrColumns FieldItemList
 	{
-		escape := $4.(string)
-		if escape != "\\" && len(escape) > 1 {
-			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ESCAPE", escape))
-			return 1
+		fieldsClause := &ast.FieldsClause{
+			Terminated: "\t",
+			Escaped:    []byte("\\")[0],
 		}
-		var enclosed byte
-		str := $3.(string)
-		if len(str) > 1 {
-			yylex.AppendError(yylex.Errorf("Incorrect arguments %s to ENCLOSED", escape))
-			return 1
-		}else if len(str) != 0 {
-			enclosed = str[0]
+		fieldItems := $2.([]*ast.FieldItem)
+		for _, item := range fieldItems {
+			switch item.Type {
+			case ast.Terminated:
+				fieldsClause.Terminated = item.Value
+			case ast.Enclosed:
+				var enclosed byte
+				if len(item.Value) > 0 {
+					enclosed = item.Value[0]
+				}
+				fieldsClause.Enclosed = enclosed
+			case ast.Escaped:
+				var escaped byte
+				if len(item.Value) > 0 {
+					escaped = item.Value[0]
+				}
+				fieldsClause.Escaped = escaped
+			}
 		}
-		var escaped byte
-		if len(escape) > 0 {
-			escaped = escape[0]
-		}
-		$$ = &ast.FieldsClause{
-			Terminated: $2.(string),
-			Enclosed:   enclosed,
-			Escaped:    escaped,
-		}
+		$$ = fieldsClause
 	}
 
 FieldsOrColumns:
 "FIELDS" | "COLUMNS"
 
-FieldsTerminated:
+FieldItemList:
+	FieldItemList FieldItem
 	{
-		$$ = "\t"
+		fieldItems := $1.([]*ast.FieldItem)
+		$$ = append(fieldItems, $2.(*ast.FieldItem))
 	}
-|	"TERMINATED" "BY" stringLit
+|	FieldItem
 	{
-		$$ = $3
+		fieldItems := make([]*ast.FieldItem, 1, 1)
+		fieldItems[0] = $1.(*ast.FieldItem)
+		$$ = fieldItems
 	}
 
-Enclosed:
+FieldItem:
+	"TERMINATED" "BY" stringLit
 	{
-		$$ = ""
+		$$ = &ast.FieldItem{
+			Type:    ast.Terminated,
+			Value:   $3,
+		}
 	}
 |	"OPTIONALLY" "ENCLOSED" "BY" stringLit
 	{
-		$$ = $4
+		str := $4
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Enclosed,
+			Value:   str,
+		}
 	}
 |	"ENCLOSED" "BY" stringLit
 	{
-		$$ = $3
-	}
-
-Escaped:
-	{
-		$$ = "\\"
+		str := $3
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Enclosed,
+			Value:   str,
+		}
 	}
 |	"ESCAPED" "BY" stringLit
 	{
-		$$ = $3
+		str := $3
+		if str != "\\" && len(str) > 1 {
+			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
+			return 1
+		}
+		$$ = &ast.FieldItem{
+			Type:    ast.Escaped,
+			Value:   str,
+		}
 	}
 
 Lines:
@@ -8281,6 +8394,33 @@ LinesTerminated:
 	{
 		$$ = $3
 	}
+
+LoadDataSetSpecOpt:
+	{
+		$$ = nil
+	}
+|	"SET" LoadDataSetList
+	{
+		$$ = nil
+	}
+
+LoadDataSetList:
+	LoadDataSetList ',' LoadDataSetItem
+	{
+		$$ = nil
+	}
+|	LoadDataSetItem
+	{
+		$$ = nil
+	}
+
+LoadDataSetItem:
+	SimpleIdent "=" ExprOrDefault
+	{
+		$$ = nil
+	}
+
+
 
 
 /*********************************************************************
