@@ -2674,18 +2674,12 @@ func (s *testParserSuite) TestSessionManage(c *C) {
 }
 
 func (s *testParserSuite) TestParseShowOpenTables(c *C) {
-	parser := parser.New()
-
-	tests := []string{
-		`SHOW OPEN TABLES`,
-		`SHOW OPEN TABLES IN test`,
-		`SHOW OPEN TABLES FROM test`,
+	table := []testCase{
+		{"SHOW OPEN TABLES", true, "SHOW OPEN TABLES"},
+		{"SHOW OPEN TABLES IN test", true, "SHOW OPEN TABLES IN `test`"},
+		{"SHOW OPEN TABLES FROM test", true, "SHOW OPEN TABLES IN `test`"},
 	}
-
-	for _, test := range tests {
-		_, _, err := parser.Parse(test, "", "")
-		c.Assert(err, IsNil, Commentf("sql: %s", test))
-	}
+	s.RunTest(c, table)
 }
 
 func (s *testParserSuite) TestSQLModeANSIQuotes(c *C) {
