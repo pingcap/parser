@@ -16,6 +16,7 @@ package ast
 import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
+	"github.com/pingcap/parser/charset"
 	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
@@ -732,6 +733,31 @@ func (n *ColumnDef) Validate() bool {
 		illegalOpt4gc = illegalOpt4gc || found
 	}
 	return !(generatedCol && illegalOpt4gc)
+}
+
+func (n *ColumnDef) ResolveCharsetCollation() error {
+	for _, v := range n.Options {
+		switch v.Tp {
+		case ColumnOptionCollate:
+			info, err := charset.GetCollationByName(v.StrValue)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			cs := info.CharsetName
+			cl := info.Name
+
+			if n.Tp.Charset == "" {
+				n.Tp.Charset = cs
+			} else if n.Tp.Charset != cs {
+				return charset.ErrCollationCharsetMismatch.GenWithStackByArgs(cl, n.Tp.Charset)
+			}
+
+			n.Tp.Collate = cl
+		default:
+			// Do not care other options
+		}
+	}
+	return nil
 }
 
 // CreateTableStmt is a statement to create a table.

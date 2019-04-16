@@ -16,6 +16,8 @@ package ast_test
 import (
 	. "github.com/pingcap/check"
 	. "github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/charset"
+	"github.com/pingcap/parser/types"
 )
 
 var _ = Suite(&testDDLSuite{})
@@ -407,4 +409,121 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		return node.(*AlterTableStmt).Specs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "ALTER TABLE t %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestColumnDefResolveCharsetCollation(c *C) {
+	col := &ColumnDef{
+		Tp:      &types.FieldType{},
+		Options: nil,
+	}
+
+	err := col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, "")
+	c.Assert(col.Tp.Collate, Equals, "")
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{
+			Charset: charset.CharsetUTF8,
+			Collate: charset.CollationUTF8,
+		},
+		Options: nil,
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, charset.CharsetUTF8)
+	c.Assert(col.Tp.Collate, Equals, charset.CollationUTF8)
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: charset.CollationUTF8},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, charset.CharsetUTF8)
+	c.Assert(col.Tp.Collate, Equals, charset.CollationUTF8)
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: "utf8_general_ci"},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, charset.CharsetUTF8)
+	c.Assert(col.Tp.Collate, Equals, "utf8_general_ci")
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{
+			Charset: charset.CharsetUTF8,
+			Collate: charset.CollationUTF8,
+		},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: "utf8_general_ci"},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, charset.CharsetUTF8)
+	c.Assert(col.Tp.Collate, Equals, "utf8_general_ci")
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: "utf8_general_ci"},
+			{Tp: ColumnOptionCollate, StrValue: "utf8_unicode_ci"},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, charset.CharsetUTF8)
+	c.Assert(col.Tp.Collate, Equals, "utf8_unicode_ci")
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{
+			Charset: charset.CharsetUTF8,
+			Collate: charset.CollationUTF8,
+		},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: "utf8_general_ci"},
+			{Tp: ColumnOptionCollate, StrValue: "utf8_unicode_ci"},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, IsNil)
+	c.Assert(col.Tp.Charset, Equals, charset.CharsetUTF8)
+	c.Assert(col.Tp.Collate, Equals, "utf8_unicode_ci")
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{
+			Charset: charset.CharsetUTF8,
+			Collate: charset.CollationUTF8,
+		},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: "utf8mb4_unicode_ci"},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, ErrorMatches, "\\[ddl:1253\\]COLLATION 'utf8mb4_unicode_ci' is not valid for CHARACTER SET 'utf8'")
+
+	col = &ColumnDef{
+		Tp: &types.FieldType{},
+		Options: []*ColumnOption{
+			{Tp: ColumnOptionCollate, StrValue: "utf8mb4_unicode_ci"},
+			{Tp: ColumnOptionCollate, StrValue: "ascii_bin"},
+		},
+	}
+
+	err = col.ResolveCharsetCollation()
+	c.Assert(err, ErrorMatches, "\\[ddl:1253\\]COLLATION 'ascii_bin' is not valid for CHARACTER SET 'utf8mb4'")
 }
