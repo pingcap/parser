@@ -984,6 +984,7 @@ const (
 	ShowErrors
 	ShowPumpStatus
 	ShowDrainerStatus
+	ShowOpenTables
 )
 
 // ShowStmt is a statement to provide information about databases, tables, columns and so on.
