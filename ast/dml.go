@@ -1768,6 +1768,7 @@ const (
 	ShowBindings
 	ShowPumpStatus
 	ShowDrainerStatus
+	ShowOpenTables
 	ShowAnalyzeStatus
 )
 
@@ -1912,6 +1913,9 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 		case ShowTables:
 			restoreOptFull()
 			ctx.WriteKeyWord("TABLES")
+			restoreShowDatabaseNameOpt()
+		case ShowOpenTables:
+			ctx.WriteKeyWord("OPEN TABLES")
 			restoreShowDatabaseNameOpt()
 		case ShowTableStatus:
 			ctx.WriteKeyWord("TABLE STATUS")
