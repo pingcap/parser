@@ -204,6 +204,7 @@ import (
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	preSplitRegions		"PRE_SPLIT_REGIONS"
+	waitSplitFinish		"WAIT_SPLIT_FINISH"
 	rangeKwd		"RANGE"
 	rank			"RANK"
 	read			"READ"
@@ -6857,6 +6858,10 @@ TableOption:
 |	"PRE_SPLIT_REGIONS" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionPreSplitRegion, UintValue: $3.(uint64)}
+	}
+|	"WAIT_SPLIT_FINISH" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionWaitSplitFinish, UintValue: $3.(uint64)}
 	}
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{

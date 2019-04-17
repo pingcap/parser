@@ -218,6 +218,9 @@ type TableInfo struct {
 	// The pre-split region num is 2^(PreSplitRegions-1).
 	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
 	PreSplitRegions uint64 `json:"pre_split_regions"`
+	// WaitSplitFinish specify the pre-split region to do with synchronous or asynchronous.
+	// false means pre-split region with asynchronous.
+	WaitSplitFinish bool `json:"wait_split_finish"`
 
 	Partition *PartitionInfo `json:"partition"`
 

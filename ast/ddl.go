@@ -1181,6 +1181,7 @@ const (
 	TableOptionStatsPersistent
 	TableOptionShardRowID
 	TableOptionPreSplitRegion
+	TableOptionWaitSplitFinish
 	TableOptionPackKeys
 )
 
@@ -1328,6 +1329,9 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("= %d", n.UintValue)
 	case TableOptionPreSplitRegion:
 		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
+		ctx.WritePlainf("= %d", n.UintValue)
+	case TableOptionWaitSplitFinish:
+		ctx.WriteKeyWord("WAIT_SPLIT_FINISH ")
 		ctx.WritePlainf("= %d", n.UintValue)
 	case TableOptionPackKeys:
 		// TODO: not support

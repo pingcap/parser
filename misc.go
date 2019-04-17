@@ -409,6 +409,7 @@ var tokenMap = map[string]int{
 	"QUICK":                    quick,
 	"SHARD_ROW_ID_BITS":        shardRowIDBits,
 	"PRE_SPLIT_REGIONS":        preSplitRegions,
+	"WAIT_SPLIT_FINISH":        waitSplitFinish,
 	"RANGE":                    rangeKwd,
 	"RECOVER":                  recover,
 	"READ":                     read,
