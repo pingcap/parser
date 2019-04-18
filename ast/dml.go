@@ -1768,6 +1768,7 @@ const (
 	ShowBindings
 	ShowPumpStatus
 	ShowDrainerStatus
+	ShowOpenTables
 )
 
 // ShowStmt is a statement to provide information about databases, tables, columns and so on.
@@ -1782,8 +1783,9 @@ type ShowStmt struct {
 	Column      *ColumnName // Used for `desc table column`.
 	Flag        int         // Some flag parsed from sql, such as FULL.
 	Full        bool
-	User        *auth.UserIdentity // Used for show grants/create user.
-	IfNotExists bool               // Used for `show create database if not exists`
+	User        *auth.UserIdentity   // Used for show grants/create user.
+	Roles       []*auth.RoleIdentity // Used for show grants .. using
+	IfNotExists bool                 // Used for `show create database if not exists`
 
 	// GlobalScope is used by `show variables` and `show bindings`
 	GlobalScope bool
@@ -1858,6 +1860,17 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore ShowStmt.User")
 			}
 		}
+		if n.Roles != nil {
+			ctx.WriteKeyWord(" USING ")
+			for i, r := range n.Roles {
+				if err := r.Restore(ctx); err != nil {
+					return errors.Annotate(err, "An error occurred while restore ShowStmt.User")
+				}
+				if i != len(n.Roles)-1 {
+					ctx.WritePlain(", ")
+				}
+			}
+		}
 	case ShowMasterStatus:
 		ctx.WriteKeyWord("MASTER STATUS")
 	case ShowProcessList:
@@ -1899,6 +1912,9 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 		case ShowTables:
 			restoreOptFull()
 			ctx.WriteKeyWord("TABLES")
+			restoreShowDatabaseNameOpt()
+		case ShowOpenTables:
+			ctx.WriteKeyWord("OPEN TABLES")
 			restoreShowDatabaseNameOpt()
 		case ShowTableStatus:
 			ctx.WriteKeyWord("TABLE STATUS")

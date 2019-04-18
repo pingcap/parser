@@ -203,6 +203,7 @@ import (
 	primary			"PRIMARY"
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
+	preSplitRegions		"PRE_SPLIT_REGIONS"
 	rangeKwd		"RANGE"
 	rank			"RANK"
 	read			"READ"
@@ -410,6 +411,7 @@ import (
 	start		"START"
 	statsPersistent	"STATS_PERSISTENT"
 	status		"STATUS"
+	open		"OPEN"
 	subject		"SUBJECT"
 	subpartition	"SUBPARTITION"
 	subpartitions	"SUBPARTITIONS"
@@ -856,6 +858,7 @@ import (
 	UserSpec		"Username and auth option"
 	UserSpecList		"Username and auth option list"
 	UserVariableList	"User defined variable name list"
+	UsingRoles	"UsingRoles is role option for SHOW GRANT"
 	Values			"values"
 	ValuesList		"values list"
 	ValuesOpt		"values optional"
@@ -3142,7 +3145,7 @@ UnReservedKeyword:
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
-| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
+| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
@@ -6204,12 +6207,21 @@ ShowStmt:
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
 		$$ = &ast.ShowStmt{Tp: ast.ShowGrants}
 	}
-|	"SHOW" "GRANTS" "FOR" Username
+|	"SHOW" "GRANTS" "FOR" Username UsingRoles
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
-		$$ = &ast.ShowStmt{
-			Tp:	ast.ShowGrants,
-			User:	$4.(*auth.UserIdentity),
+		if $5 != nil {
+			$$ = &ast.ShowStmt{
+				Tp:	ast.ShowGrants,
+				User:	$4.(*auth.UserIdentity),
+				Roles:  $5.([]*auth.RoleIdentity),
+			}
+		} else {
+			$$ = &ast.ShowStmt{
+				Tp:	ast.ShowGrants,
+				User:	$4.(*auth.UserIdentity),
+				Roles:  nil,
+			}
 		}
 	}
 |	"SHOW" "MASTER" "STATUS"
@@ -6294,6 +6306,15 @@ ShowStmt:
 		}
 	}
 
+UsingRoles:
+	{
+		$$ = nil
+	}
+|	"USING" RolenameList
+	{
+		$$ = $2.([]*auth.RoleIdentity)
+	}
+
 ShowIndexKwd:
 	"INDEX"
 |	"INDEXES"
@@ -6321,6 +6342,13 @@ ShowTargetFilterable:
 			Tp:	ast.ShowTables,
 			DBName:	$3.(string),
 			Full:	$1.(bool),
+		}
+	}
+|	"OPEN" "TABLES" ShowDatabaseNameOpt
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowOpenTables,
+			DBName:	$3.(string),
 		}
 	}
 |	"TABLE" "STATUS" ShowDatabaseNameOpt
@@ -6825,6 +6853,10 @@ TableOption:
 |	"SHARD_ROW_ID_BITS" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionShardRowID, UintValue: $3.(uint64)}
+	}
+|	"PRE_SPLIT_REGIONS" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPreSplitRegion, UintValue: $3.(uint64)}
 	}
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
