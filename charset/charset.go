@@ -54,12 +54,12 @@ var charsetInfos = []*Charset{
 }
 
 // All the names supported collations should be in the following table.
-var supportedCollationNames = map[string]interface{}{
-	CollationUTF8:    nil,
-	CollationUTF8MB4: nil,
-	CollationASCII:   nil,
-	CollationLatin1:  nil,
-	CollationBin:     nil,
+var supportedCollationNames = map[string]struct{}{
+	CollationUTF8:    {},
+	CollationUTF8MB4: {},
+	CollationASCII:   {},
+	CollationLatin1:  {},
+	CollationBin:     {},
 }
 
 // Desc is a charset description.
