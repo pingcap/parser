@@ -32,6 +32,7 @@ var (
 	_ DDLNode = &DropTableStmt{}
 	_ DDLNode = &RenameTableStmt{}
 	_ DDLNode = &TruncateTableStmt{}
+	_ DDLNode = &SplitIndexRegionStmt{}
 
 	_ Node = &AlterTableSpec{}
 	_ Node = &ColumnDef{}
@@ -1703,7 +1704,7 @@ func (n *AlterTableSpec) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-type SplitTableIndexRegionStmt struct {
+type SplitIndexRegionStmt struct {
 	ddlNode
 
 	Table      *TableName
@@ -1711,7 +1712,7 @@ type SplitTableIndexRegionStmt struct {
 	ValueLists [][]ExprNode
 }
 
-func (n *SplitTableIndexRegionStmt) Restore(ctx *RestoreCtx) error {
+func (n *SplitIndexRegionStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("SPLIT TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore SplitTableIndexRegionStmt.Table")
@@ -1737,13 +1738,13 @@ func (n *SplitTableIndexRegionStmt) Restore(ctx *RestoreCtx) error {
 	return nil
 }
 
-func (n *SplitTableIndexRegionStmt) Accept(v Visitor) (Node, bool) {
+func (n *SplitIndexRegionStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
 
-	n = newNode.(*SplitTableIndexRegionStmt)
+	n = newNode.(*SplitIndexRegionStmt)
 	node, ok := n.Table.Accept(v)
 	if !ok {
 		return n, false

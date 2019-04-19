@@ -1338,7 +1338,7 @@ var (
 		58172: 753, // ShowStmt (2x)
 		58173: 754, // ShowTableAliasOpt (2x)
 		58175: 755, // SignedLiteral (2x)
-		58178: 756, // SplitTableIndexRegionStmt (2x)
+		58178: 756, // SplitIndexRegionStmt (2x)
 		58181: 757, // Statement (2x)
 		58183: 758, // StatsPersistentVal (2x)
 		58184: 759, // StringList (2x)
@@ -2297,7 +2297,7 @@ var (
 		"ShowStmt",
 		"ShowTableAliasOpt",
 		"SignedLiteral",
-		"SplitTableIndexRegionStmt",
+		"SplitIndexRegionStmt",
 		"Statement",
 		"StatsPersistentVal",
 		"StringList",
@@ -7930,7 +7930,7 @@ yynewstate:
 		}
 	case 66:
 		{
-			parser.yyVAL.statement = &ast.SplitTableIndexRegionStmt{
+			parser.yyVAL.statement = &ast.SplitIndexRegionStmt{
 				Table:      yyS[yypt-4].item.(*ast.TableName),
 				IndexName:  yyS[yypt-2].item.(string),
 				ValueLists: yyS[yypt-0].item.([][]ast.ExprNode),

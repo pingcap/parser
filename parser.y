@@ -638,7 +638,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SplitTableIndexRegionStmt	"split table index region statement"
+	SplitIndexRegionStmt		"split index region statement"
 	SetStmt				"Set variable statement"
 	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
@@ -1447,16 +1447,16 @@ RecoverTableStmt:
 
 /*******************************************************************
  *
- *  Split Table index region Statement
+ *  Split index region Statement
  *
  *  Example:
  *      SPLIT TABLE table_name INDEX index_name SPLIT BY (val1...),(val2...)...
  *
  *******************************************************************/
-SplitTableIndexRegionStmt:
+SplitIndexRegionStmt:
 	"SPLIT" "TABLE" TableName "INDEX" IndexName "BY" ValuesList
 	{
-		$$ = &ast.SplitTableIndexRegionStmt{
+		$$ = &ast.SplitIndexRegionStmt{
 			Table: $3.(*ast.TableName),
 			IndexName: $5.(string),
 			ValueLists: $7.([][]ast.ExprNode),
@@ -6692,7 +6692,7 @@ Statement:
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
-|	SplitTableIndexRegionStmt
+|	SplitIndexRegionStmt
 |	ShowStmt
 |	SubSelect
 	{
