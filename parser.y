@@ -341,6 +341,7 @@ import (
 	identified	"IDENTIFIED"
 	isolation	"ISOLATION"
 	issuer		"ISSUER"
+	incremental	"INCREMENTAL"
 	indexes		"INDEXES"
 	invoker		"INVOKER"
 	jsonType	"JSON"
@@ -1454,6 +1455,10 @@ AnalyzeTableStmt:
 	{
 		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, IndexNames: $5.([]model.CIStr), IndexFlag: true, MaxNumBuckets: $6.(uint64)}
 	}
+|	"ANALYZE" "INCREMENTAL" "TABLE" TableName "INDEX" IndexNameList MaxNumBuckets
+	{
+		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$4.(*ast.TableName)}, IndexNames: $6.([]model.CIStr), IndexFlag: true, Incremental: true, MaxNumBuckets: $7.(uint64)}
+	}
 |	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList MaxNumBuckets
 	{
 		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, PartitionNames: $5.([]model.CIStr), MaxNumBuckets: $6.(uint64),}
@@ -1466,6 +1471,17 @@ AnalyzeTableStmt:
 			IndexNames: $7.([]model.CIStr),
 			IndexFlag: true,
 			MaxNumBuckets: $8.(uint64),
+		}
+	}
+|	"ANALYZE" "INCREMENTAL" "TABLE" TableName "PARTITION" PartitionNameList "INDEX" IndexNameList MaxNumBuckets
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames: []*ast.TableName{$4.(*ast.TableName)},
+			PartitionNames: $6.([]model.CIStr),
+			IndexNames: $8.([]model.CIStr),
+			IndexFlag: true,
+			Incremental: true,
+			MaxNumBuckets: $9.(uint64),
 		}
 	}
 
@@ -1626,8 +1642,7 @@ ColumnOption:
 	}
 |	"ON" "UPDATE" NowSymOptionFraction
 	{
-		nowFunc := &ast.FuncCallExpr{FnName: model.NewCIStr("CURRENT_TIMESTAMP")}
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionOnUpdate, Expr: nowFunc}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionOnUpdate, Expr: $3}
 	}
 |	"COMMENT" stringLit
 	{
@@ -3154,7 +3169,8 @@ UnReservedKeyword:
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
-| "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED" | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT"
+| "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
+| "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL"
 
 
 
@@ -5869,14 +5885,14 @@ CharsetName:
 	StringName
 	{
 		// Validate input charset name to keep the same behavior as parser of MySQL.
-		_, _, err := charset.GetCharsetInfo($1.(string))
+		name, _, err := charset.GetCharsetInfo($1.(string))
 		if err != nil {
 			yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs($1))
 			return 1
 		}
-		// Use $1 instead of charset name returned from charset.GetCharsetInfo(),
-		// to keep upper-lower case of input for restore.
-		$$ = $1
+		// Use charset name returned from charset.GetCharsetInfo(),
+		// to keep lower case of input for generated column restore.
+		$$ = name
 	}
 |	binaryType
 	{
@@ -6305,6 +6321,20 @@ ShowStmt:
 		$$ = &ast.ShowStmt{
 			Tp: ast.ShowPrivileges,
 		}
+	}
+|	"SHOW" "ANALYZE" "STATUS" ShowLikeOrWhereOpt
+	{
+		stmt := &ast.ShowStmt{
+			Tp: ast.ShowAnalyzeStatus,
+		}
+		if $4 != nil {
+			if x, ok := $4.(*ast.PatternLikeExpr); ok && x.Expr == nil {
+				stmt.Pattern = x
+			} else {
+				stmt.Where = $4.(ast.ExprNode)
+			}
+		}
+		$$ = stmt
 	}
 
 UsingRoles:
