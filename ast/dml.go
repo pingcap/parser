@@ -1761,6 +1761,7 @@ const (
 	ShowStatsBuckets
 	ShowStatsHealthy
 	ShowPlugins
+	ShowProfile
 	ShowProfiles
 	ShowMasterStatus
 	ShowPrivileges
@@ -1770,6 +1771,19 @@ const (
 	ShowDrainerStatus
 	ShowOpenTables
 	ShowAnalyzeStatus
+)
+
+const (
+	ProfileTypeInvalid = iota
+	ProfileTypeCPU
+	ProfileTypeMemory
+	ProfileTypeBlockIo
+	ProfileTypeContextSwitch
+	ProfileTypePageFaults
+	ProfileTypeIpc
+	ProfileTypeSwaps
+	ProfileTypeSource
+	ProfileTypeAll
 )
 
 // ShowStmt is a statement to provide information about databases, tables, columns and so on.
@@ -1792,6 +1806,10 @@ type ShowStmt struct {
 	GlobalScope bool
 	Pattern     *PatternLikeExpr
 	Where       ExprNode
+
+	ShowProfileTypes []int  // Used for `SHOW PROFILE` syntax
+	ShowProfileArgs  *int64 // Used for `SHOW PROFILE` syntax
+	ShowProfileLimit *Limit // Used for `SHOW PROFILE` syntax
 }
 
 // Restore implements Node interface.
@@ -1899,6 +1917,47 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 		}
 	case ShowProfiles:
 		ctx.WriteKeyWord("PROFILES")
+	case ShowProfile:
+		ctx.WriteKeyWord("PROFILE")
+		if len(n.ShowProfileTypes) > 0 {
+			for i, tp := range n.ShowProfileTypes {
+				ctx.WritePlain(" ")
+				if i != 0 {
+					ctx.WritePlain(",")
+				}
+				switch tp {
+				case ProfileTypeCPU:
+					ctx.WritePlain("CPU")
+				case ProfileTypeMemory:
+					ctx.WritePlain("MEMORY")
+				case ProfileTypeBlockIo:
+					ctx.WritePlain("BLOCK IO")
+				case ProfileTypeContextSwitch:
+					ctx.WritePlain("CONTEXT SWITCHES")
+				case ProfileTypeIpc:
+					ctx.WritePlain("IPC")
+				case ProfileTypePageFaults:
+					ctx.WritePlain("PAGE FAULTS")
+				case ProfileTypeSource:
+					ctx.WritePlain("SOURCE")
+				case ProfileTypeSwaps:
+					ctx.WritePlain("SWAPS")
+				case ProfileTypeAll:
+					ctx.WritePlain("ALL")
+				}
+			}
+		}
+		if n.ShowProfileArgs != nil {
+			ctx.WriteKeyWord(" FOR QUERY ")
+			ctx.WritePlainf("%d", *n.ShowProfileArgs)
+		}
+		if n.ShowProfileLimit != nil {
+			ctx.WritePlain(" ")
+			if err := n.ShowProfileLimit.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore ShowStmt.WritePlain")
+			}
+		}
+
 	case ShowPrivileges:
 		ctx.WriteKeyWord("PRIVILEGES")
 	// ShowTargetFilterable
