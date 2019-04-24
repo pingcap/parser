@@ -1770,6 +1770,7 @@ const (
 	ShowPumpStatus
 	ShowDrainerStatus
 	ShowOpenTables
+	ShowAnalyzeStatus
 )
 
 // ShowStmt is a statement to provide information about databases, tables, columns and so on.
@@ -1971,6 +1972,8 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteKeyWord("PUMP STATUS")
 		case ShowDrainerStatus:
 			ctx.WriteKeyWord("DRAINER STATUS")
+		case ShowAnalyzeStatus:
+			ctx.WriteKeyWord("ANALYZE STATUS")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
