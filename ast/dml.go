@@ -1921,29 +1921,29 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("PROFILE")
 		if len(n.ShowProfileTypes) > 0 {
 			for i, tp := range n.ShowProfileTypes {
-				ctx.WritePlain(" ")
 				if i != 0 {
 					ctx.WritePlain(",")
 				}
+				ctx.WritePlain(" ")
 				switch tp {
 				case ProfileTypeCPU:
-					ctx.WritePlain("CPU")
+					ctx.WriteKeyWord("CPU")
 				case ProfileTypeMemory:
-					ctx.WritePlain("MEMORY")
+					ctx.WriteKeyWord("MEMORY")
 				case ProfileTypeBlockIo:
-					ctx.WritePlain("BLOCK IO")
+					ctx.WriteKeyWord("BLOCK IO")
 				case ProfileTypeContextSwitch:
-					ctx.WritePlain("CONTEXT SWITCHES")
+					ctx.WriteKeyWord("CONTEXT SWITCHES")
 				case ProfileTypeIpc:
-					ctx.WritePlain("IPC")
+					ctx.WriteKeyWord("IPC")
 				case ProfileTypePageFaults:
-					ctx.WritePlain("PAGE FAULTS")
+					ctx.WriteKeyWord("PAGE FAULTS")
 				case ProfileTypeSource:
-					ctx.WritePlain("SOURCE")
+					ctx.WriteKeyWord("SOURCE")
 				case ProfileTypeSwaps:
-					ctx.WritePlain("SWAPS")
+					ctx.WriteKeyWord("SWAPS")
 				case ProfileTypeAll:
-					ctx.WritePlain("ALL")
+					ctx.WriteKeyWord("ALL")
 				}
 			}
 		}
