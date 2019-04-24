@@ -638,7 +638,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SplitIndexRegionStmt		"split index region statement"
+	SplitIndexRegionStmt		"Split index region statement"
 	SetStmt				"Set variable statement"
 	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
@@ -1447,7 +1447,7 @@ RecoverTableStmt:
 
 /*******************************************************************
  *
- *  Split index region Statement
+ *  Split index region statement
  *
  *  Example:
  *      SPLIT TABLE table_name INDEX index_name SPLIT BY (val1...),(val2...)...
