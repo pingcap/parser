@@ -5349,7 +5349,7 @@ SelectStmtLimit:
 	}
 |	"LIMIT" LimitOption "OFFSET" LimitOption
 	{
-		$$ = &ast.Limit{Offset: $4.(ast.ExprNode), Count: $2.(ast.ExprNode)}
+		$$ = &ast.Limit{Offset: $4.(ast.ExprNode), Count: $2.(ast.ExprNode), ExplicitOffsetSyntax: true}
 	}
 
 

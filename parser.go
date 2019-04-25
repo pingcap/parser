@@ -11137,7 +11137,7 @@ yynewstate:
 		}
 	case 1016:
 		{
-			parser.yyVAL.item = &ast.Limit{Offset: yyS[yypt-0].item.(ast.ExprNode), Count: yyS[yypt-2].item.(ast.ExprNode)}
+			parser.yyVAL.item = &ast.Limit{Offset: yyS[yypt-0].item.(ast.ExprNode), Count: yyS[yypt-2].item.(ast.ExprNode), ExplicitOffsetSyntax: true}
 		}
 	case 1017:
 		{

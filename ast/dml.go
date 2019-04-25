@@ -1686,21 +1686,32 @@ func (n *UpdateStmt) Accept(v Visitor) (Node, bool) {
 type Limit struct {
 	node
 
-	Count  ExprNode
-	Offset ExprNode
+	Count                ExprNode
+	Offset               ExprNode
+	ExplicitOffsetSyntax bool
 }
 
 // Restore implements Node interface.
 func (n *Limit) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("LIMIT ")
-	if n.Offset != nil {
+	if n.ExplicitOffsetSyntax {
+		if err := n.Count.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore Limit.Count")
+		}
+		ctx.WriteKeyWord(" OFFSET ")
 		if err := n.Offset.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore Limit.Offset")
 		}
-		ctx.WritePlain(",")
-	}
-	if err := n.Count.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore Limit.Count")
+	} else {
+		if n.Offset != nil {
+			if err := n.Offset.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore Limit.Offset")
+			}
+			ctx.WritePlain(",")
+		}
+		if err := n.Count.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore Limit.Count")
+		}
 	}
 	return nil
 }

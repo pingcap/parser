@@ -602,6 +602,11 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select 1 as a from dual where 1 < any (select 2) order by a", true, "SELECT 1 AS `a` FROM DUAL WHERE 1<ANY (SELECT 2) ORDER BY `a`"},
 		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
 
+		// for limit
+		{"SELECT * FROM t LIMIT 1", true, "SELECT * FROM `t` LIMIT 1"},
+		{"SELECT * FROM t LIMIT 1, 5", true, "SELECT * FROM `t` LIMIT 1,5"},
+		{"SELECT * FROM t LIMIT 1 OFFSET 5", true, "SELECT * FROM `t` LIMIT 1 OFFSET 5"},
+
 		// for https://github.com/pingcap/tidb/issues/320
 		{`(select 1);`, true, "SELECT 1"},
 
