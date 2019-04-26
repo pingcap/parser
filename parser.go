@@ -8003,7 +8003,8 @@ yynewstate:
 		{
 			colDef := &ast.ColumnDef{Name: yyS[yypt-2].item.(*ast.ColumnName), Tp: yyS[yypt-1].item.(*types.FieldType), Options: yyS[yypt-0].item.([]*ast.ColumnOption)}
 			if !colDef.Validate() {
-				yylex.Errorf("")
+				yylex.AppendError(yylex.Errorf(""))
+				return 1
 			}
 			parser.yyVAL.item = colDef
 		}

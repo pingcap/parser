@@ -689,6 +689,9 @@ func (n *ColumnDef) Validate() bool {
 		}
 		_, found := invalidOption4GeneratedColumn[opt.Tp]
 		illegalOpt4gc = illegalOpt4gc || found
+		if illegalOpt4gc {
+			break
+		}
 	}
 	return !(generatedCol && illegalOpt4gc)
 }
