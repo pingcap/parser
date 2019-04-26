@@ -1157,6 +1157,98 @@ func (n *DropIndexStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// LockTablesStmt is a statement to lock tables.
+type LockTablesStmt struct {
+	ddlNode
+
+	TableLocks []TableLock
+}
+
+// TableLockType is the type of the table lock.
+type TableLockType byte
+
+const (
+	TableLockNone TableLockType = iota
+	// TableLockRead means the session with this lock has read permission, other session can't read/write until the lock is released.
+	TableLockRead
+	// TableLockReadLocal is not supported.
+	TableLockReadLocal
+	// TableLockWriteOnlyMultiRead means the session with this lock has write/read permission, and the other session is still has read permission.
+	TableLockWriteOnlyMultiRead
+	// TableLockWrite means only the session with this lock has write/read permission, other session can't read/write until the lock is released.
+	TableLockWrite
+)
+
+func (t TableLockType) String() string {
+	switch t {
+	case TableLockNone:
+		return "NONE"
+	case TableLockRead:
+		return "READ"
+	case TableLockReadLocal:
+		return "READ LOCAL"
+	case TableLockWriteOnlyMultiRead:
+		return "WRITE_ONLY_MULTI_READ"
+	case TableLockWrite:
+		return "WRITE"
+	}
+	return ""
+}
+
+// TableLock contains the table name and lock type.
+type TableLock struct {
+	Table *TableName
+	Type  TableLockType
+}
+
+// Accept implements Node Accept interface.
+func (n *LockTablesStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*LockTablesStmt)
+	for i := range n.TableLocks {
+
+		node, ok := n.TableLocks[i].Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableLocks[i].Table = node.(*TableName)
+	}
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *LockTablesStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("LOCK TABLES ")
+	for _, tl := range n.TableLocks {
+		if err := tl.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while add index")
+		}
+		ctx.WriteKeyWord(" " + tl.Type.String())
+	}
+	return nil
+}
+
+// UnlockTablesStmt is a statement to unlock tables.
+type UnlockTablesStmt struct {
+	ddlNode
+}
+
+// Accept implements Node Accept interface.
+func (n *UnlockTablesStmt) Accept(v Visitor) (Node, bool) {
+	_, _ = v.Enter(n)
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *UnlockTablesStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("UNLOCK TABLES")
+	return nil
+
+}
+
 // TableOptionType is the type for TableOption
 type TableOptionType int
 

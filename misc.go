@@ -556,6 +556,7 @@ var tokenMap = map[string]int{
 	"WHERE":                    where,
 	"WITH":                     with,
 	"WRITE":                    write,
+	"WRITE_ONLY_MULTI_READ":    writeOnlyMultiRead,
 	"XOR":                      xor,
 	"X509":                     x509,
 	"YEAR":                     yearType,
