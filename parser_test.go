@@ -2448,6 +2448,54 @@ func (s *testParserSuite) TestPriority(c *C) {
 	c.Assert(sel.SelectStmtOpts.Priority, Equals, mysql.HighPriority)
 }
 
+func (s *testParserSuite) TestSQLBigResult(c *C) {
+	table := []testCase{
+		{`select SQL_BIG_RESULT c1 from t group by c1`, true, "SELECT `c1` FROM `t` GROUP BY `c1`"},
+		{`select c1 from t group by c1`, false, "SELECT `c1` FROM `t` GROUP BY `c1`"},
+	}
+
+	parser := parser.New()
+	for _, tt := range table {
+		stmt, _, err := parser.Parse(tt.src, "", "")
+		c.Assert(err, IsNil)
+
+		sel := stmt[0].(*ast.SelectStmt)
+		c.Assert(sel.SelectStmtOpts.SQLBigResult, Equals, tt.ok)
+	}
+}
+
+func (s *testParserSuite) TestSQLBufferResult(c *C) {
+	table := []testCase{
+		{`select SQL_BUFFER_RESULT * from t`, true, "SELECT * FROM `t`"},
+		{`select * from t`, false, "SELECT * FROM `t`"},
+	}
+
+	parser := parser.New()
+	for _, tt := range table {
+		stmt, _, err := parser.Parse(tt.src, "", "")
+		c.Assert(err, IsNil)
+
+		sel := stmt[0].(*ast.SelectStmt)
+		c.Assert(sel.SelectStmtOpts.SQLBufferResult, Equals, tt.ok)
+	}
+}
+
+func (s *testParserSuite) TestSQLSmallResult(c *C) {
+	table := []testCase{
+		{`select SQL_SMALL_RESULT c1 from t group by c1`, true, "SELECT `c1` FROM `t` GROUP BY `c1`"},
+		{`select c1 from t group by c1`, false, "SELECT `c1` FROM `t` GROUP BY `c1`"},
+	}
+
+	parser := parser.New()
+	for _, tt := range table {
+		stmt, _, err := parser.Parse(tt.src, "", "")
+		c.Assert(err, IsNil)
+
+		sel := stmt[0].(*ast.SelectStmt)
+		c.Assert(sel.SelectStmtOpts.SQLSmallResult, Equals, tt.ok)
+	}
+}
+
 func (s *testParserSuite) TestSQLNoCache(c *C) {
 	table := []testCase{
 		{`select SQL_NO_CACHE * from t`, false, ""},
