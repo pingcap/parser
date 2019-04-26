@@ -355,7 +355,7 @@ const (
 )
 
 var (
-	invalidOption4GeneratedColumn = map[ColumnOptionType]struct{}{
+	invalidOptionForGeneratedColumn = map[ColumnOptionType]struct{}{
 		ColumnOptionAutoIncrement: {},
 		ColumnOptionOnUpdate:      {},
 		ColumnOptionDefaultValue:  {},
@@ -680,6 +680,10 @@ func (n *ColumnDef) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// Validate checks if a column definition is legal.
+// For example, generated column definitions that contain such
+// column options as `ON UPDATE`, `AUTO_INCREMENT`, `DEFAULT`
+// are illegal.
 func (n *ColumnDef) Validate() bool {
 	generatedCol := false
 	illegalOpt4gc := false
@@ -687,11 +691,8 @@ func (n *ColumnDef) Validate() bool {
 		if opt.Tp == ColumnOptionGenerated {
 			generatedCol = true
 		}
-		_, found := invalidOption4GeneratedColumn[opt.Tp]
+		_, found := invalidOptionForGeneratedColumn[opt.Tp]
 		illegalOpt4gc = illegalOpt4gc || found
-		if illegalOpt4gc {
-			break
-		}
 	}
 	return !(generatedCol && illegalOpt4gc)
 }
