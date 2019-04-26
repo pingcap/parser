@@ -351,6 +351,7 @@ const (
 	ColumnOptionComment
 	ColumnOptionGenerated
 	ColumnOptionReference
+	ColumnOptionCollate
 )
 
 var (
@@ -373,7 +374,8 @@ type ColumnOption struct {
 	// Stored is only for ColumnOptionGenerated, default is false.
 	Stored bool
 	// Refer is used for foreign key.
-	Refer *ReferenceDef
+	Refer    *ReferenceDef
+	StrValue string
 }
 
 // Restore implements Node interface.
@@ -424,6 +426,12 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		if err := n.Refer.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing ColumnOption ReferenceDef")
 		}
+	case ColumnOptionCollate:
+		if n.StrValue == "" {
+			return errors.New("Empty ColumnOption COLLATE")
+		}
+		ctx.WriteKeyWord("COLLATE ")
+		ctx.WritePlain(n.StrValue)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
@@ -1193,6 +1201,7 @@ const (
 	TableOptionRowFormat
 	TableOptionStatsPersistent
 	TableOptionShardRowID
+	TableOptionPreSplitRegion
 	TableOptionPackKeys
 )
 
@@ -1337,8 +1346,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("%d", n.UintValue)
+		ctx.WritePlainf("= %d", n.UintValue)
+	case TableOptionPreSplitRegion:
+		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
+		ctx.WritePlainf("= %d", n.UintValue)
 	case TableOptionPackKeys:
 		// TODO: not support
 		ctx.WriteKeyWord("PACK_KEYS ")
@@ -1811,6 +1822,9 @@ func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(" VALUES LESS THAN ")
 		ctx.WritePlain("(")
 		for k, less := range n.LessThan {
+			if k != 0 {
+				ctx.WritePlain(", ")
+			}
 			if err := less.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore PartitionDefinition.LessThan[%d]", k)
 			}
@@ -1886,4 +1900,48 @@ func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
 	}
 
 	return nil
+}
+
+// RecoverTableStmt is a statement to recover dropped table.
+type RecoverTableStmt struct {
+	ddlNode
+
+	JobID  int64
+	Table  *TableName
+	JobNum int64
+}
+
+// Restore implements Node interface.
+func (n *RecoverTableStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("RECOVER TABLE ")
+	if n.JobID != 0 {
+		ctx.WriteKeyWord("BY JOB ")
+		ctx.WritePlainf("%d", n.JobID)
+	} else {
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing RecoverTableStmt Table")
+		}
+		if n.JobNum > 0 {
+			ctx.WritePlainf(" %d", n.JobNum)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *RecoverTableStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	n = newNode.(*RecoverTableStmt)
+	if n.Table != nil {
+		node, ok := n.Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Table = node.(*TableName)
+	}
+	return v.Leave(n)
 }

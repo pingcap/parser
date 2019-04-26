@@ -894,6 +894,7 @@ const (
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
+	ErrRoleNotGranted                                               = 3530
 	ErrWindowNoSuchWindow                                           = 3579
 	ErrWindowCircularityInWindowGraph                               = 3580
 	ErrWindowNoChildPartitioning                                    = 3581
@@ -937,6 +938,7 @@ const (
 	ErrResolveLockTimeout = 9004
 	ErrRegionUnavailable  = 9005
 	ErrGCTooEarly         = 9006
+	ErrWriteConflict      = 9007
 
 	ErrTxnTooLarge = 9500
 )
