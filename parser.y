@@ -5366,7 +5366,7 @@ SelectStmtLimit:
 
 
 SelectStmtOpts:
-	TableOptimizerHints DefaultFalseDistinctOpt PriorityOpt SelectStmtSQLBigResult SelectStmtSQLBufferResult SelectStmtSQLCache SelectStmtSQLSmallResult SelectStmtCalcFoundRows SelectStmtStraightJoin
+	TableOptimizerHints DefaultFalseDistinctOpt PriorityOpt SelectStmtSQLSmallResult SelectStmtSQLBigResult SelectStmtSQLBufferResult SelectStmtSQLCache SelectStmtCalcFoundRows SelectStmtStraightJoin
 	{
 		opt := &ast.SelectStmtOpts{}
 		if $1 != nil {
@@ -5379,16 +5379,16 @@ SelectStmtOpts:
 			opt.Priority = $3.(mysql.PriorityEnum)
 		}
 		if $4 != nil {
-			opt.SQLBigResult = $4.(bool)
+			opt.SQLSmallResult = $4.(bool)
 		}
 		if $5 != nil {
-			opt.SQLBufferResult = $5.(bool)
+			opt.SQLBigResult = $5.(bool)
 		}
 		if $6 != nil {
-			opt.SQLCache = $6.(bool)
+			opt.SQLBufferResult = $6.(bool)
 		}
 		if $7 != nil {
-			opt.SQLSmallResult = $7.(bool)
+			opt.SQLCache = $7.(bool)
 		}
 		if $8 != nil {
 			opt.CalcFoundRows = $8.(bool)
