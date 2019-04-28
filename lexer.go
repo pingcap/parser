@@ -121,13 +121,22 @@ func (s *Scanner) stmtText() string {
 
 // Errorf tells scanner something is wrong.
 // Scanner satisfies yyLexer interface which need this function.
-func (s *Scanner) Errorf(format string, a ...interface{}) {
+func (s *Scanner) Errorf(format string, a ...interface{}) (err error) {
 	str := fmt.Sprintf(format, a...)
 	val := s.r.s[s.r.pos().Offset:]
 	if len(val) > 2048 {
 		val = val[:2048]
 	}
-	err := fmt.Errorf("line %d column %d near \"%s\"%s (total length %d)", s.r.p.Line, s.r.p.Col, val, str, len(s.r.s))
+	err = fmt.Errorf("line %d column %d near \"%s\"%s (total length %d)", s.r.p.Line, s.r.p.Col, val, str, len(s.r.s))
+	return
+}
+
+// AppendError sets error into scanner.
+// Scanner satisfies yyLexer interface which need this function.
+func (s *Scanner) AppendError(err error) {
+	if err == nil {
+		return
+	}
 	s.errs = append(s.errs, err)
 }
 
