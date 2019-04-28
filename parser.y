@@ -514,7 +514,6 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
-	writeOnlyMultiRead	"WRITE_ONLY_MULTI_READ"
 
 	builtinAddDate
 	builtinBitAnd
@@ -3177,7 +3176,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "WRITE_ONLY_MULTI_READ"
+| "TIDB_SMJ" | "TIDB_INLJ"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -8493,6 +8492,10 @@ LockType:
 |	"WRITE"
         {
 		$$ = ast.TableLockWrite
+        }
+|	"WRITE" "LOCAL"
+        {
+		$$ = ast.TableLockWriteLocal
         }
 
 TableLockList:

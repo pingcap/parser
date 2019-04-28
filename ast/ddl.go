@@ -1171,12 +1171,12 @@ const (
 	TableLockNone TableLockType = iota
 	// TableLockRead means the session with this lock has read permission, other session can't read/write until the lock is released.
 	TableLockRead
-	// TableLockReadLocal is not supported.
+	// TableLockReadLocal is not supported. TableLockReadLocal enables nonconflicting INSERT statements by other sessions to execute while the lock is held.
 	TableLockReadLocal
-	// TableLockWriteOnlyMultiRead means the session with this lock has write/read permission, and the other session is still has read permission.
-	TableLockWriteOnlyMultiRead
 	// TableLockWrite means only the session with this lock has write/read permission, other session can't read/write until the lock is released.
 	TableLockWrite
+	// TableLockWriteLocal means the session with this lock has write/read permission, and the other session is still has read permission.
+	TableLockWriteLocal
 )
 
 func (t TableLockType) String() string {
@@ -1187,8 +1187,8 @@ func (t TableLockType) String() string {
 		return "READ"
 	case TableLockReadLocal:
 		return "READ LOCAL"
-	case TableLockWriteOnlyMultiRead:
-		return "WRITE_ONLY_MULTI_READ"
+	case TableLockWriteLocal:
+		return "WRITE LOCAL"
 	case TableLockWrite:
 		return "WRITE"
 	}
