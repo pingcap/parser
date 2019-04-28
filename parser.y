@@ -1531,6 +1531,12 @@ BeginTransactionStmt:
 	{
 		$$ = &ast.BeginStmt{}
 	}
+|	"BEGIN" "LOCK"
+	{
+		$$ = &ast.BeginStmt{
+			Pessimistic: true,
+		}
+	}
 |	"START" "TRANSACTION"
 	{
 		$$ = &ast.BeginStmt{}
