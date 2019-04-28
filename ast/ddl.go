@@ -1222,7 +1222,10 @@ func (n *LockTablesStmt) Accept(v Visitor) (Node, bool) {
 // Restore implements Node interface.
 func (n *LockTablesStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("LOCK TABLES ")
-	for _, tl := range n.TableLocks {
+	for i, tl := range n.TableLocks {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
 		if err := tl.Table.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while add index")
 		}

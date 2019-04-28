@@ -8494,10 +8494,6 @@ LockType:
         {
 		$$ = ast.TableLockWrite
         }
-|	"WRITE_ONLY_MULTI_READ"
-        {
-		$$ = ast.TableLockWriteOnlyMultiRead
-        }
 
 TableLockList:
 	TableLock

@@ -2391,19 +2391,19 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 	table := []testCase{
 		{`UNLOCK TABLES;`, true, "UNLOCK TABLES"},
 		{`LOCK TABLES t1 READ;`, true, "LOCK TABLES `t1` READ"},
-		{`LOCK TABLES t1 WRITE_ONLY_MULTI_READ;`, true, "LOCK TABLES `t1` WRITE_ONLY_MULTI_READ"},
+		//{`LOCK TABLES t1 WRITE_ONLY_MULTI_READ;`, true, "LOCK TABLES `t1` WRITE_ONLY_MULTI_READ"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
 		{`LOCK TABLES t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
-		// TODO: fix below test.
-		{`LOCK TABLES t3 READ, t WRITE;`, true, "LOCK TABLES `t1` WRITE, `t3` READ"},
+		{`LOCK TABLES t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
 
 		// for unlock table and lock table
 		{`UNLOCK TABLE;`, true, "UNLOCK TABLES"},
 		{`LOCK TABLE t1 READ;`, true, "LOCK TABLES `t1` READ"},
 		{`LOCK TABLE t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
-		{`LOCK TABLE t1 WRITE_ONLY_MULTI_READ;`, true, "LOCK TABLES `t1` WRITE_ONLY_MULTI_READ"},
+		//{`LOCK TABLE t1 WRITE_ONLY_MULTI_READ;`, true, "LOCK TABLES `t1` WRITE_ONLY_MULTI_READ"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
 		{`LOCK TABLE t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
+		{`LOCK TABLE t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
 		//{`LOCK TABLE t1 WRITE, t3 READ`, true, "LOCK TABLES t1 WRITE, t3 READ"},
 	}
 	s.RunTest(c, table)
