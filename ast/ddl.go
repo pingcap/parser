@@ -1209,7 +1209,6 @@ func (n *LockTablesStmt) Accept(v Visitor) (Node, bool) {
 	}
 	n = newNode.(*LockTablesStmt)
 	for i := range n.TableLocks {
-
 		node, ok := n.TableLocks[i].Table.Accept(v)
 		if !ok {
 			return n, false
@@ -1249,7 +1248,6 @@ func (n *UnlockTablesStmt) Accept(v Visitor) (Node, bool) {
 func (n *UnlockTablesStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("UNLOCK TABLES")
 	return nil
-
 }
 
 // TableOptionType is the type for TableOption
