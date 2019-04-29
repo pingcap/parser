@@ -2313,7 +2313,7 @@ type SplitIndexRegionStmt struct {
 func (n *SplitIndexRegionStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("SPLIT TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore SplitTableIndexRegionStmt.Table")
+		return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
 	}
 	ctx.WriteKeyWord(" INDEX ")
 	ctx.WriteName(n.IndexName)
