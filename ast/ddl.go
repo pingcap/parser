@@ -1189,41 +1189,10 @@ type LockTablesStmt struct {
 	TableLocks []TableLock
 }
 
-// TableLockType is the type of the table lock.
-type TableLockType byte
-
-const (
-	TableLockNone TableLockType = iota
-	// TableLockRead means the session with this lock has read permission, other session can't read/write until the lock is released.
-	TableLockRead
-	// TableLockReadLocal is not supported. TableLockReadLocal enables nonconflicting INSERT statements by other sessions to execute while the lock is held.
-	TableLockReadLocal
-	// TableLockWrite means only the session with this lock has write/read permission, other session can't read/write until the lock is released.
-	TableLockWrite
-	// TableLockWriteLocal means the session with this lock has write/read permission, and the other session is still has read permission.
-	TableLockWriteLocal
-)
-
-func (t TableLockType) String() string {
-	switch t {
-	case TableLockNone:
-		return "NONE"
-	case TableLockRead:
-		return "READ"
-	case TableLockReadLocal:
-		return "READ LOCAL"
-	case TableLockWriteLocal:
-		return "WRITE LOCAL"
-	case TableLockWrite:
-		return "WRITE"
-	}
-	return ""
-}
-
 // TableLock contains the table name and lock type.
 type TableLock struct {
 	Table *TableName
-	Type  TableLockType
+	Type  model.TableLockType
 }
 
 // Accept implements Node Accept interface.

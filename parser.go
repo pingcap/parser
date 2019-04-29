@@ -13829,24 +13829,24 @@ yynewstate:
 		{
 			parser.yyVAL.item = ast.TableLock{
 				Table: yyS[yypt-1].item.(*ast.TableName),
-				Type:  yyS[yypt-0].item.(ast.TableLockType),
+				Type:  yyS[yypt-0].item.(model.TableLockType),
 			}
 		}
 	case 1563:
 		{
-			parser.yyVAL.item = ast.TableLockRead
+			parser.yyVAL.item = model.TableLockRead
 		}
 	case 1564:
 		{
-			parser.yyVAL.item = ast.TableLockReadLocal
+			parser.yyVAL.item = model.TableLockReadLocal
 		}
 	case 1565:
 		{
-			parser.yyVAL.item = ast.TableLockWrite
+			parser.yyVAL.item = model.TableLockWrite
 		}
 	case 1566:
 		{
-			parser.yyVAL.item = ast.TableLockWriteLocal
+			parser.yyVAL.item = model.TableLockWriteLocal
 		}
 	case 1567:
 		{

@@ -8481,26 +8481,26 @@ TableLock:
         {
 		$$ = ast.TableLock{
 			Table: $1.(*ast.TableName),
-			Type:  $2.(ast.TableLockType),
+			Type:  $2.(model.TableLockType),
 		}
         }
 
 LockType:
 	"READ"
         {
-		$$ = ast.TableLockRead
+		$$ = model.TableLockRead
         }
 |	"READ" "LOCAL"
         {
-		$$ = ast.TableLockReadLocal
+		$$ = model.TableLockReadLocal
         }
 |	"WRITE"
         {
-		$$ = ast.TableLockWrite
+		$$ = model.TableLockWrite
         }
 |	"WRITE" "LOCAL"
         {
-		$$ = ast.TableLockWriteLocal
+		$$ = model.TableLockWriteLocal
         }
 
 TableLockList:
