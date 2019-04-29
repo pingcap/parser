@@ -2328,7 +2328,7 @@ func (n *SplitIndexRegionStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitTableIndexRegionStmt.ValueLists[%d][%d]", i, j)
+				return errors.Annotatef(err, "An error occurred while restore SplitIndexRegionStmt.ValueLists[%d][%d]", i, j)
 			}
 		}
 		ctx.WritePlain(")")
