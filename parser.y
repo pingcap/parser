@@ -1450,7 +1450,7 @@ RecoverTableStmt:
  *  Split index region statement
  *
  *  Example:
- *      SPLIT TABLE table_name INDEX index_name SPLIT BY (val1...),(val2...)...
+ *      SPLIT TABLE table_name INDEX index_name BY (val1...),(val2...)...
  *
  *******************************************************************/
 SplitIndexRegionStmt:
