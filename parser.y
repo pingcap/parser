@@ -3163,6 +3163,16 @@ SplitOption:
 			Num: $6.(int64),
 		}
 	}
+|	"BY" ValuesList
+	{
+		splitOpt := &ast.SplitIndexOption{
+			ValueLists: $2.([][]ast.ExprNode),
+		}
+		$$ = &ast.IndexOption {
+			SplitOpt: splitOpt,
+		}
+	}
+
 IndexType:
 	"USING" "BTREE"
 	{
