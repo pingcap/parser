@@ -1991,6 +1991,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table ", false, ""},
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
+
+		// for create table with split index.
+		{"create table t (a int, index idx(a) SPLIT MIN (1) MAX (2) NUMBER 10)", true, "CREATE TABLE `t` (`a` INT,INDEX `idx`(`a`) SPLIT MIN (1) MAX (2) NUMBER  10)"},
+		{"create table t (a int, b varchar(20), index idx(b,a) SPLIT MIN ('a',1) MAX ('z',2) NUMBER 10)", true, "CREATE TABLE `t` (`a` INT,`b` VARCHAR(20),INDEX `idx`(`b`, `a`) SPLIT MIN ('a',1) MAX ('z',2) NUMBER  10)"},
+		{"CREATE TABLE `t` (`a` INT,`b` VARCHAR(10),INDEX `idx`(`a`) SPLIT MIN (1) MAX (2) NUMBER  10,INDEX `idx2`(`b`) COMMENT 'index b'SPLIT MIN (100) MAX (1000) NUMBER  200)", true,
+			"CREATE TABLE `t` (`a` INT,`b` VARCHAR(10),INDEX `idx`(`a`) SPLIT MIN (1) MAX (2) NUMBER  10,INDEX `idx2`(`b`) COMMENT 'index b'SPLIT MIN (100) MAX (1000) NUMBER  200)"},
 	}
 	s.RunTest(c, table)
 }

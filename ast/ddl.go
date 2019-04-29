@@ -467,6 +467,43 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
+	SplitOpt     *SplitIndexOption
+}
+
+type SplitIndexOption struct {
+	Min []ExprNode
+	Max []ExprNode
+	Num int64
+}
+
+func (n *SplitIndexOption) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("SPLIT ")
+	ctx.WriteKeyWord("MIN ")
+	ctx.WritePlain("(")
+	for j, v := range n.Min {
+		if j != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Min")
+		}
+	}
+	ctx.WritePlain(")")
+
+	ctx.WriteKeyWord(" MAX ")
+	ctx.WritePlain("(")
+	for j, v := range n.Max {
+		if j != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Max")
+		}
+	}
+	ctx.WritePlain(")")
+	ctx.WriteKeyWord(" NUMBER ")
+	ctx.WritePlainf(" %d", n.Num)
+	return nil
 }
 
 // Restore implements Node interface.
@@ -493,6 +530,15 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
+	}
+	if n.SplitOpt != nil {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		err := n.SplitOpt.Restore(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

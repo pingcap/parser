@@ -514,6 +514,8 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
+	split		"SPLIT"
+	number		"NUMBER"
 
 	builtinAddDate
 	builtinBitAnd
@@ -822,6 +824,7 @@ import (
 	ShowDatabaseNameOpt		"Show tables/columns statement database name option"
 	ShowTableAliasOpt       	"Show table alias option"
 	ShowLikeOrWhereOpt		"Show like or where clause option"
+	SplitOption			"Split Option"
 	Starting			"Starting by"
 	StatementList			"statement list"
 	StatsPersistentVal		"stats_persistent value"
@@ -3117,6 +3120,8 @@ IndexOptionList:
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
 			    opt1.KeyBlockSize = opt2.KeyBlockSize
+			} else if opt2.SplitOpt != nil {
+				opt1.SplitOpt = opt2.SplitOpt
 			}
 			$$ = opt1
 		}
@@ -3142,7 +3147,22 @@ IndexOption:
 			Comment: $2,
 		}
 	}
+|	"SPLIT" SplitOption
+	{
+		$$ = &ast.IndexOption {
+			SplitOpt: $2.(*ast.SplitIndexOption),
+		}
+	}
 
+SplitOption:
+	"MIN" RowValue "MAX" RowValue "NUMBER" NUM
+	{
+		$$ = &ast.SplitIndexOption{
+			Min: $2.([]ast.ExprNode),
+			Max: $4.([]ast.ExprNode),
+			Num: $6.(int64),
+		}
+	}
 IndexType:
 	"USING" "BTREE"
 	{
@@ -3187,7 +3207,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "NUMBER"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
