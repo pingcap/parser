@@ -625,6 +625,7 @@ import (
 	OptionalBraces			"optional braces"
 	CastType			"Cast function target type"
 	CharsetName			"Character set name"
+	CollationName			"Collation name"
 	ColumnDef			"table column definition"
 	ColumnDefList			"table column definition list"
 	ColumnName			"column name"
@@ -1536,7 +1537,7 @@ ColumnOption:
 			Refer: $1.(*ast.ReferenceDef),
 		}
 	}
-|	"COLLATE" StringName
+|	"COLLATE" CollationName
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2.(string)}
 	}
@@ -1849,7 +1850,7 @@ DatabaseOption:
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCharset, Value: $4.(string)}
 	}
-|	DefaultKwdOpt "COLLATE" EqOpt StringName
+|	DefaultKwdOpt "COLLATE" EqOpt CollationName
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4.(string)}
 	}
@@ -5617,6 +5618,17 @@ CharsetName:
 		$$ = charset.CharsetBin
 	}
 
+CollationName:
+	StringName
+	{
+		info, err := charset.GetCollationByName($1.(string))
+		if err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
+		$$ = info.Name
+	}
+
 VariableAssignmentList:
 	{
 		$$ = []*ast.VariableAssignment{}
@@ -6437,7 +6449,7 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionCharset, StrValue: $4.(string)}
 	}
-|	DefaultKwdOpt "COLLATE" EqOpt StringName
+|	DefaultKwdOpt "COLLATE" EqOpt CollationName
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $4.(string)}
 	}
@@ -7080,7 +7092,7 @@ OptCollate:
 	{
 		$$ = ""
 	}
-|	"COLLATE" StringName
+|	"COLLATE" CollationName
 	{
 		$$ = $2.(string)
 	}
