@@ -471,38 +471,58 @@ type IndexOption struct {
 }
 
 type SplitIndexOption struct {
-	Min []ExprNode
-	Max []ExprNode
-	Num int64
+	Min        []ExprNode
+	Max        []ExprNode
+	Num        int64
+	ValueLists [][]ExprNode
 }
 
 func (n *SplitIndexOption) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("SPLIT ")
-	ctx.WriteKeyWord("MIN ")
-	ctx.WritePlain("(")
-	for j, v := range n.Min {
-		if j != 0 {
-			ctx.WritePlain(",")
+	if len(n.ValueLists) == 0 {
+		ctx.WriteKeyWord("MIN ")
+		ctx.WritePlain("(")
+		for j, v := range n.Min {
+			if j != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Min")
+			}
 		}
-		if err := v.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Min")
-		}
-	}
-	ctx.WritePlain(")")
+		ctx.WritePlain(")")
 
-	ctx.WriteKeyWord(" MAX ")
-	ctx.WritePlain("(")
-	for j, v := range n.Max {
-		if j != 0 {
+		ctx.WriteKeyWord(" MAX ")
+		ctx.WritePlain("(")
+		for j, v := range n.Max {
+			if j != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Max")
+			}
+		}
+		ctx.WritePlain(")")
+		ctx.WriteKeyWord(" NUMBER ")
+		ctx.WritePlainf(" %d", n.Num)
+		return nil
+	}
+	ctx.WriteKeyWord("BY ")
+	for i, row := range n.ValueLists {
+		if i != 0 {
 			ctx.WritePlain(",")
 		}
-		if err := v.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Max")
+		ctx.WritePlain("(")
+		for j, v := range row {
+			if j != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SplitIndexOption.ValueLists[%d][%d]", i, j)
+			}
 		}
+		ctx.WritePlain(")")
 	}
-	ctx.WritePlain(")")
-	ctx.WriteKeyWord(" NUMBER ")
-	ctx.WritePlainf(" %d", n.Num)
 	return nil
 }
 

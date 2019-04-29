@@ -1994,6 +1994,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 		// for create table with split index.
 		{"create table t (a int, index idx(a) SPLIT MIN (1) MAX (2) NUMBER 10)", true, "CREATE TABLE `t` (`a` INT,INDEX `idx`(`a`) SPLIT MIN (1) MAX (2) NUMBER  10)"},
+		{"create table t (a int, index idx(a) SPLIT BY (1), (2))", true, "CREATE TABLE `t` (`a` INT,INDEX `idx`(`a`) SPLIT BY (1),(2))"},
+		{"create table t (a int, index idx(a) SPLIT BY ('a',1,2), ('z',9))", true, "CREATE TABLE `t` (`a` INT,INDEX `idx`(`a`) SPLIT BY ('a',1,2),('z',9))"},
 		{"create table t (a int, b varchar(20), index idx(b,a) SPLIT MIN ('a',1) MAX ('z',2) NUMBER 10)", true, "CREATE TABLE `t` (`a` INT,`b` VARCHAR(20),INDEX `idx`(`b`, `a`) SPLIT MIN ('a',1) MAX ('z',2) NUMBER  10)"},
 		{"CREATE TABLE `t` (`a` INT,`b` VARCHAR(10),INDEX `idx`(`a`) SPLIT MIN (1) MAX (2) NUMBER  10,INDEX `idx2`(`b`) COMMENT 'index b'SPLIT MIN (100) MAX (1000) NUMBER  200)", true,
 			"CREATE TABLE `t` (`a` INT,`b` VARCHAR(10),INDEX `idx`(`a`) SPLIT MIN (1) MAX (2) NUMBER  10,INDEX `idx2`(`b`) COMMENT 'index b'SPLIT MIN (100) MAX (1000) NUMBER  200)"},

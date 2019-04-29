@@ -1029,6 +1029,7 @@ import (
 %right 	not not2
 %right	collate
 
+%left splitOptionPriv
 %precedence '('
 %precedence quick
 %precedence escape
@@ -3163,13 +3164,10 @@ SplitOption:
 			Num: $6.(int64),
 		}
 	}
-|	"BY" ValuesList
+|	"BY" ValuesList %prec splitOptionPriv
 	{
-		splitOpt := &ast.SplitIndexOption{
+		$$ = &ast.SplitIndexOption{
 			ValueLists: $2.([][]ast.ExprNode),
-		}
-		$$ = &ast.IndexOption {
-			SplitOpt: splitOpt,
 		}
 	}
 
