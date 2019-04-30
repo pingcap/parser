@@ -1177,7 +1177,10 @@ func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 
 	if n.ColumnAssignments != nil {
 		ctx.WriteKeyWord(" SET")
-		for _, assign := range n.ColumnAssignments {
+		for i, assign := range n.ColumnAssignments {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
 			ctx.WritePlain(" ")
 			if err := assign.Restore(ctx); err != nil {
 				return errors.Annotate(err, "An error occurred while restore LoadDataStmt.ColumnAssignments")
