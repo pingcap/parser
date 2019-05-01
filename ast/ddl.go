@@ -709,7 +709,7 @@ type CreateTableStmt struct {
 	Constraints []*Constraint
 	Options     []*TableOption
 	Partition   *PartitionOptions
-	OnDuplicate OnDuplicateCreateTableSelectType
+	OnDuplicate OnDuplicateKeyHandlingType
 	Select      ResultSetNode
 }
 
@@ -769,11 +769,11 @@ func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
 
 	if n.Select != nil {
 		switch n.OnDuplicate {
-		case OnDuplicateCreateTableSelectError:
+		case OnDuplicateKeyHandlingError:
 			ctx.WriteKeyWord(" AS ")
-		case OnDuplicateCreateTableSelectIgnore:
+		case OnDuplicateKeyHandlingIgnore:
 			ctx.WriteKeyWord(" IGNORE AS ")
-		case OnDuplicateCreateTableSelectReplace:
+		case OnDuplicateKeyHandlingReplace:
 			ctx.WriteKeyWord(" REPLACE AS ")
 		}
 
@@ -1227,15 +1227,16 @@ const (
 	TokuDBRowFormatUncompressed
 )
 
-// OnDuplicateCreateTableSelectType is the option that handle unique key values in 'CREATE TABLE ... SELECT'.
+// OnDuplicateKeyHandlingType is the option that handle unique key values in 'CREATE TABLE ... SELECT' or `LOAD DATA`.
 // See https://dev.mysql.com/doc/refman/5.7/en/create-table-select.html
-type OnDuplicateCreateTableSelectType int
+// See https://dev.mysql.com/doc/refman/8.0/en/load-data.html
+type OnDuplicateKeyHandling int
 
-// OnDuplicateCreateTableSelect types
+// OnDuplicateKeyHandling types
 const (
-	OnDuplicateCreateTableSelectError OnDuplicateCreateTableSelectType = iota
-	OnDuplicateCreateTableSelectIgnore
-	OnDuplicateCreateTableSelectReplace
+	OnDuplicateKeyHandlingError OnDuplicateKeyHandling = iota
+	OnDuplicateKeyHandlingIgnore
+	OnDuplicateKeyHandlingReplace
 )
 
 // TableOption is used for parsing table option from SQL.

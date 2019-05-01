@@ -8505,7 +8505,7 @@ yynewstate:
 			if yyS[yypt-3].item != nil {
 				stmt.Partition = yyS[yypt-3].item.(*ast.PartitionOptions)
 			}
-			stmt.OnDuplicate = yyS[yypt-2].item.(ast.OnDuplicateCreateTableSelectType)
+			stmt.OnDuplicate = yyS[yypt-2].item.(ast.OnDuplicateKeyHandlingType)
 			stmt.Select = yyS[yypt-0].item.(*ast.CreateTableStmt).Select
 			parser.yyVAL.statement = stmt
 		}
@@ -8663,15 +8663,15 @@ yynewstate:
 		}
 	case 200:
 		{
-			parser.yyVAL.item = ast.OnDuplicateCreateTableSelectError
+			parser.yyVAL.item = ast.OnDuplicateKeyHandlingError
 		}
 	case 201:
 		{
-			parser.yyVAL.item = ast.OnDuplicateCreateTableSelectIgnore
+			parser.yyVAL.item = ast.OnDuplicateKeyHandlingIgnore
 		}
 	case 202:
 		{
-			parser.yyVAL.item = ast.OnDuplicateCreateTableSelectReplace
+			parser.yyVAL.item = ast.OnDuplicateKeyHandlingReplace
 		}
 	case 205:
 		{

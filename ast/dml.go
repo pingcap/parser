@@ -1118,13 +1118,14 @@ func (n *Assignment) Accept(v Visitor) (Node, bool) {
 type LoadDataStmt struct {
 	dmlNode
 
-	IsLocal     bool
-	Path        string
-	Table       *TableName
-	Columns     []*ColumnName
-	FieldsInfo  *FieldsClause
-	LinesInfo   *LinesClause
-	IgnoreLines uint64
+	IsLocal        bool
+	Path           string
+	OnDuplicate OnDuplicateKeyHandling
+	Table          *TableName
+	Columns        []*ColumnName
+	FieldsInfo     *FieldsClause
+	LinesInfo      *LinesClause
+	IgnoreLines    uint64
 }
 
 // Restore implements Node interface.

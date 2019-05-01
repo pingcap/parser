@@ -772,7 +772,7 @@ import (
 	NoWriteToBinLogAliasOpt 	"NO_WRITE_TO_BINLOG alias LOCAL or empty"
 	ObjectType			"Grant statement object type"
 	OnDuplicateKeyUpdate		"ON DUPLICATE KEY UPDATE value list"
-	DuplicateOpt			"[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement"
+	DuplicateOpt			"[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
 	OptFull				"Full or empty"
 	Order				"ORDER BY clause optional collation specification"
 	OrderBy				"ORDER BY clause"
@@ -2061,7 +2061,7 @@ CreateTableStmt:
 		if $7 != nil {
 			stmt.Partition = $7.(*ast.PartitionOptions)
 		}
-		stmt.OnDuplicate = $8.(ast.OnDuplicateCreateTableSelectType)
+		stmt.OnDuplicate = $8.(ast.OnDuplicateKeyHandlingType)
 		stmt.Select = $10.(*ast.CreateTableStmt).Select
 		$$ = stmt
 	}
@@ -2252,15 +2252,15 @@ PartDefValuesOpt:
 
 DuplicateOpt:
 	{
-		$$ = ast.OnDuplicateCreateTableSelectError
+		$$ = ast.OnDuplicateKeyHandlingError
 	}
 |   "IGNORE"
 	{
-		$$ = ast.OnDuplicateCreateTableSelectIgnore
+		$$ = ast.OnDuplicateKeyHandlingIgnore
 	}
 |   "REPLACE"
 	{
-		$$ = ast.OnDuplicateCreateTableSelectReplace
+		$$ = ast.OnDuplicateKeyHandlingReplace
 	}
 
 AsOpt:
@@ -8379,22 +8379,23 @@ RevokeRoleStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/load-data.html
  *******************************************************************************************/
 LoadDataStmt:
-	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets LoadDataSetSpecOpt
+	"LOAD" "DATA" LocalOpt "INFILE" stringLit DuplicateOpt "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets LoadDataSetSpecOpt
 	{
 		x := &ast.LoadDataStmt{
-			Path:       $5,
-			Table:      $8.(*ast.TableName),
-			Columns:    $13.([]*ast.ColumnName),
-			IgnoreLines:$12.(uint64),
+			Path:           $5,
+			OnDuplicate: $6,
+			Table:          $9.(*ast.TableName),
+			Columns:        $14.([]*ast.ColumnName),
+			IgnoreLines:    $13.(uint64),
 		}
 		if $3 != nil {
 			x.IsLocal = true
 		}
-		if $10 != nil {
-			x.FieldsInfo = $10.(*ast.FieldsClause)
-		}
 		if $11 != nil {
-			x.LinesInfo = $11.(*ast.LinesClause)
+			x.FieldsInfo = $11.(*ast.FieldsClause)
+		}
+		if $12 != nil {
+			x.LinesInfo = $12.(*ast.LinesClause)
 		}
 		$$ = x
 	}
