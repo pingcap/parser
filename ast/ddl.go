@@ -709,7 +709,7 @@ type CreateTableStmt struct {
 	Constraints []*Constraint
 	Options     []*TableOption
 	Partition   *PartitionOptions
-	OnDuplicate OnDuplicateKeyHandlingType
+	OnDuplicate OnDuplicateKeyHandling
 	Select      ResultSetNode
 }
 
