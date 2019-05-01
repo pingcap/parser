@@ -8383,7 +8383,7 @@ LoadDataStmt:
 	{
 		x := &ast.LoadDataStmt{
 			Path:           $5,
-			OnDuplicate:    $6,
+			OnDuplicate:    $6.(ast.OnDuplicateKeyHandlingType),
 			Table:          $9.(*ast.TableName),
 			Columns:        $14.([]*ast.ColumnName),
 			IgnoreLines:    $13.(uint64),

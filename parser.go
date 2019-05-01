@@ -13865,7 +13865,7 @@ yynewstate:
 		{
 			x := &ast.LoadDataStmt{
 				Path:        yyS[yypt-10].ident,
-				OnDuplicate: yyS[yypt-9].item,
+				OnDuplicate: yyS[yypt-9].item.(ast.OnDuplicateKeyHandlingType),
 				Table:       yyS[yypt-6].item.(*ast.TableName),
 				Columns:     yyS[yypt-1].item.([]*ast.ColumnName),
 				IgnoreLines: yyS[yypt-2].item.(uint64),
