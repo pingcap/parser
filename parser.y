@@ -8383,13 +8383,16 @@ LoadDataStmt:
 	{
 		x := &ast.LoadDataStmt{
 			Path:           $5,
-			OnDuplicate: $6,
+			OnDuplicate:    $6,
 			Table:          $9.(*ast.TableName),
 			Columns:        $14.([]*ast.ColumnName),
 			IgnoreLines:    $13.(uint64),
 		}
 		if $3 != nil {
 			x.IsLocal = true
+			if x.OnDuplicate == ast.OnDuplicateKeyHandlingError {
+				x.OnDuplicate = ast.OnDuplicateKeyHandlingIgnore
+			}
 		}
 		if $11 != nil {
 			x.FieldsInfo = $11.(*ast.FieldsClause)
