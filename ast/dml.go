@@ -1120,7 +1120,7 @@ type LoadDataStmt struct {
 
 	IsLocal     bool
 	Path        string
-	OnDuplicate OnDuplicateKeyHandling
+	OnDuplicate OnDuplicateKeyHandlingType
 	Table       *TableName
 	Columns     []*ColumnName
 	FieldsInfo  *FieldsClause
