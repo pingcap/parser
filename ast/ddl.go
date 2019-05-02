@@ -1228,7 +1228,7 @@ const (
 )
 
 // OnDuplicateKeyHandlingType is the option that handle unique key values in 'CREATE TABLE ... SELECT' or `LOAD DATA`.
-// See https://dev.mysql.com/doc/refman/5.7/en/create-table-select.html
+// See https://dev.mysql.com/doc/refman/8.0/en/create-table-select.html
 // See https://dev.mysql.com/doc/refman/8.0/en/load-data.html
 type OnDuplicateKeyHandlingType int
 
