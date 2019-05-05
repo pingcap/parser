@@ -1144,6 +1144,9 @@ func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WriteKeyWord("INFILE ")
 	ctx.WriteString(n.Path)
+	if n.OnDuplicate == OnDuplicateKeyHandlingReplace {
+		ctx.WriteKeyWord(" REPLACE")
+	}
 	ctx.WriteKeyWord(" INTO TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore LoadDataStmt.Table")
