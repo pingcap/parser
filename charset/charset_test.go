@@ -98,3 +98,16 @@ func (s *testCharsetSuite) TestGetDefaultCollation(c *C) {
 		testGetDefaultCollation(c, tt.cs, tt.co, tt.succ)
 	}
 }
+
+func (s *testCharsetSuite) TestGetCollationByName(c *C) {
+	defer testleak.AfterTest(c)()
+
+	for _, collation := range collations {
+		coll, err := GetCollationByName(collation.Name)
+		c.Assert(err, IsNil)
+		c.Assert(coll, Equals, collation)
+	}
+
+	_, err := GetCollationByName("non_exist")
+	c.Assert(err, ErrorMatches, "\\[ddl:1273\\]Unknown collation: 'non_exist'")
+}
