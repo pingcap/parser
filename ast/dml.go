@@ -1146,6 +1146,8 @@ func (n *LoadDataStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteString(n.Path)
 	if n.OnDuplicate == OnDuplicateKeyHandlingReplace {
 		ctx.WriteKeyWord(" REPLACE")
+	} else if n.OnDuplicate == OnDuplicateKeyHandlingIgnore {
+		ctx.WriteKeyWord(" IGNORE")
 	}
 	ctx.WriteKeyWord(" INTO TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
