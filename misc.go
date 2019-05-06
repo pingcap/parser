@@ -528,6 +528,7 @@ var tokenMap = map[string]int{
 	"TOKUDB_ZLIB":              tokudbZlib,
 	"TOP":                      top,
 	"TRACE":                    trace,
+	"TRADITIONAL":              traditional,
 	"TRAILING":                 trailing,
 	"TRANSACTION":              transaction,
 	"TRIGGER":                  trigger,
