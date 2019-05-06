@@ -3201,14 +3201,14 @@ IndexOption:
 |	"SPLIT" SplitOption
 	{
 		$$ = &ast.IndexOption {
-			SplitOpt: $2.(*ast.SplitIndexOption),
+			SplitOpt: $2.(*ast.SplitOption),
 		}
 	}
 
 SplitOption:
 	"MIN" RowValue "MAX" RowValue "NUMBER" NUM
 	{
-		$$ = &ast.SplitIndexOption{
+		$$ = &ast.SplitOption{
 			Min: $2.([]ast.ExprNode),
 			Max: $4.([]ast.ExprNode),
 			Num: $6.(int64),
@@ -3216,7 +3216,7 @@ SplitOption:
 	}
 |	"BY" ValuesList %prec splitOptionPriv
 	{
-		$$ = &ast.SplitIndexOption{
+		$$ = &ast.SplitOption{
 			ValueLists: $2.([][]ast.ExprNode),
 		}
 	}

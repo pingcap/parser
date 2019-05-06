@@ -467,17 +467,17 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
-	SplitOpt     *SplitIndexOption
+	SplitOpt     *SplitOption
 }
 
-type SplitIndexOption struct {
+type SplitOption struct {
 	Min        []ExprNode
 	Max        []ExprNode
 	Num        int64
 	ValueLists [][]ExprNode
 }
 
-func (n *SplitIndexOption) Restore(ctx *RestoreCtx) error {
+func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("SPLIT ")
 	if len(n.ValueLists) == 0 {
 		ctx.WriteKeyWord("MIN ")
@@ -487,7 +487,7 @@ func (n *SplitIndexOption) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Min")
+				return errors.Annotatef(err, "An error occurred while restore SplitOption Min")
 			}
 		}
 		ctx.WritePlain(")")
@@ -499,7 +499,7 @@ func (n *SplitIndexOption) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitIndexOption Max")
+				return errors.Annotatef(err, "An error occurred while restore SplitOption Max")
 			}
 		}
 		ctx.WritePlain(")")
@@ -518,7 +518,7 @@ func (n *SplitIndexOption) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitIndexOption.ValueLists[%d][%d]", i, j)
+				return errors.Annotatef(err, "An error occurred while restore SplitOption.ValueLists[%d][%d]", i, j)
 			}
 		}
 		ctx.WritePlain(")")

@@ -9482,12 +9482,12 @@ yynewstate:
 	case 364:
 		{
 			parser.yyVAL.item = &ast.IndexOption{
-				SplitOpt: yyS[yypt-0].item.(*ast.SplitIndexOption),
+				SplitOpt: yyS[yypt-0].item.(*ast.SplitOption),
 			}
 		}
 	case 365:
 		{
-			parser.yyVAL.item = &ast.SplitIndexOption{
+			parser.yyVAL.item = &ast.SplitOption{
 				Min: yyS[yypt-4].item.([]ast.ExprNode),
 				Max: yyS[yypt-2].item.([]ast.ExprNode),
 				Num: yyS[yypt-0].item.(int64),
@@ -9495,7 +9495,7 @@ yynewstate:
 		}
 	case 366:
 		{
-			parser.yyVAL.item = &ast.SplitIndexOption{
+			parser.yyVAL.item = &ast.SplitOption{
 				ValueLists: yyS[yypt-0].item.([][]ast.ExprNode),
 			}
 		}
