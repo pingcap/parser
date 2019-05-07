@@ -2331,9 +2331,9 @@ func (s *testParserSuite) TestSessionManage(c *C) {
 
 func (s *testParserSuite) TestParseShowOpenTables(c *C) {
 	table := []testCase{
-		{"SHOW OPEN TABLES", true, "SHOW OPEN TABLES"},
-		{"SHOW OPEN TABLES IN test", true, "SHOW OPEN TABLES IN `test`"},
-		{"SHOW OPEN TABLES FROM test", true, "SHOW OPEN TABLES IN `test`"},
+		{"SHOW OPEN TABLES", true},
+		{"SHOW OPEN TABLES IN test", true},
+		{"SHOW OPEN TABLES FROM test", true},
 	}
 	s.RunTest(c, table)
 }
