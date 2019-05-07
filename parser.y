@@ -606,7 +606,8 @@ import (
 
 %type	<statement>
 	AdminStmt			"Check table statement or show ddl statement"
-	AlterTableStmt			"Alter table statement"
+	AlterDatabaseStmt		"Alter table statement"
+	AlterTableStmt			"Alter database statement"
 	AlterUserStmt			"Alter user statement"
 	AnalyzeTableStmt		"Analyze table statement"
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
@@ -712,6 +713,7 @@ import (
 	DatabaseOptionList		"CREATE Database specification list"
 	DatabaseOptionListOpt		"CREATE Database specification list opt"
 	DBName				"Database Name"
+	DBNameOpt			"Database Name or empty"
 	DistinctOpt			"Explicit distinct option"
 	DefaultFalseDistinctOpt		"Distinct option which defaults to false"
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
@@ -1023,6 +1025,8 @@ import (
 %precedence insertValues
 %precedence lowerThanCreateTableSelect
 %precedence createTableSelect
+%precedence lowerThanCharsetKwd
+%precedence charsetKwd
 %precedence lowerThanKey
 %precedence key
 
@@ -2036,6 +2040,36 @@ IndexColNameList:
 
 
 
+/**************************************AlterDatabaseStmt***************************************
+ * See https://dev.mysql.com/doc/refman/5.7/en/alter-database.html
+ * 'ALTER DATABASE ... UPGRADE DATA DIRECTORY NAME' is not supported yet.
+ *
+ *  ALTER {DATABASE | SCHEMA} [db_name]
+ *   alter_specification ...
+ *
+ *  alter_specification:
+ *   [DEFAULT] CHARACTER SET [=] charset_name
+ * | [DEFAULT] COLLATE [=] collation_name
+ *******************************************************************************************/
+ AlterDatabaseStmt:
+	"ALTER" DatabaseSym DBNameOpt DatabaseOptionListOpt
+	{
+		nameOpt := $3.([]interface{})
+		name := nameOpt[0].(string)
+		emptyDb := nameOpt[1].(bool)
+
+		opts := $4.([]*ast.DatabaseOption)
+		if len(opts) == 0 {
+			yylex.AppendError(yylex.Errorf("ALTER %v", $2))
+			return 1
+		}
+		$$ = &ast.AlterDatabaseStmt{
+			Name:					name,
+			AlterDefaultDatabase:	emptyDb,
+			Options:				opts,
+		}
+	}
+
 /*******************************************************************
  *
  *  Create Database Statement
@@ -2054,6 +2088,19 @@ CreateDatabaseStmt:
 			Name:		$4.(string),
 			Options:	$5.([]*ast.DatabaseOption),
 		}
+	}
+
+DBNameOpt:
+	/* empty */ %prec lowerThanCharsetKwd
+	{
+		/* The second return value is to indicate DBName is empty (use default database) */
+		$$ = []interface{}{"", true}
+	}
+| DBName
+	{
+		/* The second return value is to indicate DBName is not empty (but may be empty identifier) */
+		name := $1.(string)
+		$$ = []interface{}{name, false}
 	}
 
 DBName:
@@ -3237,7 +3284,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET"
+ "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
@@ -6819,6 +6866,7 @@ WithReadLockOpt:
 Statement:
 	EmptyStmt
 |	AdminStmt
+|	AlterDatabaseStmt
 |	AlterTableStmt
 |	AlterUserStmt
 |	AnalyzeTableStmt
