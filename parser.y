@@ -529,6 +529,7 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
+	split		"SPLIT"
 
 	builtinAddDate
 	builtinBitAnd
@@ -652,6 +653,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
+	SplitIndexRegionStmt		"Split index region statement"
 	SetStmt				"Set variable statement"
 	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
@@ -686,10 +688,13 @@ import (
 	ColumnDef			"table column definition"
 	ColumnDefList			"table column definition list"
 	ColumnName			"column name"
+	ColumnNameOrUserVariable	"column name or user variable"
 	ColumnNameList			"column name list"
+	ColumnNameOrUserVariableList	"column name or user variable list"
 	ColumnList			"column list"
 	ColumnNameListOpt		"column name list opt"
-	ColumnNameListOptWithBrackets 	"column name list opt with brackets"
+	ColumnNameOrUserVarListOpt	"column name or user vairiabe list opt"
+	ColumnNameOrUserVarListOptWithBrackets	"column name or user variable list opt with brackets"
 	ColumnSetValue			"insert statement set value by column name"
 	ColumnSetValueList		"insert statement set value by column name list"
 	CompareOp			"Compare opcode"
@@ -1469,6 +1474,24 @@ RecoverTableStmt:
         }
     }
 
+/*******************************************************************
+ *
+ *  Split index region statement
+ *
+ *  Example:
+ *      SPLIT TABLE table_name INDEX index_name BY (val1...),(val2...)...
+ *
+ *******************************************************************/
+SplitIndexRegionStmt:
+	"SPLIT" "TABLE" TableName "INDEX" IndexName "BY" ValuesList
+	{
+		$$ = &ast.SplitIndexRegionStmt{
+			Table: $3.(*ast.TableName),
+			IndexName: $5.(string),
+			ValueLists: $7.([][]ast.ExprNode),
+		}
+	}
+
 /*******************************************************************************************/
 
 AnalyzeTableStmt:
@@ -1624,14 +1647,44 @@ ColumnNameListOpt:
 		$$ = $1.([]*ast.ColumnName)
 	}
 
-ColumnNameListOptWithBrackets:
+ColumnNameOrUserVarListOpt:
 	/* EMPTY */
 	{
-		$$ = []*ast.ColumnName{}
+		$$ = []*ast.ColumnNameOrUserVar{}
 	}
-|	'(' ColumnNameListOpt ')'
+|	ColumnNameOrUserVariableList
 	{
-		$$ = $2.([]*ast.ColumnName)
+		$$ = $1.([]*ast.ColumnNameOrUserVar)
+	}
+
+ColumnNameOrUserVariableList:
+	ColumnNameOrUserVariable
+	{
+		$$ = []*ast.ColumnNameOrUserVar{$1.(*ast.ColumnNameOrUserVar)}
+	}
+|	ColumnNameOrUserVariableList ',' ColumnNameOrUserVariable
+	{
+		$$ = append($1.([]*ast.ColumnNameOrUserVar), $3.(*ast.ColumnNameOrUserVar))
+	}
+
+ColumnNameOrUserVariable:
+	ColumnName
+	{
+		$$ = &ast.ColumnNameOrUserVar{ColumnName: $1.(*ast.ColumnName)}
+	}
+|	UserVariable
+	{
+		$$ = &ast.ColumnNameOrUserVar{UserVar: $1.(*ast.VariableExpr)}
+	}
+
+ColumnNameOrUserVarListOptWithBrackets:
+	/* EMPTY */
+	{
+		$$ = []*ast.ColumnNameOrUserVar{}
+	}
+|	'(' ColumnNameOrUserVarListOpt ')'
+	{
+		$$ = $2.([]*ast.ColumnNameOrUserVar)
 	}
 
 CommitStmt:
@@ -3210,7 +3263,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6853,6 +6906,7 @@ Statement:
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
+|	SplitIndexRegionStmt
 |	ShowStmt
 |	SubSelect
 	{
@@ -8420,12 +8474,12 @@ RevokeRoleStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/load-data.html
  *******************************************************************************************/
 LoadDataStmt:
-	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameListOptWithBrackets LoadDataSetSpecOpt
+	"LOAD" "DATA" LocalOpt "INFILE" stringLit "INTO" "TABLE" TableName CharsetOpt Fields Lines IgnoreLines ColumnNameOrUserVarListOptWithBrackets LoadDataSetSpecOpt
 	{
 		x := &ast.LoadDataStmt{
 			Path:       $5,
 			Table:      $8.(*ast.TableName),
-			Columns:    $13.([]*ast.ColumnName),
+			ColumnsAndUserVars:    $13.([]*ast.ColumnNameOrUserVar),
 			IgnoreLines:$12.(uint64),
 		}
 		if $3 != nil {
@@ -8437,6 +8491,17 @@ LoadDataStmt:
 		if $11 != nil {
 			x.LinesInfo = $11.(*ast.LinesClause)
 		}
+		if $14 != nil {
+			x.ColumnAssignments = $14.([]*ast.Assignment)
+		}
+		columns := []*ast.ColumnName{}
+		for _, v := range x.ColumnsAndUserVars {
+			if v.ColumnName != nil {
+				columns = append(columns, v.ColumnName)
+			}
+		}
+		x.Columns = columns
+
 		$$ = x
 	}
 
@@ -8592,23 +8657,28 @@ LoadDataSetSpecOpt:
 	}
 |	"SET" LoadDataSetList
 	{
-		$$ = nil
+		$$ = $2
 	}
 
 LoadDataSetList:
 	LoadDataSetList ',' LoadDataSetItem
 	{
-		$$ = nil
+		l := $1.([]*ast.Assignment)
+		$$ = append(l, $3.(*ast.Assignment))
 	}
 |	LoadDataSetItem
 	{
-		$$ = nil
+		$$ = []*ast.Assignment{$1.(*ast.Assignment)}
 	}
 
 LoadDataSetItem:
 	SimpleIdent "=" ExprOrDefault
 	{
-		$$ = nil
+		$$ = &ast.Assignment{
+			Column:	$1.(*ast.ColumnNameExpr).Name,
+			Expr:	$3,
+		}
+
 	}
 
 
