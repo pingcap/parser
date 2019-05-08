@@ -606,8 +606,8 @@ import (
 
 %type	<statement>
 	AdminStmt			"Check table statement or show ddl statement"
-	AlterDatabaseStmt		"Alter table statement"
-	AlterTableStmt			"Alter database statement"
+	AlterDatabaseStmt		"Alter database statement"
+	AlterTableStmt			"Alter table statement"
 	AlterUserStmt			"Alter user statement"
 	AnalyzeTableStmt		"Analyze table statement"
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
@@ -713,7 +713,6 @@ import (
 	DatabaseOptionList		"CREATE Database specification list"
 	DatabaseOptionListOpt		"CREATE Database specification list opt"
 	DBName				"Database Name"
-	DBNameOpt			"Database Name or empty"
 	DistinctOpt			"Explicit distinct option"
 	DefaultFalseDistinctOpt		"Distinct option which defaults to false"
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
@@ -2052,21 +2051,20 @@ IndexColNameList:
  * | [DEFAULT] COLLATE [=] collation_name
  *******************************************************************************************/
  AlterDatabaseStmt:
-	"ALTER" DatabaseSym DBNameOpt DatabaseOptionListOpt
+	"ALTER" DatabaseSym DBName DatabaseOptionList
 	{
-		nameOpt := $3.([]interface{})
-		name := nameOpt[0].(string)
-		emptyDb := nameOpt[1].(bool)
-
-		opts := $4.([]*ast.DatabaseOption)
-		if len(opts) == 0 {
-			yylex.AppendError(yylex.Errorf("ALTER %v", $2))
-			return 1
-		}
 		$$ = &ast.AlterDatabaseStmt{
-			Name:					name,
-			AlterDefaultDatabase:	emptyDb,
-			Options:				opts,
+			Name:			$3.(string),
+			AlterDefaultDatabase:	false,
+			Options:		$4.([]*ast.DatabaseOption),
+		}
+	}
+|	"ALTER" DatabaseSym DatabaseOptionList
+	{
+		$$ = &ast.AlterDatabaseStmt{
+			Name:			"",
+			AlterDefaultDatabase:	true,
+			Options:		$3.([]*ast.DatabaseOption),
 		}
 	}
 
@@ -2088,19 +2086,6 @@ CreateDatabaseStmt:
 			Name:		$4.(string),
 			Options:	$5.([]*ast.DatabaseOption),
 		}
-	}
-
-DBNameOpt:
-	/* empty */ %prec lowerThanCharsetKwd
-	{
-		/* The second return value is to indicate DBName is empty (use default database) */
-		$$ = []interface{}{"", true}
-	}
-| DBName
-	{
-		/* The second return value is to indicate DBName is not empty (but may be empty identifier) */
-		name := $1.(string)
-		$$ = []interface{}{name, false}
 	}
 
 DBName:
@@ -2175,6 +2160,7 @@ CreateTableStmt:
 	}
 
 DefaultKwdOpt:
+	%prec lowerThanCharsetKwd
 	{}
 |	"DEFAULT"
 

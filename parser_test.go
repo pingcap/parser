@@ -2108,10 +2108,10 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 	c.Assert(err.Error(), Equals, "line 1 column 24 near \"= 'utf8mb4' COLLATE = 'utf8_bin'\" ")
 
 	_, _, err = parser.Parse("ALTER DATABASE", "", "")
-	c.Assert(err.Error(), Equals, "line 1 column 14 near \"\"ALTER DATABASE ")
+	c.Assert(err.Error(), Equals, "line 1 column 14 near \"\" ")
 
 	_, _, err = parser.Parse("ALTER SCHEMA `ANY_DB_NAME`", "", "")
-	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\"ALTER SCHEMA ")
+	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\" ")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
