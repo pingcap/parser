@@ -607,6 +607,7 @@ import (
 
 %type	<statement>
 	AdminStmt			"Check table statement or show ddl statement"
+	AlterDatabaseStmt		"Alter database statement"
 	AlterTableStmt			"Alter table statement"
 	AlterUserStmt			"Alter user statement"
 	AnalyzeTableStmt		"Analyze table statement"
@@ -1025,6 +1026,8 @@ import (
 %precedence insertValues
 %precedence lowerThanCreateTableSelect
 %precedence createTableSelect
+%precedence lowerThanCharsetKwd
+%precedence charsetKwd
 %precedence lowerThanKey
 %precedence key
 
@@ -2038,6 +2041,35 @@ IndexColNameList:
 
 
 
+/**************************************AlterDatabaseStmt***************************************
+ * See https://dev.mysql.com/doc/refman/5.7/en/alter-database.html
+ * 'ALTER DATABASE ... UPGRADE DATA DIRECTORY NAME' is not supported yet.
+ *
+ *  ALTER {DATABASE | SCHEMA} [db_name]
+ *   alter_specification ...
+ *
+ *  alter_specification:
+ *   [DEFAULT] CHARACTER SET [=] charset_name
+ * | [DEFAULT] COLLATE [=] collation_name
+ *******************************************************************************************/
+ AlterDatabaseStmt:
+	"ALTER" DatabaseSym DBName DatabaseOptionList
+	{
+		$$ = &ast.AlterDatabaseStmt{
+			Name:			$3.(string),
+			AlterDefaultDatabase:	false,
+			Options:		$4.([]*ast.DatabaseOption),
+		}
+	}
+|	"ALTER" DatabaseSym DatabaseOptionList
+	{
+		$$ = &ast.AlterDatabaseStmt{
+			Name:			"",
+			AlterDefaultDatabase:	true,
+			Options:		$3.([]*ast.DatabaseOption),
+		}
+	}
+
 /*******************************************************************
  *
  *  Create Database Statement
@@ -2130,6 +2162,7 @@ CreateTableStmt:
 	}
 
 DefaultKwdOpt:
+	%prec lowerThanCharsetKwd
 	{}
 |	"DEFAULT"
 
@@ -3263,7 +3296,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET"
+ "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
@@ -6845,6 +6878,7 @@ WithReadLockOpt:
 Statement:
 	EmptyStmt
 |	AdminStmt
+|	AlterDatabaseStmt
 |	AlterTableStmt
 |	AlterUserStmt
 |	AnalyzeTableStmt
