@@ -2401,8 +2401,16 @@ func (n *FrameBound) Accept(v Visitor) (Node, bool) {
 type SplitIndexRegionStmt struct {
 	dmlNode
 
-	Table      *TableName
-	IndexName  string
+	Table     *TableName
+	IndexName model.CIStr
+
+	SplitOpt *SplitOption
+}
+
+type SplitOption struct {
+	Min        []ExprNode
+	Max        []ExprNode
+	Num        int64
 	ValueLists [][]ExprNode
 }
 
@@ -2412,24 +2420,10 @@ func (n *SplitIndexRegionStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
 	}
 	ctx.WriteKeyWord(" INDEX ")
-	ctx.WriteName(n.IndexName)
-	ctx.WriteKeyWord(" BY ")
-	for i, row := range n.ValueLists {
-		if i != 0 {
-			ctx.WritePlain(",")
-		}
-		ctx.WritePlain("(")
-		for j, v := range row {
-			if j != 0 {
-				ctx.WritePlain(",")
-			}
-			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitIndexRegionStmt.ValueLists[%d][%d]", i, j)
-			}
-		}
-		ctx.WritePlain(")")
-	}
-	return nil
+	ctx.WriteName(n.IndexName.String())
+	ctx.WritePlain(" ")
+	err := n.SplitOpt.Restore(ctx)
+	return err
 }
 
 func (n *SplitIndexRegionStmt) Accept(v Visitor) (Node, bool) {
@@ -2444,14 +2438,53 @@ func (n *SplitIndexRegionStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, list := range n.ValueLists {
-		for j, val := range list {
-			node, ok := val.Accept(v)
-			if !ok {
-				return n, false
-			}
-			n.ValueLists[i][j] = node.(ExprNode)
-		}
-	}
 	return v.Leave(n)
+}
+
+func (n *SplitOption) Restore(ctx *RestoreCtx) error {
+	if len(n.ValueLists) == 0 {
+		ctx.WriteKeyWord("MIN ")
+		ctx.WritePlain("(")
+		for j, v := range n.Min {
+			if j != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SplitOption Min")
+			}
+		}
+		ctx.WritePlain(")")
+
+		ctx.WriteKeyWord(" MAX ")
+		ctx.WritePlain("(")
+		for j, v := range n.Max {
+			if j != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SplitOption Max")
+			}
+		}
+		ctx.WritePlain(")")
+		ctx.WriteKeyWord(" NUM")
+		ctx.WritePlainf(" %d", n.Num)
+		return nil
+	}
+	ctx.WriteKeyWord("BY ")
+	for i, row := range n.ValueLists {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		ctx.WritePlain("(")
+		for j, v := range row {
+			if j != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SplitOption.ValueLists[%d][%d]", i, j)
+			}
+		}
+		ctx.WritePlain(")")
+	}
+	return nil
 }

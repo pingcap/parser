@@ -527,6 +527,7 @@ import (
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
 	split		"SPLIT"
+	number 		"NUM"
 
 	builtinAddDate
 	builtinBitAnd
@@ -844,6 +845,7 @@ import (
 	ShowProfileTypesOpt		"Show profile types option"
 	ShowProfileType			"Show profile type"
 	ShowProfileTypes		"Show profile types"
+	SplitOption			"Split Option"
 	Starting			"Starting by"
 	StatementList			"statement list"
 	StatsPersistentVal		"stats_persistent value"
@@ -1048,6 +1050,7 @@ import (
 %right 	not not2
 %right	collate
 
+%left splitOptionPriv
 %precedence '('
 %precedence quick
 %precedence escape
@@ -1474,12 +1477,29 @@ RecoverTableStmt:
  *
  *******************************************************************/
 SplitIndexRegionStmt:
-	"SPLIT" "TABLE" TableName "INDEX" IndexName "BY" ValuesList
+	"SPLIT" "TABLE" TableName "INDEX" Identifier SplitOption
 	{
 		$$ = &ast.SplitIndexRegionStmt{
 			Table: $3.(*ast.TableName),
-			IndexName: $5.(string),
-			ValueLists: $7.([][]ast.ExprNode),
+			IndexName: model.NewCIStr($5),
+			SplitOpt: $6.(*ast.SplitOption),
+		}
+	}
+
+
+SplitOption:
+	"MIN" RowValue "MAX" RowValue "NUM" NUM
+	{
+		$$ = &ast.SplitOption{
+			Min: $2.([]ast.ExprNode),
+			Max: $4.([]ast.ExprNode),
+			Num: $6.(int64),
+		}
+	}
+|	"BY" ValuesList
+	{
+		$$ = &ast.SplitOption{
+			ValueLists: $2.([][]ast.ExprNode),
 		}
 	}
 
@@ -3258,7 +3278,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "NUM"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"

@@ -646,6 +646,10 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 index idx1 by (1)", true, "SPLIT TABLE `t1` INDEX `idx1` BY (1)"},
 		{"split table t1 index idx1 by ('abc',123), ('xyz'), ('yz', 1000)", true, "SPLIT TABLE `t1` INDEX `idx1` BY ('abc',123),('xyz'),('yz',1000)"},
 		{"split table t1 index idx1 by ", false, ""},
+		{"split table t1 index idx1 min ('a') max ('z') num 10", true, "SPLIT TABLE `t1` INDEX `idx1` MIN ('a') MAX ('z') NUM 10"},
+		{"split table t1 index idx1 min ('a',1) max ('z',2) num 10", true, "SPLIT TABLE `t1` INDEX `idx1` MIN ('a',1) MAX ('z',2) NUM 10"},
+		{"split table t1 index idx1 min () max () num 10", true, "SPLIT TABLE `t1` INDEX `idx1` MIN () MAX () NUM 10"},
+		{"split table t1 index by (1)", false, ""},
 	}
 	s.RunTest(c, table)
 }
