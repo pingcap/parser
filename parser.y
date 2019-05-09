@@ -400,8 +400,8 @@ import (
 	respect		"RESPECT"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
-	role		"ROLE"
 	rollback	"ROLLBACK"
+	role		"ROLE"
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
 	rowFormat	"ROW_FORMAT"
@@ -6117,6 +6117,10 @@ RoleNameString:
 		$$ = $1
 	}
 |	identifier
+	{
+		$$ = $1
+	}
+|	"ROLE"
 	{
 		$$ = $1
 	}
