@@ -14013,6 +14013,8 @@ yynewstate:
 			}
 			if yyS[yypt-12].item != nil {
 				x.IsLocal = true
+				// See https://dev.mysql.com/doc/refman/5.7/en/load-data.html#load-data-duplicate-key-handling
+				// If you do not specify IGNORE or REPLACE modifier , then we set default behavior to IGNORE when LOCAL modifier is specified
 				if x.OnDuplicate == ast.OnDuplicateKeyHandlingError {
 					x.OnDuplicate = ast.OnDuplicateKeyHandlingIgnore
 				}
