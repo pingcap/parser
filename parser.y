@@ -653,7 +653,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SplitIndexRegionStmt		"Split index region statement"
+	SplitRegionStmt		"Split index region statement"
 	SetStmt				"Set variable statement"
 	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
@@ -1481,10 +1481,17 @@ RecoverTableStmt:
  *      SPLIT TABLE table_name INDEX index_name BY (val1...),(val2...)...
  *
  *******************************************************************/
-SplitIndexRegionStmt:
-	"SPLIT" "TABLE" TableName "INDEX" Identifier SplitOption
+SplitRegionStmt:
+	"SPLIT" "TABLE" TableName SplitOption
 	{
-		$$ = &ast.SplitIndexRegionStmt{
+		$$ = &ast.SplitRegionStmt{
+			Table: $3.(*ast.TableName),
+			SplitOpt: $4.(*ast.SplitOption),
+		}
+	}
+|	"SPLIT" "TABLE" TableName "INDEX" Identifier SplitOption
+	{
+		$$ = &ast.SplitRegionStmt{
 			Table: $3.(*ast.TableName),
 			IndexName: model.NewCIStr($5),
 			SplitOpt: $6.(*ast.SplitOption),
@@ -6945,7 +6952,7 @@ Statement:
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
-|	SplitIndexRegionStmt
+|	SplitRegionStmt
 |	ShowStmt
 |	SubSelect
 	{
