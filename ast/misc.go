@@ -377,14 +377,11 @@ type BeginStmt struct {
 // Restore implements Node interface.
 func (n *BeginStmt) Restore(ctx *RestoreCtx) error {
 	switch n.Mode {
-	case Pessimistic:
-		ctx.WriteKeyWord("BEGIN ")
-		ctx.WriteKeyWord(Pessimistic)
-	case Optimistic:
-		ctx.WriteKeyWord("BEGIN ")
-		ctx.WriteKeyWord(Optimistic)
-	default:
+	case "":
 		ctx.WriteKeyWord("START TRANSACTION")
+	default:
+		ctx.WriteKeyWord("BEGIN ")
+		ctx.WriteKeyWord(n.Mode)
 	}
 	return nil
 }
