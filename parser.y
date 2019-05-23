@@ -517,6 +517,8 @@ import (
 	job		"JOB"
 	nodeID		"NODE_ID"
 	nodeState	"NODE_STATE"
+	optimistic	"OPTIMISTIC"
+	pessimistic	"PESSIMISTIC"
 	pump		"PUMP"
 	stats		"STATS"
 	statsMeta       "STATS_META"
@@ -1574,10 +1576,16 @@ BeginTransactionStmt:
 	{
 		$$ = &ast.BeginStmt{}
 	}
-|	"BEGIN" "LOCK"
+|	"BEGIN" "PESSIMISTIC"
 	{
 		$$ = &ast.BeginStmt{
-			Pessimistic: true,
+			Mode: ast.Pessimistic,
+		}
+	}
+|	"BEGIN" "OPTIMISTIC"
+	{
+		$$ = &ast.BeginStmt{
+			Mode: ast.Optimistic,
 		}
 	}
 |	"START" "TRANSACTION"
@@ -3327,7 +3335,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
