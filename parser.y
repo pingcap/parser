@@ -1112,19 +1112,21 @@ AlterTableSpec:
 		}
 		$$ = op
 	}
-|	"ADD" ColumnKeywordOpt ColumnDef ColumnPosition
+|	"ADD" ColumnKeywordOpt IfNotExists ColumnDef ColumnPosition
 	{
 		$$ = &ast.AlterTableSpec{
+			IfNotExists: 	$3.(bool),
 			Tp: 		ast.AlterTableAddColumns,
-			NewColumns:	[]*ast.ColumnDef{$3.(*ast.ColumnDef)},
-			Position:	$4.(*ast.ColumnPosition),
+			NewColumns:	[]*ast.ColumnDef{$4.(*ast.ColumnDef)},
+			Position:	$5.(*ast.ColumnPosition),
 		}
 	}
-|	"ADD" ColumnKeywordOpt '(' ColumnDefList ')'
+|	"ADD" ColumnKeywordOpt IfNotExists '(' ColumnDefList ')'
 	{
 		$$ = &ast.AlterTableSpec{
+			IfNotExists: 	$3.(bool),
 			Tp: 		ast.AlterTableAddColumns,
-			NewColumns:	$4.([]*ast.ColumnDef),
+			NewColumns:	$5.([]*ast.ColumnDef),
 		}
 	}
 |	"ADD" Constraint
@@ -1160,11 +1162,12 @@ AlterTableSpec:
 			Num: getUint64FromNUM($3),
 		}
 	}
-|	"DROP" ColumnKeywordOpt ColumnName RestrictOrCascadeOpt
+|	"DROP" ColumnKeywordOpt IfExists ColumnName RestrictOrCascadeOpt
 	{
 		$$ = &ast.AlterTableSpec{
+			IfExists: $3.(bool),
 			Tp: ast.AlterTableDropColumn,
-			OldColumnName: $3.(*ast.ColumnName),
+			OldColumnName: $4.(*ast.ColumnName),
 		}
 	}
 |	"DROP" "PRIMARY" "KEY"
@@ -1185,18 +1188,20 @@ AlterTableSpec:
 			Name: $3,
 		}
 	}
-|	"DROP" KeyOrIndex Identifier
+|	"DROP" KeyOrIndex IfExists Identifier
 	{
 		$$ = &ast.AlterTableSpec{
+			IfExists: $3.(bool),
 			Tp: ast.AlterTableDropIndex,
-			Name: $3,
+			Name: $4,
 		}
 	}
-|	"DROP" "FOREIGN" "KEY" Symbol
+|	"DROP" "FOREIGN" "KEY" IfExists Symbol
 	{
 		$$ = &ast.AlterTableSpec{
+			IfExists: $4.(bool),
 			Tp: ast.AlterTableDropForeignKey,
-			Name: $4.(string),
+			Name: $5.(string),
 		}
 	}
 |	"DISABLE" "KEYS"
@@ -1207,21 +1212,23 @@ AlterTableSpec:
 	{
 		$$ = &ast.AlterTableSpec{}
 	}
-|	"MODIFY" ColumnKeywordOpt ColumnDef ColumnPosition
+|	"MODIFY" ColumnKeywordOpt IfExists ColumnDef ColumnPosition
 	{
 		$$ = &ast.AlterTableSpec{
+			IfExists:	$3.(bool),
 			Tp:		ast.AlterTableModifyColumn,
-			NewColumns:	[]*ast.ColumnDef{$3.(*ast.ColumnDef)},
-			Position:	$4.(*ast.ColumnPosition),
-		}
-	}
-|	"CHANGE" ColumnKeywordOpt ColumnName ColumnDef ColumnPosition
-	{
-		$$ = &ast.AlterTableSpec{
-			Tp:    		ast.AlterTableChangeColumn,
-			OldColumnName:	$3.(*ast.ColumnName),
 			NewColumns:	[]*ast.ColumnDef{$4.(*ast.ColumnDef)},
 			Position:	$5.(*ast.ColumnPosition),
+		}
+	}
+|	"CHANGE" ColumnKeywordOpt IfExists ColumnName ColumnDef ColumnPosition
+	{
+		$$ = &ast.AlterTableSpec{
+			IfExists:	$3.(bool),
+			Tp:    		ast.AlterTableChangeColumn,
+			OldColumnName:	$4.(*ast.ColumnName),
+			NewColumns:	[]*ast.ColumnDef{$5.(*ast.ColumnDef)},
+			Position:	$6.(*ast.ColumnPosition),
 		}
 	}
 |	"ALTER" ColumnKeywordOpt ColumnName "SET" "DEFAULT" SignedLiteral
@@ -1828,21 +1835,22 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	KeyOrIndex IndexName IndexTypeOpt '(' IndexColNameList ')' IndexOptionList
+|	KeyOrIndex IfNotExists IndexName IndexTypeOpt '(' IndexColNameList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:	ast.ConstraintIndex,
-			Keys:	$5.([]*ast.IndexColName),
-			Name:	$2.(string),
+			IfNotExists:	$2.(bool),
+			Tp:		ast.ConstraintIndex,
+			Keys:		$6.([]*ast.IndexColName),
+			Name:		$3.(string),
 		}
-		if $7 != nil {
-			c.Option = $7.(*ast.IndexOption)
+		if $8 != nil {
+			c.Option = $8.(*ast.IndexOption)
 		}
-		if $3 != nil {
+		if $4 != nil {
 			if c.Option == nil {
 				c.Option = &ast.IndexOption{}
 			}
-			c.Option.Tp = $3.(model.IndexType)
+			c.Option.Tp = $4.(model.IndexType)
 		}
 		$$ = c
 	}
@@ -1864,13 +1872,14 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FOREIGN" "KEY" IndexName '(' IndexColNameList ')' ReferDef
+|	"FOREIGN" "KEY" IfNotExists IndexName '(' IndexColNameList ')' ReferDef
 	{
 		$$ = &ast.Constraint{
-			Tp:	ast.ConstraintForeignKey,
-			Keys:	$5.([]*ast.IndexColName),
-			Name:	$3.(string),
-			Refer:	$7.(*ast.ReferenceDef),
+			IfNotExists:	$3.(bool),
+			Tp:		ast.ConstraintForeignKey,
+			Keys:		$6.([]*ast.IndexColName),
+			Name:		$4.(string),
+			Refer:		$8.(*ast.ReferenceDef),
 		}
 	}
 
@@ -1988,27 +1997,28 @@ NumLiteral:
 
 
 CreateIndexStmt:
-	"CREATE" CreateIndexStmtUnique "INDEX" Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt
+	"CREATE" CreateIndexStmtUnique "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt
 	{
 		var indexOption *ast.IndexOption
-		if $11 != nil {
-			indexOption = $11.(*ast.IndexOption)
+		if $12 != nil {
+			indexOption = $12.(*ast.IndexOption)
 			if indexOption.Tp == model.IndexTypeInvalid {
-				if $5 != nil {
-					indexOption.Tp = $5.(model.IndexType)
+				if $6 != nil {
+					indexOption.Tp = $6.(model.IndexType)
 				}
 			}
 		} else {
 			indexOption = &ast.IndexOption{}
-			if $5 != nil {
-				indexOption.Tp = $5.(model.IndexType)
+			if $6 != nil {
+				indexOption.Tp = $6.(model.IndexType)
 			}
 		}
 		$$ = &ast.CreateIndexStmt{
 			Unique:        $2.(bool),
-			IndexName:     $4,
-			Table:         $7.(*ast.TableName),
-			IndexColNames: $9.([]*ast.IndexColName),
+			IfNotExists:   $4.(bool),
+			IndexName:     $5,
+			Table:         $8.(*ast.TableName),
+			IndexColNames: $10.([]*ast.IndexColName),
 			IndexOption:   indexOption,
 		}
 	}

@@ -564,6 +564,10 @@ const (
 type Constraint struct {
 	node
 
+	// only supported by MariaDB 10.0.2+ (ADD {INDEX|KEY}, ADD FOREIGN KEY),
+	// see https://mariadb.com/kb/en/library/alter-table/
+	IfNotExists bool
+
 	Tp   ConstraintType
 	Name string
 
@@ -583,8 +587,14 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("PRIMARY KEY")
 	case ConstraintKey:
 		ctx.WriteKeyWord("KEY")
+		if n.IfNotExists {
+			ctx.WriteKeyWord(" IF NOT EXISTS")
+		}
 	case ConstraintIndex:
 		ctx.WriteKeyWord("INDEX")
+		if n.IfNotExists {
+			ctx.WriteKeyWord(" IF NOT EXISTS")
+		}
 	case ConstraintUniq:
 		ctx.WriteKeyWord("UNIQUE")
 	case ConstraintUniqKey:
@@ -602,6 +612,9 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(" ")
 		}
 		ctx.WriteKeyWord("FOREIGN KEY ")
+		if n.IfNotExists {
+			ctx.WriteKeyWord("IF NOT EXISTS ")
+		}
 	} else if n.Name != "" {
 		ctx.WritePlain(" ")
 		ctx.WriteName(n.Name)
@@ -1108,6 +1121,10 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 type CreateIndexStmt struct {
 	ddlNode
 
+	// only supported by MariaDB 10.0.2+,
+	// see https://mariadb.com/kb/en/library/create-index/
+	IfNotExists bool
+
 	IndexName     string
 	Table         *TableName
 	Unique        bool
@@ -1122,6 +1139,9 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("UNIQUE ")
 	}
 	ctx.WriteKeyWord("INDEX ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
 	ctx.WriteName(n.IndexName)
 	ctx.WriteKeyWord(" ON ")
 	if err := n.Table.Restore(ctx); err != nil {
@@ -1545,6 +1565,14 @@ func (a AlterAlgorithm) String() string {
 type AlterTableSpec struct {
 	node
 
+	// only supported by MariaDB 10.0.2+ (DROP COLUMN, CHANGE COLUMN, MODIFY COLUMN, DROP INDEX, DROP FOREIGN KEY)
+	// see https://mariadb.com/kb/en/library/alter-table/
+	IfExists bool
+
+	// only supported by MariaDB 10.0.2+ (ADD COLUMN)
+	// see https://mariadb.com/kb/en/library/alter-table/
+	IfNotExists bool
+
 	Tp              AlterTableType
 	Name            string
 	Constraint      *Constraint
@@ -1586,6 +1614,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableAddColumns:
 		ctx.WriteKeyWord("ADD COLUMN ")
+		if n.IfNotExists {
+			ctx.WriteKeyWord("IF NOT EXISTS ")
+		}
 		if n.Position != nil && len(n.NewColumns) == 1 {
 			if err := n.NewColumns[0].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", 0)
@@ -1615,6 +1646,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableDropColumn:
 		ctx.WriteKeyWord("DROP COLUMN ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
 		if err := n.OldColumnName.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.OldColumnName")
 		}
@@ -1623,12 +1657,21 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("DROP PRIMARY KEY")
 	case AlterTableDropIndex:
 		ctx.WriteKeyWord("DROP INDEX ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
 		ctx.WriteName(n.Name)
 	case AlterTableDropForeignKey:
 		ctx.WriteKeyWord("DROP FOREIGN KEY ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
 		ctx.WriteName(n.Name)
 	case AlterTableModifyColumn:
 		ctx.WriteKeyWord("MODIFY COLUMN ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
 		if err := n.NewColumns[0].Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0]")
 		}
@@ -1640,6 +1683,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableChangeColumn:
 		ctx.WriteKeyWord("CHANGE COLUMN ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
 		if err := n.OldColumnName.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.OldColumnName")
 		}
