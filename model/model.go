@@ -244,7 +244,7 @@ type TableLockInfo struct {
 	// Use array because there may be multiple sessions holding the same read lock.
 	Sessions []SessionInfo
 	State    TableLockState
-	// TS use to record the timestamp of this table lock been public locked.
+	// TS is used to record the timestamp this table lock been locked.
 	TS uint64
 }
 
