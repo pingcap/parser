@@ -241,7 +241,7 @@ type TableInfo struct {
 // TableLockInfo provides meta data describing a table lock.
 type TableLockInfo struct {
 	Tp TableLockType
-	// Use array because there maybe multiple session both hold same read lock.
+	// Use array because there may be multiple sessions holding the same read lock.
 	Sessions []SessionInfo
 	State    TableLockState
 	// TS use to record the timestamp of this table lock been public locked.
