@@ -255,7 +255,7 @@ type SessionInfo struct {
 }
 
 func (s SessionInfo) String() string {
-	return "server:" + s.ServerID + "_session:" + strconv.FormatUint(s.SessionID, 10)
+	return "server: " + s.ServerID + "_session: " + strconv.FormatUint(s.SessionID, 10)
 }
 
 // DBTableID is composed by schema ID and table ID.
