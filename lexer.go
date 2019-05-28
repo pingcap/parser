@@ -220,6 +220,15 @@ func (s *Scanner) EnableWindowFunc(val bool) {
 	s.supportWindowFunc = val
 }
 
+// InheritScanner returns a new scanner object which inherits configurations from the parent scanner.
+func (s *Scanner) InheritScanner(sql string) *Scanner {
+	return &Scanner{
+		r:                 reader{s: sql},
+		sqlMode:           s.sqlMode,
+		supportWindowFunc: s.supportWindowFunc,
+	}
+}
+
 // NewScanner returns a new scanner object.
 func NewScanner(s string) *Scanner {
 	return &Scanner{r: reader{s: s}}
@@ -396,7 +405,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			end := len(comment) - 2
 			sql := comment[begin:end]
 			s.specialComment = &optimizerHintScanner{
-				Scanner: NewScanner(sql),
+				Scanner: s.InheritScanner(sql),
 				Pos: Pos{
 					pos.Line,
 					pos.Col,
@@ -413,7 +422,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		if strings.HasPrefix(comment, "/*!") {
 			sql := specCodePattern.ReplaceAllStringFunc(comment, TrimComment)
 			s.specialComment = &mysqlSpecificCodeScanner{
-				Scanner: NewScanner(sql),
+				Scanner: s.InheritScanner(sql),
 				Pos: Pos{
 					pos.Line,
 					pos.Col,

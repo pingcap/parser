@@ -261,6 +261,19 @@ func (s *testParserSuite) TestSimple(c *C) {
 	c.Assert(vExpr.Kind(), Equals, types.KindUint64)
 }
 
+func (s *testParserSuite) TestSpecialComments(c *C) {
+	parser := parser.New()
+
+	// 1. Make sure /*! ... */ respects the same SQL mode.
+	_, err := parser.ParseOneStmt(`SELECT /*! '\' */;`, "", "")
+	c.Assert(err, NotNil)
+
+	parser.SetSQLMode(mysql.ModeNoBackslashEscapes)
+	st, err := parser.ParseOneStmt(`SELECT /*! '\' */;`, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st, FitsTypeOf, &ast.SelectStmt{})
+}
+
 type testCase struct {
 	src     string
 	ok      bool
