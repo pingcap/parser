@@ -86,11 +86,18 @@ func (s *optimizerHintScanner) scan() (tok int, pos Pos, lit string) {
 	pos.Line += s.Pos.Line
 	pos.Col += s.Pos.Col
 	pos.Offset += s.Pos.Offset
-	if tok == 0 {
+	switch tok {
+	case 0:
 		if !s.end {
 			tok = hintEnd
 			s.end = true
 		}
+	case invalid:
+		// an optimizer hint is allowed to contain invalid characters, the
+		// remaining hints are just ignored.
+		// force advance the lexer even when encountering an invalid character
+		// to prevent infinite parser loop. (see issue #336)
+		s.r.inc()
 	}
 	return
 }

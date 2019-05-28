@@ -284,6 +284,13 @@ func (s *testParserSuite) TestSpecialComments(c *C) {
 	c.Assert(stmts[1].Text(), Equals, "/*! SET x = 1; SELECT 2 */")
 	// ^ not sure if correct approach; having multiple statements in MySQL is a syntax error.
 
+	// 3. Make sure invalid text won't cause infinite loop
+	// (this is issue #336)
+	st, err = parser.ParseOneStmt("SELECT /*+ 😅 */ SLEEP(1);", "", "")
+	c.Assert(err, IsNil)
+	sel, ok := st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(sel.TableHints, HasLen, 0)
 }
 
 type testCase struct {
