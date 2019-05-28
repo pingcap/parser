@@ -58,6 +58,7 @@ type Scanner struct {
 }
 
 type specialCommentScanner interface {
+	stmtTexter
 	scan() (tok int, pos Pos, lit string)
 }
 
@@ -110,6 +111,10 @@ func (s *Scanner) reset(sql string) {
 }
 
 func (s *Scanner) stmtText() string {
+	if s.specialComment != nil {
+		return s.specialComment.stmtText()
+	}
+
 	endPos := s.r.pos().Offset
 	if s.r.s[endPos-1] == '\n' {
 		endPos = endPos - 1 // trim new line
