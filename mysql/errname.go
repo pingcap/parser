@@ -914,12 +914,14 @@ var MySQLErrName = map[uint16]string{
 	ErrWindowExplainJson:                                     "To get information about window functions use EXPLAIN FORMAT=JSON",
 	ErrWindowFunctionIgnoresFrame:                            "Window function '%s' ignores the frame clause of window '%s' and aggregates over the whole partition",
 	ErrRoleNotGranted:                                        "%s is is not granted to %s",
+	ErrMaxExecTimeExceeded:                                   "Query execution was interrupted, max_execution_time exceeded.",
 
 	// TiDB errors.
-	ErrMemExceedThreshold: "%s holds %dB memory, exceeds threshold %dB.%s",
-	ErrForUpdateCantRetry: "[%d] can not retry select for update statement",
-	ErrAdminCheckTable:    "TiDB admin check table failed.",
-
+	ErrMemExceedThreshold:         "%s holds %dB memory, exceeds threshold %dB.%s",
+	ErrForUpdateCantRetry:         "[%d] can not retry select for update statement",
+	ErrAdminCheckTable:            "TiDB admin check table failed.",
+	ErrTxnTooLarge:                "Transaction is too large",
+	ErrWriteConflictInTiDB:        "Write conflict, txnStartTS %d is stale",
 	ErrInvalidPluginID:            "Wrong plugin id: %s, valid plugin id is [name]-[version], both name and version should not contain '-'",
 	ErrInvalidPluginManifest:      "Cannot read plugin %s's manifest",
 	ErrInvalidPluginName:          "Plugin load with %s but got wrong name %s",
@@ -937,7 +939,5 @@ var MySQLErrName = map[uint16]string{
 	ErrResolveLockTimeout: "Resolve lock timeout",
 	ErrRegionUnavailable:  "Region is unavailable",
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
-	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictTS=%d, key=%s",
-
-	ErrTxnTooLarge: "Transaction is too large",
+	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictStartTS=%d, conflictCommitTS=%d, key=%s",
 }
