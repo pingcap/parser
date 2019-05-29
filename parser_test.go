@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser
+package parser_test
 
 import (
 	"fmt"
@@ -21,6 +21,7 @@ import (
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/charset"
 	. "github.com/pingcap/parser/format"
@@ -28,7 +29,7 @@ import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/tidb/types"
-	"github.com/pingcap/tidb/types/parser_driver"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestT(t *testing.T) {
@@ -43,7 +44,7 @@ type testParserSuite struct {
 }
 
 func (s *testParserSuite) TestSimple(c *C) {
-	parser := New()
+	parser := parser.New()
 
 	reservedKws := []string{
 		"add", "all", "alter", "analyze", "and", "as", "asc", "between", "bigint",
@@ -68,7 +69,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"generated", "virtual", "stored", "usage",
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
-		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window",
+		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -240,6 +241,24 @@ func (s *testParserSuite) TestSimple(c *C) {
 	src = `insert into tb(v) (select v from tb);`
 	_, err = parser.ParseOneStmt(src, "", "")
 	c.Assert(err, IsNil)
+
+	// for issue #9823
+	src = "SELECT 9223372036854775807;"
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok := st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	expr := sel.Fields.Fields[0]
+	vExpr := expr.Expr.(*driver.ValueExpr)
+	c.Assert(vExpr.Kind(), Equals, types.KindInt64)
+	src = "SELECT 9223372036854775808;"
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok = st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	expr = sel.Fields.Fields[0]
+	vExpr = expr.Expr.(*driver.ValueExpr)
+	c.Assert(vExpr.Kind(), Equals, types.KindUint64)
 }
 
 type testCase struct {
@@ -255,7 +274,7 @@ type testErrMsgCase struct {
 }
 
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
-	parser := New()
+	parser := parser.New()
 	parser.EnableWindowFunc(s.enableWindowFunc)
 	for _, t := range table {
 		_, _, err := parser.Parse(t.src, "", "")
@@ -274,7 +293,7 @@ func (s *testParserSuite) RunTest(c *C, table []testCase) {
 
 func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	var sb strings.Builder
-	parser := New()
+	parser := parser.New()
 	parser.EnableWindowFunc(s.enableWindowFunc)
 	comment := Commentf("source %v", sourceSQLs)
 	stmts, _, err := parser.Parse(sourceSQLs, "", "")
@@ -301,7 +320,7 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 }
 
 func (s *testParserSuite) RunErrMsgTest(c *C, table []testErrMsgCase) {
-	parser := New()
+	parser := parser.New()
 	for _, t := range table {
 		_, _, err := parser.Parse(t.src, "", "")
 		comment := Commentf("source %v", t.src)
@@ -397,7 +416,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DO 1 from t", false, ""},
 
 		// load data
-		{"load data local infile '/tmp/tmp.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/tmp.csv' INTO TABLE `t1` FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES"},
 		{"load data infile '/tmp/t.csv' into table t", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
 		{"load data infile '/tmp/t.csv' into table t character set utf8", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
 		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
@@ -408,34 +427,47 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
 		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
 		{"load data infile '/tmp/t.csv' into table t terminated by 'xy' fields terminated by 'ab'", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t`"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
-		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab'"},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
+		{"load data local infile '/tmp/t.csv' into table t", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t`"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` LINES STARTING BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
 		{"load data local infile '/tmp/t.csv' into table t terminated by 'xy' fields terminated by 'ab'", false, ""},
 		{"load data infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` LINES STARTING BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
 		{"load data local infile '/tmp/t.csv' into table t (a,b) fields terminated by 'ab'", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` IGNORE 1 LINES"},
 		{"load data local infile '/tmp/t.csv' into table t ignore -1 lines", false, ""},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b) ignore 1 lines", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' IGNORE 1 LINES"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b' SET b = CAST(CONV(MID(@var1, 3, LENGTH(@var1)-3), 2, 10) AS UNSIGNED)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '' SET `b`=CAST(CONV(MID(@`var1`, 3, LENGTH(@`var1`)-3), 2, 10) AS UNSIGNED)"},
+
+		{"LOAD DATA INFILE 'file.txt' INTO TABLE t1 (column1, @dummy, column2, @dummy, column3)", true, "LOAD DATA INFILE 'file.txt' INTO TABLE `t1` (`column1`,@`dummy`,`column2`,@`dummy`,`column3`)"},
+		{"LOAD DATA INFILE 'file.txt' INTO TABLE t1 (column1, @var1) SET column2 = @var1/100", true, "LOAD DATA INFILE 'file.txt' INTO TABLE `t1` (`column1`,@`var1`) SET `column2`=@`var1`/100"},
+		{"LOAD DATA INFILE 'file.txt' INTO TABLE t1 (column1, @var1, @var2) SET column2 = @var1/100, column3 = DEFAULT, column4=CURRENT_TIMESTAMP, column5=@var2+1", true, "LOAD DATA INFILE 'file.txt' INTO TABLE `t1` (`column1`,@`var1`,@`var2`) SET `column2`=@`var1`/100, `column3`=DEFAULT, `column4`=CURRENT_TIMESTAMP(), `column5`=@`var2`+1"},
+
+		{"LOAD DATA INFILE '/tmp/t.csv' INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t1` FIELDS TERMINATED BY ','"},
+		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
+		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
+		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' REPLACE INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' REPLACE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
 
 		// select for update
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
@@ -538,14 +570,6 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top internal 7", true, "ADMIN SHOW SLOW TOP INTERNAL 7"},
 		{"admin show slow top all 9", true, "ADMIN SHOW SLOW TOP ALL 9"},
 		{"admin show slow recent 11", true, "ADMIN SHOW SLOW RECENT 11"},
-		{"admin restore table by job 11", true, "ADMIN RESTORE TABLE BY JOB 11"},
-		{"admin restore table by job 11,12,13", false, ""},
-		{"admin restore table by job", false, ""},
-		{"admin restore table t1", true, "ADMIN RESTORE TABLE `t1`"},
-		{"admin restore table t1,t2", false, ""},
-		{"admin restore table ", false, ""},
-		{"admin restore table t1 100", true, "ADMIN RESTORE TABLE `t1` 100"},
-		{"admin restore table t1 abc", false, ""},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -621,6 +645,16 @@ AAAAAAAAAAAA5gm5Mg==
 		{"select * from t1 partition (p1,p2)", true, "SELECT * FROM `t1` PARTITION(`p1`, `p2`)"},
 		{"select * from t1 partition (`p1`, p2, p3)", true, "SELECT * FROM `t1` PARTITION(`p1`, `p2`, `p3`)"},
 		{`select * from t1 partition ()`, false, ""},
+
+		// for split table index region syntax
+		{"split table t1 index idx1 by ('a'),('b'),('c')", true, "SPLIT TABLE `t1` INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split table t1 index idx1 by (1)", true, "SPLIT TABLE `t1` INDEX `idx1` BY (1)"},
+		{"split table t1 index idx1 by ('abc',123), ('xyz'), ('yz', 1000)", true, "SPLIT TABLE `t1` INDEX `idx1` BY ('abc',123),('xyz'),('yz',1000)"},
+		{"split table t1 index idx1 by ", false, ""},
+
+		// for transaction mode
+		{"begin pessimistic", true, "BEGIN PESSIMISTIC"},
+		{"begin optimistic", true, "BEGIN OPTIMISTIC"},
 	}
 	s.RunTest(c, table)
 }
@@ -646,6 +680,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{`SHOW GRANTS FOR 'test'@'localhost'`, true, "SHOW GRANTS FOR `test`@`localhost`"},
 		{`SHOW GRANTS FOR current_user()`, true, "SHOW GRANTS FOR CURRENT_USER"},
 		{`SHOW GRANTS FOR current_user`, true, "SHOW GRANTS FOR CURRENT_USER"},
+		{`SHOW GRANTS FOR 'u1'@'localhost' USING 'r1'`, true, "SHOW GRANTS FOR `u1`@`localhost` USING `r1`@`%`"},
+		{`SHOW GRANTS FOR 'u1'@'localhost' USING 'r1', 'r2'`, true, "SHOW GRANTS FOR `u1`@`localhost` USING `r1`@`%`, `r2`@`%`"},
 		{`SHOW COLUMNS FROM City;`, true, "SHOW COLUMNS IN `City`"},
 		{`SHOW COLUMNS FROM tv189.1_t_1_x;`, true, "SHOW COLUMNS IN `tv189`.`1_t_1_x`"},
 		{`SHOW FIELDS FROM City;`, true, "SHOW COLUMNS IN `City`"},
@@ -664,6 +700,11 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{`SHOW EVENTS FROM test_db WHERE definer = 'current_user'`, true, "SHOW EVENTS IN `test_db` WHERE `definer`='current_user'"},
 		{`SHOW PLUGINS`, true, "SHOW PLUGINS"},
 		{`SHOW PROFILES`, true, "SHOW PROFILES"},
+		{`SHOW PROFILE`, true, "SHOW PROFILE"},
+		{`SHOW PROFILE FOR QUERY 1`, true, "SHOW PROFILE FOR QUERY 1"},
+		{`SHOW PROFILE CPU FOR QUERY 2`, true, "SHOW PROFILE CPU FOR QUERY 2"},
+		{`SHOW PROFILE CPU FOR QUERY 2 LIMIT 1,1`, true, "SHOW PROFILE CPU FOR QUERY 2 LIMIT 1,1"},
+		{`SHOW PROFILE CPU, MEMORY, BLOCK IO, CONTEXT SWITCHES, PAGE FAULTS, IPC, SWAPS, SOURCE FOR QUERY 1 limit 100`, true, "SHOW PROFILE CPU, MEMORY, BLOCK IO, CONTEXT SWITCHES, PAGE FAULTS, IPC, SWAPS, SOURCE FOR QUERY 1 LIMIT 100"},
 		{`SHOW MASTER STATUS`, true, "SHOW MASTER STATUS"},
 		{`SHOW PRIVILEGES`, true, "SHOW PRIVILEGES"},
 		// for show character set
@@ -697,6 +738,12 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show stats_healthy.
 		{"show stats_healthy", true, "SHOW STATS_HEALTHY"},
 		{"show stats_healthy where table_name = 't'", true, "SHOW STATS_HEALTHY WHERE `table_name`='t'"},
+		// for show pump/drainer status.
+		{"show pump status", true, "SHOW PUMP STATUS"},
+		{"show drainer status", true, "SHOW DRAINER STATUS"},
+		{"show analyze status", true, "SHOW ANALYZE STATUS"},
+		{"show analyze status where table_name = 't'", true, "SHOW ANALYZE STATUS WHERE `table_name`='t'"},
+		{"show analyze status where table_name like '%'", true, "SHOW ANALYZE STATUS WHERE `table_name` LIKE '%'"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
@@ -753,11 +800,11 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"set names utf8", true, "SET NAMES 'utf8'"},
 		{"set names utf8 collate utf8_unicode_ci", true, "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'"},
 		{"set names binary", true, "SET NAMES 'binary'"},
-		{"set role `role1`", true, ""},
-		{"SET ROLE DEFAULT;", true, ""},
-		{"SET ROLE ALL;", true, ""},
-		{"SET ROLE ALL EXCEPT 'role1', 'role2';", true, ""},
-		{"SET DEFAULT ROLE administrator, developer TO 'joe'@'10.0.0.1';", true, ""},
+		{"set role `role1`", true, "SET ROLE `role1`@`%`"},
+		{"SET ROLE DEFAULT", true, "SET ROLE DEFAULT"},
+		{"SET ROLE ALL", true, "SET ROLE ALL"},
+		{"SET ROLE ALL EXCEPT `role1`, `role2`", true, "SET ROLE ALL EXCEPT `role1`@`%`, `role2`@`%`"},
+		{"SET DEFAULT ROLE administrator, developer TO `joe`@`10.0.0.1`", true, "SET DEFAULT ROLE `administrator`@`%`, `developer`@`%` TO `joe`@`10.0.0.1`"},
 		// for set names and set vars
 		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
@@ -778,12 +825,16 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush tidb plugins plugin1, plugin2", true, "FLUSH TIDB PLUGINS plugin1, plugin2"},
 		{"flush hosts", true, "FLUSH HOSTS"},
 		{"flush logs", true, "FLUSH LOGS"},
+
+		// for change statement
+		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true, "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8250'"},
+		{"change drainer to node_state ='paused' for node_id '127.0.0.1:8249'", true, "CHANGE DRAINER TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8249'"},
 	}
 	s.RunTest(c, table)
 }
 
 func (s *testParserSuite) TestFlushTable(c *C) {
-	parser := New()
+	parser := parser.New()
 	stmt, _, err := parser.Parse("flush local tables tbl1,tbl2 with read lock", "", "")
 	c.Assert(err, IsNil)
 	flushTable := stmt[0].(*ast.FlushStmt)
@@ -795,7 +846,7 @@ func (s *testParserSuite) TestFlushTable(c *C) {
 }
 
 func (s *testParserSuite) TestFlushPrivileges(c *C) {
-	parser := New()
+	parser := parser.New()
 	stmt, _, err := parser.Parse("flush privileges", "", "")
 	c.Assert(err, IsNil)
 	flushPrivilege := stmt[0].(*ast.FlushStmt)
@@ -938,6 +989,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT USER();", true, "SELECT USER()"},
 		{"SELECT USER(1);", true, "SELECT USER(1)"},
 		{"SELECT CURRENT_USER();", true, "SELECT CURRENT_USER()"},
+		{"SELECT CURRENT_ROLE();", true, "SELECT CURRENT_ROLE()"},
 		{"SELECT CURRENT_USER;", true, "SELECT CURRENT_USER()"},
 		{"SELECT CONNECTION_ID();", true, "SELECT CONNECTION_ID()"},
 		{"SELECT VERSION();", true, "SELECT VERSION()"},
@@ -980,7 +1032,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"create table t (row int)", false, ""},
 
 		// for cast with charset
-		{"SELECT *, CAST(data AS CHAR CHARACTER SET utf8) FROM t;", true, "SELECT *,CAST(`data` AS CHAR CHARACTER SET utf8) FROM `t`"},
+		{"SELECT *, CAST(data AS CHAR CHARACTER SET utf8) FROM t;", true, "SELECT *,CAST(`data` AS CHAR CHARSET UTF8) FROM `t`"},
 
 		// for cast as JSON
 		{"SELECT *, CAST(data AS JSON) FROM t;", true, "SELECT *,CAST(`data` AS JSON) FROM `t`"},
@@ -1175,7 +1227,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select from_unixtime(1447430881.1234567, "%Y %D %M %h:%i:%s %x")`, true, "SELECT FROM_UNIXTIME(1447430881.1234567, '%Y %D %M %h:%i:%s %x')"},
 
 		// for issue 224
-		{`SELECT CAST('test collated returns' AS CHAR CHARACTER SET utf8) COLLATE utf8_bin;`, true, "SELECT CAST('test collated returns' AS CHAR CHARACTER SET utf8)"},
+		{`SELECT CAST('test collated returns' AS CHAR CHARACTER SET utf8) COLLATE utf8_bin;`, true, "SELECT CAST('test collated returns' AS CHAR CHARSET UTF8)"},
 
 		// for string functions
 		// trim
@@ -1567,14 +1619,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo /* foo */ (a SMALLINT UNSIGNED, b INT UNSIGNED) /* foo */", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED)"},
 		{"CREATE TABLE foo (name CHAR(50) BINARY);", true, "CREATE TABLE `foo` (`name` CHAR(50) BINARY)"},
 		{"CREATE TABLE foo (name CHAR(50) COLLATE utf8_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) COLLATE utf8_bin)"},
-		{"CREATE TABLE foo (id varchar(50) collate utf8);", true, "CREATE TABLE `foo` (`id` VARCHAR(50) COLLATE utf8)"},
+		{"CREATE TABLE foo (id varchar(50) collate utf8_bin);", true, "CREATE TABLE `foo` (`id` VARCHAR(50) COLLATE utf8_bin)"},
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET UTF8)", true, "CREATE TABLE `foo` (`name` CHAR(50) CHARACTER SET UTF8)"},
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 BINARY)", true, "CREATE TABLE `foo` (`name` CHAR(50) BINARY CHARACTER SET UTF8)"},
 		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 BINARY CHARACTER set utf8)", false, ""},
 		{"CREATE TABLE foo (name CHAR(50) BINARY CHARACTER SET utf8 COLLATE utf8_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) BINARY CHARACTER SET UTF8 COLLATE utf8_bin)"},
+		{"CREATE TABLE foo (name CHAR(50) CHARACTER SET utf8 COLLATE utf8_bin COLLATE ascii_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) CHARACTER SET UTF8 COLLATE utf8_bin COLLATE ascii_bin)"},
+		{"CREATE TABLE foo (name CHAR(50) COLLATE ascii_bin COLLATE latin1_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) COLLATE ascii_bin COLLATE latin1_bin)"},
+		{"CREATE TABLE foo (name CHAR(50) COLLATE ascii_bin PRIMARY KEY COLLATE latin1_bin)", true, "CREATE TABLE `foo` (`name` CHAR(50) COLLATE ascii_bin PRIMARY KEY COLLATE latin1_bin)"},
 		{"CREATE TABLE foo (a.b, b);", false, ""},
 		{"CREATE TABLE foo (a, b.c);", false, ""},
 		{"CREATE TABLE (name CHAR(50) BINARY)", false, ""},
+		// test use key word as column name
+		{"CREATE TABLE foo (pump varchar(50), b int);", true, "CREATE TABLE `foo` (`pump` VARCHAR(50),`b` INT)"},
+		{"CREATE TABLE foo (drainer varchar(50), b int);", true, "CREATE TABLE `foo` (`drainer` VARCHAR(50),`b` INT)"},
+		{"CREATE TABLE foo (node_id varchar(50), b int);", true, "CREATE TABLE `foo` (`node_id` VARCHAR(50),`b` INT)"},
+		{"CREATE TABLE foo (node_state varchar(50), b int);", true, "CREATE TABLE `foo` (`node_state` VARCHAR(50),`b` INT)"},
 		// for table option
 		{"create table t (c int) avg_row_length = 3", true, "CREATE TABLE `t` (`c` INT) AVG_ROW_LENGTH = 3"},
 		{"create table t (c int) avg_row_length 3", true, "CREATE TABLE `t` (`c` INT) AVG_ROW_LENGTH = 3"},
@@ -1789,12 +1849,40 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a timestamp default now() on update now())", true, "CREATE TABLE `t` (`a` TIMESTAMP DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP())"},
 		{"CREATE TABLE t (c TEXT) default CHARACTER SET utf8, default COLLATE utf8_general_ci;", true, "CREATE TABLE `t` (`c` TEXT) DEFAULT CHARACTER SET = UTF8 DEFAULT COLLATE = UTF8_GENERAL_CI"},
 		{"CREATE TABLE t (c TEXT) shard_row_id_bits = 1;", true, "CREATE TABLE `t` (`c` TEXT) SHARD_ROW_ID_BITS = 1"},
+		{"CREATE TABLE t (c TEXT) shard_row_id_bits = 1, PRE_SPLIT_REGIONS = 1;", true, "CREATE TABLE `t` (`c` TEXT) SHARD_ROW_ID_BITS = 1 PRE_SPLIT_REGIONS = 1"},
 		// Create table with ON UPDATE CURRENT_TIMESTAMP(6), specify fraction part.
-		{"CREATE TABLE IF NOT EXISTS `general_log` (`event_time` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` mediumtext NOT NULL,`thread_id` bigint(20) unsigned NOT NULL,`server_id` int(10) unsigned NOT NULL,`command_type` varchar(64) NOT NULL,`argument` mediumblob NOT NULL) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log'", true, "CREATE TABLE IF NOT EXISTS `general_log` (`event_time` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(),`user_host` MEDIUMTEXT NOT NULL,`thread_id` BIGINT(20) UNSIGNED NOT NULL,`server_id` INT(10) UNSIGNED NOT NULL,`command_type` VARCHAR(64) NOT NULL,`argument` MEDIUMBLOB NOT NULL) ENGINE = CSV DEFAULT CHARACTER SET = UTF8 COMMENT = 'General log'"}, //TODO: The number yacc in parentheses has not been implemented yet.
+		{"CREATE TABLE IF NOT EXISTS `general_log` (`event_time` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` mediumtext NOT NULL,`thread_id` bigint(20) unsigned NOT NULL,`server_id` int(10) unsigned NOT NULL,`command_type` varchar(64) NOT NULL,`argument` mediumblob NOT NULL) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log'", true, "CREATE TABLE IF NOT EXISTS `general_log` (`event_time` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` MEDIUMTEXT NOT NULL,`thread_id` BIGINT(20) UNSIGNED NOT NULL,`server_id` INT(10) UNSIGNED NOT NULL,`command_type` VARCHAR(64) NOT NULL,`argument` MEDIUMBLOB NOT NULL) ENGINE = CSV DEFAULT CHARACTER SET = UTF8 COMMENT = 'General log'"}, //TODO: The number yacc in parentheses has not been implemented yet.
 		// For reference_definition in column_definition.
 		{"CREATE TABLE followers ( f1 int NOT NULL REFERENCES user_profiles (uid) );", true, "CREATE TABLE `followers` (`f1` INT NOT NULL REFERENCES `user_profiles`(`uid`))"},
 
-		// for alter table
+		// for alter database/schema/table
+		{"ALTER DATABASE t CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
+		{"ALTER DATABASE CHARACTER SET = 'utf8'", true, "ALTER DATABASE CHARACTER SET = utf8"},
+		{"ALTER DATABASE t DEFAULT CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
+		{"ALTER SCHEMA t DEFAULT CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
+		{"ALTER SCHEMA DEFAULT CHARACTER SET = 'utf8'", true, "ALTER DATABASE CHARACTER SET = utf8"},
+		{"ALTER SCHEMA t DEFAULT CHARSET = 'UTF8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
+
+		{"ALTER DATABASE t COLLATE = 'utf8_bin'", true, "ALTER DATABASE `t` COLLATE = utf8_bin"},
+		{"ALTER DATABASE COLLATE = 'utf8_bin'", true, "ALTER DATABASE COLLATE = utf8_bin"},
+		{"ALTER DATABASE t DEFAULT COLLATE = 'utf8_bin'", true, "ALTER DATABASE `t` COLLATE = utf8_bin"},
+		{"ALTER SCHEMA t DEFAULT COLLATE = 'UTF8_BiN'", true, "ALTER DATABASE `t` COLLATE = utf8_bin"},
+		{"ALTER SCHEMA DEFAULT COLLATE = 'UTF8_BiN'", true, "ALTER DATABASE COLLATE = utf8_bin"},
+		{"ALTER SCHEMA `` DEFAULT COLLATE = 'UTF8_BiN'", true, "ALTER DATABASE `` COLLATE = utf8_bin"},
+
+		{"ALTER DATABASE t CHARSET = 'utf8mb4' COLLATE = 'utf8_bin'", true, "ALTER DATABASE `t` CHARACTER SET = utf8mb4 COLLATE = utf8_bin"},
+		{
+			"ALTER DATABASE t DEFAULT CHARSET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_general_ci' CHARACTER SET = 'utf8' COLLATE = 'utf8mb4_bin'",
+			true,
+			"ALTER DATABASE `t` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci CHARACTER SET = utf8 COLLATE = utf8mb4_bin",
+		},
+		{"ALTER DATABASE DEFAULT CHARSET = 'utf8mb4' COLLATE = 'utf8_bin'", true, "ALTER DATABASE CHARACTER SET = utf8mb4 COLLATE = utf8_bin"},
+		{
+			"ALTER DATABASE DEFAULT CHARSET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_general_ci' CHARACTER SET = 'utf8' COLLATE = 'utf8mb4_bin'",
+			true,
+			"ALTER DATABASE CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci CHARACTER SET = utf8 COLLATE = utf8mb4_bin",
+		},
+
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED)"},
 		{"ALTER TABLE ADD COLUMN (a SMALLINT UNSIGNED)", false, ""},
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED, b varchar(255))", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED, `b` VARCHAR(255))"},
@@ -1862,10 +1950,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t shard_row_id_bits = 1", true, "ALTER TABLE `t` SHARD_ROW_ID_BITS = 1"},
 		{"ALTER TABLE t AUTO_INCREMENT 3", true, "ALTER TABLE `t` AUTO_INCREMENT = 3"},
 		{"ALTER TABLE t AUTO_INCREMENT = 3", true, "ALTER TABLE `t` AUTO_INCREMENT = 3"},
-		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = DEFAULT;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL, ALGORITHM = DEFAULT"},
-		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = INPLACE;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL, ALGORITHM = INPLACE"},
-		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = COPY;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL, ALGORITHM = COPY"},
-		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL, ALGORITHM = INSTANT;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL, ALGORITHM = INSTANT"},
+		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = DEFAULT;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = DEFAULT"},
+		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = INPLACE;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = INPLACE"},
+		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = COPY;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = COPY"},
+		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL, ALGORITHM = INSTANT;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = INSTANT"},
 		{"ALTER TABLE t CONVERT TO CHARACTER SET UTF8;", true, "ALTER TABLE `t` DEFAULT CHARACTER SET = UTF8"},
 		{"ALTER TABLE t CONVERT TO CHARSET UTF8;", true, "ALTER TABLE `t` DEFAULT CHARACTER SET = UTF8"},
 		{"ALTER TABLE t CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN;", true, "ALTER TABLE `t` CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
@@ -1936,12 +2024,32 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE bar (m INT)  SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) AS SELECT `n` FROM `foo`"},
 		{"CREATE TABLE bar (m INT) IGNORE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) IGNORE AS SELECT `n` FROM `foo`"},
 		{"CREATE TABLE bar (m INT) REPLACE SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) REPLACE AS SELECT `n` FROM `foo`"},
+
+		// for generated column definition
+		{"create table t (a timestamp, b timestamp as (a) not null on update current_timestamp);", false, ""},
+		{"create table t (a bigint, b bigint as (a) primary key auto_increment);", false, ""},
+		{"create table t (a bigint, b bigint as (a) not null default 10);", false, ""},
+		{"create table t (a bigint, b bigint as (a+1) not null);", true, "CREATE TABLE `t` (`a` BIGINT,`b` BIGINT GENERATED ALWAYS AS(`a`+1) VIRTUAL NOT NULL)"},
+		{"create table t (a bigint, b bigint as (a+1) not null);", true, "CREATE TABLE `t` (`a` BIGINT,`b` BIGINT GENERATED ALWAYS AS(`a`+1) VIRTUAL NOT NULL)"},
+		{"create table t (a bigint, b bigint as (a+1) not null comment 'ttt');", true, "CREATE TABLE `t` (`a` BIGINT,`b` BIGINT GENERATED ALWAYS AS(`a`+1) VIRTUAL NOT NULL COMMENT 'ttt')"},
+		{"alter table t add column (f timestamp as (a+1) default '2019-01-01 11:11:11');", false, ""},
+		{"alter table t modify column f int as (a+1) default 55;", false, ""},
+
+		// for recover table
+		{"recover table by job 11", true, "RECOVER TABLE BY JOB 11"},
+		{"recover table by job 11,12,13", false, ""},
+		{"recover table by job", false, ""},
+		{"recover table t1", true, "RECOVER TABLE `t1`"},
+		{"recover table t1,t2", false, ""},
+		{"recover table ", false, ""},
+		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
+		{"recover table t1 abc", false, ""},
 	}
 	s.RunTest(c, table)
 }
 
 func (s *testParserSuite) TestHintError(c *C) {
-	parser := New()
+	parser := parser.New()
 	stmt, warns, err := parser.Parse("select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
@@ -1965,7 +2073,7 @@ func (s *testParserSuite) TestHintError(c *C) {
 }
 
 func (s *testParserSuite) TestErrorMsg(c *C) {
-	parser := New()
+	parser := parser.New()
 	_, _, err := parser.Parse("select1 1", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 1\" ")
 	_, _, err = parser.Parse("select 1 from1 dual", "", "")
@@ -1976,10 +2084,49 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 	c.Assert(err.Error(), Equals, "line 1 column 31 near \"t1.a = t2.a;\" ")
 	_, _, err = parser.Parse("select * from t1 join t2 on t1.a >>> t2.a;", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 36 near \"> t2.a;\" ")
+
+	_, _, err = parser.Parse("create table t(f_year year(5))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1818]Supports only YEAR or YEAR(4) column")
+
+	_, _, err = parser.Parse("select ifnull(a,0) & ifnull(a,0) like '55' ESCAPE '\\\\a' from t;", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1210]Incorrect arguments to ESCAPE")
+
+	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Enclosed by '\\\\b';", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
+
+	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Escaped by '\\\\b';", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
+
+	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Enclosed by '\\\\b' Escaped by '\\\\b' ;", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
+
+	_, _, err = parser.Parse("ALTER DATABASE `` CHARACTER SET = ''", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: ''")
+
+	_, _, err = parser.Parse("ALTER DATABASE t CHARACTER SET = ''", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: ''")
+
+	_, _, err = parser.Parse("ALTER SCHEMA t CHARACTER SET = 'SOME_INVALID_CHARSET'", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'SOME_INVALID_CHARSET'")
+
+	_, _, err = parser.Parse("ALTER DATABASE t COLLATE = ''", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: ''")
+
+	_, _, err = parser.Parse("ALTER SCHEMA t COLLATE = 'SOME_INVALID_COLLATION'", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: 'SOME_INVALID_COLLATION'")
+
+	_, _, err = parser.Parse("ALTER DATABASE CHARSET = 'utf8mb4' COLLATE = 'utf8_bin'", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 24 near \"= 'utf8mb4' COLLATE = 'utf8_bin'\" ")
+
+	_, _, err = parser.Parse("ALTER DATABASE", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 14 near \"\" ")
+
+	_, _, err = parser.Parse("ALTER SCHEMA `ANY_DB_NAME`", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\" ")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
-	parser := New()
+	parser := parser.New()
 	stmt, _, err := parser.Parse("select /*+ tidb_SMJ(T1,t2) tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt := stmt[0].(*ast.SelectStmt)
@@ -2078,6 +2225,13 @@ func (s *testParserSuite) TestType(c *C) {
 func (s *testParserSuite) TestPrivilege(c *C) {
 	table := []testCase{
 		// for create user
+		{`CREATE USER 'ttt' REQUIRE X509;`, true, "CREATE USER `ttt`@`%` REQUIRE X509"},
+		{`CREATE USER 'ttt' REQUIRE SSL;`, true, "CREATE USER `ttt`@`%` REQUIRE SSL"},
+		{`CREATE USER 'ttt' REQUIRE NONE;`, true, "CREATE USER `ttt`@`%` REQUIRE NONE"},
+		{`CREATE USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';`, true, "CREATE USER `ttt`@`%` REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA'"},
+		{`CREATE USER 'ttt' WITH MAX_QUERIES_PER_HOUR 2;`, true, "CREATE USER `ttt`@`%` WITH MAX_QUERIES_PER_HOUR 2"},
+		{`CREATE USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;`, true, "CREATE USER `ttt`@`localhost` REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
+		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED BY PASSWORD '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
 		{`CREATE USER 'test'`, true, "CREATE USER `test`@`%`"},
 		{`CREATE USER test`, true, "CREATE USER `test`@`%`"},
 		{"CREATE USER `test`", true, "CREATE USER `test`@`%`"},
@@ -2136,9 +2290,9 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT SELECT ON test.* to 'test'", true, "GRANT SELECT ON `test`.* TO `test`@`%`"}, // For issue 2654.
 		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, "GRANT PROCESS /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ ON *.* TO `xxxxxxxxxx`@`%` IDENTIFIED BY PASSWORD 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'"}, // For issue 4865
 		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE USER /* UNSUPPORTED TYPE */, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
-		{"GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';", true, ""},
-		{"GRANT 'u1' TO 'u1';", true, ""},
-		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, ""},
+		{"GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';", true, "GRANT `role1`@`%`, `role2`@`%` TO `user1`@`localhost`, `user2`@`localhost`"},
+		{"GRANT 'u1' TO 'u1';", true, "GRANT `u1`@`%` TO `u1`@`%`"},
+		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
 
 		// for revoke statement
 		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
@@ -2151,7 +2305,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"REVOKE SELECT, INSERT ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT, INSERT ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
 		{"REVOKE SELECT (col1), INSERT (col1,col2) ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT (`col1`), INSERT (`col1`,`col2`) ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
 		{"REVOKE all privileges on zabbix.* FROM 'zabbix'@'localhost' identified by 'password';", true, "REVOKE ALL ON `zabbix`.* FROM `zabbix`@`localhost` IDENTIFIED BY 'password'"},
-		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, ""},
+		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, "REVOKE `role1`@`%`, `role2`@`%` FROM `user1`@`localhost`, `user2`@`localhost`"},
 	}
 	s.RunTest(c, table)
 }
@@ -2168,6 +2322,16 @@ func (s *testParserSuite) TestComment(c *C) {
 		{"/*comment*/ /*comment*/ select c /* this is a comment */ from t;", true, "SELECT `c` FROM `t`"},
 		// for unclosed comment
 		{"delete from t where a = 7 or 1=1/*' and b = 'p'", false, ""},
+
+		{"create table t (ssl int)", false, ""},
+		{"create table t (require int)", false, ""},
+		{"create table t (account int)", true, "CREATE TABLE `t` (`account` INT)"},
+		{"create table t (expire int)", true, "CREATE TABLE `t` (`expire` INT)"},
+		{"create table t (cipher int)", true, "CREATE TABLE `t` (`cipher` INT)"},
+		{"create table t (issuer int)", true, "CREATE TABLE `t` (`issuer` INT)"},
+		{"create table t (never int)", true, "CREATE TABLE `t` (`never` INT)"},
+		{"create table t (subject int)", true, "CREATE TABLE `t` (`subject` INT)"},
+		{"create table t (x509 int)", true, "CREATE TABLE `t` (`x509` INT)"},
 	}
 	s.RunTest(c, table)
 }
@@ -2227,7 +2391,7 @@ func (s *testParserSuite) TestSubquery(c *C) {
 		{"SELECT 1 > (select 1)", "select 1"},
 		{"SELECT 1 > (select 1 union select 2)", "select 1 union select 2"},
 	}
-	parser := New()
+	parser := parser.New()
 	for _, t := range tests {
 		stmt, err := parser.ParseOneStmt(t.input, "", "")
 		c.Assert(err, IsNil)
@@ -2264,7 +2428,7 @@ func (s *testParserSuite) TestUnion(c *C) {
 }
 
 func (s *testParserSuite) TestUnionOrderBy(c *C) {
-	parser := New()
+	parser := parser.New()
 	parser.EnableWindowFunc(s.enableWindowFunc)
 
 	tests := []struct {
@@ -2364,7 +2528,7 @@ func (s *testParserSuite) TestPriority(c *C) {
 	}
 	s.RunTest(c, table)
 
-	parser := New()
+	parser := parser.New()
 	stmt, _, err := parser.Parse("select HIGH_PRIORITY * from t", "", "")
 	c.Assert(err, IsNil)
 	sel := stmt[0].(*ast.SelectStmt)
@@ -2378,7 +2542,7 @@ func (s *testParserSuite) TestSQLNoCache(c *C) {
 		{`select * from t`, true, "SELECT * FROM `t`"},
 	}
 
-	parser := New()
+	parser := parser.New()
 	for _, tt := range table {
 		stmt, _, err := parser.Parse(tt.src, "", "")
 		c.Assert(err, IsNil)
@@ -2405,7 +2569,7 @@ func (s *testParserSuite) TestInsertStatementMemoryAllocation(c *C) {
 	sql := "insert t values (1)" + strings.Repeat(",(1)", 1000)
 	var oldStats, newStats runtime.MemStats
 	runtime.ReadMemStats(&oldStats)
-	_, err := New().ParseOneStmt(sql, "", "")
+	_, err := parser.New().ParseOneStmt(sql, "", "")
 	c.Assert(err, IsNil)
 	runtime.ReadMemStats(&newStats)
 	c.Assert(int(newStats.TotalAlloc-oldStats.TotalAlloc), Less, 1024*500)
@@ -2428,6 +2592,14 @@ func (s *testParserSuite) TestExplain(c *C) {
 		{"EXPLAIN FORMAT = 'row' SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
 		{"EXPLAIN FORMAT = 'ROW' SELECT 1", true, "EXPLAIN FORMAT = 'ROW' SELECT 1"},
 		{"EXPLAIN SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+		{"EXPLAIN FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
+		{"EXPLAIN FOR connection 42", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 42"},
+		{"EXPLAIN FORMAT = 'dot' FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'dot' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = 'row' FOR connection 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = TRADITIONAL FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = TRADITIONAL SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+		{"EXPLAIN FORMAT = JSON FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'json' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = JSON SELECT 1", true, "EXPLAIN FORMAT = 'json' SELECT 1"},
 	}
 	s.RunTest(c, table)
 }
@@ -2483,7 +2655,7 @@ func (s *testParserSuite) TestBinding(c *C) {
 	}
 	s.RunTest(c, table)
 
-	p := New()
+	p := parser.New()
 	sms, _, err := p.Parse("create global binding for select * from t using select * from t use index(a)", "", "")
 	c.Assert(err, IsNil)
 	v, ok := sms[0].(*ast.CreateBindingStmt)
@@ -2511,7 +2683,7 @@ func (s *testParserSuite) TestView(c *C) {
 	s.RunTest(c, table)
 
 	// Test case for the text of the select statement in create view statement.
-	p := New()
+	p := parser.New()
 	sms, _, err := p.Parse("create view v as select * from t", "", "")
 	c.Assert(err, IsNil)
 	v, ok := sms[0].(*ast.CreateViewStmt)
@@ -2546,7 +2718,7 @@ func (s *testParserSuite) TestView(c *C) {
 func (s *testParserSuite) TestTimestampDiffUnit(c *C) {
 	// Test case for timestampdiff unit.
 	// TimeUnit should be unified to upper case.
-	parser := New()
+	parser := parser.New()
 	stmt, _, err := parser.Parse("SELECT TIMESTAMPDIFF(MONTH,'2003-02-01','2003-05-01'), TIMESTAMPDIFF(month,'2003-02-01','2003-05-01');", "", "")
 	c.Assert(err, IsNil)
 	ss := stmt[0].(*ast.SelectStmt)
@@ -2595,8 +2767,17 @@ func (s *testParserSuite) TestSessionManage(c *C) {
 	s.RunTest(c, table)
 }
 
+func (s *testParserSuite) TestParseShowOpenTables(c *C) {
+	table := []testCase{
+		{"SHOW OPEN TABLES", true, "SHOW OPEN TABLES"},
+		{"SHOW OPEN TABLES IN test", true, "SHOW OPEN TABLES IN `test`"},
+		{"SHOW OPEN TABLES FROM test", true, "SHOW OPEN TABLES IN `test`"},
+	}
+	s.RunTest(c, table)
+}
+
 func (s *testParserSuite) TestSQLModeANSIQuotes(c *C) {
-	parser := New()
+	parser := parser.New()
 	parser.SetSQLMode(mysql.ModeANSIQuotes)
 	tests := []string{
 		`CREATE TABLE "table" ("id" int)`,
@@ -2609,7 +2790,7 @@ func (s *testParserSuite) TestSQLModeANSIQuotes(c *C) {
 }
 
 func (s *testParserSuite) TestDDLStatements(c *C) {
-	parser := New()
+	parser := parser.New()
 	// Tests that whatever the charset it is define, we always assign utf8 charset and utf8_bin collate.
 	createTableStr := `CREATE TABLE t (
 		a varchar(64) binary,
@@ -2642,6 +2823,37 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 		c.Assert(colDef.Tp.Collate, Equals, charset.CollationBin)
 		c.Assert(mysql.HasBinaryFlag(colDef.Tp.Flag), IsTrue)
 	}
+	// Test set collate for all column types
+	createTableStr = `CREATE TABLE t (
+		c_int int collate utf8_bin,
+		c_real real collate utf8_bin,
+		c_float float collate utf8_bin,
+		c_bool bool collate utf8_bin,
+		c_char char collate utf8_bin,
+		c_binary binary collate utf8_bin,
+		c_varchar varchar(2) collate utf8_bin,
+		c_year year collate utf8_bin,
+		c_date date collate utf8_bin,
+		c_time time collate utf8_bin,
+		c_datetime datetime collate utf8_bin,
+		c_timestamp timestamp collate utf8_bin,
+		c_tinyblob tinyblob collate utf8_bin,
+		c_blob blob collate utf8_bin,
+		c_mediumblob mediumblob collate utf8_bin,
+		c_longblob longblob collate utf8_bin,
+		c_bit bit collate utf8_bin,
+		c_long_varchar long varchar collate utf8_bin,
+		c_tinytext tinytext collate utf8_bin,
+		c_text text collate utf8_bin,
+		c_mediumtext mediumtext collate utf8_bin,
+		c_longtext longtext collate utf8_bin,
+		c_decimal decimal collate utf8_bin,
+		c_numeric numeric collate utf8_bin,
+		c_enum enum('1') collate utf8_bin,
+		c_set set('1') collate utf8_bin,
+		c_json json collate utf8_bin)`
+	stmts, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestAnalyze(c *C) {
@@ -2657,6 +2869,8 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH 4 BUCKETS"},
 		{"analyze table t partition a index b", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b`"},
 		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH 4 BUCKETS"},
+		{"analyze incremental table t index", true, "ANALYZE INCREMENTAL TABLE `t` INDEX"},
+		{"analyze incremental table t index idx", true, "ANALYZE INCREMENTAL TABLE `t` INDEX `idx`"},
 	}
 	s.RunTest(c, table)
 }
@@ -2671,7 +2885,7 @@ func (s *testParserSuite) TestGeneratedColumn(c *C) {
 		{"create table t (c int, d int as (   c + 1   ) virtual)", true, "c + 1"},
 		{"create table t (c int, d int as (1 + 1) stored)", true, "1 + 1"},
 	}
-	parser := New()
+	parser := parser.New()
 	for _, tt := range tests {
 		stmtNodes, _, err := parser.Parse(tt.input, "", "")
 		if tt.ok {
@@ -2710,7 +2924,7 @@ func (s *testParserSuite) TestSetTransaction(c *C) {
 			true, "REPEATABLE-READ",
 		},
 	}
-	parser := New()
+	parser := parser.New()
 	for _, t := range tests {
 		stmt1, err := parser.ParseOneStmt(t.input, "", "")
 		c.Assert(err, IsNil)
@@ -2726,7 +2940,7 @@ func (s *testParserSuite) TestSetTransaction(c *C) {
 func (s *testParserSuite) TestSideEffect(c *C) {
 	// This test cover a bug that parse an error SQL doesn't leave the parser in a
 	// clean state, cause the following SQL parse fail.
-	parser := New()
+	parser := parser.New()
 	_, err := parser.ParseOneStmt("create table t /*!50100 'abc', 'abc' */;", "", "")
 	c.Assert(err, NotNil)
 
@@ -2763,11 +2977,20 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 		    partition by range (id)
 		    subpartition by hash (id)
 		    (partition p0 values less than (42))`, true, "CREATE TABLE `t` (`id` INT) PARTITION BY RANGE (`id`) (PARTITION `p0` VALUES LESS THAN (42))"},
+		{`create table t1 (a varchar(5), b int signed, c varchar(10), d datetime)
+		partition by range columns(b,c)
+		subpartition by hash(to_seconds(d))
+		( partition p0 values less than (2, 'b'),
+		  partition p1 values less than (4, 'd'),
+		  partition p2 values less than (10, 'za'));`, true,
+			"CREATE TABLE `t1` (`a` VARCHAR(5),`b` INT,`c` VARCHAR(10),`d` DATETIME) PARTITION BY RANGE COLUMNS(`b`,`c`) (PARTITION `p0` VALUES LESS THAN (2, 'b'),PARTITION `p1` VALUES LESS THAN (4, 'd'),PARTITION `p2` VALUES LESS THAN (10, 'za'))"},
+		{`CREATE TABLE t1 (a INT, b TIMESTAMP DEFAULT '0000-00-00 00:00:00')
+ENGINE=INNODB PARTITION BY LINEAR HASH (a) PARTITIONS 1;`, true, "CREATE TABLE `t1` (`a` INT,`b` TIMESTAMP DEFAULT '0000-00-00 00:00:00') ENGINE = INNODB"},
 	}
 	s.RunTest(c, table)
 
 	// Check comment content.
-	parser := New()
+	parser := parser.New()
 	stmt, err := parser.ParseOneStmt("create table t (id int) partition by range (id) (partition p0 values less than (10) comment 'check')", "", "")
 	c.Assert(err, IsNil)
 	createTable := stmt.(*ast.CreateTableStmt)
@@ -2779,7 +3002,7 @@ func (s *testParserSuite) TestTablePartitionNameList(c *C) {
 		{`select * from t partition (p0,p1)`, true, ""},
 	}
 
-	parser := New()
+	parser := parser.New()
 	for _, tt := range table {
 		stmt, _, err := parser.Parse(tt.src, "", "")
 		c.Assert(err, IsNil)
@@ -2800,7 +3023,7 @@ func (s *testParserSuite) TestNotExistsSubquery(c *C) {
 		{`select * from t1 where not exists (select * from t2 where t1.a = t2.a)`, true, ""},
 	}
 
-	parser := New()
+	parser := parser.New()
 	for _, tt := range table {
 		stmt, _, err := parser.Parse(tt.src, "", "")
 		c.Assert(err, IsNil)
@@ -2815,7 +3038,7 @@ func (s *testParserSuite) TestNotExistsSubquery(c *C) {
 func (s *testParserSuite) TestWindowFunctionIdentifier(c *C) {
 	var table []testCase
 	s.enableWindowFunc = true
-	for key := range windowFuncTokenMap {
+	for key := range parser.WindowFuncTokenMapForTest {
 		table = append(table, testCase{fmt.Sprintf("select 1 %s", key), false, fmt.Sprintf("SELECT 1 AS `%s`", key)})
 	}
 	s.RunTest(c, table)
@@ -2933,7 +3156,7 @@ func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bo
 // For issue #51
 // See https://github.com/pingcap/parser/pull/51 for details
 func (s *testParserSuite) TestVisitFrameBound(c *C) {
-	parser := New()
+	parser := parser.New()
 	parser.EnableWindowFunc(true)
 	table := []struct {
 		s          string
@@ -2956,7 +3179,7 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 }
 
 func (s *testParserSuite) TestFieldText(c *C) {
-	parser := New()
+	parser := parser.New()
 	stmts, _, err := parser.Parse("select a from t", "", "")
 	c.Assert(err, IsNil)
 	tmp := stmts[0].(*ast.SelectStmt)
@@ -2978,7 +3201,7 @@ func (s *testParserSuite) TestFieldText(c *C) {
 
 // See https://github.com/pingcap/parser/issue/94
 func (s *testParserSuite) TestQuotedSystemVariables(c *C) {
-	parser := New()
+	parser := parser.New()
 
 	st, err := parser.ParseOneStmt(
 		"select @@Sql_Mode, @@`SQL_MODE`, @@session.`sql_mode`, @@global.`s ql``mode`, @@session.'sql\\nmode', @@local.\"sql\\\"mode\";",
@@ -3039,7 +3262,7 @@ func (s *testParserSuite) TestQuotedSystemVariables(c *C) {
 
 // See https://github.com/pingcap/parser/issue/95
 func (s *testParserSuite) TestQuotedVariableColumnName(c *C) {
-	parser := New()
+	parser := parser.New()
 
 	st, err := parser.ParseOneStmt(
 		"select @abc, @`abc`, @'aBc', @\"AbC\", @6, @`6`, @'6', @\"6\", @@sql_mode, @@`sql_mode`, @;",

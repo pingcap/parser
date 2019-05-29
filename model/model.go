@@ -67,6 +67,15 @@ const (
 	ColumnInfoVersion0 = uint64(0)
 	// ColumnInfoVersion1 means the column info version is 1.
 	ColumnInfoVersion1 = uint64(1)
+	// ColumnInfoVersion2 means the column info version is 2.
+	// This is for v2.1.7 to Compatible with older versions charset problem.
+	// Old version such as v2.0.8 treat utf8 as utf8mb4, because there is no UTF8 check in v2.0.8.
+	// After version V2.1.2 (PR#8738) , TiDB add UTF8 check, then the user upgrade from v2.0.8 insert some UTF8MB4 characters will got error.
+	// This is not compatibility for user. Then we try to fix this in PR #9820, and increase the version number.
+	ColumnInfoVersion2 = uint64(2)
+
+	// CurrLatestColumnInfoVersion means the latest column info in the current TiDB.
+	CurrLatestColumnInfoVersion = ColumnInfoVersion2
 )
 
 // ColumnInfo provides meta data describing of a table column.
@@ -156,12 +165,25 @@ const (
 	// when executing a change/modify column statement that does not specify a charset value for column.
 	// This behavior is not compatible with MySQL.
 	TableInfoVersion0 = uint16(0)
-	// ColumnInfoVersion1 means the table info version is 1.
+	// TableInfoVersion1 means the table info version is 1.
 	// When we execute a change/modify column statement that does not specify a charset value for column,
 	// we set the charset of this column to the charset of table. This behavior is compatible with MySQL.
 	TableInfoVersion1 = uint16(1)
+	// TableInfoVersion2 means the table info version is 2.
+	// This is for v2.1.7 to Compatible with older versions charset problem.
+	// Old version such as v2.0.8 treat utf8 as utf8mb4, because there is no UTF8 check in v2.0.8.
+	// After version V2.1.2 (PR#8738) , TiDB add UTF8 check, then the user upgrade from v2.0.8 insert some UTF8MB4 characters will got error.
+	// This is not compatibility for user. Then we try to fix this in PR #9820, and increase the version number.
+	TableInfoVersion2 = uint16(2)
+	// TableInfoVersion3 means the table info version is 3.
+	// This version aims to deal with upper-cased charset name in TableInfo stored by versions prior to TiDB v2.1.9:
+	// TiDB always suppose all charsets / collations as lower-cased and try to convert them if they're not.
+	// However, the convert is missed in some scenarios before v2.1.9, so for all those tables prior to TableInfoVersion3, their
+	// charsets / collations will be converted to lower-case while loading from the storage.
+	TableInfoVersion3 = uint16(3)
+
 	// CurrLatestTableInfoVersion means the latest table info in the current TiDB.
-	CurrLatestTableInfoVersion = TableInfoVersion1
+	CurrLatestTableInfoVersion = TableInfoVersion3
 )
 
 // ExtraHandleName is the name of ExtraHandle Column.
@@ -196,6 +218,12 @@ type TableInfo struct {
 
 	// ShardRowIDBits specify if the implicit row ID is sharded.
 	ShardRowIDBits uint64
+	// MaxShardRowIDBits uses to record the max ShardRowIDBits be used so far.
+	MaxShardRowIDBits uint64 `json:"max_shard_row_id_bits"`
+	// PreSplitRegions specify the pre-split region when create table.
+	// The pre-split region num is 2^(PreSplitRegions-1).
+	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
+	PreSplitRegions uint64 `json:"pre_split_regions"`
 
 	Partition *PartitionInfo `json:"partition"`
 
@@ -305,6 +333,16 @@ func (t *TableInfo) Cols() []*ColumnInfo {
 		}
 	}
 	return publicColumns[0 : maxOffset+1]
+}
+
+// FindIndexByName finds index by name.
+func (t *TableInfo) FindIndexByName(idxName string) *IndexInfo {
+	for _, idx := range t.Indices {
+		if idx.Name.L == idxName {
+			return idx
+		}
+	}
+	return nil
 }
 
 // NewExtraHandleColInfo mocks a column info for extra handle column.
@@ -688,8 +726,8 @@ func ColumnToProto(c *ColumnInfo) *tipb.ColumnInfo {
 // TODO: update it when more collate is supported.
 func collationToProto(c string) int32 {
 	v := mysql.CollationNames[c]
-	if v == mysql.BinaryCollationID {
-		return int32(mysql.BinaryCollationID)
+	if v == mysql.BinaryDefaultCollationID {
+		return int32(mysql.BinaryDefaultCollationID)
 	}
 	// We only support binary and utf8_bin collation.
 	// Setting other collations to utf8_bin for old data compatibility.
