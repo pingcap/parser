@@ -1659,7 +1659,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		// For reference_definition in column_definition.
 		{"CREATE TABLE followers ( f1 int NOT NULL REFERENCES user_profiles (uid) );", true},
 
-		// for alter table
+		// for alter database/schema/table
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED)", true},
 		{"ALTER TABLE ADD COLUMN (a SMALLINT UNSIGNED)", false},
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED, b varchar(255))", true},
@@ -1670,6 +1670,26 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE employees ADD PARTITION", true},
 		{"ALTER TABLE employees ADD PARTITION ( PARTITION P1 VALUES LESS THAN (2010))", true},
 		{"ALTER TABLE employees ADD PARTITION ( PARTITION P2 VALUES LESS THAN MAXVALUE)", true},
+
+		{"ALTER DATABASE t CHARACTER SET = 'utf8'", true},
+		{"ALTER DATABASE CHARACTER SET = 'utf8'", true},
+		{"ALTER DATABASE t DEFAULT CHARACTER SET = 'utf8'", true},
+		{"ALTER SCHEMA t DEFAULT CHARACTER SET = 'utf8'", true},
+		{"ALTER SCHEMA DEFAULT CHARACTER SET = 'utf8'", true},
+		{"ALTER SCHEMA t DEFAULT CHARSET = 'UTF8'", true},
+
+		{"ALTER DATABASE t COLLATE = 'utf8_bin'", true},
+		{"ALTER DATABASE COLLATE = 'utf8_bin'", true},
+		{"ALTER DATABASE t DEFAULT COLLATE = 'utf8_bin'", true},
+		{"ALTER SCHEMA t DEFAULT COLLATE = 'UTF8_BiN'", true},
+		{"ALTER SCHEMA DEFAULT COLLATE = 'UTF8_BiN'", true},
+		{"ALTER SCHEMA `` DEFAULT COLLATE = 'UTF8_BiN'", true},
+
+		{"ALTER DATABASE t CHARSET = 'utf8mb4' COLLATE = 'utf8_bin'", true},
+		{"ALTER DATABASE t DEFAULT CHARSET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_general_ci' CHARACTER SET = 'utf8' COLLATE = 'utf8mb4_bin'", true},
+		{"ALTER DATABASE DEFAULT CHARSET = 'utf8mb4' COLLATE = 'utf8_bin'", true},
+		{"ALTER DATABASE DEFAULT CHARSET = 'utf8mb4' DEFAULT COLLATE = 'utf8mb4_general_ci' CHARACTER SET = 'utf8' COLLATE = 'utf8mb4_bin'", true},
+
 		{`ALTER TABLE employees ADD PARTITION (
 				PARTITION P1 VALUES LESS THAN (2010),
 				PARTITION P2 VALUES LESS THAN (2015),

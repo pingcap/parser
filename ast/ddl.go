@@ -81,6 +81,26 @@ func (n *CreateDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// AlterDatabaseStmt is a statement to change the structure of a database.
+// See https://dev.mysql.com/doc/refman/5.7/en/alter-database.html
+type AlterDatabaseStmt struct {
+	ddlNode
+
+	Name                 string
+	AlterDefaultDatabase bool
+	Options              []*DatabaseOption
+}
+
+// Accept implements Node Accept interface.
+func (n *AlterDatabaseStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AlterDatabaseStmt)
+	return v.Leave(n)
+}
+
 // DropDatabaseStmt is a statement to drop a database and all tables in the database.
 // See https://dev.mysql.com/doc/refman/5.7/en/drop-database.html
 type DropDatabaseStmt struct {
