@@ -1016,14 +1016,15 @@ func (n *TableToTable) Accept(v Visitor) (Node, bool) {
 type CreateViewStmt struct {
 	ddlNode
 
-	OrReplace   bool
-	ViewName    *TableName
-	Cols        []model.CIStr
-	Select      StmtNode
-	Algorithm   model.ViewAlgorithm
-	Definer     *auth.UserIdentity
-	Security    model.ViewSecurity
-	CheckOption model.ViewCheckOption
+	OrReplace    bool
+	ViewName     *TableName
+	Cols         []model.CIStr
+	Select       StmtNode
+	SelectSchema []model.CIStr
+	Algorithm    model.ViewAlgorithm
+	Definer      *auth.UserIdentity
+	Security     model.ViewSecurity
+	CheckOption  model.ViewCheckOption
 }
 
 // Restore implements Node interface.
