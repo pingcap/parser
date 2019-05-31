@@ -433,6 +433,11 @@ func (t *TableInfo) FindIndexByName(idxName string) *IndexInfo {
 	return nil
 }
 
+// IsLocked checks whether the table was locked.
+func (t *TableInfo) IsLocked() bool {
+	return t.Lock != nil && len(t.Lock.Sessions) > 0
+}
+
 // NewExtraHandleColInfo mocks a column info for extra handle column.
 func NewExtraHandleColInfo() *ColumnInfo {
 	colInfo := &ColumnInfo{
