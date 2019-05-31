@@ -882,6 +882,8 @@ const (
 	ErrMustChangePasswordLogin                                      = 1862
 	ErrRowInWrongPartition                                          = 1863
 	ErrErrorLast                                                    = 1863
+	ErrMaxExecTimeExceeded                                          = 1907
+	ErrInvalidJSONData                                              = 3069
 	ErrGeneratedColumnFunctionIsNotAllowed                          = 3102
 	ErrBadGeneratedColumn                                           = 3105
 	ErrUnsupportedOnGeneratedColumn                                 = 3106
@@ -890,11 +892,12 @@ const (
 	ErrGeneratedColumnRefAutoInc                                    = 3109
 	ErrInvalidJSONText                                              = 3140
 	ErrInvalidJSONPath                                              = 3143
-	ErrInvalidJSONData                                              = 3146
+	ErrInvalidTypeForJSON                                           = 3146
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
 	ErrInvalidJSONPathArrayCell                                     = 3165
+	ErrBadUser                                                      = 3162
 	ErrRoleNotGranted                                               = 3530
 	ErrWindowNoSuchWindow                                           = 3579
 	ErrWindowCircularityInWindowGraph                               = 3580
@@ -922,6 +925,8 @@ const (
 	ErrMemExceedThreshold         = 8001
 	ErrForUpdateCantRetry         = 8002
 	ErrAdminCheckTable            = 8003
+	ErrTxnTooLarge                = 8004
+	ErrWriteConflictInTiDB        = 8005
 	ErrInvalidPluginID            = 8101
 	ErrInvalidPluginManifest      = 8102
 	ErrInvalidPluginName          = 8103
@@ -940,6 +945,4 @@ const (
 	ErrRegionUnavailable  = 9005
 	ErrGCTooEarly         = 9006
 	ErrWriteConflict      = 9007
-
-	ErrTxnTooLarge = 9500
 )

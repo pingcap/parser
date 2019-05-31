@@ -62,11 +62,11 @@ func (s *testCharsetSuite) TestValidCharset(c *C) {
 	}
 }
 
-func (s *testCharsetSuite) TestGetAllCharsets(c *C) {
+func (s *testCharsetSuite) TestGetSupportedCharsets(c *C) {
 	defer testleak.AfterTest(c)()
 	charset := &Charset{"test", "test_bin", nil, "Test", 5}
 	charsetInfos = append(charsetInfos, charset)
-	descs := GetAllCharsets()
+	descs := GetSupportedCharsets()
 	c.Assert(len(descs), Equals, len(charsetInfos)-1)
 }
 
@@ -98,6 +98,36 @@ func (s *testCharsetSuite) TestGetDefaultCollation(c *C) {
 	for _, tt := range tests {
 		testGetDefaultCollation(c, tt.cs, tt.co, tt.succ)
 	}
+
+	// Test the consistency of collations table and charset desc table
+	charset_num := 0
+	for _, collate := range collations {
+		if collate.IsDefault {
+			if desc, ok := charsets[collate.CharsetName]; ok {
+				c.Assert(collate.Name, Equals, desc.DefaultCollation)
+				charset_num += 1
+			}
+		}
+	}
+	c.Assert(charset_num, Equals, len(charsets))
+}
+
+func (s *testCharsetSuite) TestSupportedCollations(c *C) {
+	// All supportedCollation are defined from their names
+	c.Assert(len(supportedCollationNames), Equals, len(supportedCollationNames))
+
+	// The default collations of supported charsets is the subset of supported collations
+	errMsg := "Charset [%v] is supported but its default collation [%v] is not."
+	for _, desc := range GetSupportedCharsets() {
+		found := false
+		for _, c := range GetSupportedCollations() {
+			if desc.DefaultCollation == c.Name {
+				found = true
+				break
+			}
+		}
+		c.Assert(found, IsTrue, Commentf(errMsg, desc.Name, desc.DefaultCollation))
+	}
 }
 
 func (s *testCharsetSuite) TestGetCharsetDesc(c *C) {
@@ -124,6 +154,19 @@ func (s *testCharsetSuite) TestGetCharsetDesc(c *C) {
 			c.Assert(desc.Name, Equals, tt.result)
 		}
 	}
+}
+
+func (s *testCharsetSuite) TestGetCollationByName(c *C) {
+	defer testleak.AfterTest(c)()
+
+	for _, collation := range collations {
+		coll, err := GetCollationByName(collation.Name)
+		c.Assert(err, IsNil)
+		c.Assert(coll, Equals, collation)
+	}
+
+	_, err := GetCollationByName("non_exist")
+	c.Assert(err, ErrorMatches, "\\[ddl:1273\\]Unknown collation: 'non_exist'")
 }
 
 func BenchmarkGetCharsetDesc(b *testing.B) {
