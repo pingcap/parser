@@ -784,7 +784,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("/*+ ")
 		for i, tableHint := range n.TableHints {
 			if err := tableHint.Restore(ctx); err != nil {
-				errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]", i)
+				return errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]", i)
 			}
 		}
 		ctx.WritePlain("*/ ")
@@ -802,7 +802,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := field.Restore(ctx); err != nil {
-				errors.Annotatef(err, "An error occurred while restore SelectStmt.Fields[%d]", i)
+				return errors.Annotatef(err, "An error occurred while restore SelectStmt.Fields[%d]", i)
 			}
 		}
 	}
@@ -810,7 +810,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 	if n.From != nil {
 		ctx.WriteKeyWord(" FROM ")
 		if err := n.From.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore SelectStmt.From")
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.From")
 		}
 	}
 
@@ -820,21 +820,21 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 	if n.Where != nil {
 		ctx.WriteKeyWord(" WHERE ")
 		if err := n.Where.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore SelectStmt.Where")
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.Where")
 		}
 	}
 
 	if n.GroupBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.GroupBy.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore SelectStmt.GroupBy")
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.GroupBy")
 		}
 	}
 
 	if n.Having != nil {
 		ctx.WritePlain(" ")
 		if err := n.Having.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore SelectStmt.Having")
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.Having")
 		}
 	}
 
@@ -845,7 +845,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			if err := windowsSpec.Restore(ctx); err != nil {
-				errors.Annotatef(err, "An error occurred while restore SelectStmt.WindowSpec[%d]", i)
+				return errors.Annotatef(err, "An error occurred while restore SelectStmt.WindowSpec[%d]", i)
 			}
 		}
 	}
@@ -853,14 +853,14 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore SelectStmt.OrderBy")
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.OrderBy")
 		}
 	}
 
 	if n.Limit != nil {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore SelectStmt.Limit")
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.Limit")
 		}
 	}
 
@@ -982,7 +982,7 @@ func (n *UnionSelectList) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain("(")
 		}
 		if err := selectStmt.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore UnionSelectList.SelectStmt")
+			return errors.Annotate(err, "An error occurred while restore UnionSelectList.SelectStmt")
 		}
 		if selectStmt.IsInBraces {
 			ctx.WritePlain(")")
@@ -1022,20 +1022,20 @@ type UnionStmt struct {
 // Restore implements Node interface.
 func (n *UnionStmt) Restore(ctx *RestoreCtx) error {
 	if err := n.SelectList.Restore(ctx); err != nil {
-		errors.Annotate(err, "An error occurred while restore UnionStmt.SelectList")
+		return errors.Annotate(err, "An error occurred while restore UnionStmt.SelectList")
 	}
 
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore UnionStmt.OrderBy")
+			return errors.Annotate(err, "An error occurred while restore UnionStmt.OrderBy")
 		}
 	}
 
 	if n.Limit != nil {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
-			errors.Annotate(err, "An error occurred while restore UnionStmt.Limit")
+			return errors.Annotate(err, "An error occurred while restore UnionStmt.Limit")
 		}
 	}
 	return nil
@@ -1183,6 +1183,17 @@ func (n *LoadDataStmt) Accept(v Visitor) (Node, bool) {
 		n.Columns[i] = node.(*ColumnName)
 	}
 	return v.Leave(n)
+}
+
+const (
+	Terminated = iota
+	Enclosed
+	Escaped
+)
+
+type FieldItem struct {
+	Type  int
+	Value string
 }
 
 // FieldsClause represents fields references clause in load data statement.
@@ -1757,6 +1768,8 @@ const (
 	ShowBindings
 	ShowPumpStatus
 	ShowDrainerStatus
+	ShowOpenTables
+	ShowAnalyzeStatus
 )
 
 // ShowStmt is a statement to provide information about databases, tables, columns and so on.
@@ -1771,8 +1784,9 @@ type ShowStmt struct {
 	Column      *ColumnName // Used for `desc table column`.
 	Flag        int         // Some flag parsed from sql, such as FULL.
 	Full        bool
-	User        *auth.UserIdentity // Used for show grants/create user.
-	IfNotExists bool               // Used for `show create database if not exists`
+	User        *auth.UserIdentity   // Used for show grants/create user.
+	Roles       []*auth.RoleIdentity // Used for show grants .. using
+	IfNotExists bool                 // Used for `show create database if not exists`
 
 	// GlobalScope is used by `show variables` and `show bindings`
 	GlobalScope bool
@@ -1847,6 +1861,17 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore ShowStmt.User")
 			}
 		}
+		if n.Roles != nil {
+			ctx.WriteKeyWord(" USING ")
+			for i, r := range n.Roles {
+				if err := r.Restore(ctx); err != nil {
+					return errors.Annotate(err, "An error occurred while restore ShowStmt.User")
+				}
+				if i != len(n.Roles)-1 {
+					ctx.WritePlain(", ")
+				}
+			}
+		}
 	case ShowMasterStatus:
 		ctx.WriteKeyWord("MASTER STATUS")
 	case ShowProcessList:
@@ -1888,6 +1913,9 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 		case ShowTables:
 			restoreOptFull()
 			ctx.WriteKeyWord("TABLES")
+			restoreShowDatabaseNameOpt()
+		case ShowOpenTables:
+			ctx.WriteKeyWord("OPEN TABLES")
 			restoreShowDatabaseNameOpt()
 		case ShowTableStatus:
 			ctx.WriteKeyWord("TABLE STATUS")
@@ -1943,6 +1971,8 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteKeyWord("PUMP STATUS")
 		case ShowDrainerStatus:
 			ctx.WriteKeyWord("DRAINER STATUS")
+		case ShowAnalyzeStatus:
+			ctx.WriteKeyWord("ANALYZE STATUS")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
@@ -2011,7 +2041,7 @@ type WindowSpec struct {
 	Frame       *FrameClause
 
 	// OnlyAlias will set to true of the first following case.
-	// To make compatiable with MySQL, we need to distinguish `select func over w` from `select func over (w)`.
+	// To make compatible with MySQL, we need to distinguish `select func over w` from `select func over (w)`.
 	OnlyAlias bool
 }
 
