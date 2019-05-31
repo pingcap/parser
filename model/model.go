@@ -303,7 +303,7 @@ const (
 	// TableLockWrite means only the session with this lock has write/read permission.
 	// Only the session that holds the lock can access the table. No other session can access it until the lock is released.
 	TableLockWrite
-	// TableLockWriteLocal means the session with this lock has write/read permission, and the other session is still has read permission.
+	// TableLockWriteLocal means the session with this lock has write/read permission, and the other session still has read permission.
 	TableLockWriteLocal
 )
 
