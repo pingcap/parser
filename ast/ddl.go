@@ -1565,11 +1565,11 @@ func (a AlterAlgorithm) String() string {
 type AlterTableSpec struct {
 	node
 
-	// only supported by MariaDB 10.0.2+ (DROP COLUMN, CHANGE COLUMN, MODIFY COLUMN, DROP INDEX, DROP FOREIGN KEY)
+	// only supported by MariaDB 10.0.2+ (DROP COLUMN, CHANGE COLUMN, MODIFY COLUMN, DROP INDEX, DROP FOREIGN KEY, DROP PARTITION)
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfExists bool
 
-	// only supported by MariaDB 10.0.2+ (ADD COLUMN)
+	// only supported by MariaDB 10.0.2+ (ADD COLUMN, ADD PARTITION)
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfNotExists bool
 
@@ -1736,6 +1736,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain(" /* AlterTableForce is not supported */ ")
 	case AlterTableAddPartitions:
 		ctx.WriteKeyWord("ADD PARTITION")
+		if n.IfNotExists {
+			ctx.WriteKeyWord(" IF NOT EXISTS")
+		}
 		if n.PartDefinitions != nil {
 			ctx.WritePlain(" (")
 			for i, def := range n.PartDefinitions {
@@ -1756,6 +1759,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.Num)
 	case AlterTableDropPartition:
 		ctx.WriteKeyWord("DROP PARTITION ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
 		ctx.WriteName(n.Name)
 	case AlterTableTruncatePartition:
 		ctx.WriteKeyWord("TRUNCATE PARTITION ")

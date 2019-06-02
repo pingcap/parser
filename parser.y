@@ -1148,13 +1148,14 @@ AlterTableSpec:
 			Constraint: constraint,
 		}
 	}
-|	"ADD" "PARTITION" PartitionDefinitionListOpt
+|	"ADD" "PARTITION" IfNotExists PartitionDefinitionListOpt
 	{
 		var defs []*ast.PartitionDefinition
-		if $3 != nil {
-			defs = $3.([]*ast.PartitionDefinition)
+		if $4 != nil {
+			defs = $4.([]*ast.PartitionDefinition)
 		}
 		$$ = &ast.AlterTableSpec{
+			IfNotExists: 	$3.(bool),
 			Tp: ast.AlterTableAddPartitions,
 			PartDefinitions: defs,
 		}
@@ -1185,11 +1186,12 @@ AlterTableSpec:
 	{
 		$$ = &ast.AlterTableSpec{Tp: ast.AlterTableDropPrimaryKey}
 	}
-|	"DROP" "PARTITION" Identifier
+|	"DROP" "PARTITION" IfExists Identifier
 	{
 		$$ = &ast.AlterTableSpec{
+			IfExists: $3.(bool),
 			Tp: ast.AlterTableDropPartition,
-			Name: $3,
+			Name: $4,
 		}
 	}
 |	"TRUNCATE" "PARTITION" Identifier
