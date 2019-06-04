@@ -892,6 +892,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidJSONPathWildcard:                               "In this situation, path expressions may not contain the * and ** tokens.",
 	ErrInvalidJSONContainsPathType:                           "The second argument can only be either 'one' or 'all'.",
 	ErrJSONUsedAsKey:                                         "JSON column '%-.192s' cannot be used in key specification.",
+	ErrInvalidJSONPathArrayCell:                              "A path expression is not a path to a cell in an array.",
 	ErrWindowNoSuchWindow:                                    "Window name '%s' is not defined.",
 	ErrWindowCircularityInWindowGraph:                        "There is a circularity in the window dependency graph.",
 	ErrWindowNoChildPartitioning:                             "A window which depends on another cannot define partitioning.",
@@ -914,12 +915,14 @@ var MySQLErrName = map[uint16]string{
 	ErrWindowExplainJson:                                     "To get information about window functions use EXPLAIN FORMAT=JSON",
 	ErrWindowFunctionIgnoresFrame:                            "Window function '%s' ignores the frame clause of window '%s' and aggregates over the whole partition",
 	ErrRoleNotGranted:                                        "%s is is not granted to %s",
+	ErrMaxExecTimeExceeded:                                   "Query execution was interrupted, max_execution_time exceeded.",
 
 	// TiDB errors.
-	ErrMemExceedThreshold: "%s holds %dB memory, exceeds threshold %dB.%s",
-	ErrForUpdateCantRetry: "[%d] can not retry select for update statement",
-	ErrAdminCheckTable:    "TiDB admin check table failed.",
-
+	ErrMemExceedThreshold:         "%s holds %dB memory, exceeds threshold %dB.%s",
+	ErrForUpdateCantRetry:         "[%d] can not retry select for update statement",
+	ErrAdminCheckTable:            "TiDB admin check table failed.",
+	ErrTxnTooLarge:                "Transaction is too large",
+	ErrWriteConflictInTiDB:        "Write conflict, txnStartTS %d is stale",
 	ErrInvalidPluginID:            "Wrong plugin id: %s, valid plugin id is [name]-[version], both name and version should not contain '-'",
 	ErrInvalidPluginManifest:      "Cannot read plugin %s's manifest",
 	ErrInvalidPluginName:          "Plugin load with %s but got wrong name %s",
@@ -938,6 +941,4 @@ var MySQLErrName = map[uint16]string{
 	ErrRegionUnavailable:  "Region is unavailable",
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
 	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictStartTS=%d, conflictCommitTS=%d, key=%s",
-
-	ErrTxnTooLarge: "Transaction is too large",
 }
