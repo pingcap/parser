@@ -204,6 +204,7 @@ import (
 	procedure		"PROCEDURE"
 	shardRowIDBits		"SHARD_ROW_ID_BITS"
 	preSplitRegions		"PRE_SPLIT_REGIONS"
+	affinity        "AFFINITY"
 	rangeKwd		"RANGE"
 	rank			"RANK"
 	read			"READ"
@@ -7179,6 +7180,16 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionPreSplitRegion, UintValue: $3.(uint64)}
 	}
+|	"AFFINITY" "BY" '(' Expression ',' LengthNum ')'
+    {
+		$$ = &ast.TableOption{
+		    Tp: ast.TableOptionAffinity,
+		    Affinity: &ast.AffinityOption {
+		        Expr: $4.(ast.ExprNode),
+		        BitWidth: $6.(uint64),
+		    },
+		}
+    }
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
 		// Parse it but will ignore it.

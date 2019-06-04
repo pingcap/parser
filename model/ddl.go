@@ -56,6 +56,7 @@ const (
 	ActionDropView                      ActionType = 24
 	ActionRecoverTable                  ActionType = 25
 	ActionModifySchemaCharsetAndCollate ActionType = 26
+	ActionAffinity                      ActionType = 27
 )
 
 // AddIndexStr is a string related to the operation of "add index".
@@ -88,6 +89,7 @@ var actionMap = map[ActionType]string{
 	ActionDropView:                      "drop view",
 	ActionRecoverTable:                  "recover table",
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
+	ActionAffinity:                      "modify affinity",
 }
 
 // String return current ddl action in string

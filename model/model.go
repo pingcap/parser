@@ -186,6 +186,11 @@ const (
 	CurrLatestTableInfoVersion = TableInfoVersion3
 )
 
+type AffinityInfo struct {
+	Expr     string `json:"expr"`
+	BitWidth uint64 `json:"bit_width"`
+}
+
 // ExtraHandleName is the name of ExtraHandle Column.
 var ExtraHandleName = NewCIStr("_tidb_rowid")
 
@@ -226,6 +231,8 @@ type TableInfo struct {
 	PreSplitRegions uint64 `json:"pre_split_regions"`
 
 	Partition *PartitionInfo `json:"partition"`
+
+	Affinity *AffinityInfo `json:"affinity"`
 
 	Compression string `json:"compression"`
 

@@ -1243,6 +1243,7 @@ const (
 	TableOptionStatsPersistent
 	TableOptionShardRowID
 	TableOptionPreSplitRegion
+	TableOptionAffinity
 	TableOptionPackKeys
 )
 
@@ -1281,6 +1282,7 @@ type TableOption struct {
 	Tp        TableOptionType
 	StrValue  string
 	UintValue uint64
+	Affinity  *AffinityOption
 }
 
 func (n *TableOption) Restore(ctx *RestoreCtx) error {
@@ -1392,6 +1394,15 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionPreSplitRegion:
 		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
 		ctx.WritePlainf("= %d", n.UintValue)
+	case TableOptionAffinity:
+		ctx.WriteKeyWord("AFFINITY BY ")
+		if n.Affinity != nil {
+			ctx.WritePlain("(")
+			if err := n.Affinity.Expr.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore AFFINITY BY Expr")
+			}
+			ctx.WritePlainf(", %d) ", n.Affinity.BitWidth)
+		}
 	case TableOptionPackKeys:
 		// TODO: not support
 		ctx.WriteKeyWord("PACK_KEYS ")
@@ -1879,6 +1890,11 @@ func (n *PartitionDefinition) Restore(ctx *RestoreCtx) error {
 		ctx.WriteString(n.Comment)
 	}
 	return nil
+}
+
+type AffinityOption struct {
+	Expr     ExprNode
+	BitWidth uint64
 }
 
 // PartitionOptions specifies the partition options.
