@@ -261,6 +261,38 @@ func (s *testParserSuite) TestSimple(c *C) {
 	c.Assert(vExpr.Kind(), Equals, types.KindUint64)
 }
 
+func (s *testParserSuite) TestSpecialComments(c *C) {
+	parser := parser.New()
+
+	// 1. Make sure /*! ... */ respects the same SQL mode.
+	_, err := parser.ParseOneStmt(`SELECT /*! '\' */;`, "", "")
+	c.Assert(err, NotNil)
+
+	parser.SetSQLMode(mysql.ModeNoBackslashEscapes)
+	st, err := parser.ParseOneStmt(`SELECT /*! '\' */;`, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st, FitsTypeOf, &ast.SelectStmt{})
+
+	// 2. Make sure multiple statements inside /*! ... */ will not crash
+	// (this is issue #330)
+	stmts, _, err := parser.Parse("/*! SET x = 1; SELECT 2 */", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(stmts, HasLen, 2)
+	c.Assert(stmts[0], FitsTypeOf, &ast.SetStmt{})
+	c.Assert(stmts[0].Text(), Equals, "SET x = 1;")
+	c.Assert(stmts[1], FitsTypeOf, &ast.SelectStmt{})
+	c.Assert(stmts[1].Text(), Equals, "/*! SET x = 1; SELECT 2 */")
+	// ^ not sure if correct approach; having multiple statements in MySQL is a syntax error.
+
+	// 3. Make sure invalid text won't cause infinite loop
+	// (this is issue #336)
+	st, err = parser.ParseOneStmt("SELECT /*+ 😅 */ SLEEP(1);", "", "")
+	c.Assert(err, IsNil)
+	sel, ok := st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(sel.TableHints, HasLen, 0)
+}
+
 type testCase struct {
 	src     string
 	ok      bool
@@ -773,6 +805,12 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// global system variables
 		{"SET GLOBAL autocommit = 1", true, "SET @@GLOBAL.`autocommit`=1"},
 		{"SET @@global.autocommit = 1", true, "SET @@GLOBAL.`autocommit`=1"},
+		// set through mysql extension assignment syntax
+		{"SET autocommit := 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@session.autocommit := 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @MYSQLDUMP_TEMP_LOG_BIN := @@SESSION.SQL_LOG_BIN", true, "SET @`MYSQLDUMP_TEMP_LOG_BIN`=@@SESSION.`sql_log_bin`"},
+		{"SET LOCAL autocommit := 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@global.autocommit := default", true, "SET @@GLOBAL.`autocommit`=DEFAULT"},
 		// set default value
 		{"SET @@global.autocommit = default", true, "SET @@GLOBAL.`autocommit`=DEFAULT"},
 		{"SET @@session.autocommit = default", true, "SET @@SESSION.`autocommit`=DEFAULT"},
@@ -2533,6 +2571,16 @@ func (s *testParserSuite) TestPriority(c *C) {
 	c.Assert(err, IsNil)
 	sel := stmt[0].(*ast.SelectStmt)
 	c.Assert(sel.SelectStmtOpts.Priority, Equals, mysql.HighPriority)
+}
+
+func (s *testParserSuite) TestSQLResult(c *C) {
+	table := []testCase{
+		{`select SQL_BIG_RESULT c1 from t group by c1`, true, "SELECT SQL_BIG_RESULT `c1` FROM `t` GROUP BY `c1`"},
+		{`select SQL_SMALL_RESULT c1 from t group by c1`, true, "SELECT SQL_SMALL_RESULT `c1` FROM `t` GROUP BY `c1`"},
+		{`select SQL_BUFFER_RESULT * from t`, true, "SELECT SQL_BUFFER_RESULT * FROM `t`"},
+		{`select sql_small_result sql_big_result sql_buffer_result 1`, true, "SELECT SQL_SMALL_RESULT SQL_BIG_RESULT SQL_BUFFER_RESULT 1"},
+	}
+	s.RunTest(c, table)
 }
 
 func (s *testParserSuite) TestSQLNoCache(c *C) {
