@@ -2440,6 +2440,30 @@ func (n *SplitRegionStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
+	for i, val := range n.SplitOpt.Min {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.SplitOpt.Min[i] = node.(ExprNode)
+	}
+	for i, val := range n.SplitOpt.Max {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.SplitOpt.Max[i] = node.(ExprNode)
+	}
+
+	for i, list := range n.SplitOpt.ValueLists {
+		for j, val := range list {
+			node, ok := val.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.SplitOpt.ValueLists[i][j] = node.(ExprNode)
+		}
+	}
 	return v.Leave(n)
 }
 
