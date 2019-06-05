@@ -2426,8 +2426,8 @@ type SplitRegionStmt struct {
 }
 
 type SplitOption struct {
-	Min        []ExprNode
-	Max        []ExprNode
+	Lower      []ExprNode
+	Upper      []ExprNode
 	Num        int64
 	ValueLists [][]ExprNode
 }
@@ -2458,19 +2458,19 @@ func (n *SplitRegionStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.SplitOpt.Min {
+	for i, val := range n.SplitOpt.Lower {
 		node, ok := val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.SplitOpt.Min[i] = node.(ExprNode)
+		n.SplitOpt.Lower[i] = node.(ExprNode)
 	}
-	for i, val := range n.SplitOpt.Max {
+	for i, val := range n.SplitOpt.Upper {
 		node, ok := val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.SplitOpt.Max[i] = node.(ExprNode)
+		n.SplitOpt.Upper[i] = node.(ExprNode)
 	}
 
 	for i, list := range n.SplitOpt.ValueLists {
@@ -2489,24 +2489,24 @@ func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 	if len(n.ValueLists) == 0 {
 		ctx.WriteKeyWord("BETWEEN ")
 		ctx.WritePlain("(")
-		for j, v := range n.Min {
+		for j, v := range n.Lower {
 			if j != 0 {
 				ctx.WritePlain(",")
 			}
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitOption Min")
+				return errors.Annotatef(err, "An error occurred while restore SplitOption Lower")
 			}
 		}
 		ctx.WritePlain(")")
 
 		ctx.WriteKeyWord(" AND ")
 		ctx.WritePlain("(")
-		for j, v := range n.Max {
+		for j, v := range n.Upper {
 			if j != 0 {
 				ctx.WritePlain(",")
 			}
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SplitOption Max")
+				return errors.Annotatef(err, "An error occurred while restore SplitOption Upper")
 			}
 		}
 		ctx.WritePlain(")")

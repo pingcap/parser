@@ -8194,9 +8194,9 @@ yynewstate:
 	case 68:
 		{
 			parser.yyVAL.item = &ast.SplitOption{
-				Min: yyS[yypt-4].item.([]ast.ExprNode),
-				Max: yyS[yypt-2].item.([]ast.ExprNode),
-				Num: yyS[yypt-0].item.(int64),
+				Lower: yyS[yypt-4].item.([]ast.ExprNode),
+				Upper: yyS[yypt-2].item.([]ast.ExprNode),
+				Num:   yyS[yypt-0].item.(int64),
 			}
 		}
 	case 69:

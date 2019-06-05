@@ -1514,8 +1514,8 @@ SplitOption:
 	"BETWEEN" RowValue "AND" RowValue "REGIONS" NUM
 	{
 		$$ = &ast.SplitOption{
-			Min: $2.([]ast.ExprNode),
-			Max: $4.([]ast.ExprNode),
+			Lower: $2.([]ast.ExprNode),
+			Upper: $4.([]ast.ExprNode),
 			Num: $6.(int64),
 		}
 	}
