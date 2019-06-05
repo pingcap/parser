@@ -533,7 +533,7 @@ import (
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
 	split		"SPLIT"
-	number 		"NUM"
+	regions         "REGIONS"
 
 	builtinAddDate
 	builtinBitAnd
@@ -1511,7 +1511,7 @@ SplitRegionStmt:
 
 
 SplitOption:
-	"MIN" RowValue "MAX" RowValue "NUM" NUM
+	"BETWEEN" RowValue "AND" RowValue "REGIONS" NUM
 	{
 		$$ = &ast.SplitOption{
 			Min: $2.([]ast.ExprNode),
@@ -3359,7 +3359,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "NUM"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"

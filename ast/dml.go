@@ -2487,7 +2487,7 @@ func (n *SplitRegionStmt) Accept(v Visitor) (Node, bool) {
 
 func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 	if len(n.ValueLists) == 0 {
-		ctx.WriteKeyWord("MIN ")
+		ctx.WriteKeyWord("BETWEEN ")
 		ctx.WritePlain("(")
 		for j, v := range n.Min {
 			if j != 0 {
@@ -2499,7 +2499,7 @@ func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WritePlain(")")
 
-		ctx.WriteKeyWord(" MAX ")
+		ctx.WriteKeyWord(" AND ")
 		ctx.WritePlain("(")
 		for j, v := range n.Max {
 			if j != 0 {
@@ -2510,7 +2510,7 @@ func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 			}
 		}
 		ctx.WritePlain(")")
-		ctx.WriteKeyWord(" NUM")
+		ctx.WriteKeyWord(" REGIONS")
 		ctx.WritePlainf(" %d", n.Num)
 		return nil
 	}
