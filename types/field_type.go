@@ -104,6 +104,11 @@ func (ft *FieldType) Hybrid() bool {
 	return ft.Tp == mysql.TypeEnum || ft.Tp == mysql.TypeBit || ft.Tp == mysql.TypeSet
 }
 
+// IsBinaryStr indicates whether a type is a binary string type.
+func (ft *FieldType) IsBinaryStr() bool {
+	return mysql.HasBinaryFlag(ft.Flag) && ft.Charset == charset.CharsetBin && ft.Tp == mysql.TypeString
+}
+
 // Init initializes the FieldType data.
 func (ft *FieldType) Init(tp byte) {
 	ft.Tp = tp

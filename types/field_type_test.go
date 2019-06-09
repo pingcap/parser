@@ -191,6 +191,24 @@ func (s *testFieldTypeSuite) TestFieldType(c *C) {
 	ft.Decimal = 2
 	c.Assert(ft.String(), Equals, "year(2)") // Note: Invalid year.
 	c.Assert(HasCharset(ft), IsFalse)
+
+	ft = NewFieldType(mysql.TypeVarchar)
+	ft.Flen = 10
+	ft.Flag |= mysql.BinaryFlag
+	ft.Charset = charset.CharsetBin
+	c.Assert(ft.IsBinaryStr(), Equals, false)
+
+	ft = NewFieldType(mysql.TypeVarString)
+	ft.Flen = 10
+	ft.Flag |= mysql.BinaryFlag
+	ft.Charset = charset.CharsetBin
+	c.Assert(ft.IsBinaryStr(), Equals, false)
+
+	ft = NewFieldType(mysql.TypeString)
+	ft.Flen = 10
+	ft.Flag |= mysql.BinaryFlag
+	ft.Charset = charset.CharsetBin
+	c.Assert(ft.IsBinaryStr(), Equals, true)
 }
 
 func (s *testFieldTypeSuite) TestHasCharsetFromStmt(c *C) {
