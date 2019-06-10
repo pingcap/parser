@@ -688,6 +688,19 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 index idx1 by (1)", true, "SPLIT TABLE `t1` INDEX `idx1` BY (1)"},
 		{"split table t1 index idx1 by ('abc',123), ('xyz'), ('yz', 1000)", true, "SPLIT TABLE `t1` INDEX `idx1` BY ('abc',123),('xyz'),('yz',1000)"},
 		{"split table t1 index idx1 by ", false, ""},
+		{"split table t1 index idx1 between ('a') and ('z') regions 10", true, "SPLIT TABLE `t1` INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+		{"split table t1 index idx1 between ('a',1) and ('z',2) regions 10", true, "SPLIT TABLE `t1` INDEX `idx1` BETWEEN ('a',1) AND ('z',2) REGIONS 10"},
+		{"split table t1 index idx1 between () and () regions 10", true, "SPLIT TABLE `t1` INDEX `idx1` BETWEEN () AND () REGIONS 10"},
+		{"split table t1 index by (1)", false, ""},
+
+		// for split table region.
+		{"split table t1 by ('a'),('b'),('c')", true, "SPLIT TABLE `t1` BY ('a'),('b'),('c')"},
+		{"split table t1 by (1)", true, "SPLIT TABLE `t1` BY (1)"},
+		{"split table t1 by ('abc',123), ('xyz'), ('yz', 1000)", true, "SPLIT TABLE `t1` BY ('abc',123),('xyz'),('yz',1000)"},
+		{"split table t1 by ", false, ""},
+		{"split table t1 between ('a') and ('z') regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a') AND ('z') REGIONS 10"},
+		{"split table t1 between ('a',1) and ('z',2) regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a',1) AND ('z',2) REGIONS 10"},
+		{"split table t1 between () and () regions 10", true, "SPLIT TABLE `t1` BETWEEN () AND () REGIONS 10"},
 
 		// for transaction mode
 		{"begin pessimistic", true, "BEGIN PESSIMISTIC"},
@@ -1856,6 +1869,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		union_name varbinary(52) NOT NULL,
 		union_id int(11) DEFAULT '0',
 		PRIMARY KEY (union_name)) ENGINE=MyISAM DEFAULT CHARSET=binary;`, true, "CREATE TABLE `t1` (`accout_id` INT(11) DEFAULT '0',`summoner_id` INT(11) DEFAULT '0',`union_name` VARBINARY(52) NOT NULL,`union_id` INT(11) DEFAULT '0',PRIMARY KEY(`union_name`)) ENGINE = MyISAM DEFAULT CHARACTER SET = BINARY"},
+		// for issue pingcap/parser#310
+		{`CREATE TABLE t (a DECIMAL(20,0), b DECIMAL(30), c FLOAT(25,0))`, true, "CREATE TABLE `t` (`a` DECIMAL(20,0),`b` DECIMAL(30),`c` FLOAT(25,0))"},
 		// Create table with multiple index options.
 		{`create table t (c int, index ci (c) USING BTREE COMMENT "123");`, true, "CREATE TABLE `t` (`c` INT,INDEX `ci`(`c`) USING BTREE COMMENT '123')"},
 		// for default value
@@ -2515,20 +2530,25 @@ func (s *testParserSuite) TestLikeEscape(c *C) {
 	s.RunTest(c, table)
 }
 
-func (s *testParserSuite) TestMysqlDump(c *C) {
-	// Statements used by mysqldump.
+func (s *testParserSuite) TestLockUnlockTables(c *C) {
 	table := []testCase{
-		{`UNLOCK TABLES;`, true, ""},
-		{`LOCK TABLES t1 READ;`, true, ""},
+		{`UNLOCK TABLES;`, true, "UNLOCK TABLES"},
+		{`LOCK TABLES t1 READ;`, true, "LOCK TABLES `t1` READ"},
+		{`LOCK TABLES t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
-		{`LOCK TABLES t2 WRITE`, true, ""},
+		{`LOCK TABLES t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
+		{`LOCK TABLES t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
+		{`LOCK TABLES t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
+		{`LOCK TABLES t1 WRITE LOCAL, t2 READ LOCAL;`, true, "LOCK TABLES `t1` WRITE LOCAL, `t2` READ LOCAL"},
 
 		// for unlock table and lock table
-		{`UNLOCK TABLE;`, true, ""},
-		{`LOCK TABLE t1 READ;`, true, ""},
+		{`UNLOCK TABLE;`, true, "UNLOCK TABLES"},
+		{`LOCK TABLE t1 READ;`, true, "LOCK TABLES `t1` READ"},
+		{`LOCK TABLE t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
-		{`LOCK TABLE t2 WRITE`, true, ""},
-		{`LOCK TABLE t1 WRITE, t3 READ`, true, ""},
+		{`LOCK TABLE t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
+		{`LOCK TABLE t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
+		{`LOCK TABLE t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
 	}
 	s.RunTest(c, table)
 }

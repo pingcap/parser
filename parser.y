@@ -533,6 +533,7 @@ import (
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
 	split		"SPLIT"
+	regions         "REGIONS"
 
 	builtinAddDate
 	builtinBitAnd
@@ -657,7 +658,7 @@ import (
 	RevokeStmt			"Revoke statement"
 	RevokeRoleStmt      "Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SplitIndexRegionStmt		"Split index region statement"
+	SplitRegionStmt		"Split index region statement"
 	SetStmt				"Set variable statement"
 	ChangeStmt				"Change statement"
 	SetRoleStmt				"Set active role statement"
@@ -855,6 +856,7 @@ import (
 	ShowProfileTypesOpt		"Show profile types option"
 	ShowProfileType			"Show profile type"
 	ShowProfileTypes		"Show profile types"
+	SplitOption			"Split Option"
 	Starting			"Starting by"
 	StatementList			"statement list"
 	StatsPersistentVal		"stats_persistent value"
@@ -880,6 +882,7 @@ import (
 	TableRefs 			"table references"
 	TableToTable 			"rename table to table"
 	TableToTableList 		"rename table to table by list"
+	LockType			"Table locks type"
 
 	TransactionChar		"Transaction characteristic"
 	TransactionChars	"Transaction characteristic list"
@@ -1002,7 +1005,6 @@ import (
 	NationalOpt		"National option"
 	CharsetKw		"charset or charater set"
 	CommaOpt		"optional comma"
-	LockType		"Table locks type"
 	logAnd			"logical and operator"
 	logOr			"logical or operator"
 	LinearOpt		"linear or empty"
@@ -1064,6 +1066,7 @@ import (
 %right 	not not2
 %right	collate
 
+%left splitOptionPriv
 %precedence '('
 %precedence quick
 %precedence escape
@@ -1489,13 +1492,37 @@ RecoverTableStmt:
  *      SPLIT TABLE table_name INDEX index_name BY (val1...),(val2...)...
  *
  *******************************************************************/
-SplitIndexRegionStmt:
-	"SPLIT" "TABLE" TableName "INDEX" IndexName "BY" ValuesList
+SplitRegionStmt:
+	"SPLIT" "TABLE" TableName SplitOption
 	{
-		$$ = &ast.SplitIndexRegionStmt{
+		$$ = &ast.SplitRegionStmt{
 			Table: $3.(*ast.TableName),
-			IndexName: $5.(string),
-			ValueLists: $7.([][]ast.ExprNode),
+			SplitOpt: $4.(*ast.SplitOption),
+		}
+	}
+|	"SPLIT" "TABLE" TableName "INDEX" Identifier SplitOption
+	{
+		$$ = &ast.SplitRegionStmt{
+			Table: $3.(*ast.TableName),
+			IndexName: model.NewCIStr($5),
+			SplitOpt: $6.(*ast.SplitOption),
+		}
+	}
+
+
+SplitOption:
+	"BETWEEN" RowValue "AND" RowValue "REGIONS" NUM
+	{
+		$$ = &ast.SplitOption{
+			Lower: $2.([]ast.ExprNode),
+			Upper: $4.([]ast.ExprNode),
+			Num: $6.(int64),
+		}
+	}
+|	"BY" ValuesList
+	{
+		$$ = &ast.SplitOption{
+			ValueLists: $2.([][]ast.ExprNode),
 		}
 	}
 
@@ -3332,7 +3359,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6973,7 +7000,7 @@ Statement:
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
-|	SplitIndexRegionStmt
+|	SplitRegionStmt
 |	ShowStmt
 |	SubSelect
 	{
@@ -7350,10 +7377,11 @@ NumericType:
 		fopt := $2.(*ast.FloatOpt)
 		x := types.NewFieldType($1.(byte))
 		x.Flen = fopt.Flen
-		if x.Tp == mysql.TypeFloat {
+		if x.Tp == mysql.TypeFloat && fopt.Decimal == types.UnspecifiedLength && x.Flen <= 53 {
 			if x.Flen > 24 {
 				x.Tp = mysql.TypeDouble
 			}
+			x.Flen = types.UnspecifiedLength
 		}
 		x.Decimal = fopt.Decimal
 		for _, o := range $3.([]*ast.TypeOpt) {
@@ -8764,11 +8792,18 @@ LoadDataSetItem:
  *********************************************************************/
 
 UnlockTablesStmt:
-	"UNLOCK" TablesTerminalSym {}
+	"UNLOCK" TablesTerminalSym
+	{
+		$$ = &ast.UnlockTablesStmt{}
+	}
 
 LockTablesStmt:
 	"LOCK" TablesTerminalSym TableLockList
-	{}
+        {
+		$$ = &ast.LockTablesStmt{
+			TableLocks: $3.([]ast.TableLock),
+		}
+        }
 
 TablesTerminalSym:
 	"TABLES"
@@ -8776,15 +8811,40 @@ TablesTerminalSym:
 
 TableLock:
 	TableName LockType
+        {
+		$$ = ast.TableLock{
+			Table: $1.(*ast.TableName),
+			Type:  $2.(model.TableLockType),
+		}
+        }
 
 LockType:
 	"READ"
+        {
+		$$ = model.TableLockRead
+        }
 |	"READ" "LOCAL"
+        {
+		$$ = model.TableLockReadLocal
+        }
 |	"WRITE"
+        {
+		$$ = model.TableLockWrite
+        }
+|	"WRITE" "LOCAL"
+        {
+		$$ = model.TableLockWriteLocal
+        }
 
 TableLockList:
 	TableLock
+	{
+		$$ = []ast.TableLock{$1.(ast.TableLock)}
+	}
 |	TableLockList ',' TableLock
+	{
+		$$ = append($1.([]ast.TableLock), $3.(ast.TableLock))
+	}
 
 
 /********************************************************************
