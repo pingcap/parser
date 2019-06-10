@@ -697,6 +697,12 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 between ('a',1) and ('z',2) regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a',1) AND ('z',2) REGIONS 10"},
 		{"split table t1 between () and () regions 10", true, "SPLIT TABLE `t1` BETWEEN () AND () REGIONS 10"},
 
+		// for split table region status.
+		{"split table t1 status", true, "SPLIT TABLE `t1` STATUS"},
+		{"split table t1", false, ""},
+		{"split table t1 index idx1 status", true, "SPLIT TABLE `t1` INDEX `idx1` STATUS"},
+		{"split table t1 index idx1", false, ""},
+
 		// for transaction mode
 		{"begin pessimistic", true, "BEGIN PESSIMISTIC"},
 		{"begin optimistic", true, "BEGIN OPTIMISTIC"},

@@ -1508,6 +1508,19 @@ SplitRegionStmt:
 			SplitOpt: $6.(*ast.SplitOption),
 		}
 	}
+|      "SPLIT" "TABLE" TableName "STATUS"
+       {
+               $$ = &ast.SplitRegionStatusStmt{
+                       Table: $3.(*ast.TableName),
+               }
+       }
+|      "SPLIT" "TABLE" TableName "INDEX" Identifier "STATUS"
+       {
+               $$ = &ast.SplitRegionStatusStmt{
+                       Table: $3.(*ast.TableName),
+                       IndexName: model.NewCIStr($5),
+               }
+       }
 
 
 SplitOption:

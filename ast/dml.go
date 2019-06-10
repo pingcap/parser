@@ -2485,6 +2485,41 @@ func (n *SplitRegionStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type SplitRegionStatusStmt struct {
+	dmlNode
+
+	Table     *TableName
+	IndexName model.CIStr
+}
+
+func (n *SplitRegionStatusStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("SPLIT TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
+	}
+	if len(n.IndexName.L) > 0 {
+		ctx.WriteKeyWord(" INDEX ")
+		ctx.WriteName(n.IndexName.String())
+	}
+	ctx.WriteKeyWord(" STATUS")
+	return nil
+}
+
+func (n *SplitRegionStatusStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	n = newNode.(*SplitRegionStatusStmt)
+	node, ok := n.Table.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Table = node.(*TableName)
+	return v.Leave(n)
+}
+
 func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 	if len(n.ValueLists) == 0 {
 		ctx.WriteKeyWord("BETWEEN ")
