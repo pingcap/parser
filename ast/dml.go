@@ -1827,6 +1827,7 @@ const (
 	ShowDrainerStatus
 	ShowOpenTables
 	ShowAnalyzeStatus
+	ShowRegions
 )
 
 const (
@@ -1852,7 +1853,8 @@ type ShowStmt struct {
 	DBName      string
 	Table       *TableName  // Used for showing columns.
 	Column      *ColumnName // Used for `desc table column`.
-	Flag        int         // Some flag parsed from sql, such as FULL.
+	IndexName   model.CIStr
+	Flag        int // Some flag parsed from sql, such as FULL.
 	Full        bool
 	User        *auth.UserIdentity   // Used for show grants/create user.
 	Roles       []*auth.RoleIdentity // Used for show grants .. using
@@ -2088,6 +2090,17 @@ func (n *ShowStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WriteKeyWord("DRAINER STATUS")
 		case ShowAnalyzeStatus:
 			ctx.WriteKeyWord("ANALYZE STATUS")
+		case ShowRegions:
+			ctx.WriteKeyWord("TABLE ")
+			if err := n.Table.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
+			}
+			if len(n.IndexName.L) > 0 {
+				ctx.WriteKeyWord(" INDEX ")
+				ctx.WriteName(n.IndexName.String())
+			}
+			ctx.WriteKeyWord(" REGIONS")
+			return nil
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
@@ -2482,41 +2495,6 @@ func (n *SplitRegionStmt) Accept(v Visitor) (Node, bool) {
 			n.SplitOpt.ValueLists[i][j] = node.(ExprNode)
 		}
 	}
-	return v.Leave(n)
-}
-
-type SplitRegionStatusStmt struct {
-	dmlNode
-
-	Table     *TableName
-	IndexName model.CIStr
-}
-
-func (n *SplitRegionStatusStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("SPLIT TABLE ")
-	if err := n.Table.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
-	}
-	if len(n.IndexName.L) > 0 {
-		ctx.WriteKeyWord(" INDEX ")
-		ctx.WriteName(n.IndexName.String())
-	}
-	ctx.WriteKeyWord(" STATUS")
-	return nil
-}
-
-func (n *SplitRegionStatusStmt) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
-
-	n = newNode.(*SplitRegionStatusStmt)
-	node, ok := n.Table.Accept(v)
-	if !ok {
-		return n, false
-	}
-	n.Table = node.(*TableName)
 	return v.Leave(n)
 }
 

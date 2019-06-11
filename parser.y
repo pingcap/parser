@@ -1508,20 +1508,6 @@ SplitRegionStmt:
 			SplitOpt: $6.(*ast.SplitOption),
 		}
 	}
-|      "SPLIT" "TABLE" TableName "STATUS"
-       {
-               $$ = &ast.SplitRegionStatusStmt{
-                       Table: $3.(*ast.TableName),
-               }
-       }
-|      "SPLIT" "TABLE" TableName "INDEX" Identifier "STATUS"
-       {
-               $$ = &ast.SplitRegionStatusStmt{
-                       Table: $3.(*ast.TableName),
-                       IndexName: model.NewCIStr($5),
-               }
-       }
-
 
 SplitOption:
 	"BETWEEN" RowValue "AND" RowValue "REGIONS" NUM
@@ -6458,6 +6444,21 @@ ShowStmt:
                         User:	$4.(*auth.UserIdentity),
                 }
         }
+|	"SHOW" "TABLE" TableName "REGIONS"
+	{
+                $$ = &ast.ShowStmt{
+                        Tp:	ast.ShowRegions,
+			Table:	$3.(*ast.TableName),
+                }
+	}
+|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS"
+	{
+                $$ = &ast.ShowStmt{
+                        Tp:	ast.ShowRegions,
+			Table:	$3.(*ast.TableName),
+			IndexName: model.NewCIStr($5),
+                }
+	}
 |	"SHOW" "GRANTS"
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html
