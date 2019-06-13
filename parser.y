@@ -6610,18 +6610,18 @@ ShowStmt:
         }
 |	"SHOW" "TABLE" TableName "REGIONS"
 	{
-                $$ = &ast.ShowStmt{
+		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowRegions,
 			Table:	$3.(*ast.TableName),
-                }
+		}
 	}
 |	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS"
 	{
-                $$ = &ast.ShowStmt{
+		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowRegions,
 			Table:	$3.(*ast.TableName),
 			IndexName: model.NewCIStr($5),
-                }
+		}
 	}
 |	"SHOW" "GRANTS"
 	{
