@@ -505,6 +505,12 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAA5gm5Mg==
 '/*!*/;`, true},
+
+		// for split table index region syntax
+		{"split table t1 index idx1 by ('a'),('b'),('c')", true},
+		{"split table t1 index idx1 by (1)", true},
+		{"split table t1 index idx1 by ('abc',123), ('xyz'), ('yz', 1000)", true},
+		{"split table t1 index idx1 by ", false},
 	}
 	s.RunTest(c, table)
 }
