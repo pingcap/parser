@@ -27,7 +27,7 @@ var (
 	_ DMLNode = &SelectStmt{}
 	_ DMLNode = &ShowStmt{}
 	_ DMLNode = &LoadDataStmt{}
-	_ DMLNode = &SplitIndexRegionStmt{}
+	_ DMLNode = &SplitRegionStmt{}
 
 	_ Node = &Assignment{}
 	_ Node = &ByItem{}
@@ -1214,33 +1214,55 @@ func (n *FrameBound) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-type SplitIndexRegionStmt struct {
+type SplitRegionStmt struct {
 	dmlNode
 
-	Table      *TableName
-	IndexName  string
+	Table     *TableName
+	IndexName model.CIStr
+
+	SplitOpt *SplitOption
+}
+
+type SplitOption struct {
+	Lower      []ExprNode
+	Upper      []ExprNode
+	Num        int64
 	ValueLists [][]ExprNode
 }
 
-func (n *SplitIndexRegionStmt) Accept(v Visitor) (Node, bool) {
+func (n *SplitRegionStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
 
-	n = newNode.(*SplitIndexRegionStmt)
+	n = newNode.(*SplitRegionStmt)
 	node, ok := n.Table.Accept(v)
 	if !ok {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, list := range n.ValueLists {
+	for i, val := range n.SplitOpt.Lower {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.SplitOpt.Lower[i] = node.(ExprNode)
+	}
+	for i, val := range n.SplitOpt.Upper {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.SplitOpt.Upper[i] = node.(ExprNode)
+	}
+	for i, list := range n.SplitOpt.ValueLists {
 		for j, val := range list {
 			node, ok := val.Accept(v)
 			if !ok {
 				return n, false
 			}
-			n.ValueLists[i][j] = node.(ExprNode)
+			n.SplitOpt.ValueLists[i][j] = node.(ExprNode)
 		}
 	}
 	return v.Leave(n)

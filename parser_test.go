@@ -511,6 +511,19 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 index idx1 by (1)", true},
 		{"split table t1 index idx1 by ('abc',123), ('xyz'), ('yz', 1000)", true},
 		{"split table t1 index idx1 by ", false},
+		{"split table t1 index idx1 between ('a') and ('z') regions 10", true},
+		{"split table t1 index idx1 between ('a',1) and ('z',2) regions 10", true},
+		{"split table t1 index idx1 between () and () regions 10", true},
+		{"split table t1 index by (1)", false},
+
+		// for split table region.
+		{"split table t1 by ('a'),('b'),('c')", true},
+		{"split table t1 by (1)", true},
+		{"split table t1 by ('abc',123), ('xyz'), ('yz', 1000)", true},
+		{"split table t1 by ", false},
+		{"split table t1 between ('a') and ('z') regions 10", true},
+		{"split table t1 between ('a',1) and ('z',2) regions 10", true},
+		{"split table t1 between () and () regions 10", true},
 	}
 	s.RunTest(c, table)
 }
