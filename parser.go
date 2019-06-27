@@ -10920,6 +10920,9 @@ yynewstate:
 				Distinct:       yyS[yypt-1].item.(*ast.SelectStmtOpts).Distinct,
 				Fields:         yyS[yypt-0].item.(*ast.FieldList),
 			}
+			if st.SelectStmtOpts.TableHints != nil {
+				st.TableHints = st.SelectStmtOpts.TableHints
+			}
 			parser.yyVAL.item = st
 		}
 	case 932:
@@ -10938,9 +10941,6 @@ yynewstate:
 		{
 			st := yyS[yypt-6].item.(*ast.SelectStmt)
 			st.From = yyS[yypt-4].item.(*ast.TableRefsClause)
-			if st.SelectStmtOpts.TableHints != nil {
-				st.TableHints = st.SelectStmtOpts.TableHints
-			}
 			lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 			if lastField.Expr != nil && lastField.AsName.O == "" {
 				lastEnd := parser.endOffset(&yyS[yypt-5])
