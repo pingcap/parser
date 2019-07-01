@@ -16,7 +16,6 @@ package ast
 import (
 	"bytes"
 	"fmt"
-	"github.com/pingcap/tidb/types"
 	"strconv"
 	"strings"
 
