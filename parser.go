@@ -14564,11 +14564,13 @@ yynewstate:
 		}
 	case 1636:
 		{
-			parser.yyVAL.item = ast.NewValueExpr(yyS[yypt-0].item).GetString()
+			h, _ := ast.NewHexLiteral(yyS[yypt-0].item.(string))
+			parser.yyVAL.item = h.ToString()
 		}
 	case 1637:
 		{
-			parser.yyVAL.item = ast.NewValueExpr(yyS[yypt-0].item).GetString()
+			b, _ := ast.NewBitLiteral(yyS[yypt-0].item.(string))
+			parser.yyVAL.item = b.ToString()
 		}
 	case 1638:
 		{
