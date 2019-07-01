@@ -16,6 +16,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"github.com/pingcap/tidb/types"
 	"strconv"
 	"strings"
 
@@ -2033,8 +2034,12 @@ func (n *TableOptimizerHint) Accept(v Visitor) (Node, bool) {
 // NewDecimal creates a types.Decimal value, it's provided by parser driver.
 var NewDecimal func(string) (interface{}, error)
 
+type BinaryLiteral interface {
+	ToString() string
+}
+
 // NewHexLiteral creates a types.HexLiteral value, it's provided by parser driver.
-var NewHexLiteral func(string) (interface{}, error)
+var NewHexLiteral func(string) (BinaryLiteral, error)
 
 // NewBitLiteral creates a types.BitLiteral value, it's provided by parser driver.
-var NewBitLiteral func(string) (interface{}, error)
+var NewBitLiteral func(string) (BinaryLiteral, error)
