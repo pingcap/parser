@@ -1942,15 +1942,19 @@ func (s *testParserSuite) TestDDL(c *C) {
 		},
 
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED)"},
+		{"ALTER TABLE t ADD COLUMN IF NOT EXISTS (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN IF NOT EXISTS (`a` SMALLINT UNSIGNED)"},
 		{"ALTER TABLE ADD COLUMN (a SMALLINT UNSIGNED)", false, ""},
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED, b varchar(255))", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED, `b` VARCHAR(255))"},
+		{"ALTER TABLE t ADD COLUMN IF NOT EXISTS (a SMALLINT UNSIGNED, b varchar(255))", true, "ALTER TABLE `t` ADD COLUMN IF NOT EXISTS (`a` SMALLINT UNSIGNED, `b` VARCHAR(255))"},
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED FIRST)", false, ""},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED FIRST", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED FIRST"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED AFTER b", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED AFTER `b`"},
+		{"ALTER TABLE t ADD COLUMN IF NOT EXISTS a SMALLINT UNSIGNED AFTER b", true, "ALTER TABLE `t` ADD COLUMN IF NOT EXISTS `a` SMALLINT UNSIGNED AFTER `b`"},
 		{"ALTER TABLE employees ADD PARTITION", true, "ALTER TABLE `employees` ADD PARTITION"},
 		{"ALTER TABLE employees ADD PARTITION ( PARTITION P1 VALUES LESS THAN (2010))", true, "ALTER TABLE `employees` ADD PARTITION (PARTITION `P1` VALUES LESS THAN (2010))"},
 		{"ALTER TABLE employees ADD PARTITION ( PARTITION P2 VALUES LESS THAN MAXVALUE)", true, "ALTER TABLE `employees` ADD PARTITION (PARTITION `P2` VALUES LESS THAN (MAXVALUE))"},
+		{"ALTER TABLE employees ADD PARTITION IF NOT EXISTS ( PARTITION P2 VALUES LESS THAN MAXVALUE)", true, "ALTER TABLE `employees` ADD PARTITION IF NOT EXISTS (PARTITION `P2` VALUES LESS THAN (MAXVALUE))"},
 		{`ALTER TABLE employees ADD PARTITION (
 				PARTITION P1 VALUES LESS THAN (2010),
 				PARTITION P2 VALUES LESS THAN (2015),
@@ -1960,7 +1964,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true, "ALTER TABLE `t` DROP PARTITION `p1`"},
 		{"alter table t drop partition p2;", true, "ALTER TABLE `t` DROP PARTITION `p2`"},
+		{"alter table t drop partition if exists p2;", true, "ALTER TABLE `t` DROP PARTITION IF EXISTS `p2`"},
 		{"alter table t drop partition p1, p2;", true, "ALTER TABLE `t` DROP PARTITION `p1`,`p2`"},
+		{"alter table t drop partition if exists p1, p2;", true, "ALTER TABLE `t` DROP PARTITION IF EXISTS `p1`,`p2`"},
 		{"alter table employees add partition partitions 1;", true, "ALTER TABLE `employees` ADD PARTITION PARTITIONS 1"},
 		{"alter table employees add partition partitions 2;", true, "ALTER TABLE `employees` ADD PARTITION PARTITIONS 2"},
 		{"alter table clients coalesce partition 3;", true, "ALTER TABLE `clients` COALESCE PARTITION 3"},
@@ -1968,7 +1974,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t DISABLE KEYS", true, "ALTER TABLE `t` DISABLE KEYS"},
 		{"ALTER TABLE t ENABLE KEYS", true, "ALTER TABLE `t` ENABLE KEYS"},
 		{"ALTER TABLE t MODIFY COLUMN a varchar(255)", true, "ALTER TABLE `t` MODIFY COLUMN `a` VARCHAR(255)"},
+		{"ALTER TABLE t MODIFY COLUMN IF EXISTS a varchar(255)", true, "ALTER TABLE `t` MODIFY COLUMN IF EXISTS `a` VARCHAR(255)"},
 		{"ALTER TABLE t CHANGE COLUMN a b varchar(255)", true, "ALTER TABLE `t` CHANGE COLUMN `a` `b` VARCHAR(255)"},
+		{"ALTER TABLE t CHANGE COLUMN IF EXISTS a b varchar(255)", true, "ALTER TABLE `t` CHANGE COLUMN IF EXISTS `a` `b` VARCHAR(255)"},
 		{"ALTER TABLE t CHANGE COLUMN a b varchar(255) CHARACTER SET UTF8 BINARY", true, "ALTER TABLE `t` CHANGE COLUMN `a` `b` VARCHAR(255) BINARY CHARACTER SET UTF8"},
 		{"ALTER TABLE t CHANGE COLUMN a b varchar(255) FIRST", true, "ALTER TABLE `t` CHANGE COLUMN `a` `b` VARCHAR(255) FIRST"},
 		{"ALTER TABLE db.t RENAME to db1.t1", true, "ALTER TABLE `db`.`t` RENAME AS `db1`.`t1`"},
@@ -1993,11 +2001,15 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD FULLTEXT `FullText` (`name` ASC)", true, "ALTER TABLE `t` ADD FULLTEXT `FullText`(`name`)"},
 		{"ALTER TABLE t ADD FULLTEXT INDEX `FullText` (`name` ASC)", true, "ALTER TABLE `t` ADD FULLTEXT `FullText`(`name`)"},
 		{"ALTER TABLE t ADD INDEX (a) USING BTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING BTREE COMMENT 'a'"},
+		{"ALTER TABLE t ADD INDEX IF NOT EXISTS (a) USING BTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING BTREE COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING HASH COMMENT 'a'"},
+		{"ALTER TABLE t ADD KEY IF NOT EXISTS (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING HASH COMMENT 'a'"},
 		{"ALTER TABLE t ADD PRIMARY KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE INDEX (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
+		{"ALTER TABLE t ADD CONSTRAINT fk_t2_id FOREIGN KEY (t2_id) REFERENCES t(id)", true, "ALTER TABLE `t` ADD CONSTRAINT `fk_t2_id` FOREIGN KEY (`t2_id`) REFERENCES `t`(`id`)"},
+		{"ALTER TABLE t ADD CONSTRAINT fk_t2_id FOREIGN KEY IF NOT EXISTS (t2_id) REFERENCES t(id)", true, "ALTER TABLE `t` ADD CONSTRAINT `fk_t2_id` FOREIGN KEY IF NOT EXISTS (`t2_id`) REFERENCES `t`(`id`)"},
 		{"ALTER TABLE t ENGINE ''", true, "ALTER TABLE `t` ENGINE = ''"},
 		{"ALTER TABLE t ENGINE = ''", true, "ALTER TABLE `t` ENGINE = ''"},
 		{"ALTER TABLE t ENGINE = 'innodb'", true, "ALTER TABLE `t` ENGINE = innodb"},
@@ -2021,7 +2033,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t CONVERT TO CHARSET UTF8 COLLATE UTF8_BIN;", true, "ALTER TABLE `t` CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
 		{"ALTER TABLE t FORCE", true, "ALTER TABLE `t` FORCE /* AlterTableForce is not supported */ "},
 		{"ALTER TABLE t DROP INDEX;", false, "ALTER TABLE `t` DROP INDEX"},
+		{"ALTER TABLE t DROP INDEX a", true, "ALTER TABLE `t` DROP INDEX `a`"},
+		{"ALTER TABLE t DROP INDEX IF EXISTS a", true, "ALTER TABLE `t` DROP INDEX IF EXISTS `a`"},
+		{"ALTER TABLE t DROP FOREIGN KEY a", true, "ALTER TABLE `t` DROP FOREIGN KEY `a`"},
+		{"ALTER TABLE t DROP FOREIGN KEY IF EXISTS a", true, "ALTER TABLE `t` DROP FOREIGN KEY IF EXISTS `a`"},
 		{"ALTER TABLE t DROP COLUMN a CASCADE", true, "ALTER TABLE `t` DROP COLUMN `a`"},
+		{"ALTER TABLE t DROP COLUMN IF EXISTS a CASCADE", true, "ALTER TABLE `t` DROP COLUMN IF EXISTS `a`"},
 		{`ALTER TABLE testTableCompression COMPRESSION="LZ4";`, true, "ALTER TABLE `testTableCompression` COMPRESSION = 'LZ4'"},
 		{`ALTER TABLE t1 COMPRESSION="zlib";`, true, "ALTER TABLE `t1` COMPRESSION = 'zlib'"},
 		{"ALTER TABLE t1", true, "ALTER TABLE `t1`"},
@@ -2045,7 +2062,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
 		{"CREATE UNIQUE INDEX idx ON t (a)", true, "CREATE UNIQUE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE UNIQUE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE UNIQUE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
 		{"CREATE INDEX idx ON t (a) USING HASH", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH"},
 		{"CREATE INDEX idx ON t (a) COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) COMMENT 'foo'"},
 		{"CREATE INDEX idx ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
@@ -2244,13 +2263,21 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].L, Equals, "t4")
 
-	stmt, _, err = parser.Parse("SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t1 INNER JOIN t2 where t1.c1 = t2.c1", "", "")
-	c.Assert(err, IsNil)
-	selectStmt = stmt[0].(*ast.SelectStmt)
-	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 1)
-	c.Assert(hints[0].HintName.L, Equals, "max_execution_time")
-	c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
+	queries := []string{
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t1 INNER JOIN t2 where t1.c1 = t2.c1",
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ 1",
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ SLEEP(20)",
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ 1 FROM DUAL",
+	}
+	for i, query := range queries {
+		stmt, _, err = parser.Parse(query, "", "")
+		c.Assert(err, IsNil)
+		selectStmt = stmt[0].(*ast.SelectStmt)
+		hints = selectStmt.TableHints
+		c.Assert(len(hints), Equals, 1)
+		c.Assert(hints[0].HintName.L, Equals, "max_execution_time", Commentf("case", i))
+		c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
+	}
 }
 
 func (s *testParserSuite) TestType(c *C) {
@@ -2563,6 +2590,11 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{`LOCK TABLE t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
 		{`LOCK TABLE t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
 		{`LOCK TABLE t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
+
+		// for cleanup table lock.
+		{"ADMIN CLEANUP TABLE LOCK", false, ""},
+		{"ADMIN CLEANUP TABLE LOCK t", true, "ADMIN CLEANUP TABLE LOCK `t`"},
+		{"ADMIN CLEANUP TABLE LOCK t1,t2", true, "ADMIN CLEANUP TABLE LOCK `t1`, `t2`"},
 	}
 	s.RunTest(c, table)
 }
