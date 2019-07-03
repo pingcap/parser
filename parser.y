@@ -8907,13 +8907,11 @@ FieldTerminator:
 	}
 |	hexLit
 	{
-		h, _ := ast.NewHexLiteral($1.(string))
-		$$ = (h.(ast.BinaryLiteral)).ToString()
+		$$ = $1.(ast.BinaryLiteral).ToString()
 	}
 |	bitLit
 	{
-		b, _ := ast.NewBitLiteral($1.(string))
-		$$ = (b.(ast.BinaryLiteral)).ToString()
+		$$ = $1.(ast.BinaryLiteral).ToString()
 	}
 
 Lines:

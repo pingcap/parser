@@ -14564,13 +14564,11 @@ yynewstate:
 		}
 	case 1636:
 		{
-			h, _ := ast.NewHexLiteral(yyS[yypt-0].item.(string))
-			parser.yyVAL.item = (h.(ast.BinaryLiteral)).ToString()
+			parser.yyVAL.item = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
 		}
 	case 1637:
 		{
-			b, _ := ast.NewBitLiteral(yyS[yypt-0].item.(string))
-			parser.yyVAL.item = (b.(ast.BinaryLiteral)).ToString()
+			parser.yyVAL.item = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
 		}
 	case 1638:
 		{
