@@ -464,6 +464,7 @@ import (
 	timestampDiff		"TIMESTAMPDIFF"
 	top			"TOP"
 	trim			"TRIM"
+	exprPushdownBlacklist		"EXPR_PUSHDOWN_BLACKLIST"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin		"ADMIN"
@@ -3049,8 +3050,9 @@ TiDBKeyword:
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
-| "INPLACE" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM" | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" 
+| "INPLACE" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM" | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP"
 | "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOP" | "TRIM" | "NEXT_ROW_ID"
+| "EXPR_PUSHDOWN_BLACKLIST"
 
 /************************************************************************************
  *
@@ -5886,6 +5888,12 @@ AdminStmt:
 			ShowSlow: $4.(*ast.ShowSlow),
 		}
 	}
+|	"ADMIN" "RELOAD" "EXPR_PUSHDOWN_BLACKLIST"
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminReloadExprPushdownBlacklist,
+ 		}
+ 	}
 
 AdminShowSlow:
 	"RECENT" NUM

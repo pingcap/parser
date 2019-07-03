@@ -537,6 +537,7 @@ var tokenMap = map[string]int{
 	"YEAR":                     yearType,
 	"YEAR_MONTH":               yearMonth,
 	"ZEROFILL":                 zerofill,
+	"EXPR_PUSHDOWN_BLACKLIST":  exprPushdownBlacklist,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details
