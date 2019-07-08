@@ -15,7 +15,10 @@ package ast_test
 
 import (
 	. "github.com/pingcap/check"
+	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/ast"
 	. "github.com/pingcap/parser/ast"
+	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var _ = Suite(&testFunctionsSuite{})
@@ -81,8 +84,8 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
-		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)"},
-		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARACTER SET UtF8)"},
+		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARSET UTF8)"},
+		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARSET UTF8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},
 	}
 	extractNodeFunc := func(node Node) Node {
@@ -121,18 +124,76 @@ func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }
 
+func (ts *testFunctionsSuite) TestConvert(c *C) {
+	// Test case for CONVERT(expr USING transcoding_name).
+	cases := []struct {
+		SQL          string
+		CharsetName  string
+		ErrorMessage string
+	}{
+		{`SELECT CONVERT("abc" USING "latin1")`, "latin1", ""},
+		{`SELECT CONVERT("abc" USING laTiN1)`, "latin1", ""},
+		{`SELECT CONVERT("abc" USING "binary")`, "binary", ""},
+		{`SELECT CONVERT("abc" USING biNaRy)`, "binary", ""},
+		{`SELECT CONVERT(a USING a)`, "", `[parser:1115]Unknown character set: 'a'`}, // TiDB issue #4436.
+		{`SELECT CONVERT("abc" USING CONCAT("utf", "8"))`, "", `[parser:1115]Unknown character set: 'CONCAT'`},
+	}
+	for _, testCase := range cases {
+		stmt, err := parser.New().ParseOneStmt(testCase.SQL, "", "")
+		if testCase.ErrorMessage != "" {
+			c.Assert(err.Error(), Equals, testCase.ErrorMessage)
+			continue
+		}
+		c.Assert(err, IsNil)
+
+		st := stmt.(*ast.SelectStmt)
+		expr := st.Fields.Fields[0].Expr.(*FuncCallExpr)
+		charsetArg := expr.Args[1].(*driver.ValueExpr)
+		c.Assert(charsetArg.GetString(), Equals, testCase.CharsetName)
+	}
+}
+
+func (ts *testFunctionsSuite) TestChar(c *C) {
+	// Test case for CHAR(N USING charset_name)
+	cases := []struct {
+		SQL          string
+		CharsetName  string
+		ErrorMessage string
+	}{
+		{`SELECT CHAR("abc" USING "latin1")`, "latin1", ""},
+		{`SELECT CHAR("abc" USING laTiN1)`, "latin1", ""},
+		{`SELECT CHAR("abc" USING "binary")`, "binary", ""},
+		{`SELECT CHAR("abc" USING binary)`, "binary", ""},
+		{`SELECT CHAR(a USING a)`, "", `[parser:1115]Unknown character set: 'a'`},
+		{`SELECT CHAR("abc" USING CONCAT("utf", "8"))`, "", `[parser:1115]Unknown character set: 'CONCAT'`},
+	}
+	for _, testCase := range cases {
+		stmt, err := parser.New().ParseOneStmt(testCase.SQL, "", "")
+		if testCase.ErrorMessage != "" {
+			c.Assert(err.Error(), Equals, testCase.ErrorMessage)
+			continue
+		}
+		c.Assert(err, IsNil)
+
+		st := stmt.(*ast.SelectStmt)
+		expr := st.Fields.Fields[0].Expr.(*FuncCallExpr)
+		charsetArg := expr.Args[1].(*driver.ValueExpr)
+		c.Assert(charsetArg.GetString(), Equals, testCase.CharsetName)
+	}
+}
+
 func (ts *testDMLSuite) TestWindowFuncExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"RANK() OVER w", "RANK() OVER (`w`)"},
+		{"RANK() OVER w", "RANK() OVER `w`"},
 		{"RANK() OVER (PARTITION BY a)", "RANK() OVER (PARTITION BY `a`)"},
 		{"MAX(DISTINCT a) OVER (PARTITION BY a)", "MAX(DISTINCT `a`) OVER (PARTITION BY `a`)"},
 		{"MAX(DISTINCTROW a) OVER (PARTITION BY a)", "MAX(DISTINCT `a`) OVER (PARTITION BY `a`)"},
 		{"MAX(DISTINCT ALL a) OVER (PARTITION BY a)", "MAX(DISTINCT `a`) OVER (PARTITION BY `a`)"},
 		{"MAX(ALL a) OVER (PARTITION BY a)", "MAX(`a`) OVER (PARTITION BY `a`)"},
-		{"FIRST_VALUE(val) IGNORE NULLS OVER w", "FIRST_VALUE(`val`) IGNORE NULLS OVER (`w`)"},
-		{"FIRST_VALUE(val) RESPECT NULLS OVER w", "FIRST_VALUE(`val`) OVER (`w`)"},
-		{"NTH_VALUE(val, 233) FROM LAST IGNORE NULLS OVER w", "NTH_VALUE(`val`, 233) FROM LAST IGNORE NULLS OVER (`w`)"},
-		{"NTH_VALUE(val, 233) FROM FIRST IGNORE NULLS OVER w", "NTH_VALUE(`val`, 233) IGNORE NULLS OVER (`w`)"},
+		{"FIRST_VALUE(val) IGNORE NULLS OVER (w)", "FIRST_VALUE(`val`) IGNORE NULLS OVER (`w`)"},
+		{"FIRST_VALUE(val) RESPECT NULLS OVER w", "FIRST_VALUE(`val`) OVER `w`"},
+		{"NTH_VALUE(val, 233) FROM LAST IGNORE NULLS OVER w", "NTH_VALUE(`val`, 233) FROM LAST IGNORE NULLS OVER `w`"},
+		{"NTH_VALUE(val, 233) FROM FIRST IGNORE NULLS OVER (w)", "NTH_VALUE(`val`, 233) IGNORE NULLS OVER (`w`)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr

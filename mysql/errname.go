@@ -833,7 +833,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInternal:                                              "Internal : %s",
 	ErrInnodbImport:                                          "ALTER TABLE '%-.192s' IMPORT TABLESPACE failed with error %d : '%s'",
 	ErrInnodbIndexCorrupt:                                    "Index corrupt: %s",
-	ErrInvalidYearColumnLength:                               "YEAR(%d) column type is deprecated. Creating YEAR(4) column instead.",
+	ErrInvalidYearColumnLength:                               "Supports only YEAR or YEAR(4) column",
 	ErrNotValidPassword:                                      "Your password does not satisfy the current policy requirements",
 	ErrMustChangePassword:                                    "You must SET PASSWORD before executing this statement",
 	ErrFkNoIndexChild:                                        "Failed to add the foreign key constaint. Missing index for constraint '%s' in the foreign table '%s'",
@@ -885,12 +885,14 @@ var MySQLErrName = map[uint16]string{
 	ErrDependentByGeneratedColumn:                            "Column '%s' has a generated column dependency.",
 	ErrGeneratedColumnFunctionIsNotAllowed:                   "Expression of generated column '%s' contains a disallowed function.",
 	ErrGeneratedColumnRefAutoInc:                             "Generated column '%s' cannot refer to auto-increment column.",
+	ErrInvalidJSONData:                                       "Invalid JSON data provided to function %s: %s",
 	ErrInvalidJSONText:                                       "Invalid JSON text: %-.192s",
 	ErrInvalidJSONPath:                                       "Invalid JSON path expression %s.",
-	ErrInvalidJSONData:                                       "Invalid data type for JSON data",
+	ErrInvalidTypeForJSON:                                    "Invalid data type for JSON data in argument %d to function %s; a JSON string or JSON type is required.",
 	ErrInvalidJSONPathWildcard:                               "In this situation, path expressions may not contain the * and ** tokens.",
 	ErrInvalidJSONContainsPathType:                           "The second argument can only be either 'one' or 'all'.",
 	ErrJSONUsedAsKey:                                         "JSON column '%-.192s' cannot be used in key specification.",
+	ErrInvalidJSONPathArrayCell:                              "A path expression is not a path to a cell in an array.",
 	ErrWindowNoSuchWindow:                                    "Window name '%s' is not defined.",
 	ErrWindowCircularityInWindowGraph:                        "There is a circularity in the window dependency graph.",
 	ErrWindowNoChildPartitioning:                             "A window which depends on another cannot define partitioning.",
@@ -912,12 +914,20 @@ var MySQLErrName = map[uint16]string{
 	ErrWindowNoGroupOrderUnused:                              "ASC or DESC with GROUP BY isn't allowed with window functions; put ASC or DESC in ORDER BY",
 	ErrWindowExplainJson:                                     "To get information about window functions use EXPLAIN FORMAT=JSON",
 	ErrWindowFunctionIgnoresFrame:                            "Window function '%s' ignores the frame clause of window '%s' and aggregates over the whole partition",
+	ErrRoleNotGranted:                                        "%s is is not granted to %s",
+	ErrMaxExecTimeExceeded:                                   "Query execution was interrupted, max_execution_time exceeded.",
+
+	// MariaDB errors.
+	ErrOnlyOneDefaultPartionAllowed:         "Only one DEFAULT partition allowed",
+	ErrWrongPartitionTypeExpectedSystemTime: "Wrong partitioning type, expected type: `SYSTEM_TIME`",
+	ErrSystemVersioningWrongPartitions:      "Wrong Partitions: must have at least one HISTORY and exactly one last CURRENT",
 
 	// TiDB errors.
-	ErrMemExceedThreshold: "%s holds %dB memory, exceeds threshold %dB.%s",
-	ErrForUpdateCantRetry: "[%d] can not retry select for update statement",
-	ErrAdminCheckTable:    "TiDB admin check table failed.",
-
+	ErrMemExceedThreshold:         "%s holds %dB memory, exceeds threshold %dB.%s",
+	ErrForUpdateCantRetry:         "[%d] can not retry select for update statement",
+	ErrAdminCheckTable:            "TiDB admin check table failed.",
+	ErrTxnTooLarge:                "Transaction is too large",
+	ErrWriteConflictInTiDB:        "Write conflict, txnStartTS %d is stale",
 	ErrInvalidPluginID:            "Wrong plugin id: %s, valid plugin id is [name]-[version], both name and version should not contain '-'",
 	ErrInvalidPluginManifest:      "Cannot read plugin %s's manifest",
 	ErrInvalidPluginName:          "Plugin load with %s but got wrong name %s",
@@ -927,6 +937,7 @@ var MySQLErrName = map[uint16]string{
 	ErrRequireVersionCheckFail:    "Plugin %s require %s be %v but got %v",
 	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so cannot be reloaded",
 	ErrUnsupportedReloadPluginVar: "Reload plugin with different sysVar is unsupported %v",
+	ErrTableLocked:                "Table '%s' was locked in %s by %v",
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
@@ -935,6 +946,5 @@ var MySQLErrName = map[uint16]string{
 	ErrResolveLockTimeout: "Resolve lock timeout",
 	ErrRegionUnavailable:  "Region is unavailable",
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
-
-	ErrTxnTooLarge: "Transaction is too large",
+	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictStartTS=%d, conflictCommitTS=%d, key=%s",
 }
