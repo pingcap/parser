@@ -4382,6 +4382,13 @@ CastType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
+|	Integer
+	{
+		x := types.NewFieldType(mysql.TypeLonglong)
+                x.Charset = charset.CharsetBin
+                x.Collate = charset.CollationBin
+                $$ = x
+	}
 |	"JSON"
 	{
 		x := types.NewFieldType(mysql.TypeJSON)
@@ -6965,6 +6972,10 @@ BooleanType:
 
 OptInteger:
 	{}
+|	Integer {}
+
+Integer:
+	"BIGINT"
 |	"INTEGER"
 |	"INT"
 
