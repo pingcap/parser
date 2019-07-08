@@ -6347,6 +6347,20 @@ AdminStmt:
  			Tp: ast.AdminReloadExprPushdownBlacklist,
  		}
  	}
+|	"ADMIN" "PLUGINS" "ENABLE" PluginNameList
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminPluginEnable,
+ 			Plugins: $4.([]string),
+ 		}
+ 	}
+|	"ADMIN" "PLUGINS" "DISABLE" PluginNameList
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminPluginDisable,
+ 			Plugins: $4.([]string),
+ 		}
+ 	}
 
 AdminShowSlow:
 	"RECENT" NUM
