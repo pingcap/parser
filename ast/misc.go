@@ -657,6 +657,8 @@ const (
 	AdminShowSlow
 	AdminShowNextRowID
 	AdminReloadExprPushdownBlacklist
+	AdminPluginDisable
+	AdminPluginEnable
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -708,6 +710,7 @@ type AdminStmt struct {
 
 	HandleRanges []HandleRange
 	ShowSlow     *ShowSlow
+	Plugins      []string
 }
 
 // Accept implements Node Accept interface.
