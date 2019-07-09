@@ -1380,6 +1380,7 @@ const (
 	AdminChecksumTable
 	AdminShowSlow
 	AdminShowNextRowID
+	AdminReloadExprPushdownBlacklist
 	AdminReloadDisabledOptimizeList
 	AdminPluginDisable
 	AdminPluginEnable
@@ -1552,6 +1553,8 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		if err := n.ShowSlow.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AdminStmt.ShowSlow")
 		}
+	case AdminReloadExprPushdownBlacklist:
+		ctx.WriteKeyWord("RELOAD EXPR_PUSHDOWN_BLACKLIST")
 	case AdminReloadDisabledOptimizeList:
 		ctx.WriteKeyWord("RELOAD DISABLED_OPTIMIZE_LIST")
 	case AdminPluginEnable:

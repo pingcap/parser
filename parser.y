@@ -514,6 +514,7 @@ import (
 	variance		"VARIANCE"
 	varPop			"VAR_POP"
 	varSamp			"VAR_SAMP"
+	exprPushdownBlacklist		"EXPR_PUSHDOWN_BLACKLIST"
 	disabledOptimizeList		"DISABLED_OPTIMIZE_LIST"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
@@ -3535,7 +3536,7 @@ NotKeywordToken:
 | "INPLACE" | "INSTANT" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
 | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" | "VARIANCE" | "VAR_POP" | "VAR_SAMP"
 | "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOKUDB_DEFAULT" | "TOKUDB_FAST" | "TOKUDB_LZMA" | "TOKUDB_QUICKLZ" | "TOKUDB_SNAPPY" | "TOKUDB_SMALL" | "TOKUDB_UNCOMPRESSED" | "TOKUDB_ZLIB" | "TOP" | "TRIM" | "NEXT_ROW_ID"
-| "DISABLED_OPTIMIZE_LIST"
+| "EXPR_PUSHDOWN_BLACKLIST" | "DISABLED_OPTIMIZE_LIST"
 
 /************************************************************************************
  *
@@ -6509,6 +6510,12 @@ AdminStmt:
 			ShowSlow: $4.(*ast.ShowSlow),
 		}
 	}
+|	"ADMIN" "RELOAD" "EXPR_PUSHDOWN_BLACKLIST"
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminReloadExprPushdownBlacklist,
+ 		}
+ 	}
 |	"ADMIN" "RELOAD" "DISABLED_OPTIMIZE_LIST"
  	{
  		$$ = &ast.AdminStmt{
