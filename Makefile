@@ -1,8 +1,11 @@
-.PHONY: all parser clean
+.PHONY: all parser clean compatibility_reporter
 
 ARCH:="`uname -s`"
 MAC:="Darwin"
 LINUX:="Linux"
+
+LDFLAGS += -X "github.com/pingcap/parser.TiDBParserGitHash=$(shell git rev-parse HEAD)"
+LDFLAGS += -X "github.com/pingcap/parser.TiDBParserGitBranch=$(shell git rev-parse --abbrev-ref HEAD)"
 
 all: parser.go fmt
 
@@ -30,6 +33,9 @@ parser: bin/goyacc
 
 bin/goyacc: goyacc/main.go
 	GO111MODULE=on go build -o bin/goyacc goyacc/main.go
+
+compatibility_reporter: compatibility_reporter/main.go
+	GO111MODULE=on go build -ldflags '$(LDFLAGS)' -o bin/compatibility_reporter compatibility_reporter/main.go
 
 fmt:
 	@echo "gofmt (simplify)"
