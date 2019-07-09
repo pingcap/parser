@@ -1381,6 +1381,8 @@ const (
 	AdminShowSlow
 	AdminShowNextRowID
 	AdminReloadDisabledOptimizeList
+	AdminPluginDisable
+	AdminPluginEnable
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1456,6 +1458,7 @@ type AdminStmt struct {
 
 	HandleRanges []HandleRange
 	ShowSlow     *ShowSlow
+	Plugins      []string
 }
 
 // Restore implements Node interface.
@@ -1551,6 +1554,26 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		}
 	case AdminReloadDisabledOptimizeList:
 		ctx.WriteKeyWord("RELOAD DISABLED_OPTIMIZE_LIST")
+	case AdminPluginEnable:
+		ctx.WriteKeyWord("PLUGINS ENABLE")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
+	case AdminPluginDisable:
+		ctx.WriteKeyWord("PLUGINS DISABLE")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
