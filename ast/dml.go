@@ -986,6 +986,7 @@ const (
 	ShowPumpStatus
 	ShowDrainerStatus
 	ShowOpenTables
+	ShowRegions
 )
 
 // ShowStmt is a statement to provide information about databases, tables, columns and so on.
@@ -994,13 +995,14 @@ type ShowStmt struct {
 	dmlNode
 	resultSetNode
 
-	Tp     ShowStmtType // Databases/Tables/Columns/....
-	DBName string
-	Table  *TableName  // Used for showing columns.
-	Column *ColumnName // Used for `desc table column`.
-	Flag   int         // Some flag parsed from sql, such as FULL.
-	Full   bool
-	User   *auth.UserIdentity // Used for show grants.
+	Tp        ShowStmtType // Databases/Tables/Columns/....
+	DBName    string
+	Table     *TableName  // Used for showing columns.
+	Column    *ColumnName // Used for `desc table column`.
+	IndexName model.CIStr
+	Flag      int // Some flag parsed from sql, such as FULL.
+	Full      bool
+	User      *auth.UserIdentity // Used for show grants.
 
 	// GlobalScope is used by show variables
 	GlobalScope bool

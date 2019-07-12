@@ -5998,6 +5998,21 @@ ShowStmt:
 			DBName:	$4.(string),
 		}
 	}
+|	"SHOW" "TABLE" TableName "REGIONS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowRegions,
+			Table:	$3.(*ast.TableName),
+		}
+	}
+|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowRegions,
+			Table:	$3.(*ast.TableName),
+			IndexName: model.NewCIStr($5),
+		}
+	}
 |	"SHOW" "GRANTS"
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-grants.html

@@ -527,6 +527,12 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 between ('a') and ('z') regions 10", true},
 		{"split table t1 between ('a',1) and ('z',2) regions 10", true},
 		{"split table t1 between () and () regions 10", true},
+
+		// for show table regions.
+		{"show table t1 regions", true},
+		{"show table t1", false, },
+		{"show table t1 index idx1 regions", true},
+		{"show table t1 index idx1", false},
 	}
 	s.RunTest(c, table)
 }
