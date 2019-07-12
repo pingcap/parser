@@ -4743,6 +4743,3 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
 
  opt_force: %empty
           | FORCE_SYM
-
-
-[a]KeyWord 只能拿到这种程度，没有词法规则要自己弄
