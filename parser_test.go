@@ -452,6 +452,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top all 9", true},
 		{"admin show slow recent 11", true},
 		{"admin reload expr_pushdown_blacklist", true},
+		{"admin plugins disable audit, whitelist", true},
+		{"admin plugins enable audit, whitelist", true},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true},
