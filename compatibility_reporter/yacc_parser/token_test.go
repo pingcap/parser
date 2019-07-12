@@ -30,28 +30,38 @@ func assertEq(t *testing.T, expected, actual string) {
 		t.Errorf("expect: '%v', but got: '%v'", expected, actual)
 	}
 }
-func TestTokenize(t *testing.T) {
-	next := Tokenize(newMockReader(
-		`column_attribute_list: column_attribute_list 
-		column_attribute | column_attribute`))
-	expect := []string{"column_attribute_list", ":", "column_attribute_list", "column_attribute", "|", "column_attribute"}
+
+func withTokenizeResult(origin string, visitor func(index int, tkn string)) {
+	next := Tokenize(newMockReader(origin))
 	for i := 0; ; i++ {
 		tkn := next()
 		if isEOF(tkn) {
 			break
 		}
-		assertEq(t, expect[i], tkn.toString())
+		visitor(i, tkn.toString())
 	}
 }
 
-func TestColonStrToken(t *testing.T) {
-	next := Tokenize(newMockReader(`this: is a test with 'colon appears inside a string :)'`))
+func printTokenizeResult(origin string) {
+	withTokenizeResult(origin, func (_ int, s string) {
+		fmt.Println(s)
+	})
+}
 
-	for i := 0; ; i++ {
-		tkn := next()
-		if isEOF(tkn) {
-			break
-		}
-		fmt.Println(tkn.toString())
-	}
+func assertExpectedTokenResult(t *testing.T, origin string, expected []string) {
+	withTokenizeResult(origin, func (idx int, s string) {
+		assertEq(t, expected[idx], s)
+	})
+}
+
+func TestTokenize(t *testing.T) {
+	origin := `column_attribute_list: column_attribute_list column_attribute | column_attribute`
+	expect := []string{"column_attribute_list", ":", "column_attribute_list", "column_attribute", "|", "column_attribute"}
+	assertExpectedTokenResult(t, origin, expect)
+}
+
+func TestColonStrToken(t *testing.T) {
+	origin := `this: is a test with 'colon appears inside a string :)'`
+	expect := []string{"this", ":", "is", "a", "test", "with", "'colon appears inside a string :)'"}
+	assertExpectedTokenResult(t, origin, expect)
 }
