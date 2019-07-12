@@ -18,6 +18,8 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"github.com/pingcap/parser/compatibility_reporter/sql_generator"
+	"github.com/pingcap/parser/compatibility_reporter/yacc_parser"
 	"os"
 	"strings"
 
@@ -27,13 +29,15 @@ import (
 )
 
 var (
-	output        = flag.String("o", "./report.csv", "Output path of csv format report")
-	printAll      = flag.Bool("a", false, "Output all test case, regardless of success or failure")
-	mysqlUser     = flag.String("u", "root", "MySQL User for login")
-	mysqlPassword = flag.String("p", "", "Password to use when connecting to MySQL server")
-	mysqlHost     = flag.String("h", "127.0.0.1", "Connect to MySQL host")
-	mysqlPort     = flag.Int("P", 3306, "Port number to use for MySQL connection")
-	MySQLVersion  = "None"
+	output         = flag.String("o", "./report.csv", "Output path of csv format report")
+	printAll       = flag.Bool("a", false, "Output all test case, regardless of success or failure")
+	mysqlUser      = flag.String("u", "root", "MySQL User for login")
+	mysqlPassword  = flag.String("p", "", "Password to use when connecting to MySQL server")
+	mysqlHost      = flag.String("h", "127.0.0.1", "Connect to MySQL host")
+	mysqlPort      = flag.Int("P", 3306, "Port number to use for MySQL connection")
+	productionName = flag.String("n", "", "Production name to test")
+	bnfPath        = flag.String("b", "", "BNF file path")
+	MySQLVersion   = "None"
 )
 
 type caseReport struct {
@@ -126,7 +130,19 @@ func escapeString(str string) string {
 
 func main() {
 	flag.Parse()
-	reader := bufio.NewReader(os.Stdin)
+
+	bnfs := strings.Split(*bnfPath, " ")
+	var allProductions []yacc_parser.Production
+	for _, bnf := range bnfs {
+		bnfFile, err := os.Open(bnf)
+		if err != nil {
+			panic(fmt.Sprintf("File '%s' open failure", bnf))
+		}
+		productions := yacc_parser.Parse(yacc_parser.Tokenize(bufio.NewReader(bnfFile)))
+		allProductions = append(allProductions, productions...)
+	}
+
+	sqlIter := sql_generator.GenerateSQL(allProductions, *productionName)
 
 	db, dbErr := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/mysql",
 		*mysqlUser, *mysqlPassword, *mysqlHost, *mysqlPort))
@@ -144,22 +160,14 @@ func main() {
 
 	csvFile, fileErr := os.OpenFile(*output, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 	if fileErr != nil {
-		panic(fmt.Sprintf("file(%s) open failure: %s", *output, fileErr.Error()))
+		panic(fmt.Sprintf("file '%s' open failure: %s", *output, fileErr.Error()))
 	}
 	defer csvFile.Close()
 	printCsvHead(csvFile)
 
-	for true {
-		sql, scanErr := reader.ReadString('\n')
-		if scanErr != nil {
-			if scanErr.Error() != "EOF" {
-				panic("stdin read error: " + scanErr.Error())
-			}
-			break
-		}
-		sql = strings.TrimSpace(sql)
+	for sqlIter.HasNext() {
 		report := caseReport{
-			Sql: sql,
+			Sql: sqlIter.Next(),
 		}
 		tidbParserTest(tidbParser, &report)
 		mysqlParserTest(db, &report)
