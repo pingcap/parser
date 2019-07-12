@@ -2,6 +2,7 @@ package yacc_parser
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"testing"
 )
@@ -40,5 +41,17 @@ func TestTokenize(t *testing.T) {
 			break
 		}
 		assertEq(t, expect[i], tkn.toString())
+	}
+}
+
+func TestColonStrToken(t *testing.T) {
+	next := Tokenize(newMockReader(`this: is a test with 'colon appears inside a string :)'`))
+
+	for i := 0; ; i++ {
+		tkn := next()
+		if isEOF(tkn) {
+			break
+		}
+		fmt.Println(tkn.toString())
 	}
 }
