@@ -1522,6 +1522,11 @@ func (s *testParserSuite) TestDDL(c *C) {
  PARTITION part9 VALUES LESS THAN (10) COMMENT = '10月份' ENGINE = InnoDB,
  PARTITION part10 VALUES LESS THAN (11) COMMENT = '11月份' ENGINE = InnoDB,
  PARTITION part11 VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB) */ ;`, true},
+		{`create table t (a int) /*!50100 partition by list (a) (
+partition p0 values in (1) ENGINE = InnoDB,
+partition p1 values in (29) ENGINE = InnoDB,
+partition p2 values in (2) ENGINE = InnoDB,
+partition p3 values in (3) ENGINE = InnoDB) */`, true},
 
 		// for check clause
 		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)), check (c2 in (0, 1)))", true},
