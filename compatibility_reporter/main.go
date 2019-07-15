@@ -204,7 +204,7 @@ func main() {
 		if report.MySQLPass {
 			mysqlPassCases++
 		}
-		if report.MySQLPass != report.TiDBPass {
+		if !(report.MySQLPass && report.TiDBPass) && (report.MySQLErrNo != report.TiDBErrNo) {
 			incompatibleCases++
 		}
 	}
