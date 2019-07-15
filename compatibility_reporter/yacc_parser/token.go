@@ -54,12 +54,15 @@ func (q *quote) isInsideStr() bool {
 	return q.c != 0
 }
 
-func (q *quote) tryToggle(other rune) {
+func (q *quote) tryToggle(other rune) bool {
 	if q.c == 0 {
 		q.c = other
+		return true
 	} else if q.c == other {
 		q.c = 0
+		return true
 	}
+	return false
 }
 
 // Tokenize is used to wrap a reader into a token producer.
@@ -103,6 +106,16 @@ func Tokenize(reader *bufio.Reader) func() token {
 				break
 			}
 			stringBuf += string(r)
+
+			// Handle end str.
+			if r == '\'' || r == '"' {
+				if !q.isInsideStr() {
+					panic(fmt.Sprintf("unexpected character: `%s` after `%s`", string(r), stringBuf))
+				}
+				if q.tryToggle(r) {
+					break
+				}
+			}
 		}
 		if allCapital(stringBuf) {
 			return &keyword{stringBuf}
