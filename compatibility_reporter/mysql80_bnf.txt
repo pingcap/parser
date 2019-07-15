@@ -8,14 +8,7 @@ start_entry: sql_statement
            | GRAMMAR_SELECTOR_CTE table_subquery END_OF_INPUT
 
 
-sql_statement: END_OF_INPUT
-
-
 $@1: %empty
-
-
-sql_statement: simple_statement_or_begin $@1 ';' opt_end_of_input
-             | simple_statement_or_begin END_OF_INPUT
 
 
 opt_end_of_input: %empty
@@ -119,7 +112,7 @@ simple_statement: alter_database_stmt
                 | xa
 
 
-deallocate: deallocate_or_drop PREPARE_SYM[a] ident
+deallocate: deallocate_or_drop PREPARE_SYM ident
 
 
 deallocate_or_drop: DEALLOCATE_SYM
@@ -158,14 +151,17 @@ help: HELP_SYM $@3 ident_or_text
 
 $@4: %empty
 
+change: change1
+    | change2
 
-change: CHANGE MASTER_SYM TO_SYM $@4 master_defs opt_channel
+
+change1: CHANGE MASTER_SYM TO_SYM $@4 master_defs opt_channel
 
 
 $@5: %empty
 
 
-change: CHANGE REPLICATION FILTER_SYM $@5 filter_defs opt_channel
+change2: CHANGE REPLICATION FILTER_SYM $@5 filter_defs opt_channel
 
 
 filter_defs: filter_def
@@ -464,21 +460,24 @@ sp_proc_stmts1: sp_proc_stmt ';'
 sp_decls: %empty
         | sp_decls sp_decl ';'
 
+sp_decl: sp_decl1
+    | sp_decl2
+    | sp_decl3
 
-sp_decl: DECLARE_SYM sp_decl_idents type opt_collate sp_opt_default
+sp_decl1: DECLARE_SYM sp_decl_idents type opt_collate sp_opt_default
        | DECLARE_SYM ident CONDITION_SYM FOR_SYM sp_cond
 
 
 $@10: %empty
 
 
-sp_decl: DECLARE_SYM sp_handler_type HANDLER_SYM FOR_SYM $@10 sp_hcond_list sp_proc_stmt
+sp_decl2: DECLARE_SYM sp_handler_type HANDLER_SYM FOR_SYM $@10 sp_hcond_list sp_proc_stmt
 
 
 $@11: %empty
 
 
-sp_decl: DECLARE_SYM ident CURSOR_SYM FOR_SYM $@11 select_stmt
+sp_decl3: DECLARE_SYM ident CURSOR_SYM FOR_SYM $@11 select_stmt
 
 
 sp_handler_type: EXIT_SYM
@@ -770,8 +769,11 @@ $@30: %empty
 
 sp_block_content: BEGIN_SYM $@30 sp_decls sp_proc_stmts END
 
+sp_unlabeled_control: sp_unlabeled_control1
+    | sp_unlabeled_control2
+    | sp_unlabeled_control3
 
-sp_unlabeled_control: LOOP_SYM sp_proc_stmts1 END LOOP_SYM
+sp_unlabeled_control1: LOOP_SYM sp_proc_stmts1 END LOOP_SYM
 
 
 $@31: %empty
@@ -780,7 +782,7 @@ $@31: %empty
 $@32: %empty
 
 
-sp_unlabeled_control: WHILE_SYM $@31 expr $@32 DO_SYM sp_proc_stmts1 END WHILE_SYM
+sp_unlabeled_control2: WHILE_SYM $@31 expr $@32 DO_SYM sp_proc_stmts1 END WHILE_SYM
 
 
 $@33: %empty
@@ -789,7 +791,7 @@ $@33: %empty
 $@34: %empty
 
 
-sp_unlabeled_control: REPEAT_SYM sp_proc_stmts1 UNTIL_SYM $@33 expr $@34 END REPEAT_SYM
+sp_unlabeled_control3: REPEAT_SYM sp_proc_stmts1 UNTIL_SYM $@33 expr $@34 END REPEAT_SYM
 
 
 trg_action_time: BEFORE_SYM
@@ -1617,14 +1619,16 @@ alter_function_stmt: ALTER FUNCTION_SYM sp_name $@39 sp_a_chistics
 
 $@40: %empty
 
+alter_view_stmt: alter_view_stmt1
+    |alter_view_stmt2
 
-alter_view_stmt: ALTER view_algorithm definer_opt $@40 view_tail
+alter_view_stmt1: ALTER view_algorithm definer_opt $@40 view_tail
 
 
 $@41: %empty
 
 
-alter_view_stmt: ALTER definer_opt $@41 view_tail
+alter_view_stmt2: ALTER definer_opt $@41 view_tail
 
 
 $@42: %empty
@@ -3191,8 +3195,12 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
 
  show: SHOW $@45 show_param
 
+ show_param: show_param1
+    | show_param2
+    | show_param3
 
- show_param: DATABASES opt_wild_or_where_for_show
+
+ show_param1: DATABASES opt_wild_or_where_for_show
            | opt_show_cmd_type TABLES opt_db opt_wild_or_where_for_show
            | opt_full TRIGGERS_SYM opt_db opt_wild_or_where_for_show
            | EVENTS_SYM opt_db opt_wild_or_where_for_show
@@ -3209,13 +3217,13 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
  $@46: %empty
 
 
- show_param: BINLOG_SYM EVENTS_SYM binlog_in binlog_from $@46 opt_limit_clause
+ show_param2: BINLOG_SYM EVENTS_SYM binlog_in binlog_from $@46 opt_limit_clause
 
 
  $@47: %empty
 
 
- show_param: RELAYLOG_SYM EVENTS_SYM binlog_in binlog_from $@47 opt_limit_clause opt_channel
+ show_param3: RELAYLOG_SYM EVENTS_SYM binlog_in binlog_from $@47 opt_limit_clause opt_channel
            | opt_extended keys_or_index from_or_in table_ident opt_db opt_where_clause_expr
            | opt_storage ENGINES_SYM
            | COUNT_SYM '(' '*' ')' WARNINGS
@@ -3341,15 +3349,17 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
  flush_options: table_or_tables opt_table_list $@49 opt_flush_lock
               | flush_options_list
 
+opt_flush_lock: opt_flush_lock1
+    |opt_flush_lock2
 
- opt_flush_lock: %empty
+ opt_flush_lock1: %empty
                | WITH READ_SYM LOCK_SYM
 
 
  $@50: %empty
 
 
- opt_flush_lock: FOR_SYM $@50 EXPORT_SYM
+ opt_flush_lock2: FOR_SYM $@50 EXPORT_SYM
 
 
  flush_options_list: flush_options_list ',' flush_option
@@ -3391,14 +3401,16 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
 
  $@52: %empty
 
+reset_option: reset_option1
+    | reset_option2
 
- reset_option: SLAVE $@52 slave_reset_options opt_channel
+ reset_option1: SLAVE $@52 slave_reset_options opt_channel
 
 
  $@53: %empty
 
 
- reset_option: MASTER_SYM $@53 master_reset_options
+ reset_option2: MASTER_SYM $@53 master_reset_options
 
 
  slave_reset_options: %empty
@@ -4304,26 +4316,31 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
                   | LT
 
 
- revoke: REVOKE role_or_privilege_list FROM user_list
+revoke: revoke1
+    | revoke2
+
+ revoke1: REVOKE role_or_privilege_list FROM user_list
        | REVOKE role_or_privilege_list ON_SYM opt_acl_type grant_ident FROM user_list
 
 
  $@57: %empty
 
 
- revoke: REVOKE ALL opt_privileges $@57 ON_SYM opt_acl_type grant_ident FROM user_list
+ revoke2: REVOKE ALL opt_privileges $@57 ON_SYM opt_acl_type grant_ident FROM user_list
        | REVOKE ALL opt_privileges ',' GRANT OPTION FROM user_list
        | REVOKE PROXY_SYM ON_SYM user FROM user_list
 
+grant: grant1
+    | grant2
 
- grant: GRANT role_or_privilege_list TO_SYM user_list opt_with_admin_option
+ grant1: GRANT role_or_privilege_list TO_SYM user_list opt_with_admin_option
       | GRANT role_or_privilege_list ON_SYM opt_acl_type grant_ident TO_SYM user_list grant_options opt_grant_as
 
 
  $@58: %empty
 
 
- grant: GRANT ALL opt_privileges $@58 ON_SYM opt_acl_type grant_ident TO_SYM user_list grant_options opt_grant_as
+ grant2: GRANT ALL opt_privileges $@58 ON_SYM opt_acl_type grant_ident TO_SYM user_list grant_options opt_grant_as
       | GRANT PROXY_SYM ON_SYM user TO_SYM user_list opt_grant_option
 
 

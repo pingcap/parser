@@ -26,3 +26,7 @@ t3: 'f'
 		println(sqlIter.Next())
 	}
 }
+
+func TestB(t *testing.T) {
+
+}

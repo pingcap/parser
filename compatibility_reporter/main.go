@@ -18,13 +18,13 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/pingcap/parser/compatibility_reporter/sql_generator"
-	"github.com/pingcap/parser/compatibility_reporter/yacc_parser"
 	"os"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/compatibility_reporter/sql_generator"
+	"github.com/pingcap/parser/compatibility_reporter/yacc_parser"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -59,6 +59,8 @@ func mysqlParserTest(mysqlSource *sql.DB, report *caseReport) {
 	if !success {
 		panic("MySQL client error:" + parserErr.Error())
 	}
+	// number 1064 is mysql server errno, it means parser error
+	// see: https://dev.mysql.com/doc/refman/8.0/en/server-error-reference.html#error_er_parse_error
 	if mysqlErr.Number == 1064 {
 		report.MySQLPass = false
 		report.MySQLErr = mysqlErr
@@ -115,6 +117,18 @@ func printCsvCaseReport(csvFile *os.File, report *caseReport) {
 	}
 }
 
+func printCsvSummary(csvFile *os.File, totalCases uint64, tidbPassCases uint64, mysqlPassCases uint64, incompatibleCases uint64) {
+	_, writeErr := csvFile.WriteString(fmt.Sprintf("totalCases,%d,tidbPassCases,%d,mysqlPassCases,%d,incompatibleCases,%d\n",
+		totalCases,
+		tidbPassCases,
+		mysqlPassCases,
+		incompatibleCases,
+	))
+	if writeErr != nil {
+		panic(fmt.Sprintf("file(%s) write failure: %s", *output, writeErr.Error()))
+	}
+}
+
 func escapeErrorString(err error) string {
 	if err == nil {
 		return ""
@@ -164,7 +178,10 @@ func main() {
 	}
 	defer csvFile.Close()
 	printCsvHead(csvFile)
-
+	var totalCases uint64 = 0
+	var tidbPassCases uint64 = 0
+	var mysqlPassCases uint64 = 0
+	var incompatibleCases uint64 = 0
 	for sqlIter.HasNext() {
 		report := caseReport{
 			Sql: sqlIter.Next(),
@@ -172,5 +189,16 @@ func main() {
 		tidbParserTest(tidbParser, &report)
 		mysqlParserTest(db, &report)
 		printCsvCaseReport(csvFile, &report)
+		totalCases++
+		if report.TiDBPass {
+			tidbPassCases++
+		}
+		if report.MySQLPass {
+			mysqlPassCases++
+		}
+		if report.MySQLPass != report.TiDBPass {
+			incompatibleCases++
+		}
 	}
+	printCsvSummary(csvFile, totalCases, tidbPassCases, mysqlPassCases, incompatibleCases)
 }

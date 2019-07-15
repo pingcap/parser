@@ -40,11 +40,11 @@ type terminator struct {
 }
 
 func (t *terminator) walk() bool {
-	panic("unreachable")
+	panic("unreachable, you maybe forget calling `pruneTerminator` before calling `walk`")
 }
 
 func (t *terminator) materialize(writer io.StringWriter) error {
-	panic("unreachable")
+	panic("unreachable, you maybe forget calling `pruneTerminator` before calling `walk`")
 }
 
 type expressionNode struct {
@@ -106,6 +106,7 @@ func (pn *productionNode) materialize(writer io.StringWriter) error {
 	return pn.exprs[pn.walkIndex].materialize(writer)
 }
 
+// pruneTerminator remove the branch whose include terminator node.
 func (pn *productionNode) pruneTerminator() {
 	if pn.pruned {
 		return
@@ -133,8 +134,6 @@ func newExpressionNode(seq yacc_parser.Seq) *expressionNode {
 		items: make([]node, len(seq.Items)),
 	}
 }
-
-var productionMap = make(map[string]yacc_parser.Production)
 
 func buildTree(productionName string, fathers []string) node {
 	sumFather := 0
@@ -164,12 +163,14 @@ func buildTree(productionName string, fathers []string) node {
 	return root
 }
 
+// SQLIterator is a iterator of sql generator
 type SQLIterator struct {
 	root             *productionNode
 	alreadyPointNext bool
 	noNext           bool
 }
 
+// HasNext returns whether the iterator exists next sql case
 func (i *SQLIterator) HasNext() bool {
 	if !i.alreadyPointNext {
 		i.noNext = i.root.walk()
@@ -178,6 +179,8 @@ func (i *SQLIterator) HasNext() bool {
 	return !i.noNext
 }
 
+// Next returns next sql case in iterator
+// it will panic when the iterator doesn't exist next sql case
 func (i *SQLIterator) Next() string {
 	if !i.HasNext() {
 		panic("there isn't next item in this sql iterator")
@@ -191,7 +194,13 @@ func (i *SQLIterator) Next() string {
 	return stringBuffer.String()
 }
 
+var productionMap map[string]yacc_parser.Production
+
+// GenerateSQL returns a `SQLIterator` which can generate sql case by case
+// productions is a `Production` array created by `yacc_parser.Parse`
+// productionName assigns a production name as the root node.
 func GenerateSQL(productions []yacc_parser.Production, productionName string) *SQLIterator {
+	productionMap = make(map[string]yacc_parser.Production)
 	for _, production := range productions {
 		if _, exist := productionMap[production.Head]; exist {
 			panic(fmt.Sprintf("Production '%s' duplicate definitions", production.Head))

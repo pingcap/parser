@@ -1,0 +1,11 @@
+%empty: ''
+
+IDENT: 'ident'
+
+IDENT_QUOTED: 'ident'
+
+SET_VAR: 'set_var'
+
+TEXT_STRING: 'text_string'
+
+LEX_HOSTNAME: 'lex_hostname'
