@@ -43,13 +43,13 @@ func withTokenizeResult(origin string, visitor func(index int, tkn string)) {
 }
 
 func printTokenizeResult(origin string) {
-	withTokenizeResult(origin, func (_ int, s string) {
+	withTokenizeResult(origin, func(_ int, s string) {
 		fmt.Println(s)
 	})
 }
 
 func assertExpectedTokenResult(t *testing.T, origin string, expected []string) {
-	withTokenizeResult(origin, func (idx int, s string) {
+	withTokenizeResult(origin, func(idx int, s string) {
 		assertEq(t, expected[idx], s)
 	})
 }
@@ -63,5 +63,19 @@ func TestTokenize(t *testing.T) {
 func TestColonStrToken(t *testing.T) {
 	origin := `this: is a test with 'colon appears inside a string :)'`
 	expect := []string{"this", ":", "is", "a", "test", "with", "'colon appears inside a string :)'"}
+	assertExpectedTokenResult(t, origin, expect)
+}
+
+func TestSimpleStr(t *testing.T) {
+	origin := `a: 'b' c`
+	expect := []string{"a", ":", "'b'", "c"}
+	assertExpectedTokenResult(t, origin, expect)
+
+	origin = `a: '"b' "'c"`
+	expect = []string{"a", ":", `'"b'`, `"'c"`}
+	assertExpectedTokenResult(t, origin, expect)
+
+	origin = `a: 'b"' "c'"`
+	expect = []string{"a", ":", `'b"'`, `"c'"`}
 	assertExpectedTokenResult(t, origin, expect)
 }
