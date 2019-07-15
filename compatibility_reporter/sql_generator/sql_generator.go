@@ -200,6 +200,7 @@ var productionMap map[string]yacc_parser.Production
 // productions is a `Production` array created by `yacc_parser.Parse`
 // productionName assigns a production name as the root node.
 func GenerateSQL(productions []yacc_parser.Production, productionName string) *SQLIterator {
+	println("finish parse bnf file")
 	productionMap = make(map[string]yacc_parser.Production)
 	for _, production := range productions {
 		if _, exist := productionMap[production.Head]; exist {
@@ -207,8 +208,11 @@ func GenerateSQL(productions []yacc_parser.Production, productionName string) *S
 		}
 		productionMap[production.Head] = production
 	}
+	println("finish create production map, map size:", len(productionMap))
 	pNode := buildTree(productionName, nil).(*productionNode)
+	println("finish build tree")
 	pNode.pruneTerminator()
+	println("finish prune terminator branch")
 	return &SQLIterator{
 		root:             pNode,
 		alreadyPointNext: true,

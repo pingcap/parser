@@ -61,7 +61,7 @@ func mysqlParserTest(mysqlSource *sql.DB, report *caseReport) {
 	}
 	mysqlErr, success := parserErr.(*mysql.MySQLError)
 	if !success {
-		panic("MySQL client error:" + parserErr.Error())
+		panic("MySQL client error:" + parserErr.Error() + "sql: " + report.Sql)
 	}
 	// number 1064 is mysql server errno, it means parser error
 	// see: https://dev.mysql.com/doc/refman/8.0/en/server-error-reference.html#error_er_parse_error
