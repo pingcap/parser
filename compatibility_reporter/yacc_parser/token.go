@@ -46,7 +46,25 @@ func (nt *nonTerminal) toString() string {
 	return nt.val
 }
 
+type quote struct {
+	c rune
+}
+
+func (q *quote) isInsideStr() bool {
+	return q.c != 0
+}
+
+func (q *quote) tryToggle(other rune) {
+	if q.c == 0 {
+		q.c = other
+	} else if q.c == other {
+		q.c = 0
+	}
+}
+
+// Tokenize is used to wrap a reader into a token producer.
 func Tokenize(reader *bufio.Reader) func() token {
+	q := quote{0}
 	return func() token {
 		var r rune
 		var err error
@@ -57,14 +75,19 @@ func Tokenize(reader *bufio.Reader) func() token {
 			if err == io.EOF {
 				return &eof{}
 			}
-			if !unicode.IsSpace(r) {
+			if !unicode.IsSpace(r) || q.isInsideStr() {
 				break
 			}
 		}
 
 		// Handle delimiter.
-		if r == ':' || r == '|' {
+		if (r == ':' || r == '|') && !q.isInsideStr() {
 			return &operator{string(r)}
+		}
+
+		// Toggle isInsideStr.
+		if r == '\'' || r == '"' {
+			q.tryToggle(r)
 		}
 
 		// Handle identifier.
@@ -72,7 +95,10 @@ func Tokenize(reader *bufio.Reader) func() token {
 		for {
 			r, _, err = reader.ReadRune()
 			panicIfNonEOF(err)
-			if err == io.EOF || unicode.IsSpace(r) || isDelimiter(r) {
+			if err == io.EOF {
+				break
+			}
+			if (unicode.IsSpace(r) || isDelimiter(r)) && !q.isInsideStr() {
 				reader.UnreadRune()
 				break
 			}
@@ -84,6 +110,10 @@ func Tokenize(reader *bufio.Reader) func() token {
 			return &nonTerminal{stringBuf}
 		}
 	}
+}
+
+func isInsideStr(oldStrChar rune) bool {
+	return oldStrChar == 0
 }
 
 func panicIfNonEOF(err error) {
