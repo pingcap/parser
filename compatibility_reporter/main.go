@@ -22,9 +22,11 @@ import (
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/compatibility_reporter/sql_generator"
 	"github.com/pingcap/parser/compatibility_reporter/yacc_parser"
+	"github.com/pingcap/parser/terror"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -41,12 +43,14 @@ var (
 )
 
 type caseReport struct {
-	Sql       string
-	MySQLPass bool
-	MySQLErr  error
-	TiDBPass  bool
-	TiDBWarns []error
-	TiDBErr   error
+	Sql        string
+	MySQLPass  bool
+	MySQLErr   error
+	MySQLErrNo uint16
+	TiDBPass   bool
+	TiDBWarns  []error
+	TiDBErr    error
+	TiDBErrNo  uint16
 }
 
 func mysqlParserTest(mysqlSource *sql.DB, report *caseReport) {
@@ -61,12 +65,9 @@ func mysqlParserTest(mysqlSource *sql.DB, report *caseReport) {
 	}
 	// number 1064 is mysql server errno, it means parser error
 	// see: https://dev.mysql.com/doc/refman/8.0/en/server-error-reference.html#error_er_parse_error
-	if mysqlErr.Number == 1064 {
-		report.MySQLPass = false
-		report.MySQLErr = mysqlErr
-	} else {
-		report.MySQLPass = true
-	}
+	report.MySQLPass = mysqlErr.Number != 1064
+	report.MySQLErr = mysqlErr
+	report.MySQLErrNo = mysqlErr.Number
 }
 
 func tidbParserTest(tidbParser *parser.Parser, report *caseReport) {
@@ -74,6 +75,11 @@ func tidbParserTest(tidbParser *parser.Parser, report *caseReport) {
 	report.TiDBPass = stmtNodes != nil && len(stmtNodes) > 0 && parserErr == nil
 	report.TiDBWarns = parserWarns
 	report.TiDBErr = parserErr
+	if parserErr != nil {
+		if pErr, ok := errors.Unwrap(parserErr).(*terror.Error); ok {
+			report.TiDBErrNo = uint16(pErr.Code())
+		}
+	}
 }
 
 func printCsvHead(csvFile *os.File) {
@@ -97,7 +103,9 @@ func printCsvHead(csvFile *os.File) {
 }
 
 func printCsvCaseReport(csvFile *os.File, report *caseReport) {
-	if !*printAll && report.TiDBPass && report.MySQLPass {
+	if !*printAll &&
+		((report.TiDBPass && report.MySQLPass) ||
+			(report.TiDBErrNo == report.MySQLErrNo)) {
 		return
 	}
 	var tidbWarns []string
