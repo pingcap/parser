@@ -80,7 +80,7 @@ func TestSimpleStr(t *testing.T) {
 	assertExpectedTokenResult(t, origin, expect)
 }
 
-func TestA(t* testing.T) {
+func TestA(t *testing.T) {
 	origin := `t1: 'a' 'b' t2
     | 'c' t3
     | t2 'f' t3 'g'
@@ -91,6 +91,6 @@ t2: 'd'
 t3: 'f'
     | 'g' 'h'
 	| 'i'`
-	expect := []string {`t1`,`:`,`'a'`,`'b'`,`t2`,`|`,`'c'`,`t3`,`|`,`t2`,`'f'`,`t3`,`'g'`,`t2`,`:`,`'d'`,`|`,`t3`,`'e'`,`t3`,`:`,`'f'`,`|`,`'g'`,`'h'`,`|`,`'i'`}
+	expect := []string{`t1`, `:`, `'a'`, `'b'`, `t2`, `|`, `'c'`, `t3`, `|`, `t2`, `'f'`, `t3`, `'g'`, `t2`, `:`, `'d'`, `|`, `t3`, `'e'`, `t3`, `:`, `'f'`, `|`, `'g'`, `'h'`, `|`, `'i'`}
 	assertExpectedTokenResult(t, origin, expect)
 }
