@@ -218,7 +218,7 @@ func main() {
 			incompatibleCases++
 		}
 		if *totalOutputCase != 0 && outputCaseNum >= *totalOutputCase {
-			return
+			break
 		}
 	}
 	printCsvSummary(csvFile, totalCases, tidbPassCases, mysqlPassCases, incompatibleCases)
