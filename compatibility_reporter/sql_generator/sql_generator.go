@@ -208,8 +208,14 @@ func buildTree(productionName string, parent *expressionNode) node {
 	return root
 }
 
+// SQLIterator is a iterator interface of sql generator
 type SQLIterator interface {
+
+	// HasNext returns whether the iterator exists next sql case
 	HasNext() bool
+
+	// Next returns next sql case in iterator
+	// it will panic when the iterator doesn't exist next sql case
 	Next() string
 }
 
@@ -272,7 +278,7 @@ func initProductionMap(productions []yacc_parser.Production) {
 	checkProductionMap()
 }
 
-// GenerateSQL returns a `SQLSequentialIterator` which can generate sql case by case
+// GenerateSQLSequentially returns a `SQLSequentialIterator` which can generate sql case by case sequential
 // productions is a `Production` array created by `yacc_parser.Parse`
 // productionName assigns a production name as the root node.
 func GenerateSQLSequentially(productions []yacc_parser.Production, productionName string) SQLIterator {
@@ -291,14 +297,18 @@ func GenerateSQLSequentially(productions []yacc_parser.Production, productionNam
 	}
 }
 
+// SQLRandomlyIterator is a iterator of sql generator
 type SQLRandomlyIterator struct {
 	productionName string
 }
 
+// HasNext returns whether the iterator exists next sql case
 func (i *SQLRandomlyIterator) HasNext() bool {
 	return true
 }
 
+// Next returns next sql case in iterator
+// it will panic when the iterator doesn't exist next sql case
 func (i *SQLRandomlyIterator) Next() string {
 	stringBuffer := bytes.NewBuffer([]byte{})
 	generateSQLRandomly(i.productionName, nil, stringBuffer)
@@ -309,6 +319,9 @@ func (i *SQLRandomlyIterator) Next() string {
 	return output
 }
 
+// GenerateSQLSequentially returns a `SQLSequentialIterator` which can generate sql case by case randomly
+// productions is a `Production` array created by `yacc_parser.Parse`
+// productionName assigns a production name as the root node.
 func GenerateSQLRandomly(productions []yacc_parser.Production, productionName string) SQLIterator {
 	initProductionMap(productions)
 	return &SQLRandomlyIterator{
