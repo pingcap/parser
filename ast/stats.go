@@ -50,10 +50,18 @@ const (
 	AnalyzeOptCMSketchWidth
 )
 
+// AnalyzeOptionString stores the string form of analyze options.
+var AnalyzeOptionString = map[AnalyzeOptionType]string{
+	AnalyzeOptNumBuckets:    "BUCKETS",
+	AnalyzeOptNumTopN:       "TOPN",
+	AnalyzeOptCMSketchWidth: "CMSKETCH WIDTH",
+	AnalyzeOptCMSketchDepth: "CMSKETCH DEPTH",
+}
+
 // AnalyzeOpt stores the analyze option type and value.
 type AnalyzeOpt struct {
-	OptType AnalyzeOptionType
-	Value   uint64
+	Type  AnalyzeOptionType
+	Value uint64
 }
 
 // Restore implements Node interface.
@@ -98,16 +106,7 @@ func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
 				ctx.WritePlain(",")
 			}
 			ctx.WritePlainf(" %d ", opt.Value)
-			switch opt.OptType {
-			case AnalyzeOptNumBuckets:
-				ctx.WriteKeyWord("BUCKETS")
-			case AnalyzeOptNumTopN:
-				ctx.WriteKeyWord("TOPN")
-			case AnalyzeOptCMSketchDepth:
-				ctx.WriteKeyWord("CMSKETCH DEPTH")
-			case AnalyzeOptCMSketchWidth:
-				ctx.WriteKeyWord("CMSKETCH WIDTH")
-			}
+			ctx.WritePlain(AnalyzeOptionString[opt.Type])
 		}
 	}
 	return nil
