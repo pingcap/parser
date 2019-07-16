@@ -32,11 +32,28 @@ type AnalyzeTableStmt struct {
 	TableNames     []*TableName
 	PartitionNames []model.CIStr
 	IndexNames     []model.CIStr
-	MaxNumBuckets  uint64
+	AnalyzeOpts    []AnalyzeOpt
 
 	// IndexFlag is true when we only analyze indices for a table.
 	IndexFlag   bool
 	Incremental bool
+}
+
+// AnalyzeOptType is the type for analyze options.
+type AnalyzeOptionType int
+
+// Analyze option types.
+const (
+	AnalyzeOptNumBuckets = iota
+	AnalyzeOptNumTopN
+	AnalyzeOptCMSketchDepth
+	AnalyzeOptCMSketchWidth
+)
+
+// AnalyzeOpt stores the analyze option type and value.
+type AnalyzeOpt struct {
+	OptType AnalyzeOptionType
+	Value   uint64
 }
 
 // Restore implements Node interface.
@@ -74,10 +91,24 @@ func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteName(index.O)
 	}
-	if n.MaxNumBuckets != 0 {
-		ctx.WriteKeyWord(" WITH ")
-		ctx.WritePlainf("%d", n.MaxNumBuckets)
-		ctx.WriteKeyWord(" BUCKETS")
+	if len(n.AnalyzeOpts) != 0 {
+		ctx.WriteKeyWord(" WITH")
+		for i, opt := range n.AnalyzeOpts {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WritePlainf(" %d ", opt.Value)
+			switch opt.OptType {
+			case AnalyzeOptNumBuckets:
+				ctx.WriteKeyWord("BUCKETS")
+			case AnalyzeOptNumTopN:
+				ctx.WriteKeyWord("TOPN")
+			case AnalyzeOptCMSketchDepth:
+				ctx.WriteKeyWord("CMSKETCH DEPTH")
+			case AnalyzeOptCMSketchWidth:
+				ctx.WriteKeyWord("CMSKETCH WIDTH")
+			}
+		}
 	}
 	return nil
 }
