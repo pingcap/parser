@@ -1,19 +1,5 @@
-$accept: start_entry $end
-
-
-start_entry: sql_statement
-           | GRAMMAR_SELECTOR_EXPR bit_expr END_OF_INPUT
-           | GRAMMAR_SELECTOR_PART partition_clause END_OF_INPUT
-           | GRAMMAR_SELECTOR_GCOL IDENT_sys '(' expr ')' END_OF_INPUT
-           | GRAMMAR_SELECTOR_CTE table_subquery END_OF_INPUT
-
 
 $@1: %empty
-
-
-opt_end_of_input: %empty
-                | END_OF_INPUT
-
 
 simple_statement_or_begin: simple_statement
                          | begin_stmt
@@ -2173,8 +2159,9 @@ standalone_alter_commands: DISCARD_SYM TABLESPACE_SYM
  optional_braces: %empty
                 | '(' ')'
 
+expr: '1>2'
 
- expr: expr or expr
+ expr_origin: expr or expr
      | expr XOR expr
      | expr and expr
      | NOT_SYM expr

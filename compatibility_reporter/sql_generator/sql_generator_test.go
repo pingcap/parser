@@ -92,10 +92,23 @@ func (s *testSQLGeneratorSuite) TestLoopBNF(c *C) {
 
 func (s *testSQLGeneratorSuite) runTest(c *C, source string, productionName string, expect []string) {
 	p := yacc_parser.Parse(yacc_parser.Tokenize(bufio.NewReader(bytes.NewBuffer([]byte(source)))))
-	sqlIter := GenerateSQL(p, productionName)
+	sqlSeqIter := GenerateSQLSequentially(p, productionName)
 	var output []string
-	for sqlIter.HasNext() {
-		output = append(output, sqlIter.Next())
+	for sqlSeqIter.HasNext() {
+		output = append(output, sqlSeqIter.Next())
 	}
+	sqlRandIter := GenerateSQLRandomly(p, productionName)
 	c.Assert(output, DeepEquals, expect)
+	for i := 0; i < 1000; i++ {
+		c.Assert(isExist(sqlRandIter.Next(), expect), IsTrue)
+	}
+}
+
+func isExist(value string, array []string) bool {
+	for _, item := range array {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }

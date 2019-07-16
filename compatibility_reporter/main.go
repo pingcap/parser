@@ -31,15 +31,17 @@ import (
 )
 
 var (
-	output         = flag.String("o", "./report.csv", "Output path of csv format report")
-	printAll       = flag.Bool("a", false, "Output all test case, regardless of success or failure")
-	mysqlUser      = flag.String("u", "root", "MySQL User for login")
-	mysqlPassword  = flag.String("p", "", "Password to use when connecting to MySQL server")
-	mysqlHost      = flag.String("h", "127.0.0.1", "Connect to MySQL host")
-	mysqlPort      = flag.Int("P", 3306, "Port number to use for MySQL connection")
-	productionName = flag.String("n", "", "Production name to test")
-	bnfPath        = flag.String("b", "", "BNF file path")
-	MySQLVersion   = "None"
+	output          = flag.String("o", "./report.csv", "Output path of csv format report")
+	printAll        = flag.Bool("a", false, "Output all test case, regardless of success or failure")
+	mysqlUser       = flag.String("u", "root", "MySQL User for login")
+	mysqlPassword   = flag.String("p", "", "Password to use when connecting to MySQL server")
+	mysqlHost       = flag.String("h", "127.0.0.1", "Connect to MySQL host")
+	mysqlPort       = flag.Int("P", 3306, "Port number to use for MySQL connection")
+	productionName  = flag.String("n", "", "Production name to test")
+	bnfPath         = flag.String("b", "", "BNF file path")
+	randomlyGen     = flag.Bool("R", false, "Generator SQL randomly")
+	totalOutputCase = flag.Uint64("N", 0, "The number of output sql case, set 0 for infinite")
+	MySQLVersion    = "None"
 )
 
 type caseReport struct {
@@ -102,10 +104,13 @@ func printCsvHead(csvFile *os.File) {
 	}
 }
 
+var outputCaseNum uint64
+
 func printCsvCaseReport(csvFile *os.File, report *caseReport) {
 	if !*printAll &&
 		((report.TiDBPass && report.MySQLPass) ||
-			(report.TiDBErrNo == report.MySQLErrNo)) {
+			(report.TiDBErrNo == report.MySQLErrNo)) ||
+		!report.MySQLPass {
 		return
 	}
 	var tidbWarns []string
@@ -120,6 +125,7 @@ func printCsvCaseReport(csvFile *os.File, report *caseReport) {
 		report.TiDBPass,
 		escapeString(tidbWarnsStr),
 		escapeErrorString(report.TiDBErr)))
+	outputCaseNum++
 	if writeErr != nil {
 		panic(fmt.Sprintf("file(%s) write failure: %s", *output, writeErr.Error()))
 	}
@@ -163,8 +169,12 @@ func main() {
 		productions := yacc_parser.Parse(yacc_parser.Tokenize(bufio.NewReader(bnfFile)))
 		allProductions = append(allProductions, productions...)
 	}
-
-	sqlIter := sql_generator.GenerateSQL(allProductions, *productionName)
+	var sqlIter sql_generator.SQLIterator
+	if *randomlyGen {
+		sqlIter = sql_generator.GenerateSQLRandomly(allProductions, *productionName)
+	} else {
+		sqlIter = sql_generator.GenerateSQLSequentially(allProductions, *productionName)
+	}
 
 	db, dbErr := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/mysql",
 		*mysqlUser, *mysqlPassword, *mysqlHost, *mysqlPort))
@@ -206,6 +216,9 @@ func main() {
 		}
 		if !(report.MySQLPass && report.TiDBPass) && (report.MySQLErrNo != report.TiDBErrNo) {
 			incompatibleCases++
+		}
+		if *totalOutputCase != 0 && outputCaseNum >= *totalOutputCase {
+			return
 		}
 	}
 	printCsvSummary(csvFile, totalCases, tidbPassCases, mysqlPassCases, incompatibleCases)
