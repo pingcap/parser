@@ -41,7 +41,7 @@ var (
 	bnfPath         string
 	randomlyGen     bool
 	totalOutputCase uint64
-	database		string
+	database        string
 	MySQLVersion    = "None"
 )
 
