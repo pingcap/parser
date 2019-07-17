@@ -8351,7 +8351,13 @@ yynewstate:
 		}
 	case 263:
 		{
-			parser.yyVAL.expr = &ast.UnaryOperationExpr{Op: opcode.Not, V: yyS[yypt-0].expr}
+			expr, ok := yyS[yypt-0].expr.(*ast.ExistsSubqueryExpr)
+			if ok {
+				expr.Not = true
+				parser.yyVAL.expr = yyS[yypt-0].expr
+			} else {
+				parser.yyVAL.expr = &ast.UnaryOperationExpr{Op: opcode.Not, V: yyS[yypt-0].expr}
+			}
 		}
 	case 264:
 		{
