@@ -2704,3 +2704,20 @@ func (s *testParserSuite) TestFieldText(c *C) {
 		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
 	}
 }
+
+func (s *testParserSuite) TestNotExistsSubquery(c *C) {
+	table := []testCase{
+		{`select * from t1 where not exists (select * from t2 where t1.a = t2.a)`, true},
+	}
+
+ 	parser := New()
+	for _, tt := range table {
+		stmt, _, err := parser.Parse(tt.src, "", "")
+		c.Assert(err, IsNil)
+
+ 		sel := stmt[0].(*ast.SelectStmt)
+		exists, ok := sel.Where.(*ast.ExistsSubqueryExpr)
+		c.Assert(ok, IsTrue)
+		c.Assert(exists.Not, Equals, tt.ok)
+	}
+}
