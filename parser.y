@@ -467,6 +467,7 @@ import (
 	week		"WEEK"
 	yearType	"YEAR"
 	x509		"X509"
+	enforced	"ENFORCED"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
@@ -1023,6 +1024,8 @@ import (
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
 	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
+	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -1165,10 +1168,14 @@ AlterTableSpec:
 	}
 |	"ADD" Constraint
 	{
-		constraint := $2.(*ast.Constraint)
-		$$ = &ast.AlterTableSpec{
-			Tp: ast.AlterTableAddConstraint,
-			Constraint: constraint,
+		if $2 == nil {
+			$$ = nil
+		}else{
+			constraint := $2.(*ast.Constraint)
+			$$ = &ast.AlterTableSpec{
+				Tp: ast.AlterTableAddConstraint,
+				Constraint: constraint,
+			}
 		}
 	}
 |	"ADD" "PARTITION" IfNotExists PartitionDefinitionListOpt
@@ -1448,11 +1455,19 @@ AlterTableSpecListOpt:
 AlterTableSpecList:
 	AlterTableSpec
 	{
-		$$ = []*ast.AlterTableSpec{$1.(*ast.AlterTableSpec)}
+		if $1 == nil {
+			$$ = []*ast.AlterTableSpec{}
+		}else{
+			$$ = []*ast.AlterTableSpec{$1.(*ast.AlterTableSpec)}
+		}
 	}
 |	AlterTableSpecList ',' AlterTableSpec
 	{
-		$$ = append($1.([]*ast.AlterTableSpec), $3.(*ast.AlterTableSpec))
+		if $3 == nil {
+			$$ = $1.([]*ast.AlterTableSpec)
+		}else{
+			$$ = append($1.([]*ast.AlterTableSpec), $3.(*ast.AlterTableSpec))
+		}
 	}
 
 PartitionNameList:
@@ -1800,6 +1815,14 @@ PrimaryOpt:
 	{}
 | "PRIMARY"
 
+EnforcedOrNot:
+	"ENFORCED"
+|	"NOT" "ENFORCED"
+
+EnforcedOrNotOpt:
+	{}
+|	EnforcedOrNot
+
 ColumnOption:
 	"NOT" "NULL"
 	{
@@ -1845,6 +1868,8 @@ ColumnOption:
 		// See https://dev.mysql.com/doc/refman/5.7/en/create-table.html
 		// The CHECK clause is parsed but ignored by all storage engines.
 		$$ = &ast.ColumnOption{}
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 |	GeneratedAlways "AS" '(' Expression ')' VirtualOrStored
 	{
@@ -1981,6 +2006,13 @@ ConstraintElem:
 			Name:		$4.(string),
 			Refer:		$8.(*ast.ReferenceDef),
 		}
+	}
+|	"CHECK" '(' Expression ')' EnforcedOrNotOpt
+	{
+		/* Nothing to do now */
+		$$ = nil
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 ReferDef:
@@ -3533,7 +3565,7 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
@@ -7295,11 +7327,15 @@ StatementList:
 Constraint:
 	ConstraintKeywordOpt ConstraintElem
 	{
-		cst := $2.(*ast.Constraint)
-		if $1 != nil {
-			cst.Name = $1.(string)
+		if $2 != nil{
+			cst := $2.(*ast.Constraint)
+			if $1 != nil {
+				cst.Name = $1.(string)
+			}
+			$$ = cst
+		}else{
+			$$ = nil
 		}
-		$$ = cst
 	}
 
 TableElement:
@@ -7309,12 +7345,11 @@ TableElement:
 	}
 |	Constraint
 	{
-		$$ = $1.(*ast.Constraint)
-	}
-|	"CHECK" '(' Expression ')'
-	{
-		/* Nothing to do now */
-		$$ = nil
+		if $1 == nil {
+			$$ = nil
+		}else{
+			$$ = $1.(*ast.Constraint)
+		}
 	}
 
 TableElementList:

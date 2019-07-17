@@ -1847,8 +1847,17 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 		if len(n.NewColumns[0].Options) == 1 {
 			ctx.WriteKeyWord("SET DEFAULT ")
-			if err := n.NewColumns[0].Options[0].Expr.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+			expr := n.NewColumns[0].Options[0].Expr
+			if valueExpr, ok := expr.(ValueExpr); ok {
+				if err := valueExpr.Restore(ctx); err != nil {
+					return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+				}
+			} else {
+				ctx.WritePlain("(")
+				if err := expr.Restore(ctx); err != nil {
+					return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+				}
+				ctx.WritePlain(")")
 			}
 		} else {
 			ctx.WriteKeyWord(" DROP DEFAULT")
