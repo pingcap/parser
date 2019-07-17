@@ -7,12 +7,6 @@ import (
 	"unicode"
 )
 
-const delimiter string = "|:"
-const (
-	or    = '|'
-	colon = ':'
-)
-
 type token interface {
 	toString() string
 }
@@ -102,7 +96,9 @@ func Tokenize(reader *bufio.Reader) func() token {
 				break
 			}
 			if (unicode.IsSpace(r) || isDelimiter(r)) && !q.isInsideStr() {
-				reader.UnreadRune()
+				if err := reader.UnreadRune(); err != nil {
+					panic(fmt.Sprintf("Unable to unread rune: %s.", string(r)))
+				}
 				break
 			}
 			stringBuf += string(r)
@@ -123,10 +119,6 @@ func Tokenize(reader *bufio.Reader) func() token {
 			return &nonTerminal{stringBuf}
 		}
 	}
-}
-
-func isInsideStr(oldStrChar rune) bool {
-	return oldStrChar == 0
 }
 
 func panicIfNonEOF(err error) {
