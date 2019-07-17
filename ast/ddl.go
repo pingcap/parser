@@ -562,6 +562,7 @@ const (
 	ConstraintUniqIndex
 	ConstraintForeignKey
 	ConstraintFulltext
+	ConstraintCheck
 )
 
 // Constraint is constraint for table definition.
@@ -580,6 +581,8 @@ type Constraint struct {
 	Refer *ReferenceDef // Used for foreign key.
 
 	Option *IndexOption // Index Options
+
+	Expr ExprNode // Used for Check
 }
 
 // Restore implements Node interface.
@@ -607,6 +610,19 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("UNIQUE INDEX")
 	case ConstraintFulltext:
 		ctx.WriteKeyWord("FULLTEXT")
+	case ConstraintCheck:
+		if n.Name != "" {
+			ctx.WriteKeyWord("CONSTRAINT ")
+			ctx.WriteName(n.Name)
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("CHECK")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+		ctx.WritePlain(")")
+		return nil
 	}
 
 	if n.Tp == ConstraintForeignKey {

@@ -1168,14 +1168,10 @@ AlterTableSpec:
 	}
 |	"ADD" Constraint
 	{
-		if $2 == nil {
-			$$ = nil
-		}else{
-			constraint := $2.(*ast.Constraint)
-			$$ = &ast.AlterTableSpec{
-				Tp: ast.AlterTableAddConstraint,
-				Constraint: constraint,
-			}
+		constraint := $2.(*ast.Constraint)
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableAddConstraint,
+			Constraint: constraint,
 		}
 	}
 |	"ADD" "PARTITION" IfNotExists PartitionDefinitionListOpt
@@ -1455,19 +1451,11 @@ AlterTableSpecListOpt:
 AlterTableSpecList:
 	AlterTableSpec
 	{
-		if $1 == nil {
-			$$ = []*ast.AlterTableSpec{}
-		}else{
-			$$ = []*ast.AlterTableSpec{$1.(*ast.AlterTableSpec)}
-		}
+		$$ = []*ast.AlterTableSpec{$1.(*ast.AlterTableSpec)}
 	}
 |	AlterTableSpecList ',' AlterTableSpec
 	{
-		if $3 == nil {
-			$$ = $1.([]*ast.AlterTableSpec)
-		}else{
-			$$ = append($1.([]*ast.AlterTableSpec), $3.(*ast.AlterTableSpec))
-		}
+		$$ = append($1.([]*ast.AlterTableSpec), $3.(*ast.AlterTableSpec))
 	}
 
 PartitionNameList:
@@ -2009,10 +1997,10 @@ ConstraintElem:
 	}
 |	"CHECK" '(' Expression ')' EnforcedOrNotOpt
 	{
-		/* Nothing to do now */
-		$$ = nil
-		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
+		$$ = &ast.Constraint{
+			Tp:		ast.ConstraintCheck,
+			Expr:		$3.(ast.ExprNode),
+                }
 	}
 
 ReferDef:
@@ -7327,15 +7315,11 @@ StatementList:
 Constraint:
 	ConstraintKeywordOpt ConstraintElem
 	{
-		if $2 != nil{
-			cst := $2.(*ast.Constraint)
-			if $1 != nil {
-				cst.Name = $1.(string)
-			}
-			$$ = cst
-		}else{
-			$$ = nil
+		cst := $2.(*ast.Constraint)
+		if $1 != nil {
+			cst.Name = $1.(string)
 		}
+		$$ = cst
 	}
 
 TableElement:
@@ -7345,11 +7329,7 @@ TableElement:
 	}
 |	Constraint
 	{
-		if $1 == nil {
-			$$ = nil
-		}else{
-			$$ = $1.(*ast.Constraint)
-		}
+		$$ = $1.(*ast.Constraint)
 	}
 
 TableElementList:

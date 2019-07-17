@@ -8071,14 +8071,10 @@ yynewstate:
 		}
 	case 9:
 		{
-			if yyS[yypt-0].item == nil {
-				parser.yyVAL.item = nil
-			} else {
-				constraint := yyS[yypt-0].item.(*ast.Constraint)
-				parser.yyVAL.item = &ast.AlterTableSpec{
-					Tp:         ast.AlterTableAddConstraint,
-					Constraint: constraint,
-				}
+			constraint := yyS[yypt-0].item.(*ast.Constraint)
+			parser.yyVAL.item = &ast.AlterTableSpec{
+				Tp:         ast.AlterTableAddConstraint,
+				Constraint: constraint,
 			}
 		}
 	case 10:
@@ -8333,19 +8329,11 @@ yynewstate:
 		}
 	case 56:
 		{
-			if yyS[yypt-0].item == nil {
-				parser.yyVAL.item = []*ast.AlterTableSpec{}
-			} else {
-				parser.yyVAL.item = []*ast.AlterTableSpec{yyS[yypt-0].item.(*ast.AlterTableSpec)}
-			}
+			parser.yyVAL.item = []*ast.AlterTableSpec{yyS[yypt-0].item.(*ast.AlterTableSpec)}
 		}
 	case 57:
 		{
-			if yyS[yypt-0].item == nil {
-				parser.yyVAL.item = yyS[yypt-2].item.([]*ast.AlterTableSpec)
-			} else {
-				parser.yyVAL.item = append(yyS[yypt-2].item.([]*ast.AlterTableSpec), yyS[yypt-0].item.(*ast.AlterTableSpec))
-			}
+			parser.yyVAL.item = append(yyS[yypt-2].item.([]*ast.AlterTableSpec), yyS[yypt-0].item.(*ast.AlterTableSpec))
 		}
 	case 58:
 		{
@@ -8789,10 +8777,10 @@ yynewstate:
 		}
 	case 146:
 		{
-			/* Nothing to do now */
-			parser.yyVAL.item = nil
-			yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-			parser.lastErrorAsWarn()
+			parser.yyVAL.item = &ast.Constraint{
+				Tp:   ast.ConstraintCheck,
+				Expr: yyS[yypt-2].expr.(ast.ExprNode),
+			}
 		}
 	case 147:
 		{
@@ -13224,15 +13212,11 @@ yynewstate:
 		}
 	case 1386:
 		{
-			if yyS[yypt-0].item != nil {
-				cst := yyS[yypt-0].item.(*ast.Constraint)
-				if yyS[yypt-1].item != nil {
-					cst.Name = yyS[yypt-1].item.(string)
-				}
-				parser.yyVAL.item = cst
-			} else {
-				parser.yyVAL.item = nil
+			cst := yyS[yypt-0].item.(*ast.Constraint)
+			if yyS[yypt-1].item != nil {
+				cst.Name = yyS[yypt-1].item.(string)
 			}
+			parser.yyVAL.item = cst
 		}
 	case 1387:
 		{
@@ -13240,11 +13224,7 @@ yynewstate:
 		}
 	case 1388:
 		{
-			if yyS[yypt-0].item == nil {
-				parser.yyVAL.item = nil
-			} else {
-				parser.yyVAL.item = yyS[yypt-0].item.(*ast.Constraint)
-			}
+			parser.yyVAL.item = yyS[yypt-0].item.(*ast.Constraint)
 		}
 	case 1389:
 		{
