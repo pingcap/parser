@@ -868,12 +868,28 @@ type SetDefaultRoleStmt struct {
 	stmtNode
 
 	SetRoleOpt SetRoleStmtType
-	RoleList   []*auth.RoleIdentity
-	UserList   []*auth.UserIdentity
+	// IfExist just used for `ALTER USER ... DEFAULT ROLE`.
+	IfExist bool
+	// IsAlter indicated whether this sql is `ALTER USER`.
+	IsAlter  bool
+	RoleList []*auth.RoleIdentity
+	UserList []*auth.UserIdentity
 }
 
 func (n *SetDefaultRoleStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("SET DEFAULT ROLE")
+	if n.IsAlter {
+		ctx.WriteKeyWord("ALTER USER ")
+		if n.IfExist {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
+		err := n.UserList[0].Restore(ctx)
+		if err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetDefaultRoleStmt.UserName")
+		}
+		ctx.WriteKeyWord(" DEFAULT ROLE")
+	} else {
+		ctx.WriteKeyWord("SET DEFAULT ROLE")
+	}
 	switch n.SetRoleOpt {
 	case SetRoleNone:
 		ctx.WriteKeyWord(" NONE")
@@ -891,15 +907,17 @@ func (n *SetDefaultRoleStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(",")
 		}
 	}
-	ctx.WritePlain(" TO")
-	for i, user := range n.UserList {
-		ctx.WritePlain(" ")
-		err := user.Restore(ctx)
-		if err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetDefaultRoleStmt.UserList")
-		}
-		if i != len(n.UserList)-1 {
-			ctx.WritePlain(",")
+	if !n.IsAlter {
+		ctx.WritePlain(" TO")
+		for i, user := range n.UserList {
+			ctx.WritePlain(" ")
+			err := user.Restore(ctx)
+			if err != nil {
+				return errors.Annotate(err, "An error occurred while restore SetDefaultRoleStmt.UserList")
+			}
+			if i != len(n.UserList)-1 {
+				ctx.WritePlain(",")
+			}
 		}
 	}
 	return nil
