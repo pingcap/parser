@@ -56,7 +56,6 @@ t3: 'f'
 	assertExpectedTokenResult(c, origin, expect)
 }
 
-
 func assertExpectedTokenResult(c *C, origin string, expected []string) {
 	withTokenizeResult(origin, func(idx int, s string) {
 		c.Assert(expected[idx], Equals, s)
