@@ -515,6 +515,7 @@ import (
 	varPop			"VAR_POP"
 	varSamp			"VAR_SAMP"
 	exprPushdownBlacklist		"EXPR_PUSHDOWN_BLACKLIST"
+	optRuleBlacklist		"OPT_RULE_BLACKLIST"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin		"ADMIN"
@@ -3556,7 +3557,7 @@ NotKeywordToken:
 | "INPLACE" | "INSTANT" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
 | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" | "VARIANCE" | "VAR_POP" | "VAR_SAMP"
 | "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOKUDB_DEFAULT" | "TOKUDB_FAST" | "TOKUDB_LZMA" | "TOKUDB_QUICKLZ" | "TOKUDB_SNAPPY" | "TOKUDB_SMALL" | "TOKUDB_UNCOMPRESSED" | "TOKUDB_ZLIB" | "TOP" | "TRIM" | "NEXT_ROW_ID"
-| "EXPR_PUSHDOWN_BLACKLIST"
+| "EXPR_PUSHDOWN_BLACKLIST" | "OPT_RULE_BLACKLIST"
 
 /************************************************************************************
  *
@@ -6534,6 +6535,26 @@ AdminStmt:
  	{
  		$$ = &ast.AdminStmt{
  			Tp: ast.AdminReloadExprPushdownBlacklist,
+ 		}
+ 	}
+|	"ADMIN" "RELOAD" "OPT_RULE_BLACKLIST"
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminReloadOptRuleBlacklist,
+ 		}
+ 	}
+|	"ADMIN" "PLUGINS" "ENABLE" PluginNameList
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminPluginEnable,
+ 			Plugins: $4.([]string),
+ 		}
+ 	}
+|	"ADMIN" "PLUGINS" "DISABLE" PluginNameList
+ 	{
+ 		$$ = &ast.AdminStmt{
+ 			Tp: ast.AdminPluginDisable,
+ 			Plugins: $4.([]string),
  		}
  	}
 |	"ADMIN" "CLEANUP" "TABLE" "LOCK" TableNameList
