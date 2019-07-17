@@ -41,6 +41,7 @@ var (
 	bnfPath         string
 	randomlyGen     bool
 	totalOutputCase uint64
+	database		string
 	MySQLVersion    = "None"
 )
 
@@ -55,7 +56,12 @@ func parseFlag() {
 	flag.StringVar(&bnfPath, "b", "", "BNF file path")
 	flag.BoolVar(&randomlyGen, "R", false, "Generator SQL randomly")
 	flag.Uint64Var(&totalOutputCase, "N", 0, "The number of output sql case, set 0 for infinite")
+	flag.StringVar(&database, "d", "mysql", "The database selected after connected")
 	flag.Parse()
+	if len(productionName) == 0 || len(bnfPath) == 0 {
+		flag.Usage()
+		os.Exit(0)
+	}
 }
 
 type caseReport struct {
@@ -189,8 +195,8 @@ func main() {
 		sqlIter = sql_generator.GenerateSQLSequentially(allProductions, productionName)
 	}
 
-	db, dbErr := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/mysql",
-		mysqlUser, mysqlPassword, mysqlHost, mysqlPort))
+	db, dbErr := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+		mysqlUser, mysqlPassword, mysqlHost, mysqlPort, database))
 	if dbErr != nil {
 		panic("MySQL client error:" + dbErr.Error())
 	}
