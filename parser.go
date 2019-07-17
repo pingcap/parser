@@ -8781,6 +8781,8 @@ yynewstate:
 				Tp:   ast.ConstraintCheck,
 				Expr: yyS[yypt-2].expr.(ast.ExprNode),
 			}
+			yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
 		}
 	case 147:
 		{

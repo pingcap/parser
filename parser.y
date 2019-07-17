@@ -2001,6 +2001,8 @@ ConstraintElem:
 			Tp:		ast.ConstraintCheck,
 			Expr:		$3.(ast.ExprNode),
                 }
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 ReferDef:
