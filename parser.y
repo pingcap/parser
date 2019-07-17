@@ -1282,6 +1282,18 @@ AlterTableSpec:
 			NewColumns:	[]*ast.ColumnDef{colDef},
 		}
 	}
+|	"ALTER" ColumnKeywordOpt ColumnName "SET" "DEFAULT" '(' Expression ')'
+	{
+		option := &ast.ColumnOption{Expr: $7}
+		colDef := &ast.ColumnDef{
+			Name: 	 $3.(*ast.ColumnName),
+			Options: []*ast.ColumnOption{option},
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:		ast.AlterTableAlterColumn,
+			NewColumns:	[]*ast.ColumnDef{colDef},
+		}
+	}
 |	"ALTER" ColumnKeywordOpt ColumnName "DROP" "DEFAULT"
 	{
 		colDef := &ast.ColumnDef{
@@ -1362,28 +1374,37 @@ AlterAlgorithm:
 	{
 		$$ = ast.AlterAlgorithmInstant
 	}
-
+|	identifier
+	{
+		yylex.AppendError(ErrUnknownAlterAlgorithm.GenWithStackByArgs($1))
+		return 1
+	}
 
 LockClauseOpt:
 	{}
 | 	LockClause {}
 
 LockClause:
-	"LOCK" eq "NONE"
+	"LOCK" EqOpt "NONE"
 	{
 		$$ = ast.LockTypeNone
 	}
-|	"LOCK" eq "DEFAULT"
+|	"LOCK" EqOpt "DEFAULT"
 	{
 		$$ = ast.LockTypeDefault
 	}
-|	"LOCK" eq "SHARED"
+|	"LOCK" EqOpt "SHARED"
 	{
 		$$ = ast.LockTypeShared
 	}
-|	"LOCK" eq "EXCLUSIVE"
+|	"LOCK" EqOpt "EXCLUSIVE"
 	{
 		$$ = ast.LockTypeExclusive
+	}
+|	"LOCK" EqOpt identifier
+	{
+		yylex.AppendError(ErrUnknownAlterLock.GenWithStackByArgs($3))
+		return 1
 	}
 
 KeyOrIndex: "KEY" | "INDEX"
