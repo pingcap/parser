@@ -393,6 +393,7 @@ const (
 	ColumnOptionGenerated
 	ColumnOptionReference
 	ColumnOptionCollate
+	ColumnOptionCheck
 )
 
 var (
@@ -417,6 +418,8 @@ type ColumnOption struct {
 	// Refer is used for foreign key.
 	Refer    *ReferenceDef
 	StrValue string
+	// Enforced is only for Check, default is true.
+	Enforced bool
 }
 
 // Restore implements Node interface.
@@ -473,6 +476,18 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COLLATE ")
 		ctx.WritePlain(n.StrValue)
+	case ColumnOptionCheck:
+		ctx.WriteKeyWord("CHECK")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+		ctx.WritePlain(")")
+		if n.Enforced {
+			ctx.WriteKeyWord(" ENFORCED")
+		} else {
+			ctx.WriteKeyWord(" NOT ENFORCED")
+		}
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
