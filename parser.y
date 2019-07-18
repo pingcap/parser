@@ -2041,6 +2041,7 @@ PartitionOpt:
 	}
 |	"PARTITION" "BY" "LIST" '(' Expression ')' PartitionNumOpt SubPartitionOpt PartitionDefinitionListOpt
 	{
+		$$ = nil
 	}
 
 SubPartitionOpt:
@@ -2156,6 +2157,7 @@ PartDefValuesOpt:
 	}
 |	"VALUES" "IN" '(' ExpressionList ')'
 	{
+		$$ = nil
 	}
 
 DuplicateOpt:

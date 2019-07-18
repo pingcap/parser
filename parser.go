@@ -7957,6 +7957,10 @@ yynewstate:
 				Definitions: defs,
 			}
 		}
+	case 173:
+		{
+			parser.yyVAL.item = nil
+		}
 	case 179:
 		{
 			parser.yyVAL.item = nil
@@ -8042,6 +8046,10 @@ yynewstate:
 	case 195:
 		{
 			parser.yyVAL.item = yyS[yypt-1].item
+		}
+	case 196:
+		{
+			parser.yyVAL.item = nil
 		}
 	case 197:
 		{
