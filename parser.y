@@ -2577,7 +2577,13 @@ Expression:
 	}
 |	"NOT" Expression %prec not
 	{
-		$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
+		expr, ok := $2.(*ast.ExistsSubqueryExpr)
+		if ok {
+			expr.Not = true
+			$$ = $2
+		} else {
+			$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
+		}
 	}
 |	BoolPri IsOrNotOp trueKwd %prec is
 	{
@@ -6005,6 +6011,21 @@ ShowStmt:
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateDatabase,
 			DBName:	$4.(string),
+		}
+	}
+|	"SHOW" "TABLE" TableName "REGIONS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowRegions,
+			Table:	$3.(*ast.TableName),
+		}
+	}
+|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowRegions,
+			Table:	$3.(*ast.TableName),
+			IndexName: model.NewCIStr($5),
 		}
 	}
 |	"SHOW" "GRANTS"

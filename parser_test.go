@@ -527,6 +527,12 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 between ('a') and ('z') regions 10", true},
 		{"split table t1 between ('a',1) and ('z',2) regions 10", true},
 		{"split table t1 between () and () regions 10", true},
+
+		// for show table regions.
+		{"show table t1 regions", true},
+		{"show table t1", false, },
+		{"show table t1 index idx1 regions", true},
+		{"show table t1 index idx1", false},
 	}
 	s.RunTest(c, table)
 }
@@ -2701,5 +2707,22 @@ func (s *testParserSuite) TestFieldText(c *C) {
 		traceStmt := stmts[0].(*ast.TraceStmt)
 		c.Assert(traceStmt.Text(), Equals, sql)
 		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
+}
+
+func (s *testParserSuite) TestNotExistsSubquery(c *C) {
+	table := []testCase{
+		{`select * from t1 where not exists (select * from t2 where t1.a = t2.a)`, true},
+	}
+
+ 	parser := New()
+	for _, tt := range table {
+		stmt, _, err := parser.Parse(tt.src, "", "")
+		c.Assert(err, IsNil)
+
+ 		sel := stmt[0].(*ast.SelectStmt)
+		exists, ok := sel.Where.(*ast.ExistsSubqueryExpr)
+		c.Assert(ok, IsTrue)
+		c.Assert(exists.Not, Equals, tt.ok)
 	}
 }
