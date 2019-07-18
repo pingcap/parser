@@ -175,6 +175,7 @@ import (
 	longblobType		"LONGBLOB"
 	longtextType		"LONGTEXT"
 	lowPriority		"LOW_PRIORITY"
+	match			"MATCH"
 	maxValue		"MAXVALUE"
 	mediumblobType		"MEDIUMBLOB"
 	mediumIntType		"MEDIUMINT"
@@ -385,6 +386,7 @@ import (
 	only		"ONLY"
 	pageSym		"PAGE"
 	password	"PASSWORD"
+	partial		"PARTIAL"
 	partitions	"PARTITIONS"
 	pipesAsOr
 	plugins		"PLUGINS"
@@ -419,6 +421,7 @@ import (
 	share		"SHARE"
 	shared		"SHARED"
 	signed		"SIGNED"
+	simple		"SIMPLE"
 	slave		"SLAVE"
 	slow		"SLOW"
 	snapshot	"SNAPSHOT"
@@ -828,8 +831,7 @@ import (
 	PrivLevel			"Privilege scope"
 	PrivType			"Privilege type"
 	ReferDef			"Reference definition"
-	OnDeleteOpt			"optional ON DELETE clause"
-	OnUpdateOpt			"optional ON UPDATE clause"
+	OnDeleteUpdateOpt		"optional ON DELETE and UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
 	RequireList			"require list"
@@ -1023,6 +1025,8 @@ import (
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
 	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
+	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
+	MatchOpt		"optional MATCH clause"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -1962,41 +1966,46 @@ ConstraintElem:
 		}
 	}
 
+Match:
+	"MATCH" "FULL"
+|	"MATCH" "PARTIAL"
+|	"MATCH" "SIMPLE"
+
+MatchOpt:
+	{}
+|	Match
+
 ReferDef:
-	"REFERENCES" TableName '(' IndexColNameList ')' OnDeleteOpt OnUpdateOpt
+	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
 	{
-		var onDeleteOpt *ast.OnDeleteOpt
-		if $6 != nil {
-			onDeleteOpt = $6.(*ast.OnDeleteOpt)
-		}
-		var onUpdateOpt *ast.OnUpdateOpt
-		if $7 != nil {
-			onUpdateOpt = $7.(*ast.OnUpdateOpt)
-		}
+		onDeleteUpdate := $7.([]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
 			IndexColNames: $4.([]*ast.IndexColName),
-			OnDelete: onDeleteOpt,
-			OnUpdate: onUpdateOpt,
+			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
+			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
 		}
 	}
 
-OnDeleteOpt:
+OnDeleteUpdateOpt:
 	{
-		$$ = &ast.OnDeleteOpt{}
+		$$ = []interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
 	} %prec lowerThanOn
-|	"ON" "DELETE" ReferOpt
+|	"ON" "DELETE" ReferOpt %prec lowerThanOn
 	{
-		$$ = &ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}
+		$$ = []interface{}{&ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}, &ast.OnUpdateOpt{}}
 	}
-
-OnUpdateOpt:
+|	"ON" "UPDATE" ReferOpt %prec lowerThanOn
 	{
-		$$ = &ast.OnUpdateOpt{}
-	} %prec lowerThanOn
-|	"ON" "UPDATE" ReferOpt
+		$$ = []interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}}
+	}
+|	"ON" "DELETE" ReferOpt "ON" "UPDATE" ReferOpt
 	{
-		$$ = &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}
+		$$ = []interface{}{&ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}, &ast.OnUpdateOpt{ReferOpt: $6.(ast.ReferOptionType)}}
+	}
+|	"ON" "UPDATE" ReferOpt "ON" "DELETE" ReferOpt
+	{
+		$$ = []interface{}{&ast.OnDeleteOpt{ReferOpt: $6.(ast.ReferOptionType)}, &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}}
 	}
 
 ReferOpt:
@@ -3524,7 +3533,7 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE"
 
 
 TiDBKeyword:
