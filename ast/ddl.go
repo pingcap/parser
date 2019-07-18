@@ -583,6 +583,8 @@ type Constraint struct {
 	Option *IndexOption // Index Options
 
 	Expr ExprNode // Used for Check
+
+	Enforced bool // Used for Check
 }
 
 // Restore implements Node interface.
@@ -621,7 +623,12 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
-		ctx.WritePlain(")")
+		ctx.WritePlain(") ")
+		if n.Enforced {
+			ctx.WriteKeyWord("ENFORCED")
+		} else {
+			ctx.WriteKeyWord("NOT ENFORCED")
+		}
 		return nil
 	}
 

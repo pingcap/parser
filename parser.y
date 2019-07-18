@@ -989,6 +989,8 @@ import (
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
 	TableOptimizerHintList	"Table level optimizer hint list"
+	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -1024,8 +1026,6 @@ import (
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
 	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
-	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
-	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -1805,11 +1805,23 @@ PrimaryOpt:
 
 EnforcedOrNot:
 	"ENFORCED"
+	{
+		$$ = true
+	}
 |	"NOT" "ENFORCED"
+	{
+		$$ = false
+	}
 
 EnforcedOrNotOpt:
 	{}
+	{
+		$$ = true
+	}
 |	EnforcedOrNot
+	{
+		$$ = $1
+	}
 
 ColumnOption:
 	"NOT" "NULL"
@@ -2000,6 +2012,7 @@ ConstraintElem:
 		$$ = &ast.Constraint{
 			Tp:		ast.ConstraintCheck,
 			Expr:		$3.(ast.ExprNode),
+			Enforced:	$5.(bool),
                 }
 		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
