@@ -13998,8 +13998,7 @@ yynewstate:
 		}
 	case 1319:
 		{
-			user := make([]*auth.UserIdentity, 0, 1)
-			user = append(user, yyS[yypt-3].item.(*auth.UserIdentity))
+			user := []*auth.UserIdentity{yyS[yypt-3].item.(*auth.UserIdentity)}
 			tmp := yyS[yypt-0].item.(*ast.SetRoleStmt)
 			parser.yyVAL.statement = &ast.SetDefaultRoleStmt{
 				SetRoleOpt: tmp.SetRoleOpt,

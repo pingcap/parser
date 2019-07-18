@@ -7171,16 +7171,15 @@ SetDefaultRoleStmt:
 	}
 | 	"ALTER" "USER" IfExists Username "DEFAULT" "ROLE" SetDefaultRoleOpt
 	{
-		user := make([]*auth.UserIdentity, 0, 1)
-		user = append(user, $4.(*auth.UserIdentity))
+		user := []*auth.UserIdentity{$4.(*auth.UserIdentity)}
 		tmp := $7.(*ast.SetRoleStmt)
 		$$ = &ast.SetDefaultRoleStmt{
         	SetRoleOpt: tmp.SetRoleOpt,
-        	RoleList: tmp.RoleList,
-        	IsAlter: true,
-        	IfExist: $3.(bool),
-        	UserList: user,
-        }
+			RoleList: tmp.RoleList,
+			IsAlter: true,
+			IfExist: $3.(bool),
+			UserList: user,
+		}
 	}
 
 SetDefaultRoleOpt:
