@@ -1974,6 +1974,10 @@ Match:
 MatchOpt:
 	{}
 |	Match
+	{
+		yylex.AppendError(yylex.Errorf("The MATCH clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 
 ReferDef:
 	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
@@ -2024,6 +2028,10 @@ ReferOpt:
 |	"NO" "ACTION"
 	{
 		$$ = ast.ReferOptionNoAction
+	}
+|	"SET" "DEFAULT"
+	{
+		$$ = ast.ReferOptionSetDefault
 	}
 
 /*
