@@ -8686,7 +8686,7 @@ yynewstate:
 		{
 			// See https://dev.mysql.com/doc/refman/5.7/en/create-table.html
 			// The CHECK clause is parsed but ignored by all storage engines.
-			// See the next branch named `EnforcedOrNotOrNotNullOpt`.
+			// See the branch named `EnforcedOrNotOrNotNullOpt`.
 
 			optionCheck := &ast.ColumnOption{
 				Tp:       ast.ColumnOptionCheck,
@@ -8695,7 +8695,7 @@ yynewstate:
 			}
 			switch yyS[yypt-0].item.(int) {
 			case 0:
-				parser.yyVAL.item = []*ast.ColumnOption{optionCheck, &ast.ColumnOption{Tp: ast.ColumnOptionNotNull}}
+				parser.yyVAL.item = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
 			case 1:
 				optionCheck.Enforced = true
 				parser.yyVAL.item = optionCheck

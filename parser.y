@@ -1826,6 +1826,9 @@ EnforcedOrNotOpt:
 	}
 
 EnforcedOrNotOrNotNullOpt:
+//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
+//
+//	  { [NOT] NULL | CHECK(...) [NOT] ENFORCED } ...
 	"NOT" "NULL"
 	{
 		$$ = 0
@@ -1883,7 +1886,7 @@ ColumnOption:
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/create-table.html
 		// The CHECK clause is parsed but ignored by all storage engines.
-		// See the next branch named `EnforcedOrNotOrNotNullOpt`.
+		// See the branch named `EnforcedOrNotOrNotNullOpt`.
 
 		optionCheck := &ast.ColumnOption{
 			Tp: ast.ColumnOptionCheck,
@@ -1892,7 +1895,7 @@ ColumnOption:
 		}
 		switch $5.(int){
 		case 0:
-			$$ = []*ast.ColumnOption{optionCheck, &ast.ColumnOption{Tp: ast.ColumnOptionNotNull}}
+			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
 		case 1:
 			optionCheck.Enforced = true
 			$$ = optionCheck
