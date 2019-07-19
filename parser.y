@@ -1835,9 +1835,9 @@ EnforcedOrNotOrNotNullOpt:
 	}
 |	EnforcedOrNotOpt
 	{
-		if($1.(bool)){
+		if ($1.(bool)) {
 			$$ = 1
-		}else{
+		} else {
 			$$ = 2
 		}
 	}
@@ -1893,7 +1893,7 @@ ColumnOption:
 			Expr: $3,
 			Enforced: true,
 		}
-		switch $5.(int){
+		switch $5.(int) {
 		case 0:
 			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
 		case 1:
@@ -1950,17 +1950,17 @@ VirtualOrStored:
 ColumnOptionList:
 	ColumnOption
 	{
-		if columnOption,ok := $1.(*ast.ColumnOption); ok{
+		if columnOption,ok := $1.(*ast.ColumnOption); ok {
 			$$ = []*ast.ColumnOption{columnOption}
-		}else{
+		} else {
 			$$ = $1
 		}
 	}
 |	ColumnOptionList ColumnOption
 	{
-		if columnOption,ok := $2.(*ast.ColumnOption); ok{
+		if columnOption,ok := $2.(*ast.ColumnOption); ok {
 			$$ = append($1.([]*ast.ColumnOption), columnOption)
-		}else{
+		} else {
 			$$ = append($1.([]*ast.ColumnOption), $2.([]*ast.ColumnOption)...)
 		}
 	}
@@ -2057,7 +2057,7 @@ ConstraintElem:
 			Tp:		ast.ConstraintCheck,
 			Expr:		$3.(ast.ExprNode),
 			Enforced:	$5.(bool),
-                }
+		}
 		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
