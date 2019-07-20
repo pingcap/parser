@@ -8994,7 +8994,7 @@ yynewstate:
 			parser.yyVAL.item = &ast.PartitionMethod{
 				Tp:   model.PartitionTypeSystemTime,
 				Expr: yyS[yypt-1].expr.(ast.ExprNode),
-				Unit: ast.NewValueExpr(yyS[yypt-0].item),
+				Unit: yyS[yypt-0].item.(ast.TimeUnitType),
 			}
 		}
 	case 201:

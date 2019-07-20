@@ -2354,7 +2354,7 @@ PartitionMethod:
 		$$ = &ast.PartitionMethod{
 			Tp:    model.PartitionTypeSystemTime,
 			Expr:  $3.(ast.ExprNode),
-			Unit:  ast.NewValueExpr($4),
+			Unit:  $4.(ast.TimeUnitType),
 		}
 	}
 |	"SYSTEM_TIME" "LIMIT" LengthNum
