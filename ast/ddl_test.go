@@ -35,6 +35,7 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		expectedLeaveCnt int
 	}{
 		{&CreateDatabaseStmt{}, 0, 0},
+		{&AlterDatabaseStmt{}, 0, 0},
 		{&DropDatabaseStmt{}, 0, 0},
 		{&DropIndexStmt{Table: &TableName{}}, 0, 0},
 		{&DropTableStmt{Tables: []*TableName{{}, {}}}, 0, 0},
@@ -86,6 +87,8 @@ func (ts *testDDLSuite) TestDDLOnDeleteRestore(c *C) {
 		return node.(*CreateTableStmt).Constraints[1].Refer.OnDelete
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) on update CASCADE %s)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s on update CASCADE)", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C) {
@@ -99,6 +102,8 @@ func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C) {
 		return node.(*CreateTableStmt).Constraints[1].Refer.OnUpdate
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) ON DELETE CASCADE %s )", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s ON DELETE CASCADE)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id)  %s )", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestDDLIndexOption(c *C) {
@@ -186,8 +191,11 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"UNIQUE KEY", "UNIQUE KEY"},
 		{"on update CURRENT_TIMESTAMP", "ON UPDATE CURRENT_TIMESTAMP()"},
 		{"comment 'hello'", "COMMENT 'hello'"},
-		{"generated always as(id + 1)", "GENERATED ALWAYS AS(`id`+1)"},
+		{"generated always as(id + 1)", "GENERATED ALWAYS AS(`id`+1) VIRTUAL"},
+		{"generated always as(id + 1) virtual", "GENERATED ALWAYS AS(`id`+1) VIRTUAL"},
+		{"generated always as(id + 1) stored", "GENERATED ALWAYS AS(`id`+1) STORED"},
 		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
+		{"COLLATE utf8_bin", "COLLATE utf8_bin"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0].Options[0]
@@ -231,11 +239,12 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id set('''a''','''b''')", "`id` SET('''a''','''b''')"},
 		{"id set('a\\nb','a''	\\r\\nb','a\\rb')", "`id` SET('a\nb','a''	\r\nb','a\rb')"},
 		{`id set("a'\nb","a'b\tc")`, "`id` SET('a''\nb','a''b\tc')"},
-		{"id TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_G", "`id` TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_G"},
+		{"id TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_CI", "`id` TEXT CHARACTER SET UTF8 COLLATE utf8_unicode_ci"},
 		{"id text character set UTF8", "`id` TEXT CHARACTER SET UTF8"},
 		{"id text charset UTF8", "`id` TEXT CHARACTER SET UTF8"},
-		{"id varchar(50) collate UTF8MB4_CZECH_CI", "`id` VARCHAR(50) COLLATE UTF8MB4_CZECH_CI"},
-		{"id varchar(50) collate utf8", "`id` VARCHAR(50) COLLATE utf8"},
+		{"id varchar(50) collate UTF8MB4_CZECH_CI", "`id` VARCHAR(50) COLLATE utf8mb4_czech_ci"},
+		{"id varchar(50) collate utf8_bin", "`id` VARCHAR(50) COLLATE utf8_bin"},
+		{"id varchar(50) collate utf8_unicode_ci collate utf8mb4_bin", "`id` VARCHAR(50) COLLATE utf8_unicode_ci COLLATE utf8mb4_bin"},
 		{"c1 char(10) character set LATIN1 collate latin1_german1_ci", "`c1` CHAR(10) CHARACTER SET LATIN1 COLLATE latin1_german1_ci"},
 
 		{"id int(11) PRIMARY KEY", "`id` INT(11) PRIMARY KEY"},
@@ -246,10 +255,67 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
 		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
 		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
+		{"id INT(11) COLLATE ascii_bin", "`id` INT(11) COLLATE ascii_bin"},
+		{"id INT(11) collate ascii_bin collate utf8_bin", "`id` INT(11) COLLATE ascii_bin COLLATE utf8_bin"},
 		{"id INT(11) on update CURRENT_TIMESTAMP", "`id` INT(11) ON UPDATE CURRENT_TIMESTAMP()"},
 		{"id INT(11) comment 'hello'", "`id` INT(11) COMMENT 'hello'"},
-		{"id INT(11) generated always as(id + 1)", "`id` INT(11) GENERATED ALWAYS AS(`id`+1)"},
+		{"id INT(11) generated always as(id + 1)", "`id` INT(11) GENERATED ALWAYS AS(`id`+1) VIRTUAL"},
 		{"id INT(11) REFERENCES parent(id)", "`id` INT(11) REFERENCES `parent`(`id`)"},
+
+		{"id bit", "`id` BIT(1)"},
+		{"id bit(1)", "`id` BIT(1)"},
+		{"id bit(64)", "`id` BIT(64)"},
+		{"id tinyint", "`id` TINYINT"},
+		{"id tinyint(255)", "`id` TINYINT(255)"},
+		{"id bool", "`id` TINYINT(1)"},
+		{"id boolean", "`id` TINYINT(1)"},
+		{"id smallint", "`id` SMALLINT"},
+		{"id smallint(255)", "`id` SMALLINT(255)"},
+		{"id mediumint", "`id` MEDIUMINT"},
+		{"id mediumint(255)", "`id` MEDIUMINT(255)"},
+		{"id int", "`id` INT"},
+		{"id int(255)", "`id` INT(255)"},
+		{"id integer", "`id` INT"},
+		{"id integer(255)", "`id` INT(255)"},
+		{"id bigint", "`id` BIGINT"},
+		{"id bigint(255)", "`id` BIGINT(255)"},
+		{"id decimal", "`id` DECIMAL"},
+		{"id decimal(10)", "`id` DECIMAL(10)"},
+		{"id decimal(10,0)", "`id` DECIMAL(10,0)"},
+		{"id decimal(65)", "`id` DECIMAL(65)"},
+		{"id decimal(65,30)", "`id` DECIMAL(65,30)"},
+		{"id dec(10,0)", "`id` DECIMAL(10,0)"},
+		{"id numeric(10,0)", "`id` DECIMAL(10,0)"},
+		{"id float(0)", "`id` FLOAT"},
+		{"id float(24)", "`id` FLOAT"},
+		{"id float(25)", "`id` DOUBLE"},
+		{"id float(53)", "`id` DOUBLE"},
+		{"id float(7,0)", "`id` FLOAT(7,0)"},
+		{"id float(25,0)", "`id` FLOAT(25,0)"},
+		{"id double(15,0)", "`id` DOUBLE(15,0)"},
+		{"id double precision(15,0)", "`id` DOUBLE(15,0)"},
+		{"id real(15,0)", "`id` DOUBLE(15,0)"},
+		{"id year(4)", "`id` YEAR(4)"},
+		{"id time", "`id` TIME"},
+		{"id char", "`id` CHAR"},
+		{"id char(0)", "`id` CHAR(0)"},
+		{"id char(255)", "`id` CHAR(255)"},
+		{"id national char(0)", "`id` CHAR(0)"},
+		{"id binary", "`id` BINARY"},
+		{"id varbinary(0)", "`id` VARBINARY(0)"},
+		{"id varbinary(65535)", "`id` VARBINARY(65535)"},
+		{"id tinyblob", "`id` TINYBLOB"},
+		{"id tinytext", "`id` TINYTEXT"},
+		{"id blob", "`id` BLOB"},
+		{"id blob(0)", "`id` BLOB(0)"},
+		{"id blob(65535)", "`id` BLOB(65535)"},
+		{"id text(0)", "`id` TEXT(0)"},
+		{"id text(65535)", "`id` TEXT(65535)"},
+		{"id mediumblob", "`id` MEDIUMBLOB"},
+		{"id mediumtext", "`id` MEDIUMTEXT"},
+		{"id longblob", "`id` LONGBLOB"},
+		{"id longtext", "`id` LONGTEXT"},
+		{"id json", "`id` JSON"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0]
@@ -265,6 +331,20 @@ func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*TruncateTableStmt)
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLDropTableStmtRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"drop table t1", "DROP TABLE `t1`"},
+		{"drop table if exists t1", "DROP TABLE IF EXISTS `t1`"},
+		{"drop temporary table t1", "DROP TEMPORARY TABLE `t1`"},
+		{"drop temporary table if exists t1", "DROP TEMPORARY TABLE IF EXISTS `t1`"},
+		{"DROP /*!40005 TEMPORARY */ TABLE IF EXISTS `test`", "DROP TEMPORARY TABLE IF EXISTS `test`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DropTableStmt)
 	}
 	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
@@ -286,6 +366,9 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		{"ENGINE innodb", "ENGINE = innodb"},
 		{"ENGINE = innodb", "ENGINE = innodb"},
 		{"ENGINE = 'innodb'", "ENGINE = innodb"},
+		{"ENGINE tokudb", "ENGINE = tokudb"},
+		{"ENGINE = tokudb", "ENGINE = tokudb"},
+		{"ENGINE = 'tokudb'", "ENGINE = tokudb"},
 		{"DEFAULT CHARACTER SET utf8", "DEFAULT CHARACTER SET = UTF8"},
 		{"DEFAULT CHARACTER SET = utf8", "DEFAULT CHARACTER SET = UTF8"},
 		{"DEFAULT CHARSET utf8", "DEFAULT CHARACTER SET = UTF8"},
@@ -322,6 +405,15 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		{"ROW_FORMAT = compact", "ROW_FORMAT = COMPACT"},
 		{"ROW_FORMAT = redundant", "ROW_FORMAT = REDUNDANT"},
 		{"ROW_FORMAT = dynamic", "ROW_FORMAT = DYNAMIC"},
+		{"ROW_FORMAT tokudb_default", "ROW_FORMAT = TOKUDB_DEFAULT"},
+		{"ROW_FORMAT = tokudb_default", "ROW_FORMAT = TOKUDB_DEFAULT"},
+		{"ROW_FORMAT = tokudb_fast", "ROW_FORMAT = TOKUDB_FAST"},
+		{"ROW_FORMAT = tokudb_small", "ROW_FORMAT = TOKUDB_SMALL"},
+		{"ROW_FORMAT = tokudb_zlib", "ROW_FORMAT = TOKUDB_ZLIB"},
+		{"ROW_FORMAT = tokudb_quicklz", "ROW_FORMAT = TOKUDB_QUICKLZ"},
+		{"ROW_FORMAT = tokudb_lzma", "ROW_FORMAT = TOKUDB_LZMA"},
+		{"ROW_FORMAT = tokudb_snappy", "ROW_FORMAT = TOKUDB_SNAPPY"},
+		{"ROW_FORMAT = tokudb_uncompressed", "ROW_FORMAT = TOKUDB_UNCOMPRESSED"},
 		{"shard_row_id_bits 1", "SHARD_ROW_ID_BITS = 1"},
 		{"shard_row_id_bits = 1", "SHARD_ROW_ID_BITS = 1"},
 		{"CONVERT TO CHARACTER SET utf8", "DEFAULT CHARACTER SET = UTF8"},

@@ -27,8 +27,13 @@ import (
 )
 
 const (
-	codeErrParse  = terror.ErrCode(mysql.ErrParse)
-	codeErrSyntax = terror.ErrCode(mysql.ErrSyntax)
+	codeErrParse                   = terror.ErrCode(mysql.ErrParse)
+	codeErrSyntax                  = terror.ErrCode(mysql.ErrSyntax)
+	codeErrUnknownCharacterSet     = terror.ErrCode(mysql.ErrUnknownCharacterSet)
+	codeErrInvalidYearColumnLength = terror.ErrCode(mysql.ErrInvalidYearColumnLength)
+	codeWrongArgument              = terror.ErrCode(mysql.ErrWrongArguments)
+	codeWrongFieldTerminators      = terror.ErrCode(mysql.ErrWrongFieldTerminators)
+	codeTooBigDisplayWidth         = terror.ErrCode(mysql.ErrTooBigDisplaywidth)
 )
 
 var (
@@ -36,6 +41,17 @@ var (
 	ErrSyntax = terror.ClassParser.New(codeErrSyntax, mysql.MySQLErrName[mysql.ErrSyntax])
 	// ErrParse returns for sql parse error.
 	ErrParse = terror.ClassParser.New(codeErrParse, mysql.MySQLErrName[mysql.ErrParse])
+	// ErrUnknownCharacterSet returns for no character set found error.
+	ErrUnknownCharacterSet = terror.ClassParser.New(codeErrUnknownCharacterSet, mysql.MySQLErrName[mysql.ErrUnknownCharacterSet])
+	// ErrInvalidYearColumnLength returns for illegal column length for year type.
+	ErrInvalidYearColumnLength = terror.ClassParser.New(codeErrInvalidYearColumnLength, mysql.MySQLErrName[mysql.ErrInvalidYearColumnLength])
+	// ErrWrongArguments returns for illegal argument.
+	ErrWrongArguments = terror.ClassParser.New(codeWrongArgument, mysql.MySQLErrName[mysql.ErrWrongArguments])
+	// ErrWrongFieldTerminators returns for illegal field terminators.
+	ErrWrongFieldTerminators = terror.ClassParser.New(codeWrongFieldTerminators, mysql.MySQLErrName[mysql.ErrWrongFieldTerminators])
+	// ErrTooBigDisplayWidth returns for data display width exceed limit .
+	ErrTooBigDisplayWidth = terror.ClassParser.New(codeTooBigDisplayWidth, mysql.MySQLErrName[mysql.ErrTooBigDisplaywidth])
+
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
 	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
@@ -45,8 +61,13 @@ var (
 
 func init() {
 	parserMySQLErrCodes := map[terror.ErrCode]uint16{
-		codeErrSyntax: mysql.ErrSyntax,
-		codeErrParse:  mysql.ErrParse,
+		codeErrSyntax:                  mysql.ErrSyntax,
+		codeErrParse:                   mysql.ErrParse,
+		codeErrUnknownCharacterSet:     mysql.ErrUnknownCharacterSet,
+		codeErrInvalidYearColumnLength: mysql.ErrInvalidYearColumnLength,
+		codeWrongArgument:              mysql.ErrWrongArguments,
+		codeWrongFieldTerminators:      mysql.ErrWrongFieldTerminators,
+		codeTooBigDisplayWidth:         mysql.ErrTooBigDisplaywidth,
 	}
 	terror.ErrClassToMySQLCodes[terror.ClassParser] = parserMySQLErrCodes
 }
@@ -200,12 +221,12 @@ func toInt(l yyLexer, lval *yySymType, str string) int {
 			// get value 99999999999999999999999999999999999999999999999999999999999999999
 			return toDecimal(l, lval, str)
 		}
-		l.Errorf("integer literal: %v", err)
+		l.AppendError(l.Errorf("integer literal: %v", err))
 		return int(unicode.ReplacementChar)
 	}
 
 	switch {
-	case n < math.MaxInt64:
+	case n <= math.MaxInt64:
 		lval.item = int64(n)
 	default:
 		lval.item = n
@@ -216,7 +237,7 @@ func toInt(l yyLexer, lval *yySymType, str string) int {
 func toDecimal(l yyLexer, lval *yySymType, str string) int {
 	dec, err := ast.NewDecimal(str)
 	if err != nil {
-		l.Errorf("decimal literal: %v", err)
+		l.AppendError(l.Errorf("decimal literal: %v", err))
 	}
 	lval.item = dec
 	return decLit
@@ -225,7 +246,7 @@ func toDecimal(l yyLexer, lval *yySymType, str string) int {
 func toFloat(l yyLexer, lval *yySymType, str string) int {
 	n, err := strconv.ParseFloat(str, 64)
 	if err != nil {
-		l.Errorf("float literal: %v", err)
+		l.AppendError(l.Errorf("float literal: %v", err))
 		return int(unicode.ReplacementChar)
 	}
 
@@ -237,7 +258,7 @@ func toFloat(l yyLexer, lval *yySymType, str string) int {
 func toHex(l yyLexer, lval *yySymType, str string) int {
 	h, err := ast.NewHexLiteral(str)
 	if err != nil {
-		l.Errorf("hex literal: %v", err)
+		l.AppendError(l.Errorf("hex literal: %v", err))
 		return int(unicode.ReplacementChar)
 	}
 	lval.item = h
@@ -248,7 +269,7 @@ func toHex(l yyLexer, lval *yySymType, str string) int {
 func toBit(l yyLexer, lval *yySymType, str string) int {
 	b, err := ast.NewBitLiteral(str)
 	if err != nil {
-		l.Errorf("bit literal: %v", err)
+		l.AppendError(l.Errorf("bit literal: %v", err))
 		return int(unicode.ReplacementChar)
 	}
 	lval.item = b

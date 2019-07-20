@@ -148,6 +148,11 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 	}
 }
 
+// NewStd calls New using the standard message for the error code
+func (ec ErrClass) NewStd(code ErrCode) *Error {
+	return ec.New(code, mysql.MySQLErrName[uint16(code)])
+}
+
 // Error implements error interface and adds integer Class and Code, so
 // errors with different message can be compared.
 type Error struct {
@@ -239,7 +244,15 @@ func (e *Error) FastGen(format string, args ...interface{}) error {
 	err := *e
 	err.message = format
 	err.args = args
-	return &err
+	return errors.SuspendStack(&err)
+}
+
+// FastGen generates a new *Error with the same class and code, and a new arguments.
+// This will not call runtime.Caller to get file and line.
+func (e *Error) FastGenByArgs(args ...interface{}) error {
+	err := *e
+	err.args = args
+	return errors.SuspendStack(&err)
 }
 
 // Equal checks if err is equal to e.

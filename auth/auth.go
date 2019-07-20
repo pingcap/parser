@@ -50,6 +50,9 @@ func (user *UserIdentity) Restore(ctx *RestoreCtx) error {
 // String converts UserIdentity to the format user@host.
 func (user *UserIdentity) String() string {
 	// TODO: Escape username and hostname.
+	if user == nil {
+		return ""
+	}
 	return fmt.Sprintf("%s@%s", user.Username, user.Hostname)
 }
 
@@ -57,6 +60,26 @@ func (user *UserIdentity) String() string {
 func (user *UserIdentity) AuthIdentityString() string {
 	// TODO: Escape username and hostname.
 	return fmt.Sprintf("%s@%s", user.AuthUsername, user.AuthHostname)
+}
+
+type RoleIdentity struct {
+	Username string
+	Hostname string
+}
+
+func (role *RoleIdentity) Restore(ctx *RestoreCtx) error {
+	ctx.WriteName(role.Username)
+	if role.Hostname != "" {
+		ctx.WritePlain("@")
+		ctx.WriteName(role.Hostname)
+	}
+	return nil
+}
+
+// String converts UserIdentity to the format user@host.
+func (role *RoleIdentity) String() string {
+	// TODO: Escape username and hostname.
+	return fmt.Sprintf("`%s`@`%s`", role.Username, role.Hostname)
 }
 
 // CheckScrambledPassword check scrambled password received from client.

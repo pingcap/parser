@@ -48,6 +48,29 @@ func (s *testCacheableSuite) TestCacheable(c *C) {
 
 	stmt = &DoStmt{}
 	c.Assert(IsReadOnly(stmt), IsTrue)
+
+	stmt = &ExplainStmt{
+		Stmt: &InsertStmt{},
+	}
+	c.Assert(IsReadOnly(stmt), IsTrue)
+
+	stmt = &ExplainStmt{
+		Analyze: true,
+		Stmt:    &InsertStmt{},
+	}
+	c.Assert(IsReadOnly(stmt), IsFalse)
+
+	stmt = &ExplainStmt{
+		Stmt: &SelectStmt{},
+	}
+	c.Assert(IsReadOnly(stmt), IsTrue)
+
+	stmt = &ExplainStmt{
+		Analyze: true,
+		Stmt:    &SelectStmt{},
+	}
+	c.Assert(IsReadOnly(stmt), IsTrue)
+
 }
 
 // CleanNodeText set the text of node and all child node empty.
@@ -103,6 +126,10 @@ type NodeRestoreTestCase struct {
 }
 
 func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node) {
+	RunNodeRestoreTestWithFlags(c, nodeTestCases, template, extractNodeFunc, DefaultRestoreFlags)
+}
+
+func RunNodeRestoreTestWithFlags(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node, flags RestoreFlags) {
 	parser := parser.New()
 	parser.EnableWindowFunc(true)
 	for _, testCase := range nodeTestCases {
@@ -112,7 +139,7 @@ func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template stri
 		comment := Commentf("source %#v", testCase)
 		c.Assert(err, IsNil, comment)
 		var sb strings.Builder
-		err = extractNodeFunc(stmt).Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+		err = extractNodeFunc(stmt).Restore(NewRestoreCtx(flags, &sb))
 		c.Assert(err, IsNil, comment)
 		restoreSql := fmt.Sprintf(template, sb.String())
 		comment = Commentf("source %#v; restore %v", testCase, restoreSql)

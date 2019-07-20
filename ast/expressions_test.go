@@ -16,6 +16,7 @@ package ast_test
 import (
 	. "github.com/pingcap/check"
 	. "github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -200,6 +201,24 @@ func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }
 
+func (tc *testExpressionsSuite) TestBinaryOperationExprWithFlags(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"'a'!=1", "'a' != 1"},
+		{"a!=1", "`a` != 1"},
+		{"3<5", "3 < 5"},
+		{"10>5", "10 > 5"},
+		{"3+5", "3 + 5"},
+		{"3-5", "3 - 5"},
+		{"a<>5", "`a` != 5"},
+		{"a=1", "`a` = 1"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	flags := format.DefaultRestoreFlags | format.RestoreSpacesAroundBinaryOperation
+	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags)
+}
+
 func (tc *testExpressionsSuite) TestParenthesesExpr(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"(1+2)*3", "(1+2)*3"},
@@ -311,7 +330,7 @@ func (tc *testExpressionsSuite) TestMaxValueExprRestore(c *C) {
 		{"maxvalue", "MAXVALUE"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*AlterTableStmt).Specs[0].PartDefinitions[0].LessThan[0]
+		return node.(*AlterTableStmt).Specs[0].PartDefinitions[0].Clause.(*PartitionDefinitionClauseLessThan).Exprs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "alter table posts add partition ( partition p1 values less than %s)", extractNodeFunc)
 }

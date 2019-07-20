@@ -16,6 +16,9 @@ package mysql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pingcap/errors"
+	. "github.com/pingcap/parser/format"
 )
 
 func newInvalidModeErr(s string) error {
@@ -28,7 +31,7 @@ var (
 	TiDBReleaseVersion = "None"
 
 	// ServerVersion is the version information of this tidb-server in MySQL's format.
-	ServerVersion = fmt.Sprintf("5.7.10-TiDB-%s", TiDBReleaseVersion)
+	ServerVersion = fmt.Sprintf("5.7.25-TiDB-%s", TiDBReleaseVersion)
 )
 
 // Header information.
@@ -179,6 +182,10 @@ const (
 	GlobalStatusTable = "GLOBAL_STATUS"
 	// TiDBTable is the table contains tidb info.
 	TiDBTable = "tidb"
+	//  RoleEdgesTable is the table contains role relation info
+	RoleEdgeTable = "role_edges"
+	// DefaultRoleTable is the table contain default active role info
+	DefaultRoleTable = "default_roles"
 )
 
 // PrivilegeType  privilege
@@ -222,6 +229,10 @@ const (
 	CreateViewPriv
 	// ShowViewPriv is the privilege to show create view.
 	ShowViewPriv
+	// CreateRolePriv the privilege to create a role.
+	CreateRolePriv
+	// DropRolePriv is the privilege to drop a role.
+	DropRolePriv
 	// AllPriv is the privilege for all actions.
 	AllPriv
 )
@@ -283,6 +294,8 @@ var Priv2UserCol = map[PrivilegeType]string{
 	IndexPriv:      "Index_priv",
 	CreateViewPriv: "Create_view_priv",
 	ShowViewPriv:   "Show_view_priv",
+	CreateRolePriv: "Create_role_priv",
+	DropRolePriv:   "Drop_role_priv",
 }
 
 // Command2Str is the command information to command name.
@@ -341,10 +354,12 @@ var Col2PrivType = map[string]PrivilegeType{
 	"Index_priv":       IndexPriv,
 	"Create_view_priv": CreateViewPriv,
 	"Show_view_priv":   ShowViewPriv,
+	"Create_role_priv": CreateRolePriv,
+	"Drop_role_priv":   DropRolePriv,
 }
 
 // AllGlobalPrivs is all the privileges in global scope.
-var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv}
+var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv}
 
 // Priv2Str is the map for privilege to string.
 var Priv2Str = map[PrivilegeType]string{
@@ -366,6 +381,8 @@ var Priv2Str = map[PrivilegeType]string{
 	IndexPriv:      "Index",
 	CreateViewPriv: "Create View",
 	ShowViewPriv:   "Show View",
+	CreateRolePriv: "Create Role",
+	DropRolePriv:   "Drop Role",
 }
 
 // Priv2SetStr is the map for privilege to string.
@@ -382,6 +399,8 @@ var Priv2SetStr = map[PrivilegeType]string{
 	IndexPriv:      "Index",
 	CreateViewPriv: "Create View",
 	ShowViewPriv:   "Show View",
+	CreateRolePriv: "Create Role",
+	DropRolePriv:   "Drop Role",
 }
 
 // SetStr2Priv is the map for privilege set string to privilege type.
@@ -713,6 +732,23 @@ func Str2Priority(val string) PriorityEnum {
 	default:
 		return NoPriority
 	}
+}
+
+// Restore implements Node interface.
+func (n *PriorityEnum) Restore(ctx *RestoreCtx) error {
+	switch *n {
+	case NoPriority:
+		return nil
+	case LowPriority:
+		ctx.WriteKeyWord("LOW_PRIORITY")
+	case HighPriority:
+		ctx.WriteKeyWord("HIGH_PRIORITY")
+	case DelayedPriority:
+		ctx.WriteKeyWord("DELAYED")
+	default:
+		return errors.Errorf("undefined PriorityEnum Type[%d]", *n)
+	}
+	return nil
 }
 
 // PrimaryKeyName defines primary key name.

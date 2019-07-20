@@ -50,10 +50,26 @@ func (s *testSQLDigestSuite) TestNormalize(c *C) {
 		// test syntax error, it will be checked by parser, but it should not make normalize dead loop.
 		{"select * from t ignore index(", "select * from t ignore index"},
 		{"select /*+ ", "select "},
+		{"select * from 🥳", "select * from"},
 	}
 	for _, test := range tests {
 		actual := parser.Normalize(test.input)
 		c.Assert(actual, Equals, test.expect)
+	}
+}
+
+func (s *testSQLDigestSuite) TestNormalizeDigest(c *C) {
+	tests := []struct {
+		sql        string
+		normalized string
+		digest     string
+	}{
+		{"select 1 from b where id in (1, 3, '3', 1, 2, 3, 4)", "select ? from b where id in ( ... )", "f36161eef94dbfbd5e2f6b9a2f498a4c7facc6860621fbeb8084f63898275016"},
+	}
+	for _, test := range tests {
+		normalized, digest := parser.NormalizeDigest(test.sql)
+		c.Assert(normalized, Equals, test.normalized)
+		c.Assert(digest, Equals, test.digest)
 	}
 }
 

@@ -58,6 +58,7 @@ type Scanner struct {
 }
 
 type specialCommentScanner interface {
+	stmtTexter
 	scan() (tok int, pos Pos, lit string)
 }
 
@@ -85,11 +86,18 @@ func (s *optimizerHintScanner) scan() (tok int, pos Pos, lit string) {
 	pos.Line += s.Pos.Line
 	pos.Col += s.Pos.Col
 	pos.Offset += s.Pos.Offset
-	if tok == 0 {
+	switch tok {
+	case 0:
 		if !s.end {
 			tok = hintEnd
 			s.end = true
 		}
+	case invalid:
+		// an optimizer hint is allowed to contain invalid characters, the
+		// remaining hints are just ignored.
+		// force advance the lexer even when encountering an invalid character
+		// to prevent infinite parser loop. (see issue #336)
+		s.r.inc()
 	}
 	return
 }
@@ -110,6 +118,10 @@ func (s *Scanner) reset(sql string) {
 }
 
 func (s *Scanner) stmtText() string {
+	if s.specialComment != nil {
+		return s.specialComment.stmtText()
+	}
+
 	endPos := s.r.pos().Offset
 	if s.r.s[endPos-1] == '\n' {
 		endPos = endPos - 1 // trim new line
@@ -126,7 +138,7 @@ func (s *Scanner) stmtText() string {
 
 // Errorf tells scanner something is wrong.
 // Scanner satisfies yyLexer interface which need this function.
-func (s *Scanner) Errorf(format string, a ...interface{}) {
+func (s *Scanner) Errorf(format string, a ...interface{}) (err error) {
 	str := fmt.Sprintf(format, a...)
 	val := s.r.s[s.lastScanOffset:]
 	var lenStr = ""
@@ -134,8 +146,17 @@ func (s *Scanner) Errorf(format string, a ...interface{}) {
 		lenStr = "(total length " + strconv.Itoa(len(val)) + ")"
 		val = val[:2048]
 	}
-	err := fmt.Errorf("line %d column %d near \"%s\"%s %s",
+	err = fmt.Errorf("line %d column %d near \"%s\"%s %s",
 		s.r.p.Line, s.r.p.Col, val, str, lenStr)
+	return
+}
+
+// AppendError sets error into scanner.
+// Scanner satisfies yyLexer interface which need this function.
+func (s *Scanner) AppendError(err error) {
+	if err == nil {
+		return
+	}
 	s.errs = append(s.errs, err)
 }
 
@@ -190,9 +211,11 @@ func (s *Scanner) Lex(v *yySymType) int {
 	case quotedIdentifier:
 		tok = identifier
 	}
-	if tok == unicode.ReplacementChar && s.r.eof() {
-		return 0
+
+	if tok == unicode.ReplacementChar {
+		return invalid
 	}
+
 	return tok
 }
 
@@ -209,6 +232,15 @@ func (s *Scanner) GetSQLMode() mysql.SQLMode {
 // EnableWindowFunc controls whether the scanner recognize the keywords of window function.
 func (s *Scanner) EnableWindowFunc(val bool) {
 	s.supportWindowFunc = val
+}
+
+// InheritScanner returns a new scanner object which inherits configurations from the parent scanner.
+func (s *Scanner) InheritScanner(sql string) *Scanner {
+	return &Scanner{
+		r:                 reader{s: sql},
+		sqlMode:           s.sqlMode,
+		supportWindowFunc: s.supportWindowFunc,
+	}
 }
 
 // NewScanner returns a new scanner object.
@@ -387,7 +419,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			end := len(comment) - 2
 			sql := comment[begin:end]
 			s.specialComment = &optimizerHintScanner{
-				Scanner: NewScanner(sql),
+				Scanner: s.InheritScanner(sql),
 				Pos: Pos{
 					pos.Line,
 					pos.Col,
@@ -404,7 +436,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		if strings.HasPrefix(comment, "/*!") {
 			sql := specCodePattern.ReplaceAllStringFunc(comment, TrimComment)
 			s.specialComment = &mysqlSpecificCodeScanner{
-				Scanner: NewScanner(sql),
+				Scanner: s.InheritScanner(sql),
 				Pos: Pos{
 					pos.Line,
 					pos.Col,
