@@ -999,6 +999,7 @@ type OnDeleteUpdateDef struct {
 	TableOptimizerHintList	"Table level optimizer hint list"
 	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -1087,6 +1088,7 @@ type OnDeleteUpdateDef struct {
 %left 	'*' '/' '%' div mod
 %left 	'^'
 %left 	'~' neg
+%precedence lowerThanNot
 %right 	not not2
 %right	collate
 
@@ -1824,10 +1826,27 @@ EnforcedOrNot:
 EnforcedOrNotOpt:
 	{
 		$$ = true
-	}
+	} %prec lowerThanNot
 |	EnforcedOrNot
 	{
 		$$ = $1
+	}
+
+EnforcedOrNotOrNotNullOpt:
+//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
+//
+//	  { [NOT] NULL | CHECK(...) [NOT] ENFORCED } ...
+	"NOT" "NULL"
+	{
+		$$ = 0
+	}
+|	EnforcedOrNotOpt
+	{
+		if ($1.(bool)) {
+			$$ = 1
+		} else {
+			$$ = 2
+		}
 	}
 
 ColumnOption:
@@ -1870,30 +1889,30 @@ ColumnOption:
 	{
 		$$ =  &ast.ColumnOption{Tp: ast.ColumnOptionComment, Expr: ast.NewValueExpr($2)}
 	}
-|	"CHECK" '(' Expression ')'
+|	"CHECK" '(' Expression ')' EnforcedOrNotOrNotNullOpt
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/create-table.html
 		// The CHECK clause is parsed but ignored by all storage engines.
-		// See the next branch named `EnforcedOrNot`.
+		// See the branch named `EnforcedOrNotOrNotNullOpt`.
 
-		$$ = &ast.ColumnOption{
+		optionCheck := &ast.ColumnOption{
 			Tp: ast.ColumnOptionCheck,
 			Expr: $3,
 			Enforced: true,
 		}
+		switch $5.(int) {
+		case 0:
+			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
+		case 1:
+			optionCheck.Enforced = true
+			$$ = optionCheck
+		case 2:
+			optionCheck.Enforced = false
+			$$ = optionCheck
+		default:
+		}
 		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
-	}
-|	EnforcedOrNot
-	{
-		// This branch is needed to workaround the need of a lookahead of 2 for the grammar:
-		//
-		//  { [NOT] NULL | CHECK(...) [NOT] ENFORCED } ...
-		//
-		// See: the `ColumnOptionList` rule rejects all unexpected `EnforcedOrNot` sequences.
-		// Here we refer to the implementation of MySQL
-
-		$$ = $1
 	}
 |	GeneratedAlways "AS" '(' Expression ')' VirtualOrStored
 	{
@@ -1938,30 +1957,18 @@ VirtualOrStored:
 ColumnOptionList:
 	ColumnOption
 	{
-		if columnOption,ok := $1.(*ast.ColumnOption); ok{
-			// $1 is normal `ColumnOption`
+		if columnOption,ok := $1.(*ast.ColumnOption); ok {
 			$$ = []*ast.ColumnOption{columnOption}
-		}else{
-			// $1 is `EnforcedOrNot`
-			yylex.AppendError(yylex.Errorf(""))
-			return 1
+		} else {
+			$$ = $1
 		}
 	}
 |	ColumnOptionList ColumnOption
 	{
-		if columnOption,ok := $2.(*ast.ColumnOption); ok{
-			// $2 is normal `ColumnOption`
+		if columnOption,ok := $2.(*ast.ColumnOption); ok {
 			$$ = append($1.([]*ast.ColumnOption), columnOption)
-		}else{
-			// $2 is `EnforcedOrNot`
-			columnOptionList := $1.([]*ast.ColumnOption)
-			lastColumnOption := columnOptionList[len(columnOptionList)-1]
-			// check if the sequence before `EnforcedOrNot` is `ColumnOptionCheck`
-			if lastColumnOption.Tp != ast.ColumnOptionCheck{
-				yylex.AppendError(yylex.Errorf(""))
-				return 1
-			}
-			lastColumnOption.Enforced = $2.(bool)
+		} else {
+			$$ = append($1.([]*ast.ColumnOption), $2.([]*ast.ColumnOption)...)
 		}
 	}
 
@@ -2057,7 +2064,7 @@ ConstraintElem:
 			Tp:		ast.ConstraintCheck,
 			Expr:		$3.(ast.ExprNode),
 			Enforced:	$5.(bool),
-                }
+		}
 		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
