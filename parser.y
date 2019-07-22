@@ -37,6 +37,12 @@ import (
 	"github.com/pingcap/parser/types"
 )
 
+// this is local type definition to serve ON UPDATE /ON DELETE
+type OnDeleteUpdateDef struct {
+    OnDelete *ast.OnDeleteOpt
+    OnUpdate *ast.OnUpdateOpt
+}
+
 %}
 
 %union {
@@ -467,6 +473,7 @@ import (
 	week		"WEEK"
 	yearType	"YEAR"
 	x509		"X509"
+	enforced	"ENFORCED"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
@@ -796,6 +803,7 @@ import (
 	OnDuplicateKeyUpdate		"ON DUPLICATE KEY UPDATE value list"
 	DuplicateOpt			"[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
 	OptFull				"Full or empty"
+	OptTemporary			"TEMPORARY or empty"
 	Order				"ORDER BY clause optional collation specification"
 	OrderBy				"ORDER BY clause"
 	OrReplace			"or replace"
@@ -828,8 +836,9 @@ import (
 	PrivLevel			"Privilege scope"
 	PrivType			"Privilege type"
 	ReferDef			"Reference definition"
-	OnDeleteOpt			"optional ON DELETE clause"
-	OnUpdateOpt			"optional ON UPDATE clause"
+	OnDelete			"ON DELETE clause"
+	OnUpdate			"ON UPDATE clause"
+	OnDeleteUpdateOpt   "optional ON DELETE clause + ON UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
 	RequireList			"require list"
@@ -988,6 +997,9 @@ import (
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
 	TableOptimizerHintList	"Table level optimizer hint list"
+	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -1076,6 +1088,7 @@ import (
 %left 	'*' '/' '%' div mod
 %left 	'^'
 %left 	'~' neg
+%precedence lowerThanNot
 %right 	not not2
 %right	collate
 
@@ -1283,6 +1296,18 @@ AlterTableSpec:
 			NewColumns:	[]*ast.ColumnDef{colDef},
 		}
 	}
+|	"ALTER" ColumnKeywordOpt ColumnName "SET" "DEFAULT" '(' Expression ')'
+	{
+		option := &ast.ColumnOption{Expr: $7}
+		colDef := &ast.ColumnDef{
+			Name: 	 $3.(*ast.ColumnName),
+			Options: []*ast.ColumnOption{option},
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:		ast.AlterTableAlterColumn,
+			NewColumns:	[]*ast.ColumnDef{colDef},
+		}
+	}
 |	"ALTER" ColumnKeywordOpt ColumnName "DROP" "DEFAULT"
 	{
 		colDef := &ast.ColumnDef{
@@ -1363,28 +1388,37 @@ AlterAlgorithm:
 	{
 		$$ = ast.AlterAlgorithmInstant
 	}
-
+|	identifier
+	{
+		yylex.AppendError(ErrUnknownAlterAlgorithm.GenWithStackByArgs($1))
+		return 1
+	}
 
 LockClauseOpt:
 	{}
 | 	LockClause {}
 
 LockClause:
-	"LOCK" eq "NONE"
+	"LOCK" EqOpt "NONE"
 	{
 		$$ = ast.LockTypeNone
 	}
-|	"LOCK" eq "DEFAULT"
+|	"LOCK" EqOpt "DEFAULT"
 	{
 		$$ = ast.LockTypeDefault
 	}
-|	"LOCK" eq "SHARED"
+|	"LOCK" EqOpt "SHARED"
 	{
 		$$ = ast.LockTypeShared
 	}
-|	"LOCK" eq "EXCLUSIVE"
+|	"LOCK" EqOpt "EXCLUSIVE"
 	{
 		$$ = ast.LockTypeExclusive
+	}
+|	"LOCK" EqOpt identifier
+	{
+		yylex.AppendError(ErrUnknownAlterLock.GenWithStackByArgs($3))
+		return 1
 	}
 
 KeyOrIndex: "KEY" | "INDEX"
@@ -1779,6 +1813,42 @@ PrimaryOpt:
 	{}
 | "PRIMARY"
 
+EnforcedOrNot:
+	"ENFORCED"
+	{
+		$$ = true
+	}
+|	"NOT" "ENFORCED"
+	{
+		$$ = false
+	}
+
+EnforcedOrNotOpt:
+	{
+		$$ = true
+	} %prec lowerThanNot
+|	EnforcedOrNot
+	{
+		$$ = $1
+	}
+
+EnforcedOrNotOrNotNullOpt:
+//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
+//
+//	  { [NOT] NULL | CHECK(...) [NOT] ENFORCED } ...
+	"NOT" "NULL"
+	{
+		$$ = 0
+	}
+|	EnforcedOrNotOpt
+	{
+		if ($1.(bool)) {
+			$$ = 1
+		} else {
+			$$ = 2
+		}
+	}
+
 ColumnOption:
 	"NOT" "NULL"
 	{
@@ -1819,11 +1889,30 @@ ColumnOption:
 	{
 		$$ =  &ast.ColumnOption{Tp: ast.ColumnOptionComment, Expr: ast.NewValueExpr($2)}
 	}
-|	"CHECK" '(' Expression ')'
+|	"CHECK" '(' Expression ')' EnforcedOrNotOrNotNullOpt
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/create-table.html
 		// The CHECK clause is parsed but ignored by all storage engines.
-		$$ = &ast.ColumnOption{}
+		// See the branch named `EnforcedOrNotOrNotNullOpt`.
+
+		optionCheck := &ast.ColumnOption{
+			Tp: ast.ColumnOptionCheck,
+			Expr: $3,
+			Enforced: true,
+		}
+		switch $5.(int) {
+		case 0:
+			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
+		case 1:
+			optionCheck.Enforced = true
+			$$ = optionCheck
+		case 2:
+			optionCheck.Enforced = false
+			$$ = optionCheck
+		default:
+		}
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 |	GeneratedAlways "AS" '(' Expression ')' VirtualOrStored
 	{
@@ -1868,11 +1957,19 @@ VirtualOrStored:
 ColumnOptionList:
 	ColumnOption
 	{
-		$$ = []*ast.ColumnOption{$1.(*ast.ColumnOption)}
+		if columnOption,ok := $1.(*ast.ColumnOption); ok {
+			$$ = []*ast.ColumnOption{columnOption}
+		} else {
+			$$ = $1
+		}
 	}
 |	ColumnOptionList ColumnOption
 	{
-		$$ = append($1.([]*ast.ColumnOption), $2.(*ast.ColumnOption))
+		if columnOption,ok := $2.(*ast.ColumnOption); ok {
+			$$ = append($1.([]*ast.ColumnOption), columnOption)
+		} else {
+			$$ = append($1.([]*ast.ColumnOption), $2.([]*ast.ColumnOption)...)
+		}
 	}
 
 ColumnOptionListOpt:
@@ -1961,43 +2058,60 @@ ConstraintElem:
 			Refer:		$8.(*ast.ReferenceDef),
 		}
 	}
+|	"CHECK" '(' Expression ')' EnforcedOrNotOpt
+	{
+		$$ = &ast.Constraint{
+			Tp:		ast.ConstraintCheck,
+			Expr:		$3.(ast.ExprNode),
+			Enforced:	$5.(bool),
+		}
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 
 ReferDef:
-	"REFERENCES" TableName '(' IndexColNameList ')' OnDeleteOpt OnUpdateOpt
+	"REFERENCES" TableName '(' IndexColNameList ')' OnDeleteUpdateOpt
 	{
-		var onDeleteOpt *ast.OnDeleteOpt
-		if $6 != nil {
-			onDeleteOpt = $6.(*ast.OnDeleteOpt)
-		}
-		var onUpdateOpt *ast.OnUpdateOpt
-		if $7 != nil {
-			onUpdateOpt = $7.(*ast.OnUpdateOpt)
-		}
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
 			IndexColNames: $4.([]*ast.IndexColName),
-			OnDelete: onDeleteOpt,
-			OnUpdate: onUpdateOpt,
+			OnDelete: $6.(OnDeleteUpdateDef).OnDelete,
+			OnUpdate: $6.(OnDeleteUpdateDef).OnUpdate,
 		}
 	}
 
-OnDeleteOpt:
-	{
-		$$ = &ast.OnDeleteOpt{}
-	} %prec lowerThanOn
-|	"ON" "DELETE" ReferOpt
+OnDelete:
+	"ON" "DELETE" ReferOpt
 	{
 		$$ = &ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}
 	}
 
-OnUpdateOpt:
-	{
-		$$ = &ast.OnUpdateOpt{}
-	} %prec lowerThanOn
-|	"ON" "UPDATE" ReferOpt
+OnUpdate:
+	"ON" "UPDATE" ReferOpt
 	{
 		$$ = &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}
 	}
+
+OnDeleteUpdateOpt:
+    OnDelete OnUpdate
+    {
+        $$ = OnDeleteUpdateDef{ $1.(*ast.OnDeleteOpt), $2.(*ast.OnUpdateOpt) }
+	}
+|   OnUpdate OnDelete
+    {
+        $$ = OnDeleteUpdateDef{ $2.(*ast.OnDeleteOpt), $1.(*ast.OnUpdateOpt) }
+	}
+|   OnUpdate
+    {
+        $$ = OnDeleteUpdateDef{ &ast.OnDeleteOpt{}, $1.(*ast.OnUpdateOpt) }
+    } %prec lowerThanOn
+|   OnDelete
+    {
+        $$ = OnDeleteUpdateDef{ $1.(*ast.OnDeleteOpt), &ast.OnUpdateOpt{} }
+    } %prec lowerThanOn
+|   {
+		$$ = OnDeleteUpdateDef{ &ast.OnDeleteOpt{}, &ast.OnUpdateOpt{} }
+	} %prec lowerThanOn
 
 ReferOpt:
 	"RESTRICT"
@@ -2747,26 +2861,26 @@ DoStmt:
  *
  *******************************************************************/
 DeleteFromStmt:
-	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
+	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
 	{
 		// Single Table
 		tn := $7.(*ast.TableName)
-		tn.IndexHints = $8.([]*ast.IndexHint)
-		join := &ast.Join{Left: &ast.TableSource{Source: tn}, Right: nil}
+		tn.IndexHints = $9.([]*ast.IndexHint)
+		join := &ast.Join{Left: &ast.TableSource{Source: tn, AsName: $8.(model.CIStr)}, Right: nil}
 		x := &ast.DeleteStmt{
 			TableRefs: &ast.TableRefsClause{TableRefs: join},
 			Priority:  $3.(mysql.PriorityEnum),
 			Quick:	   $4.(bool),
 			IgnoreErr: $5.(bool),
 		}
-		if $9 != nil {
-			x.Where = $9.(ast.ExprNode)
-		}
 		if $10 != nil {
-			x.Order = $10.(*ast.OrderByClause)
+			x.Where = $10.(ast.ExprNode)
 		}
 		if $11 != nil {
-			x.Limit = $11.(*ast.Limit)
+			x.Order = $11.(*ast.OrderByClause)
+		}
+		if $12 != nil {
+			x.Limit = $12.(*ast.Limit)
 		}
 
 		$$ = x
@@ -2828,14 +2942,15 @@ DropIndexStmt:
 	}
 
 DropTableStmt:
-	"DROP" TableOrTables TableNameList RestrictOrCascadeOpt
+	"DROP" OptTemporary TableOrTables IfExists TableNameList RestrictOrCascadeOpt
 	{
-		$$ = &ast.DropTableStmt{Tables: $3.([]*ast.TableName), IsView: false}
+		$$ = &ast.DropTableStmt{IfExists: $4.(bool), Tables: $5.([]*ast.TableName), IsView: false, IsTemporary: $2.(bool)}
 	}
-|	"DROP" TableOrTables "IF" "EXISTS" TableNameList RestrictOrCascadeOpt
-	{
-		$$ = &ast.DropTableStmt{IfExists: true, Tables: $5.([]*ast.TableName), IsView: false}
-	}
+
+OptTemporary:
+	  /* empty */ { $$= false; }
+	| "TEMPORARY" { $$= true;  }
+	;
 
 DropViewStmt:
 	"DROP" "VIEW" TableNameList RestrictOrCascadeOpt
@@ -3512,7 +3627,7 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
@@ -7290,11 +7405,6 @@ TableElement:
 	{
 		$$ = $1.(*ast.Constraint)
 	}
-|	"CHECK" '(' Expression ')'
-	{
-		/* Nothing to do now */
-		$$ = nil
-	}
 
 TableElementList:
 	TableElement
@@ -8010,6 +8120,7 @@ OptCharset:
 CharsetKw:
 	"CHARACTER" "SET"
 |	"CHARSET"
+| 	"CHAR" "SET"
 
 OptCollate:
 	{
