@@ -2293,7 +2293,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_hashagg")
 	c.Assert(hints[1].HintName.L, Equals, "tidb_streamagg")
 
