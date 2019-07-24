@@ -21,7 +21,7 @@ type ProdList struct {
 }
 
 func newProdList(productions []Production) *ProdList {
-	prodList := &ProdList{nil, 0 }
+	prodList := &ProdList{nil, 0}
 	for i := len(productions) - 1; i >= 0; i-- {
 		prodList.prepend(productions[i].Head)
 	}
@@ -67,16 +67,17 @@ type WalkIndices struct {
 	arr     []int
 	current int
 }
+
 func newWalkIndices() WalkIndices {
 	return WalkIndices{nil, -1}
 }
 
-func (wi *WalkIndices) tryCarry() (reachEnding bool){
+func (wi *WalkIndices) tryCarry() (reachEnding bool) {
 	if wi.current <= 0 {
 		return true
 	}
 	wi.arr[wi.current] = 0
-	wi.arr[wi.current - 1]++
+	wi.arr[wi.current-1]++
 	return false
 }
 func (wi *WalkIndices) produceChoice() int {
@@ -95,10 +96,10 @@ func (wi *WalkIndices) nextPermutation() {
 
 // SQLSequentialIterator is a iterator of sql generator
 type SQLEnumIterator struct {
-	wi WalkIndices
+	wi      WalkIndices
 	prodMap map[string]Production
-	start string
-	cache string
+	start   string
+	cache   string
 }
 
 func NewSQLEnumIterator(prods []Production, prodName string) sql_generator.SQLIterator {
@@ -109,10 +110,10 @@ func NewSQLEnumIterator(prods []Production, prodName string) sql_generator.SQLIt
 		panic(fmt.Sprintf("%v", err.Error()))
 	}
 	return &SQLEnumIterator{
-		wi: wi,
+		wi:      wi,
 		prodMap: prodMap,
-		start: prodName,
-		cache: cache,
+		start:   prodName,
+		cache:   cache,
 	}
 }
 
@@ -163,7 +164,7 @@ func checkProductionMap(productionMap map[string]Production) {
 
 func generateSQL(walkIndices *WalkIndices, start string, prodMap map[string]Production) (string, error) {
 	depthCounts := newDepthCountMap(prodMap)
-	var prodList = &ProdList{&ProdNode{start, nil},1}
+	var prodList = &ProdList{&ProdNode{start, nil}, 1}
 	var sql []string
 	walkIndices.reset()
 
@@ -181,7 +182,7 @@ func generateSQL(walkIndices *WalkIndices, start string, prodMap map[string]Prod
 		}
 
 		subProds := seqs[nextChoice].Items
-		for i := len(subProds)-1; i >= 0; i-- {
+		for i := len(subProds) - 1; i >= 0; i-- {
 			prodList.prepend(subProds[i])
 		}
 
@@ -200,7 +201,7 @@ func generateSQL(walkIndices *WalkIndices, start string, prodMap map[string]Prod
 
 func newDepthCountMap(prodMap map[string]Production) map[string]int {
 	depthCounts := make(map[string]int, len(prodMap))
-	for k, _ := range prodMap {
+	for k := range prodMap {
 		depthCounts[k] = 0
 	}
 	return depthCounts

@@ -89,7 +89,6 @@ func (s *testSQLGeneratorSuite) TestLoopBNF(c *C) {
 	s.runTest(c, source, "t1", expect)
 }
 
-
 func (s *testSQLGeneratorSuite) runTest(c *C, source string, productionName string, expect []string) {
 	p := yacc_parser.Parse(yacc_parser.Tokenize(bufio.NewReader(bytes.NewBuffer([]byte(source)))))
 	sqlSeqIter := NewSQLEnumIterator(p, productionName)
