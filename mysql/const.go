@@ -233,6 +233,13 @@ const (
 	CreateRolePriv
 	// DropRolePriv is the privilege to drop a role.
 	DropRolePriv
+
+	CreateTMPTablePriv
+	LockTablesPriv
+	CreateRoutinePriv
+	AlterRoutinePriv
+	EventPriv
+
 	// AllPriv is the privilege for all actions.
 	AllPriv
 )
@@ -276,26 +283,31 @@ const PWDHashLen = 40
 
 // Priv2UserCol is the privilege to mysql.user table column name.
 var Priv2UserCol = map[PrivilegeType]string{
-	CreatePriv:     "Create_priv",
-	SelectPriv:     "Select_priv",
-	InsertPriv:     "Insert_priv",
-	UpdatePriv:     "Update_priv",
-	DeletePriv:     "Delete_priv",
-	ShowDBPriv:     "Show_db_priv",
-	SuperPriv:      "Super_priv",
-	CreateUserPriv: "Create_user_priv",
-	TriggerPriv:    "Trigger_priv",
-	DropPriv:       "Drop_priv",
-	ProcessPriv:    "Process_priv",
-	GrantPriv:      "Grant_priv",
-	ReferencesPriv: "References_priv",
-	AlterPriv:      "Alter_priv",
-	ExecutePriv:    "Execute_priv",
-	IndexPriv:      "Index_priv",
-	CreateViewPriv: "Create_view_priv",
-	ShowViewPriv:   "Show_view_priv",
-	CreateRolePriv: "Create_role_priv",
-	DropRolePriv:   "Drop_role_priv",
+	CreatePriv:         "Create_priv",
+	SelectPriv:         "Select_priv",
+	InsertPriv:         "Insert_priv",
+	UpdatePriv:         "Update_priv",
+	DeletePriv:         "Delete_priv",
+	ShowDBPriv:         "Show_db_priv",
+	SuperPriv:          "Super_priv",
+	CreateUserPriv:     "Create_user_priv",
+	TriggerPriv:        "Trigger_priv",
+	DropPriv:           "Drop_priv",
+	ProcessPriv:        "Process_priv",
+	GrantPriv:          "Grant_priv",
+	ReferencesPriv:     "References_priv",
+	AlterPriv:          "Alter_priv",
+	ExecutePriv:        "Execute_priv",
+	IndexPriv:          "Index_priv",
+	CreateViewPriv:     "Create_view_priv",
+	ShowViewPriv:       "Show_view_priv",
+	CreateRolePriv:     "Create_role_priv",
+	DropRolePriv:       "Drop_role_priv",
+	CreateTMPTablePriv: "Create_tmp_table_priv",
+	LockTablesPriv:     "Lock_tables_priv",
+	CreateRoutinePriv:  "Create_routine_priv",
+	AlterRoutinePriv:   "Alter_routine_priv",
+	EventPriv:          "Event_priv",
 }
 
 // Command2Str is the command information to command name.
@@ -358,9 +370,6 @@ var Col2PrivType = map[string]PrivilegeType{
 	"Drop_role_priv":   DropRolePriv,
 }
 
-// AllGlobalPrivs is all the privileges in global scope.
-var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv}
-
 // Priv2Str is the map for privilege to string.
 var Priv2Str = map[PrivilegeType]string{
 	CreatePriv:     "Create",
@@ -418,6 +427,9 @@ var SetStr2Priv = map[string]PrivilegeType{
 	"Create View": CreateViewPriv,
 	"Show View":   ShowViewPriv,
 }
+
+// AllGlobalPrivs is all the privileges in global scope.
+var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv}
 
 // AllDBPrivs is all the privileges in database scope.
 var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
