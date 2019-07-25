@@ -246,7 +246,7 @@ const (
 
 // AllPrivMask is the mask for PrivilegeType with all bits set to 1.
 // If it's passed to RequestVerification, it means any privilege would be OK.
-const AllPrivMask = (AllPriv - 1) - 1
+const AllPrivMask = AllPriv - 1
 
 // MySQL type maximum length.
 const (
@@ -310,6 +310,35 @@ var Priv2UserCol = map[PrivilegeType]string{
 	EventPriv:          "Event_priv",
 }
 
+// Col2PrivType is the privilege tables column name to privilege type.
+var Col2PrivType = map[string]PrivilegeType{
+	"Create_priv":           CreatePriv,
+	"Select_priv":           SelectPriv,
+	"Insert_priv":           InsertPriv,
+	"Update_priv":           UpdatePriv,
+	"Delete_priv":           DeletePriv,
+	"Show_db_priv":          ShowDBPriv,
+	"Super_priv":            SuperPriv,
+	"Create_user_priv":      CreateUserPriv,
+	"Trigger_priv":          TriggerPriv,
+	"Drop_priv":             DropPriv,
+	"Process_priv":          ProcessPriv,
+	"Grant_priv":            GrantPriv,
+	"References_priv":       ReferencesPriv,
+	"Alter_priv":            AlterPriv,
+	"Execute_priv":          ExecutePriv,
+	"Index_priv":            IndexPriv,
+	"Create_view_priv":      CreateViewPriv,
+	"Show_view_priv":        ShowViewPriv,
+	"Create_role_priv":      CreateRolePriv,
+	"Drop_role_priv":        DropRolePriv,
+	"Create_tmp_table_priv": CreateTMPTablePriv,
+	"Lock_tables_priv":      LockTablesPriv,
+	"Create_routine_priv":   CreateRoutinePriv,
+	"Alter_routine_priv":    AlterRoutinePriv,
+	"Event_priv":            EventPriv,
+}
+
 // Command2Str is the command information to command name.
 var Command2Str = map[byte]string{
 	ComSleep:            "Sleep",
@@ -344,30 +373,6 @@ var Command2Str = map[byte]string{
 	ComDaemon:           "Daemon",
 	ComBinlogDumpGtid:   "Binlog Dump",
 	ComResetConnection:  "Reset connect",
-}
-
-// Col2PrivType is the privilege tables column name to privilege type.
-var Col2PrivType = map[string]PrivilegeType{
-	"Create_priv":      CreatePriv,
-	"Select_priv":      SelectPriv,
-	"Insert_priv":      InsertPriv,
-	"Update_priv":      UpdatePriv,
-	"Delete_priv":      DeletePriv,
-	"Show_db_priv":     ShowDBPriv,
-	"Super_priv":       SuperPriv,
-	"Create_user_priv": CreateUserPriv,
-	"Trigger_priv":     TriggerPriv,
-	"Drop_priv":        DropPriv,
-	"Process_priv":     ProcessPriv,
-	"Grant_priv":       GrantPriv,
-	"References_priv":  ReferencesPriv,
-	"Alter_priv":       AlterPriv,
-	"Execute_priv":     ExecutePriv,
-	"Index_priv":       IndexPriv,
-	"Create_view_priv": CreateViewPriv,
-	"Show_view_priv":   ShowViewPriv,
-	"Create_role_priv": CreateRolePriv,
-	"Drop_role_priv":   DropRolePriv,
 }
 
 // Priv2Str is the map for privilege to string.

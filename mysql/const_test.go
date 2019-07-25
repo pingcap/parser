@@ -35,16 +35,19 @@ func (s *testConstSuite) TestPrivAllConsistency(c *C) {
 		c.Assert(ok, IsTrue, Commentf("priv fail %d", priv))
 	}
 
-	var allPriv PrivilegeType
-	for v := range Priv2UserCol {
-		allPriv = allPriv | v
-	}
-	c.Assert(allPriv, Equals, AllPrivMask)
-
 	for _, v := range AllGlobalPrivs {
 		_, ok := Priv2UserCol[v]
 		c.Assert(ok, IsTrue)
 	}
 
 	c.Assert(len(Priv2UserCol), Equals, len(AllGlobalPrivs))
+
+	for _, v := range Priv2UserCol {
+		_, ok := Col2PrivType[v]
+		c.Assert(ok, IsTrue)
+	}
+	for _, v := range Col2PrivType {
+		_, ok := Priv2UserCol[v]
+		c.Assert(ok, IsTrue)
+	}
 }
