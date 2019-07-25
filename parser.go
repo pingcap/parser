@@ -9006,7 +9006,7 @@ yynewstate:
 		}
 	case 160:
 		{
-			onDeleteUpdate := yyS[yypt-0].item.([]interface{})
+			onDeleteUpdate := yyS[yypt-0].item.([2]interface{})
 			parser.yyVAL.item = &ast.ReferenceDef{
 				Table:         yyS[yypt-5].item.(*ast.TableName),
 				IndexColNames: yyS[yypt-3].item.([]*ast.IndexColName),
@@ -9025,23 +9025,23 @@ yynewstate:
 		}
 	case 163:
 		{
-			parser.yyVAL.item = []interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
+			parser.yyVAL.item = [2]interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
 		}
 	case 164:
 		{
-			parser.yyVAL.item = []interface{}{yyS[yypt-0].item, &ast.OnUpdateOpt{}}
+			parser.yyVAL.item = [2]interface{}{yyS[yypt-0].item, &ast.OnUpdateOpt{}}
 		}
 	case 165:
 		{
-			parser.yyVAL.item = []interface{}{&ast.OnDeleteOpt{}, yyS[yypt-0].item}
+			parser.yyVAL.item = [2]interface{}{&ast.OnDeleteOpt{}, yyS[yypt-0].item}
 		}
 	case 166:
 		{
-			parser.yyVAL.item = []interface{}{yyS[yypt-1].item, yyS[yypt-0].item}
+			parser.yyVAL.item = [2]interface{}{yyS[yypt-1].item, yyS[yypt-0].item}
 		}
 	case 167:
 		{
-			parser.yyVAL.item = []interface{}{yyS[yypt-0].item, yyS[yypt-1].item}
+			parser.yyVAL.item = [2]interface{}{yyS[yypt-0].item, yyS[yypt-1].item}
 		}
 	case 168:
 		{

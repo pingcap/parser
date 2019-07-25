@@ -2132,7 +2132,7 @@ MatchOpt:
 ReferDef:
 	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
 	{
-		onDeleteUpdate := $7.([]interface{})
+		onDeleteUpdate := $7.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
 			IndexColNames: $4.([]*ast.IndexColName),
@@ -2156,23 +2156,23 @@ OnUpdate:
 
 OnDeleteUpdateOpt:
 	{
-		$$ = []interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
+		$$ = [2]interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
 	} %prec lowerThanOn
 |	OnDelete  %prec lowerThanOn
 	{
-		$$ = []interface{}{$1, &ast.OnUpdateOpt{}}
+		$$ = [2]interface{}{$1, &ast.OnUpdateOpt{}}
 	}
 |	OnUpdate %prec lowerThanOn
 	{
-		$$ = []interface{}{&ast.OnDeleteOpt{}, $1}
+		$$ = [2]interface{}{&ast.OnDeleteOpt{}, $1}
 	}
 |	OnDelete OnUpdate
 	{
-		$$ = []interface{}{$1, $2}
+		$$ = [2]interface{}{$1, $2}
 	}
 |	OnUpdate OnDelete
 	{
-		$$ = []interface{}{$2, $1}
+		$$ = [2]interface{}{$2, $1}
 	}
 
 ReferOpt:
