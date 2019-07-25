@@ -14,7 +14,6 @@
 package mysql
 
 import (
-	"fmt"
 	"testing"
 
 	. "github.com/pingcap/check"
@@ -50,4 +49,6 @@ func (s *testConstSuite) TestPrivAllConsistency(c *C) {
 		_, ok := Priv2UserCol[v]
 		c.Assert(ok, IsTrue)
 	}
+
+	c.Assert(len(Priv2Str), Equals, len(Priv2UserCol))
 }
