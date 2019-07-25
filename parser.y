@@ -6807,20 +6807,37 @@ ShowStmt:
                         User:	$4.(*auth.UserIdentity),
                 }
         }
-|	"SHOW" "TABLE" TableName "REGIONS"
+|	"SHOW" "TABLE" TableName "REGIONS" ShowLikeOrWhereOpt
 	{
-		$$ = &ast.ShowStmt{
+
+		stmt := &ast.ShowStmt{
 			Tp:	ast.ShowRegions,
 			Table:	$3.(*ast.TableName),
 		}
+		if $5 != nil {
+			if x, ok := $5.(*ast.PatternLikeExpr); ok && x.Expr == nil {
+				stmt.Pattern = x
+			} else {
+				stmt.Where = $5.(ast.ExprNode)
+			}
+		}
+		$$ = stmt
 	}
-|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS"
+|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS" ShowLikeOrWhereOpt
 	{
-		$$ = &ast.ShowStmt{
+		stmt := &ast.ShowStmt{
 			Tp:	ast.ShowRegions,
 			Table:	$3.(*ast.TableName),
 			IndexName: model.NewCIStr($5),
 		}
+		if $7 != nil {
+			if x, ok := $7.(*ast.PatternLikeExpr); ok && x.Expr == nil {
+				stmt.Pattern = x
+			} else {
+				stmt.Where = $7.(ast.ExprNode)
+			}
+		}
+		$$ = stmt
 	}
 |	"SHOW" "GRANTS"
 	{
