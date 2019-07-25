@@ -192,6 +192,7 @@ const (
 	Lcase           = "lcase"
 	Left            = "left"
 	Length          = "length"
+	OctetLength     = "octet_length"
 	LoadFile        = "load_file"
 	Locate          = "locate"
 	Lower           = "lower"
