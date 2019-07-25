@@ -525,7 +525,9 @@ import (
 	admin		"ADMIN"
 	buckets		"BUCKETS"
 	cancel		"CANCEL"
+	cmSketch	"CMSKETCH"
 	ddl		"DDL"
+	depth		"DEPTH"
 	drainer		"DRAINER"
 	jobs		"JOBS"
 	job		"JOB"
@@ -543,7 +545,11 @@ import (
 	tidbHJ		"TIDB_HJ"
 	tidbSMJ		"TIDB_SMJ"
 	tidbINLJ	"TIDB_INLJ"
+	tidbHASHAGG 	"TIDB_HASHAGG"
+	tidbSTREAMAGG	"TIDB_STREAMAGG"
+	topn		"TOPN"
 	split		"SPLIT"
+	width		"WIDTH"
 	regions         "REGIONS"
 
 	builtinAddDate
@@ -690,6 +696,9 @@ import (
 	AlterTableSpec			"Alter table specification"
 	AlterTableSpecList		"Alter table specification list"
 	AlterTableSpecListOpt		"Alter table specification list optional"
+	AnalyzeOption			"Analyze option"
+	AnalyzeOptionList		"Analyze option list"
+	AnalyzeOptionListOpt		"Optional analyze option list"
 	AnyOrAll			"Any or All for subquery"
 	Assignment			"assignment"
 	AssignmentList			"assignment list"
@@ -793,7 +802,6 @@ import (
 	LoadDataSetItem			"Single load data specification"
 	LocalOpt			"Local opt"
 	LockClause         		"Alter table lock clause"
-	MaxNumBuckets			"Max number of buckets"
 	NumLiteral			"Num/Int/Float/Decimal Literal"
 	NoWriteToBinLogAliasOpt 	"NO_WRITE_TO_BINLOG alias LOCAL or empty"
 	ObjectType			"Grant statement object type"
@@ -833,6 +841,8 @@ import (
 	PrivLevel			"Privilege scope"
 	PrivType			"Privilege type"
 	ReferDef			"Reference definition"
+	OnDelete			"ON DELETE clause"
+	OnUpdate			"ON UPDATE clause"
 	OnDeleteUpdateOpt		"optional ON DELETE and UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
@@ -995,6 +1005,8 @@ import (
 	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
+	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
+	MatchOpt		"optional MATCH clause"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -1030,8 +1042,6 @@ import (
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
 	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
-	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
-	MatchOpt		"optional MATCH clause"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -1122,18 +1132,18 @@ AlterTableStmt:
 			Specs: specs,
 		}
 	}
-|	"ALTER" IgnoreOptional "TABLE" TableName "ANALYZE" "PARTITION" PartitionNameList MaxNumBuckets
+|	"ALTER" IgnoreOptional "TABLE" TableName "ANALYZE" "PARTITION" PartitionNameList AnalyzeOptionListOpt
 	{
-		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$4.(*ast.TableName)}, PartitionNames: $7.([]model.CIStr), MaxNumBuckets: $8.(uint64),}
+		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$4.(*ast.TableName)}, PartitionNames: $7.([]model.CIStr), AnalyzeOpts: $8.([]ast.AnalyzeOpt),}
 	}
-|	"ALTER" IgnoreOptional "TABLE" TableName "ANALYZE" "PARTITION" PartitionNameList "INDEX" IndexNameList MaxNumBuckets
+|	"ALTER" IgnoreOptional "TABLE" TableName "ANALYZE" "PARTITION" PartitionNameList "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
 		$$ = &ast.AnalyzeTableStmt{
 			TableNames: []*ast.TableName{$4.(*ast.TableName)},
 			PartitionNames: $7.([]model.CIStr),
 			IndexNames: $9.([]model.CIStr),
 			IndexFlag: true,
-			MaxNumBuckets: $10.(uint64),
+			AnalyzeOpts: $10.([]ast.AnalyzeOpt),
 		}
 	}
 
@@ -1602,33 +1612,33 @@ SplitOption:
 /*******************************************************************************************/
 
 AnalyzeTableStmt:
-	"ANALYZE" "TABLE" TableNameList MaxNumBuckets
+	"ANALYZE" "TABLE" TableNameList AnalyzeOptionListOpt
 	 {
-		$$ = &ast.AnalyzeTableStmt{TableNames: $3.([]*ast.TableName), MaxNumBuckets: $4.(uint64)}
+		$$ = &ast.AnalyzeTableStmt{TableNames: $3.([]*ast.TableName), AnalyzeOpts: $4.([]ast.AnalyzeOpt),}
 	 }
-|	"ANALYZE" "TABLE" TableName "INDEX" IndexNameList MaxNumBuckets
+|	"ANALYZE" "TABLE" TableName "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
-		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, IndexNames: $5.([]model.CIStr), IndexFlag: true, MaxNumBuckets: $6.(uint64)}
+		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, IndexNames: $5.([]model.CIStr), IndexFlag: true, AnalyzeOpts: $6.([]ast.AnalyzeOpt),}
 	}
-|	"ANALYZE" "INCREMENTAL" "TABLE" TableName "INDEX" IndexNameList MaxNumBuckets
+|	"ANALYZE" "INCREMENTAL" "TABLE" TableName "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
-		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$4.(*ast.TableName)}, IndexNames: $6.([]model.CIStr), IndexFlag: true, Incremental: true, MaxNumBuckets: $7.(uint64)}
+		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$4.(*ast.TableName)}, IndexNames: $6.([]model.CIStr), IndexFlag: true, Incremental: true, AnalyzeOpts: $7.([]ast.AnalyzeOpt),}
 	}
-|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList MaxNumBuckets
+|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList AnalyzeOptionListOpt
 	{
-		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, PartitionNames: $5.([]model.CIStr), MaxNumBuckets: $6.(uint64),}
+		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, PartitionNames: $5.([]model.CIStr), AnalyzeOpts: $6.([]ast.AnalyzeOpt),}
 	}
-|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList "INDEX" IndexNameList MaxNumBuckets
+|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
 		$$ = &ast.AnalyzeTableStmt{
 			TableNames: []*ast.TableName{$3.(*ast.TableName)},
 			PartitionNames: $5.([]model.CIStr),
 			IndexNames: $7.([]model.CIStr),
 			IndexFlag: true,
-			MaxNumBuckets: $8.(uint64),
+			AnalyzeOpts: $8.([]ast.AnalyzeOpt),
 		}
 	}
-|	"ANALYZE" "INCREMENTAL" "TABLE" TableName "PARTITION" PartitionNameList "INDEX" IndexNameList MaxNumBuckets
+|	"ANALYZE" "INCREMENTAL" "TABLE" TableName "PARTITION" PartitionNameList "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
 		$$ = &ast.AnalyzeTableStmt{
 			TableNames: []*ast.TableName{$4.(*ast.TableName)},
@@ -1636,17 +1646,45 @@ AnalyzeTableStmt:
 			IndexNames: $8.([]model.CIStr),
 			IndexFlag: true,
 			Incremental: true,
-			MaxNumBuckets: $9.(uint64),
+			AnalyzeOpts: $9.([]ast.AnalyzeOpt),
 		}
 	}
 
-MaxNumBuckets:
+AnalyzeOptionListOpt:
 	{
-		$$ = uint64(0)
+		$$ = []ast.AnalyzeOpt{}
 	}
-|	"WITH" NUM "BUCKETS"
+|	"WITH" AnalyzeOptionList
 	{
-		$$ = getUint64FromNUM($2)
+		$$ = $2.([]ast.AnalyzeOpt)
+	}
+
+AnalyzeOptionList:
+	AnalyzeOption
+	{
+		$$ = []ast.AnalyzeOpt{$1.(ast.AnalyzeOpt)}
+	}
+|	AnalyzeOptionList ',' AnalyzeOption
+	{
+		$$ = append($1.([]ast.AnalyzeOpt), $3.(ast.AnalyzeOpt))
+	}
+
+AnalyzeOption:
+	NUM "BUCKETS"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptNumBuckets, Value: getUint64FromNUM($1)}
+	}
+|	NUM "TOPN"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptNumTopN, Value: getUint64FromNUM($1)}
+	}
+|	NUM "CMSKETCH" "DEPTH"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptCMSketchDepth, Value: getUint64FromNUM($1)}
+	}
+|	NUM "CMSKETCH" "WIDTH"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptCMSketchWidth, Value: getUint64FromNUM($1)}
 	}
 
 /*******************************************************************************************/
@@ -2068,13 +2106,25 @@ ConstraintElem:
 
 Match:
 	"MATCH" "FULL"
+	{
+		$$ = ast.MatchFull
+	}
 |	"MATCH" "PARTIAL"
+	{
+		$$ = ast.MatchPartial
+	}
 |	"MATCH" "SIMPLE"
+	{
+		$$ = ast.MatchSimple
+	}
 
 MatchOpt:
-	{}
+	{
+		$$ = ast.MatchNone
+	}
 |	Match
 	{
+		$$ = $1
 		yylex.AppendError(yylex.Errorf("The MATCH clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
@@ -2088,28 +2138,41 @@ ReferDef:
 			IndexColNames: $4.([]*ast.IndexColName),
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
+			Match: $6.(ast.MatchType),
 		}
+	}
+
+OnDelete:
+	"ON" "DELETE" ReferOpt
+	{
+		$$ = &ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}
+	}
+
+OnUpdate:
+	"ON" "UPDATE" ReferOpt
+	{
+		$$ = &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}
 	}
 
 OnDeleteUpdateOpt:
 	{
 		$$ = []interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
 	} %prec lowerThanOn
-|	"ON" "DELETE" ReferOpt %prec lowerThanOn
+|	OnDelete  %prec lowerThanOn
 	{
-		$$ = []interface{}{&ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}, &ast.OnUpdateOpt{}}
+		$$ = []interface{}{$1, &ast.OnUpdateOpt{}}
 	}
-|	"ON" "UPDATE" ReferOpt %prec lowerThanOn
+|	OnUpdate %prec lowerThanOn
 	{
-		$$ = []interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}}
+		$$ = []interface{}{&ast.OnDeleteOpt{}, $1}
 	}
-|	"ON" "DELETE" ReferOpt "ON" "UPDATE" ReferOpt
+|	OnDelete OnUpdate
 	{
-		$$ = []interface{}{&ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}, &ast.OnUpdateOpt{ReferOpt: $6.(ast.ReferOptionType)}}
+		$$ = []interface{}{$1, $2}
 	}
-|	"ON" "UPDATE" ReferOpt "ON" "DELETE" ReferOpt
+|	OnUpdate OnDelete
 	{
-		$$ = []interface{}{&ast.OnDeleteOpt{ReferOpt: $6.(ast.ReferOptionType)}, &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}}
+		$$ = []interface{}{$2, $1}
 	}
 
 ReferOpt:
@@ -3648,8 +3711,8 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
+ "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
+| "TIDB_SMJ" | "TIDB_INLJ" | "TIDB_HASHAGG" | "TIDB_STREAMAGG" | "TOPN" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -5910,6 +5973,14 @@ TableOptimizerHintOpt:
 |	tidbHJ '(' HintTableList ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+	}
+|	tidbHASHAGG '(' ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+	}
+|	tidbSTREAMAGG '(' ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
 	}
 |	maxExecutionTime '(' NUM ')'
 	{
