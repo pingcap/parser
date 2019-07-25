@@ -1705,7 +1705,6 @@ const (
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
-	AlterTableRemovePartitioning
 
 	// TODO: Add more actions
 )
