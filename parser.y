@@ -1125,10 +1125,7 @@ AlterTableStmt:
 	{
 		specs := $5.([]*ast.AlterTableSpec)
 		if $6 != nil {
-			specs = append(specs, &ast.AlterTableSpec{
-				Tp:        ast.AlterTablePartition,
-				Partition: $6.(*ast.PartitionOptions),
-			})
+			specs = append(specs, $6.(*ast.AlterTableSpec))
 		}
 		$$ = &ast.AlterTableStmt{
 			Table: $4.(*ast.TableName),
@@ -1153,12 +1150,20 @@ AlterTableStmt:
 AlterTablePartitionOpt:
 	PartitionOpt
         {
-        	$$ = $1
+        	if $1 != nil {
+	        	$$ = &ast.AlterTableSpec{
+               			Tp:        ast.AlterTablePartition,
+                		Partition: $1.(*ast.PartitionOptions),
+                        }
+        	} else {
+        		$$ = nil
+        	}
+
         }
 | 	"REMOVE" "PARTITIONING"
         {
-        	$$ = &ast.PartitionOptions{
-        		IsRemovePartitioning: true,
+        	$$ = &ast.AlterTableSpec{
+        		Tp:        ast.AlterTableRemovePartitioning,
         	}
 		yylex.AppendError(yylex.Errorf("The REMOVE PARTITIONING clause is parsed but ignored by all storage engines."))
                 parser.lastErrorAsWarn()

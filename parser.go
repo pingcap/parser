@@ -8148,10 +8148,7 @@ yynewstate:
 		{
 			specs := yyS[yypt-1].item.([]*ast.AlterTableSpec)
 			if yyS[yypt-0].item != nil {
-				specs = append(specs, &ast.AlterTableSpec{
-					Tp:        ast.AlterTablePartition,
-					Partition: yyS[yypt-0].item.(*ast.PartitionOptions),
-				})
+				specs = append(specs, yyS[yypt-0].item.(*ast.AlterTableSpec))
 			}
 			parser.yyVAL.statement = &ast.AlterTableStmt{
 				Table: yyS[yypt-2].item.(*ast.TableName),
@@ -8174,12 +8171,20 @@ yynewstate:
 		}
 	case 5:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item
+			if yyS[yypt-0].item != nil {
+				parser.yyVAL.item = &ast.AlterTableSpec{
+					Tp:        ast.AlterTablePartition,
+					Partition: yyS[yypt-0].item.(*ast.PartitionOptions),
+				}
+			} else {
+				parser.yyVAL.item = nil
+			}
+
 		}
 	case 6:
 		{
-			parser.yyVAL.item = &ast.PartitionOptions{
-				IsRemovePartitioning: true,
+			parser.yyVAL.item = &ast.AlterTableSpec{
+				Tp: ast.AlterTableRemovePartitioning,
 			}
 			yylex.AppendError(yylex.Errorf("The REMOVE PARTITIONING clause is parsed but ignored by all storage engines."))
 			parser.lastErrorAsWarn()

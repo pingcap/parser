@@ -1705,6 +1705,7 @@ const (
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
+	AlterTableRemovePartitioning
 
 	// TODO: Add more actions
 )
@@ -1998,6 +1999,8 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ENABLE KEYS")
 	case AlterTableDisableKeys:
 		ctx.WriteKeyWord("DISABLE KEYS")
+	case AlterTableRemovePartitioning:
+		ctx.WriteKeyWord("REMOVE PARTITIONING")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -2066,7 +2069,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
 	for i, spec := range n.Specs {
-		if i == 0 || spec.Tp == AlterTablePartition {
+		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning {
 			ctx.WritePlain(" ")
 		} else {
 			ctx.WritePlain(", ")
@@ -2510,16 +2513,12 @@ func (n *PartitionMethod) acceptInPlace(v Visitor) bool {
 type PartitionOptions struct {
 	node
 	PartitionMethod
-	Sub                  *PartitionMethod
-	Definitions          []*PartitionDefinition
-	IsRemovePartitioning bool
+	Sub         *PartitionMethod
+	Definitions []*PartitionDefinition
 }
 
 // Validate checks if the partition is well-formed.
 func (n *PartitionOptions) Validate() error {
-	if n.IsRemovePartitioning {
-		return nil
-	}
 	// if both a partition list and the partition numbers are specified, their values must match
 	if n.Num != 0 && len(n.Definitions) != 0 && n.Num != uint64(len(n.Definitions)) {
 		return ErrPartitionWrongNoPart
@@ -2575,10 +2574,6 @@ func (n *PartitionOptions) Validate() error {
 }
 
 func (n *PartitionOptions) Restore(ctx *RestoreCtx) error {
-	if n.IsRemovePartitioning {
-		ctx.WriteKeyWord("REMOVE PARTITIONING")
-		return nil
-	}
 	ctx.WriteKeyWord("PARTITION BY ")
 	if err := n.PartitionMethod.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore PartitionOptions.PartitionMethod")
