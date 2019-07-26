@@ -1163,7 +1163,7 @@ AlterTablePartitionOpt:
 | 	"REMOVE" "PARTITIONING"
         {
         	$$ = &ast.AlterTableSpec{
-        		Tp:        ast.AlterTableRemovePartitioning,
+        		Tp: ast.AlterTableRemovePartitioning,
         	}
 		yylex.AppendError(yylex.Errorf("The REMOVE PARTITIONING clause is parsed but ignored by all storage engines."))
                 parser.lastErrorAsWarn()
