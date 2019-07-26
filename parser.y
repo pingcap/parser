@@ -1152,22 +1152,22 @@ AlterTablePartitionOpt:
         {
         	if $1 != nil {
 	        	$$ = &ast.AlterTableSpec{
-               			Tp:        ast.AlterTablePartition,
-                		Partition: $1.(*ast.PartitionOptions),
-                        }
-        	} else {
-        		$$ = nil
-        	}
+				Tp: ast.AlterTablePartition,
+				Partition: $1.(*ast.PartitionOptions),
+			}
+		} else {
+			$$ = nil
+		}
 
-        }
-| 	"REMOVE" "PARTITIONING"
-        {
+	}
+|	"REMOVE" "PARTITIONING"
+	{
         	$$ = &ast.AlterTableSpec{
         		Tp: ast.AlterTableRemovePartitioning,
         	}
 		yylex.AppendError(yylex.Errorf("The REMOVE PARTITIONING clause is parsed but ignored by all storage engines."))
-                parser.lastErrorAsWarn()
-        }
+		parser.lastErrorAsWarn()
+	}
 
 AlterTableSpec:
 	TableOptionList %prec higherThanComma
