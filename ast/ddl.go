@@ -222,6 +222,17 @@ func (n *IndexColName) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// MatchType is the type for reference match type.
+type MatchType int
+
+// match type
+const (
+	MatchNone MatchType = iota
+	MatchFull
+	MatchPartial
+	MatchSimple
+)
+
 // ReferenceDef is used for parsing foreign key reference option from SQL.
 // See http://dev.mysql.com/doc/refman/5.7/en/create-table-foreign-keys.html
 type ReferenceDef struct {
@@ -231,6 +242,7 @@ type ReferenceDef struct {
 	IndexColNames []*IndexColName
 	OnDelete      *OnDeleteOpt
 	OnUpdate      *OnUpdateOpt
+	Match         MatchType
 }
 
 // Restore implements Node interface.
@@ -251,6 +263,17 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WritePlain(")")
+	if n.Match != MatchNone {
+		ctx.WriteKeyWord(" MATCH ")
+		switch n.Match {
+		case MatchFull:
+			ctx.WriteKeyWord("FULL")
+		case MatchPartial:
+			ctx.WriteKeyWord("PARTIAL")
+		case MatchSimple:
+			ctx.WriteKeyWord("SIMPLE")
+		}
+	}
 	if n.OnDelete.ReferOpt != ReferOptionNoOption {
 		ctx.WritePlain(" ")
 		if err := n.OnDelete.Restore(ctx); err != nil {
@@ -308,6 +331,7 @@ const (
 	ReferOptionCascade
 	ReferOptionSetNull
 	ReferOptionNoAction
+	ReferOptionSetDefault
 )
 
 // String implements fmt.Stringer interface.
@@ -321,6 +345,8 @@ func (r ReferOptionType) String() string {
 		return "SET NULL"
 	case ReferOptionNoAction:
 		return "NO ACTION"
+	case ReferOptionSetDefault:
+		return "SET DEFAULT"
 	}
 	return ""
 }
@@ -1679,6 +1705,7 @@ const (
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
+	AlterTableRemovePartitioning
 
 	// TODO: Add more actions
 )
@@ -1972,6 +1999,8 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ENABLE KEYS")
 	case AlterTableDisableKeys:
 		ctx.WriteKeyWord("DISABLE KEYS")
+	case AlterTableRemovePartitioning:
+		ctx.WriteKeyWord("REMOVE PARTITIONING")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -2040,7 +2069,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
 	for i, spec := range n.Specs {
-		if i == 0 || spec.Tp == AlterTablePartition {
+		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning {
 			ctx.WritePlain(" ")
 		} else {
 			ctx.WritePlain(", ")

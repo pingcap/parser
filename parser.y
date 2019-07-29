@@ -37,12 +37,6 @@ import (
 	"github.com/pingcap/parser/types"
 )
 
-// this is local type definition to serve ON UPDATE /ON DELETE
-type OnDeleteUpdateDef struct {
-    OnDelete *ast.OnDeleteOpt
-    OnUpdate *ast.OnUpdateOpt
-}
-
 %}
 
 %union {
@@ -181,6 +175,7 @@ type OnDeleteUpdateDef struct {
 	longblobType		"LONGBLOB"
 	longtextType		"LONGTEXT"
 	lowPriority		"LOW_PRIORITY"
+	match			"MATCH"
 	maxValue		"MAXVALUE"
 	mediumblobType		"MEDIUMBLOB"
 	mediumIntType		"MEDIUMINT"
@@ -391,6 +386,8 @@ type OnDeleteUpdateDef struct {
 	only		"ONLY"
 	pageSym		"PAGE"
 	password	"PASSWORD"
+	partial		"PARTIAL"
+	partitioning	"PARTITIONING"
 	partitions	"PARTITIONS"
 	pipesAsOr
 	plugins		"PLUGINS"
@@ -408,6 +405,7 @@ type OnDeleteUpdateDef struct {
 	recover 	"RECOVER"
 	redundant	"REDUNDANT"
 	reload		"RELOAD"
+	remove 		"REMOVE"
 	repeatable	"REPEATABLE"
 	respect		"RESPECT"
 	replication	"REPLICATION"
@@ -425,6 +423,7 @@ type OnDeleteUpdateDef struct {
 	share		"SHARE"
 	shared		"SHARED"
 	signed		"SIGNED"
+	simple		"SIMPLE"
 	slave		"SLAVE"
 	slow		"SLOW"
 	snapshot	"SNAPSHOT"
@@ -696,6 +695,7 @@ type OnDeleteUpdateDef struct {
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
 	AlterAlgorithm			"Alter table algorithm"
+	AlterTablePartitionOpt		"Alter table partition option"
 	AlterTableSpec			"Alter table specification"
 	AlterTableSpecList		"Alter table specification list"
 	AlterTableSpecListOpt		"Alter table specification list optional"
@@ -846,7 +846,7 @@ type OnDeleteUpdateDef struct {
 	ReferDef			"Reference definition"
 	OnDelete			"ON DELETE clause"
 	OnUpdate			"ON UPDATE clause"
-	OnDeleteUpdateOpt   "optional ON DELETE clause + ON UPDATE clause"
+	OnDeleteUpdateOpt		"optional ON DELETE and UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
 	RequireList			"require list"
@@ -1008,6 +1008,8 @@ type OnDeleteUpdateDef struct {
 	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
+	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
+	MatchOpt		"optional MATCH clause"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -1119,14 +1121,11 @@ Start:
  * See https://dev.mysql.com/doc/refman/5.7/en/alter-table.html
  *******************************************************************************************/
 AlterTableStmt:
-	"ALTER" IgnoreOptional "TABLE" TableName AlterTableSpecListOpt PartitionOpt
+	"ALTER" IgnoreOptional "TABLE" TableName AlterTableSpecListOpt AlterTablePartitionOpt
 	{
 		specs := $5.([]*ast.AlterTableSpec)
 		if $6 != nil {
-			specs = append(specs, &ast.AlterTableSpec{
-				Tp:        ast.AlterTablePartition,
-				Partition: $6.(*ast.PartitionOptions),
-			})
+			specs = append(specs, $6.(*ast.AlterTableSpec))
 		}
 		$$ = &ast.AlterTableStmt{
 			Table: $4.(*ast.TableName),
@@ -1146,6 +1145,28 @@ AlterTableStmt:
 			IndexFlag: true,
 			AnalyzeOpts: $10.([]ast.AnalyzeOpt),
 		}
+	}
+
+AlterTablePartitionOpt:
+	PartitionOpt
+        {
+        	if $1 != nil {
+	        	$$ = &ast.AlterTableSpec{
+				Tp: ast.AlterTablePartition,
+				Partition: $1.(*ast.PartitionOptions),
+			}
+		} else {
+			$$ = nil
+		}
+
+	}
+|	"REMOVE" "PARTITIONING"
+	{
+        	$$ = &ast.AlterTableSpec{
+        		Tp: ast.AlterTableRemovePartitioning,
+        	}
+		yylex.AppendError(yylex.Errorf("The REMOVE PARTITIONING clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 AlterTableSpec:
@@ -2105,14 +2126,41 @@ ConstraintElem:
 		parser.lastErrorAsWarn()
 	}
 
-ReferDef:
-	"REFERENCES" TableName '(' IndexColNameList ')' OnDeleteUpdateOpt
+Match:
+	"MATCH" "FULL"
 	{
+		$$ = ast.MatchFull
+	}
+|	"MATCH" "PARTIAL"
+	{
+		$$ = ast.MatchPartial
+	}
+|	"MATCH" "SIMPLE"
+	{
+		$$ = ast.MatchSimple
+	}
+
+MatchOpt:
+	{
+		$$ = ast.MatchNone
+	}
+|	Match
+	{
+		$$ = $1
+		yylex.AppendError(yylex.Errorf("The MATCH clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+
+ReferDef:
+	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
+	{
+		onDeleteUpdate := $7.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
 			IndexColNames: $4.([]*ast.IndexColName),
-			OnDelete: $6.(OnDeleteUpdateDef).OnDelete,
-			OnUpdate: $6.(OnDeleteUpdateDef).OnUpdate,
+			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
+			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
+			Match: $6.(ast.MatchType),
 		}
 	}
 
@@ -2129,25 +2177,25 @@ OnUpdate:
 	}
 
 OnDeleteUpdateOpt:
-    OnDelete OnUpdate
-    {
-        $$ = OnDeleteUpdateDef{ $1.(*ast.OnDeleteOpt), $2.(*ast.OnUpdateOpt) }
-	}
-|   OnUpdate OnDelete
-    {
-        $$ = OnDeleteUpdateDef{ $2.(*ast.OnDeleteOpt), $1.(*ast.OnUpdateOpt) }
-	}
-|   OnUpdate
-    {
-        $$ = OnDeleteUpdateDef{ &ast.OnDeleteOpt{}, $1.(*ast.OnUpdateOpt) }
-    } %prec lowerThanOn
-|   OnDelete
-    {
-        $$ = OnDeleteUpdateDef{ $1.(*ast.OnDeleteOpt), &ast.OnUpdateOpt{} }
-    } %prec lowerThanOn
-|   {
-		$$ = OnDeleteUpdateDef{ &ast.OnDeleteOpt{}, &ast.OnUpdateOpt{} }
+	{
+		$$ = [2]interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
 	} %prec lowerThanOn
+|	OnDelete  %prec lowerThanOn
+	{
+		$$ = [2]interface{}{$1, &ast.OnUpdateOpt{}}
+	}
+|	OnUpdate %prec lowerThanOn
+	{
+		$$ = [2]interface{}{&ast.OnDeleteOpt{}, $1}
+	}
+|	OnDelete OnUpdate
+	{
+		$$ = [2]interface{}{$1, $2}
+	}
+|	OnUpdate OnDelete
+	{
+		$$ = [2]interface{}{$2, $1}
+	}
 
 ReferOpt:
 	"RESTRICT"
@@ -2165,6 +2213,12 @@ ReferOpt:
 |	"NO" "ACTION"
 	{
 		$$ = ast.ReferOptionNoAction
+	}
+|	"SET" "DEFAULT"
+	{
+		$$ = ast.ReferOptionSetDefault
+		yylex.AppendError(yylex.Errorf("The SET DEFAULT clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 /*
@@ -3675,7 +3729,7 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING"
 
 
 TiDBKeyword:
@@ -5015,6 +5069,15 @@ CastType:
 		x.Flag |= mysql.BinaryFlag | (mysql.ParseToJSONFlag)
 		x.Charset = mysql.DefaultCharset
 		x.Collate = mysql.DefaultCollationName
+		$$ = x
+	}
+|	"DOUBLE"
+	{
+		x := types.NewFieldType(mysql.TypeDouble)
+		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDouble)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
 		$$ = x
 	}
 
