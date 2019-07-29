@@ -1105,6 +1105,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		// for cast as signed int, fix issue #3691.
 		{"select cast(1 as signed int);", true, "SELECT CAST(1 AS SIGNED)"},
 
+		// for cast as double
+		{"select cast(1 as double);", true, "SELECT CAST(1 AS DOUBLE)"},
+
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
 		{"SELECT last_insert_id(1);", true, "SELECT LAST_INSERT_ID(1)"},
@@ -2168,6 +2171,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table ", false, ""},
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
+
+		// for remove partitioning
+		{"alter table t remove partitioning", true, "ALTER TABLE `t` REMOVE PARTITIONING"},
+		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident` REMOVE PARTITIONING"},
+		{"alter table t lock = default remove partitioning", true, "ALTER TABLE `t` LOCK = DEFAULT REMOVE PARTITIONING"},
 	}
 	s.RunTest(c, table)
 }
