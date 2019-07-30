@@ -1620,10 +1620,8 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
 	case TableOptionStorageMedia:
-		// TODO: not support
 		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
-		ctx.WritePlain(" /* TableOptionStorageMedia is not supported */ ")
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
