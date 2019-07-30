@@ -39,7 +39,7 @@ func (s *testConstSuite) TestPrivAllConsistency(c *C) {
 		c.Assert(ok, IsTrue)
 	}
 
-	c.Assert(len(Priv2UserCol), Equals, len(AllGlobalPrivs)+1)
+	c.Assert(len(Priv2UserCol), Equals, len(AllGlobalPrivs))
 
 	for _, v := range Priv2UserCol {
 		_, ok := Col2PrivType[v]

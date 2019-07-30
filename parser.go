@@ -14629,11 +14629,11 @@ yynewstate:
 		}
 	case 1636:
 		{
-			parser.yyVAL.item = mysql.PrivilegeType(0)
+			parser.yyVAL.item = mysql.CreateTMPTablePriv
 		}
 	case 1637:
 		{
-			parser.yyVAL.item = mysql.PrivilegeType(0)
+			parser.yyVAL.item = mysql.LockTablesPriv
 		}
 	case 1638:
 		{
@@ -14653,15 +14653,15 @@ yynewstate:
 		}
 	case 1642:
 		{
-			parser.yyVAL.item = mysql.PrivilegeType(0)
+			parser.yyVAL.item = mysql.CreateRoutinePriv
 		}
 	case 1643:
 		{
-			parser.yyVAL.item = mysql.PrivilegeType(0)
+			parser.yyVAL.item = mysql.AlterRoutinePriv
 		}
 	case 1644:
 		{
-			parser.yyVAL.item = mysql.PrivilegeType(0)
+			parser.yyVAL.item = mysql.EventPriv
 		}
 	case 1645:
 		{

@@ -8860,11 +8860,11 @@ PrivType:
 	}
 |	"CREATE" "TEMPORARY" "TABLES"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateTMPTablePriv
 	}
 |	"LOCK" "TABLES"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.LockTablesPriv
 	}
 |	"CREATE" "VIEW"
 	{
@@ -8884,15 +8884,15 @@ PrivType:
 	}
 |	"CREATE" "ROUTINE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateRoutinePriv
 	}
 |	"ALTER" "ROUTINE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.AlterRoutinePriv
 	}
 |	"EVENT"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.EventPriv
 	}
 
 ObjectType:
