@@ -7633,11 +7633,15 @@ TableOption:
 	{
 		// Parse it but will ignore it.
 		$$ = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "MEMORY"}
+		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 |	"STORAGE" "DISK"
 	{
 		// Parse it but will ignore it.
 		$$ = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "DISK"}
+		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 StatsPersistentVal:

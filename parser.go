@@ -13646,11 +13646,15 @@ yynewstate:
 		{
 			// Parse it but will ignore it.
 			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "MEMORY"}
+			yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
 		}
 	case 1445:
 		{
 			// Parse it but will ignore it.
 			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "DISK"}
+			yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
 		}
 	case 1448:
 		{
