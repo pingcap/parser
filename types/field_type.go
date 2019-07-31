@@ -223,7 +223,11 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 
 	if precision != UnspecifiedLength {
 		ctx.WritePlainf("(%d", precision)
-		if scale != UnspecifiedLength {
+		if scale != UnspecifiedLength &&
+			(ft.Tp == mysql.TypeDecimal ||
+				ft.Tp == mysql.TypeFloat ||
+				ft.Tp == mysql.TypeDouble ||
+				ft.Tp == mysql.TypeNewDecimal) {
 			ctx.WritePlainf(",%d", scale)
 		}
 		ctx.WritePlain(")")
