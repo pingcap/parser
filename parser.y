@@ -5089,9 +5089,8 @@ CastType:
 		fopt := $2.(*ast.FloatOpt)
 		if fopt.Flen >= 54 {
 			yylex.AppendError(ErrTooBigPrecision.GenWithStackByArgs(fopt.Flen,"CAST",53))
-		}
-		if fopt.Flen >= 25 {
-		    x = types.NewFieldType(mysql.TypeDouble)
+		} else if fopt.Flen >= 25 {
+			x = types.NewFieldType(mysql.TypeDouble)
 		}
 		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(x.Tp)
 		x.Flag |= mysql.BinaryFlag
