@@ -201,13 +201,11 @@ func (ft *FieldType) String() string {
 func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(TypeToStr(ft.Tp, ft.Charset))
 
-	precision := ft.Flen
-	scale := ft.Decimal
+	precision := UnspecifiedLength
+	scale := UnspecifiedLength
 
 	switch ft.Tp {
 	case mysql.TypeEnum, mysql.TypeSet:
-		precision = UnspecifiedLength
-		scale = UnspecifiedLength
 		ctx.WritePlain("(")
 		for i, e := range ft.Elems {
 			if i != 0 {
@@ -218,20 +216,19 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlain(")")
 	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
 		precision = ft.Decimal
-		scale = UnspecifiedLength
+	case mysql.TypeDecimal, mysql.TypeFloat, mysql.TypeDouble, mysql.TypeNewDecimal:
+		precision = ft.Flen
+		scale = ft.Decimal
+	default:
+		precision = ft.Flen
 	}
 
 	if precision != UnspecifiedLength {
 		ctx.WritePlainf("(%d", precision)
-		if scale != UnspecifiedLength &&
-			(ft.Tp == mysql.TypeDecimal ||
-				ft.Tp == mysql.TypeFloat ||
-				ft.Tp == mysql.TypeDouble ||
-				ft.Tp == mysql.TypeNewDecimal) {
+		if scale != UnspecifiedLength {
 			ctx.WritePlainf(",%d", scale)
 		}
 		ctx.WritePlain(")")
-
 	}
 
 	if mysql.HasUnsignedFlag(ft.Flag) {
