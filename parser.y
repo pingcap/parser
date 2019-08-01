@@ -319,6 +319,7 @@ import (
 	delayKeyWrite	"DELAY_KEY_WRITE"
 	directory	"DIRECTORY"
 	disable		"DISABLE"
+	disk		"DISK"
 	do		"DO"
 	duplicate	"DUPLICATE"
 	dynamic		"DYNAMIC"
@@ -432,7 +433,9 @@ import (
 	sqlNoCache	"SQL_NO_CACHE"
 	start		"START"
 	statsPersistent	"STATS_PERSISTENT"
+	statsSamplePages	"STATS_SAMPLE_PAGES"
 	status		"STATUS"
+	storage		"STORAGE"
 	swaps		"SWAPS"
 	switchesSym	"SWITCHES"
 	systemTime	"SYSTEM_TIME"
@@ -3729,7 +3732,7 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES"
 
 
 TiDBKeyword:
@@ -5075,6 +5078,21 @@ CastType:
 	{
 		x := types.NewFieldType(mysql.TypeDouble)
 		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDouble)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|	"FLOAT" FloatOpt
+	{
+		x := types.NewFieldType(mysql.TypeFloat)
+		fopt := $2.(*ast.FloatOpt)
+		if fopt.Flen >= 54 {
+			yylex.AppendError(ErrTooBigPrecision.GenWithStackByArgs(fopt.Flen,"CAST",53))
+		} else if fopt.Flen >= 25 {
+			x = types.NewFieldType(mysql.TypeDouble)
+		}
+		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(x.Tp)
 		x.Flag |= mysql.BinaryFlag
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CollationBin
@@ -7631,6 +7649,23 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
 	}
+|	"STATS_SAMPLE_PAGES" EqOpt LengthNum
+	{
+		// Parse it but will ignore it.	
+		// In MySQL, STATS_SAMPLE_PAGES=N(Where 0<N<=65535) or STAS_SAMPLE_PAGES=DEFAULT.
+		// Cause we don't support it, so we don't check range of the value.
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, UintValue: $3.(uint64)}
+		yylex.AppendError(yylex.Errorf("The STATS_SAMPLE_PAGES is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"STATS_SAMPLE_PAGES" EqOpt "DEFAULT"
+	{
+		// Parse it but will ignore it.	
+		// In MySQL, default value of STATS_SAMPLE_PAGES is 0.
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, UintValue: 0}
+		yylex.AppendError(yylex.Errorf("The STATS_SAMPLE_PAGES is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 |	"SHARD_ROW_ID_BITS" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionShardRowID, UintValue: $3.(uint64)}
@@ -7643,6 +7678,20 @@ TableOption:
 	{
 		// Parse it but will ignore it.
 		$$ = &ast.TableOption{Tp: ast.TableOptionPackKeys}
+	}
+|	"STORAGE" "MEMORY"
+	{
+		// Parse it but will ignore it.
+		$$ = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "MEMORY"}
+		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"STORAGE" "DISK"
+	{
+		// Parse it but will ignore it.
+		$$ = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "DISK"}
+		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 StatsPersistentVal:
@@ -8893,11 +8942,11 @@ PrivType:
 	}
 |	"CREATE" "TEMPORARY" "TABLES"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateTMPTablePriv
 	}
 |	"LOCK" "TABLES"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.LockTablesPriv
 	}
 |	"CREATE" "VIEW"
 	{
@@ -8917,15 +8966,15 @@ PrivType:
 	}
 |	"CREATE" "ROUTINE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateRoutinePriv
 	}
 |	"ALTER" "ROUTINE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.AlterRoutinePriv
 	}
 |	"EVENT"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.EventPriv
 	}
 
 ObjectType:

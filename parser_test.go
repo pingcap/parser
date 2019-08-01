@@ -351,6 +351,54 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
 }
 
+func (s *testParserSuite) RunTestInRealAsFloatMode(c *C, table []testCase) {
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	parser.SetSQLMode(mysql.ModeRealAsFloat)
+	for _, t := range table {
+		_, _, err := parser.Parse(t.src, "", "")
+		comment := Commentf("source %v", t.src)
+		if !t.ok {
+			c.Assert(err, NotNil, comment)
+			continue
+		}
+		c.Assert(err, IsNil, comment)
+		// restore correctness test
+		if t.ok {
+			s.RunRestoreTestInRealAsFloatMode(c, t.src, t.restore)
+		}
+	}
+}
+
+func (s *testParserSuite) RunRestoreTestInRealAsFloatMode(c *C, sourceSQLs, expectSQLs string) {
+	var sb strings.Builder
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	parser.SetSQLMode(mysql.ModeRealAsFloat)
+	comment := Commentf("source %v", sourceSQLs)
+	stmts, _, err := parser.Parse(sourceSQLs, "", "")
+	c.Assert(err, IsNil, comment)
+	restoreSQLs := ""
+	for _, stmt := range stmts {
+		sb.Reset()
+		err = stmt.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+		c.Assert(err, IsNil, comment)
+		restoreSQL := sb.String()
+		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
+		restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
+		c.Assert(err, IsNil, comment)
+		CleanNodeText(stmt)
+		CleanNodeText(restoreStmt)
+		c.Assert(restoreStmt, DeepEquals, stmt, comment)
+		if restoreSQLs != "" {
+			restoreSQLs += "; "
+		}
+		restoreSQLs += restoreSQL
+	}
+	comment = Commentf("restore %v; expect %v", restoreSQLs, expectSQLs)
+	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
+}
+
 func (s *testParserSuite) RunErrMsgTest(c *C, table []testErrMsgCase) {
 	parser := parser.New()
 	for _, t := range table {
@@ -1112,6 +1160,14 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		// for cast as double
 		{"select cast(1 as double);", true, "SELECT CAST(1 AS DOUBLE)"},
 
+		// for cast as float
+		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(54));", false, ""},
+
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
 		{"SELECT last_insert_id(1);", true, "SELECT LAST_INSERT_ID(1)"},
@@ -1614,6 +1670,18 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT `uuid`()", true, "SELECT UUID()"},
 	}
 	s.RunTest(c, table)
+
+	// Test in REAL_AS_FLOAT SQL mode.
+	table2 := []testCase{
+		// for cast as float
+		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(54));", false, ""},
+	}
+	s.RunTestInRealAsFloatMode(c, table2)
 }
 
 func (s *testParserSuite) TestIdentifier(c *C) {
@@ -1736,9 +1804,14 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (c int) STATS_PERSISTENT = default", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 		{"create table t (c int) STATS_PERSISTENT = 0", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 		{"create table t (c int) STATS_PERSISTENT = 1", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
+		{"create table t (c int) STATS_SAMPLE_PAGES 10", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 10"},
+		{"create table t (c int) STATS_SAMPLE_PAGES = 10", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 10"},
+		{"create table t (c int) STATS_SAMPLE_PAGES = default", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = DEFAULT"},
 		{"create table t (c int) PACK_KEYS = 1", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) PACK_KEYS = 0", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) PACK_KEYS = DEFAULT", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
+		{"create table t (c int) STORAGE DISK", true, "CREATE TABLE `t` (`c` INT) STORAGE DISK"},
+		{"create table t (c int) STORAGE MEMORY", true, "CREATE TABLE `t` (`c` INT) STORAGE MEMORY"},
 		{`create table testTableCompression (c VARCHAR(15000)) compression="ZLIB";`, true, "CREATE TABLE `testTableCompression` (`c` VARCHAR(15000)) COMPRESSION = 'ZLIB'"},
 		{`create table t1 (c1 int) compression="zlib";`, true, "CREATE TABLE `t1` (`c1` INT) COMPRESSION = 'zlib'"},
 
@@ -2442,7 +2515,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"grant all privileges on zabbix.* to 'zabbix'@'localhost' identified by 'password';", true, "GRANT ALL ON `zabbix`.* TO `zabbix`@`localhost` IDENTIFIED BY 'password'"},
 		{"GRANT SELECT ON test.* to 'test'", true, "GRANT SELECT ON `test`.* TO `test`@`%`"}, // For issue 2654.
 		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, "GRANT PROCESS /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ ON *.* TO `xxxxxxxxxx`@`%` IDENTIFIED BY PASSWORD 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'"}, // For issue 4865
-		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE USER /* UNSUPPORTED TYPE */, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
+		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
 		{"GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';", true, "GRANT `role1`@`%`, `role2`@`%` TO `user1`@`localhost`, `user2`@`localhost`"},
 		{"GRANT 'u1' TO 'u1';", true, "GRANT `u1`@`%` TO `u1`@`%`"},
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
