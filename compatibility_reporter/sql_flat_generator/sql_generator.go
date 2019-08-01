@@ -10,6 +10,13 @@ import (
 
 const maxDepthCount = 2
 
+var whiteList = map[string]*struct{}{
+	"ident":     {},
+	"%empty":    {},
+	"IDENT":     {},
+	"IDENT_sys": {},
+}
+
 type ProdNode struct {
 	prod string
 	next *ProdNode
@@ -64,26 +71,33 @@ func concat(first, second *ProdList) *ProdList {
 }
 
 type WalkIndices struct {
+	max     []int
 	arr     []int
 	current int
 }
 
 func newWalkIndices() WalkIndices {
-	return WalkIndices{nil, -1}
+	return WalkIndices{nil, nil, -1}
 }
 
 func (wi *WalkIndices) tryCarry() (reachEnding bool) {
-	if wi.current <= 0 {
+	var i int
+	for i = wi.current; i > 0 && wi.arr[i] > wi.max[i]; i-- {
+		wi.arr[i] = 0
+		wi.arr[i-1]++
+	}
+	if i == 0 && wi.arr[0] > wi.max[0] {
 		return true
 	}
-	wi.arr[wi.current] = 0
-	wi.arr[wi.current-1]++
+	wi.max = wi.max[:i+1]
+	wi.arr = wi.arr[:i+1]
 	return false
 }
-func (wi *WalkIndices) produceChoice() int {
+func (wi *WalkIndices) produceChoice(currentMaxChoice int) int {
 	wi.current++
 	if wi.current >= len(wi.arr) {
 		wi.arr = append(wi.arr, 0)
+		wi.max = append(wi.max, currentMaxChoice)
 	}
 	return wi.arr[wi.current]
 }
@@ -173,7 +187,7 @@ func generateSQL(walkIndices *WalkIndices, start string, prodMap map[string]Prod
 		depthCounts[head.prod]++
 
 		seqs := filterMaxDepth(prodMap[head.prod].Alter, depthCounts, maxDepthCount)
-		nextChoice := walkIndices.produceChoice()
+		nextChoice := walkIndices.produceChoice(len(seqs) - 1)
 		if nextChoice >= len(seqs) {
 			if ending := walkIndices.tryCarry(); ending {
 				return "", io.EOF
@@ -221,7 +235,7 @@ func maxDepth(seq Seq, depthCount map[string]int) int {
 	max := 0
 	for _, s := range seq.Items {
 		d, ok := depthCount[s]
-		if !ok {
+		if !ok || whiteList[s] != nil {
 			continue
 		}
 		if max < d {

@@ -270,8 +270,9 @@ func checkProductionMap() {
 func initProductionMap(productions []yacc_parser.Production) {
 	productionMap = make(map[string]yacc_parser.Production)
 	for _, production := range productions {
-		if _, exist := productionMap[production.Head]; exist {
-			panic(fmt.Sprintf("Production '%s' duplicate definitions", production.Head))
+		if pm, exist := productionMap[production.Head]; exist {
+			pm.Alter = append(pm.Alter, production.Alter...)
+			productionMap[production.Head] = pm
 		}
 		productionMap[production.Head] = production
 	}
