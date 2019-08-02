@@ -1635,7 +1635,7 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		}
 	case TableOptionSecondaryEngine:
 		ctx.WriteKeyWord("SECONDARY_ENGINE ")
-		ctx.WritePlainf("= ")
+		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
 	case TableOptionSecondaryEngineNull:
 		ctx.WriteKeyWord("SECONDARY_ENGINE ")
