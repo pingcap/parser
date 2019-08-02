@@ -8472,8 +8472,7 @@ yynewstate:
 		{
 			// Parse it and ignore it. Just for compatibility.
 			parser.yyVAL.item = &ast.AlterTableSpec{
-				Tp:               ast.AlterTableWithValidation,
-				IfWithValidation: true,
+				Tp: ast.AlterTableWithValidation,
 			}
 			yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 			parser.lastErrorAsWarn()
@@ -8482,8 +8481,7 @@ yynewstate:
 		{
 			// Parse it and ignore it. Just for compatibility.
 			parser.yyVAL.item = &ast.AlterTableSpec{
-				Tp:               ast.AlterTableWithValidation,
-				IfWithValidation: false,
+				Tp: ast.AlterTableWithoutValidation,
 			}
 			yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 			parser.lastErrorAsWarn()

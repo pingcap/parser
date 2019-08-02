@@ -1720,6 +1720,7 @@ const (
 	AlterTableDisableKeys
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
+	AlterTableWithoutValidation
 
 	// TODO: Add more actions
 )
@@ -1791,24 +1792,23 @@ type AlterTableSpec struct {
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfNotExists bool
 
-	Tp               AlterTableType
-	Name             string
-	Constraint       *Constraint
-	Options          []*TableOption
-	NewTable         *TableName
-	NewColumns       []*ColumnDef
-	OldColumnName    *ColumnName
-	Position         *ColumnPosition
-	LockType         LockType
-	Algorithm        AlterAlgorithm
-	Comment          string
-	FromKey          model.CIStr
-	ToKey            model.CIStr
-	Partition        *PartitionOptions
-	PartitionNames   []model.CIStr
-	PartDefinitions  []*PartitionDefinition
-	Num              uint64
-	IfWithValidation bool
+	Tp              AlterTableType
+	Name            string
+	Constraint      *Constraint
+	Options         []*TableOption
+	NewTable        *TableName
+	NewColumns      []*ColumnDef
+	OldColumnName   *ColumnName
+	Position        *ColumnPosition
+	LockType        LockType
+	Algorithm       AlterAlgorithm
+	Comment         string
+	FromKey         model.CIStr
+	ToKey           model.CIStr
+	Partition       *PartitionOptions
+	PartitionNames  []model.CIStr
+	PartDefinitions []*PartitionDefinition
+	Num             uint64
 }
 
 // Restore implements Node interface.
@@ -2017,11 +2017,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	case AlterTableRemovePartitioning:
 		ctx.WriteKeyWord("REMOVE PARTITIONING")
 	case AlterTableWithValidation:
-		if n.IfWithValidation {
-			ctx.WriteKeyWord("WITH VALIDATION")
-		} else {
-			ctx.WriteKeyWord("WITHOUT VALIDATION")
-		}
+		ctx.WriteKeyWord("WITH VALIDATION")
+	case AlterTableWithoutValidation:
+		ctx.WriteKeyWord("WITHOUT VALIDATION")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)

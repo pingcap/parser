@@ -1408,7 +1408,6 @@ AlterTableSpec:
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
 			Tp:               ast.AlterTableWithValidation,
-			IfWithValidation: true,
 		}
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
@@ -1417,8 +1416,7 @@ AlterTableSpec:
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
-			Tp:               ast.AlterTableWithValidation,
-			IfWithValidation: false,
+			Tp:               ast.AlterTableWithoutValidation,
 		}
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
