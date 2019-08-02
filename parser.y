@@ -1412,7 +1412,7 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
-|	"WITHOUT" "VALIDATION"
+| "WITHOUT" "VALIDATION"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
