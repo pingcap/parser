@@ -1403,7 +1403,7 @@ AlterTableSpec:
 			Tp:    		ast.AlterTableForce,
 		}
 	}
-|	"WITH" "VALIDATION"
+| "WITH" "VALIDATION"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
