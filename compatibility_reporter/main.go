@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
@@ -42,6 +43,8 @@ var (
 	randomlyGen     bool
 	totalOutputCase uint64
 	database        string
+	exceptErrnoStr  string
+	exceptErrno     []uint16
 	MySQLVersion    = "None"
 )
 
@@ -57,10 +60,22 @@ func parseFlag() {
 	flag.BoolVar(&randomlyGen, "R", false, "Generator SQL randomly")
 	flag.Uint64Var(&totalOutputCase, "N", 0, "The number of output sql case, set 0 for infinite")
 	flag.StringVar(&database, "d", "mysql", "The database selected after connected")
+	flag.StringVar(&exceptErrnoStr, "E", "", "Except cases of these error codes")
 	flag.Parse()
 	if len(productionName) == 0 || len(bnfPath) == 0 {
 		flag.Usage()
 		os.Exit(0)
+	}
+	errnoStrs := strings.Split(exceptErrnoStr, ",")
+	for _, errnoStr := range errnoStrs {
+		if errnoStr == "" {
+			continue
+		}
+		errno, err := strconv.ParseUint(errnoStr, 10, 16)
+		if err != nil {
+			panic("parameter error:" + errnoStr)
+		}
+		exceptErrno = append(exceptErrno, uint16(errno))
 	}
 }
 
@@ -132,6 +147,11 @@ func printCsvCaseReport(csvFile *os.File, report *caseReport) {
 			(report.TiDBErrNo == report.MySQLErrNo)) ||
 		!report.MySQLPass {
 		return
+	}
+	for _, errno := range exceptErrno {
+		if errno == report.MySQLErrNo {
+			return
+		}
 	}
 	var tidbWarns []string
 	for _, warn := range report.TiDBWarns {
