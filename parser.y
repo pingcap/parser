@@ -417,6 +417,7 @@ import (
 	rowCount	"ROW_COUNT"
 	rowFormat	"ROW_FORMAT"
 	second		"SECOND"
+	secondaryEngine	"SECONDARY_ENGINE"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
 	serializable	"SERIALIZABLE"
@@ -465,12 +466,14 @@ import (
 	unknown 	"UNKNOWN"
 	user		"USER"
 	undefined	"UNDEFINED"
+	validation	"VALIDATION"
 	value		"VALUE"
 	variables	"VARIABLES"
 	view		"VIEW"
 	binding		"BINDING"
 	bindings	"BINDINGS"
 	warnings	"WARNINGS"
+	without		"WITHOUT"
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
 	yearType	"YEAR"
@@ -1400,6 +1403,24 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableForce,
 		}
+	}
+| "WITH" "VALIDATION"
+	{
+		// Parse it and ignore it. Just for compatibility.
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableWithValidation,
+		}
+		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+| "WITHOUT" "VALIDATION"
+	{
+		// Parse it and ignore it. Just for compatibility.
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableWithoutValidation,
+		}
+		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 
@@ -3732,7 +3753,8 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
+| "WITHOUT"
 
 
 TiDBKeyword:
@@ -7674,6 +7696,22 @@ TableOption:
 		// Parse it but will ignore it.
 		$$ = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "DISK"}
 		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"SECONDARY_ENGINE" EqOpt "NULL"
+	{
+		// Parse it but will ignore it
+		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
+		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngineNull}
+		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"SECONDARY_ENGINE" EqOpt StringName
+	{
+		// Parse it but will ignore it
+		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
+		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: $3.(string)}
+		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
 
