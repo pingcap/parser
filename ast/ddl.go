@@ -220,6 +220,17 @@ func (n *IndexColName) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// MatchType is the type for reference match type.
+type MatchType int
+
+// match type
+const (
+	MatchNone MatchType = iota
+	MatchFull
+	MatchPartial
+	MatchSimple
+)
+
 // ReferenceDef is used for parsing foreign key reference option from SQL.
 // See http://dev.mysql.com/doc/refman/5.7/en/create-table-foreign-keys.html
 type ReferenceDef struct {
@@ -229,6 +240,7 @@ type ReferenceDef struct {
 	IndexColNames []*IndexColName
 	OnDelete      *OnDeleteOpt
 	OnUpdate      *OnUpdateOpt
+	Match         MatchType
 }
 
 // Restore implements Node interface.
@@ -249,6 +261,17 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WritePlain(")")
+	if n.Match != MatchNone {
+		ctx.WriteKeyWord(" MATCH ")
+		switch n.Match {
+		case MatchFull:
+			ctx.WriteKeyWord("FULL")
+		case MatchPartial:
+			ctx.WriteKeyWord("PARTIAL")
+		case MatchSimple:
+			ctx.WriteKeyWord("SIMPLE")
+		}
+	}
 	if n.OnDelete.ReferOpt != ReferOptionNoOption {
 		ctx.WritePlain(" ")
 		if err := n.OnDelete.Restore(ctx); err != nil {
@@ -306,6 +329,7 @@ const (
 	ReferOptionCascade
 	ReferOptionSetNull
 	ReferOptionNoAction
+	ReferOptionSetDefault
 )
 
 // String implements fmt.Stringer interface.
@@ -319,6 +343,8 @@ func (r ReferOptionType) String() string {
 		return "SET NULL"
 	case ReferOptionNoAction:
 		return "NO ACTION"
+	case ReferOptionSetDefault:
+		return "SET DEFAULT"
 	}
 	return ""
 }
@@ -1421,6 +1447,10 @@ const (
 	TableOptionNodegroup
 	TableOptionDataDirectory
 	TableOptionIndexDirectory
+	TableOptionStorageMedia
+	TableOptionStatsSamplePages
+	TableOptionSecondaryEngine
+	TableOptionSecondaryEngineNull
 )
 
 // RowFormat types
@@ -1590,6 +1620,25 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("INDEX DIRECTORY ")
 		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
+	case TableOptionStorageMedia:
+		ctx.WriteKeyWord("STORAGE ")
+		ctx.WriteKeyWord(n.StrValue)
+	case TableOptionStatsSamplePages:
+		ctx.WriteKeyWord("STATS_SAMPLE_PAGES ")
+		ctx.WritePlain("= ")
+		if n.UintValue == 0 {
+			ctx.WriteKeyWord("DEFAULT")
+		} else {
+			ctx.WritePlainf("%d", n.UintValue)
+		}
+	case TableOptionSecondaryEngine:
+		ctx.WriteKeyWord("SECONDARY_ENGINE ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case TableOptionSecondaryEngineNull:
+		ctx.WriteKeyWord("SECONDARY_ENGINE ")
+		ctx.WritePlain("= ")
+		ctx.WriteKeyWord("NULL")
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
@@ -1677,6 +1726,9 @@ const (
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
+	AlterTableRemovePartitioning
+	AlterTableWithValidation
+	AlterTableWithoutValidation
 
 	// TODO: Add more actions
 )
@@ -1970,6 +2022,12 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ENABLE KEYS")
 	case AlterTableDisableKeys:
 		ctx.WriteKeyWord("DISABLE KEYS")
+	case AlterTableRemovePartitioning:
+		ctx.WriteKeyWord("REMOVE PARTITIONING")
+	case AlterTableWithValidation:
+		ctx.WriteKeyWord("WITH VALIDATION")
+	case AlterTableWithoutValidation:
+		ctx.WriteKeyWord("WITHOUT VALIDATION")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -2038,7 +2096,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
 	for i, spec := range n.Specs {
-		if i == 0 || spec.Tp == AlterTablePartition {
+		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning {
 			ctx.WritePlain(" ")
 		} else {
 			ctx.WritePlain(", ")

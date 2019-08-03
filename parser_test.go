@@ -351,6 +351,54 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
 }
 
+func (s *testParserSuite) RunTestInRealAsFloatMode(c *C, table []testCase) {
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	parser.SetSQLMode(mysql.ModeRealAsFloat)
+	for _, t := range table {
+		_, _, err := parser.Parse(t.src, "", "")
+		comment := Commentf("source %v", t.src)
+		if !t.ok {
+			c.Assert(err, NotNil, comment)
+			continue
+		}
+		c.Assert(err, IsNil, comment)
+		// restore correctness test
+		if t.ok {
+			s.RunRestoreTestInRealAsFloatMode(c, t.src, t.restore)
+		}
+	}
+}
+
+func (s *testParserSuite) RunRestoreTestInRealAsFloatMode(c *C, sourceSQLs, expectSQLs string) {
+	var sb strings.Builder
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	parser.SetSQLMode(mysql.ModeRealAsFloat)
+	comment := Commentf("source %v", sourceSQLs)
+	stmts, _, err := parser.Parse(sourceSQLs, "", "")
+	c.Assert(err, IsNil, comment)
+	restoreSQLs := ""
+	for _, stmt := range stmts {
+		sb.Reset()
+		err = stmt.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+		c.Assert(err, IsNil, comment)
+		restoreSQL := sb.String()
+		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
+		restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
+		c.Assert(err, IsNil, comment)
+		CleanNodeText(stmt)
+		CleanNodeText(restoreStmt)
+		c.Assert(restoreStmt, DeepEquals, stmt, comment)
+		if restoreSQLs != "" {
+			restoreSQLs += "; "
+		}
+		restoreSQLs += restoreSQL
+	}
+	comment = Commentf("restore %v; expect %v", restoreSQLs, expectSQLs)
+	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
+}
+
 func (s *testParserSuite) RunErrMsgTest(c *C, table []testErrMsgCase) {
 	parser := parser.New()
 	for _, t := range table {
@@ -1105,6 +1153,17 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		// for cast as signed int, fix issue #3691.
 		{"select cast(1 as signed int);", true, "SELECT CAST(1 AS SIGNED)"},
 
+		// for cast as double
+		{"select cast(1 as double);", true, "SELECT CAST(1 AS DOUBLE)"},
+
+		// for cast as float
+		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(54));", false, ""},
+
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
 		{"SELECT last_insert_id(1);", true, "SELECT LAST_INSERT_ID(1)"},
@@ -1607,6 +1666,18 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT `uuid`()", true, "SELECT UUID()"},
 	}
 	s.RunTest(c, table)
+
+	// Test in REAL_AS_FLOAT SQL mode.
+	table2 := []testCase{
+		// for cast as float
+		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(54));", false, ""},
+	}
+	s.RunTestInRealAsFloatMode(c, table2)
 }
 
 func (s *testParserSuite) TestIdentifier(c *C) {
@@ -1729,9 +1800,17 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (c int) STATS_PERSISTENT = default", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 		{"create table t (c int) STATS_PERSISTENT = 0", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 		{"create table t (c int) STATS_PERSISTENT = 1", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
+		{"create table t (c int) STATS_SAMPLE_PAGES 10", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 10"},
+		{"create table t (c int) STATS_SAMPLE_PAGES = 10", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 10"},
+		{"create table t (c int) STATS_SAMPLE_PAGES = default", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = DEFAULT"},
 		{"create table t (c int) PACK_KEYS = 1", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) PACK_KEYS = 0", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) PACK_KEYS = DEFAULT", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
+		{"create table t (c int) STORAGE DISK", true, "CREATE TABLE `t` (`c` INT) STORAGE DISK"},
+		{"create table t (c int) STORAGE MEMORY", true, "CREATE TABLE `t` (`c` INT) STORAGE MEMORY"},
+		{"create table t (c int) SECONDARY_ENGINE null", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = NULL"},
+		{"create table t (c int) SECONDARY_ENGINE = innodb", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'innodb'"},
+		{"create table t (c int) SECONDARY_ENGINE 'null'", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'null'"},
 		{`create table testTableCompression (c VARCHAR(15000)) compression="ZLIB";`, true, "CREATE TABLE `testTableCompression` (`c` VARCHAR(15000)) COMPRESSION = 'ZLIB'"},
 		{`create table t1 (c1 int) compression="zlib";`, true, "CREATE TABLE `t1` (`c1` INT) COMPRESSION = 'zlib'"},
 
@@ -1897,6 +1976,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table if not exists `t` (`id` int not null auto_increment comment '消息ID', primary key `pk_id` (`id`) );", true, "CREATE TABLE IF NOT EXISTS `t` (`id` INT NOT NULL AUTO_INCREMENT COMMENT '消息ID',PRIMARY KEY(`id`))"},
 		// Create table with like.
 		{"create table a like b", true, "CREATE TABLE `a` LIKE `b`"},
+		{"create table a (id int REFERENCES a (id) ON delete NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) ON update set default )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON UPDATE SET DEFAULT)"},
+		{"create table a (id int REFERENCES a (id) ON delete set null on update CASCADE)", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE SET NULL ON UPDATE CASCADE)"},
+		{"create table a (id int REFERENCES a (id) ON update set default on delete RESTRICT)", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE RESTRICT ON UPDATE SET DEFAULT)"},
+		{"create table a (id int REFERENCES a (id) MATCH FULL ON delete NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) MATCH FULL ON DELETE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) MATCH PARTIAL ON update NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) MATCH PARTIAL ON UPDATE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) MATCH SIMPLE ON update NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) MATCH SIMPLE ON UPDATE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) ON update set default )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON UPDATE SET DEFAULT)"},
+		{"create table a (id int REFERENCES a (id) ON update set default on update CURRENT_TIMESTAMP)", false, ""},
+		{"create table a (id int REFERENCES a (id) ON delete set default on update CURRENT_TIMESTAMP)", false, ""},
 		{"create table a (like b)", true, "CREATE TABLE `a` LIKE `b`"},
 		{"create table if not exists a like b", true, "CREATE TABLE IF NOT EXISTS `a` LIKE `b`"},
 		{"create table if not exists a (like b)", true, "CREATE TABLE IF NOT EXISTS `a` LIKE `b`"},
@@ -2085,6 +2174,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t enable keys, comment = 'cmt' partition by hash(a)", true, "ALTER TABLE `t` ENABLE KEYS, COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt', partition by hash(a)", false, ""},
 
+		{"alter table t with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t without validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t without validation, with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t with validation, modify column b int as (a + 2) ", true, "ALTER TABLE `t` WITH VALIDATION, MODIFY COLUMN `b` INT GENERATED ALWAYS AS(`a`+2) VIRTUAL"},
+		{"alter table t with validation, change column b c int as (a + 2)", true, "ALTER TABLE `t` WITH VALIDATION, CHANGE COLUMN `b` `c` INT GENERATED ALWAYS AS(`a`+2) VIRTUAL"},
+
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
@@ -2158,6 +2253,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table ", false, ""},
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
+
+		// for remove partitioning
+		{"alter table t remove partitioning", true, "ALTER TABLE `t` REMOVE PARTITIONING"},
+		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident` REMOVE PARTITIONING"},
+		{"alter table t lock = default remove partitioning", true, "ALTER TABLE `t` LOCK = DEFAULT REMOVE PARTITIONING"},
 	}
 	s.RunTest(c, table)
 }
@@ -2288,6 +2388,15 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].L, Equals, "t4")
 
+	stmt, _, err = parser.Parse("select /*+ TIDB_HASHAGG() tidb_streamagg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "tidb_hashagg")
+	c.Assert(hints[1].HintName.L, Equals, "tidb_streamagg")
+
 	queries := []string{
 		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t1 INNER JOIN t2 where t1.c1 = t2.c1",
 		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ 1",
@@ -2411,7 +2520,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"grant all privileges on zabbix.* to 'zabbix'@'localhost' identified by 'password';", true, "GRANT ALL ON `zabbix`.* TO `zabbix`@`localhost` IDENTIFIED BY 'password'"},
 		{"GRANT SELECT ON test.* to 'test'", true, "GRANT SELECT ON `test`.* TO `test`@`%`"}, // For issue 2654.
 		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, "GRANT PROCESS /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ ON *.* TO `xxxxxxxxxx`@`%` IDENTIFIED BY PASSWORD 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'"}, // For issue 4865
-		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE USER /* UNSUPPORTED TYPE */, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
+		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
 		{"GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';", true, "GRANT `role1`@`%`, `role2`@`%` TO `user1`@`localhost`, `user2`@`localhost`"},
 		{"GRANT 'u1' TO 'u1';", true, "GRANT `u1`@`%` TO `u1`@`%`"},
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
@@ -3006,6 +3115,10 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t1 index a", true, "ANALYZE TABLE `t1` INDEX `a`"},
 		{"analyze table t1 index a,b", true, "ANALYZE TABLE `t1` INDEX `a`,`b`"},
 		{"analyze table t with 4 buckets", true, "ANALYZE TABLE `t` WITH 4 BUCKETS"},
+		{"analyze table t with 4 topn", true, "ANALYZE TABLE `t` WITH 4 TOPN"},
+		{"analyze table t with 4 cmsketch width", true, "ANALYZE TABLE `t` WITH 4 CMSKETCH WIDTH"},
+		{"analyze table t with 4 cmsketch depth", true, "ANALYZE TABLE `t` WITH 4 CMSKETCH DEPTH"},
+		{"analyze table t with 4 buckets, 4 topn, 4 cmsketch width, 4 cmsketch depth", true, "ANALYZE TABLE `t` WITH 4 BUCKETS, 4 TOPN, 4 CMSKETCH WIDTH, 4 CMSKETCH DEPTH"},
 		{"analyze table t index a with 4 buckets", true, "ANALYZE TABLE `t` INDEX `a` WITH 4 BUCKETS"},
 		{"analyze table t partition a", true, "ANALYZE TABLE `t` PARTITION `a`"},
 		{"analyze table t partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH 4 BUCKETS"},
