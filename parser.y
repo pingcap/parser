@@ -416,6 +416,7 @@ import (
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
 	rowFormat	"ROW_FORMAT"
+	rtree		"RTREE"
 	second		"SECOND"
 	secondaryEngine	"SECONDARY_ENGINE"
 	security	"SECURITY"
@@ -3729,6 +3730,10 @@ IndexType:
 	{
 		$$ = model.IndexTypeHash
 	}
+|	"USING" "RTREE"
+	{
+		$$ = model.IndexTypeRtree
+	}
 
 IndexTypeOpt:
 	{
@@ -3759,7 +3764,7 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
-| "WITHOUT"
+| "WITHOUT" | "RTREE"
 
 
 TiDBKeyword:
