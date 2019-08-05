@@ -1055,7 +1055,7 @@ func (p *PasswordOrLockOption) Restore(ctx *RestoreCtx) error {
 	case PasswordExpireNever:
 		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
 	case PasswordExpireInterval:
-		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
+		ctx.WriteKeyWord("PASSWORD EXPIRE INTERVAL")
 		ctx.WritePlainf(" %d", p.Count)
 		ctx.WriteKeyWord(" DAY")
 	case Lock:
@@ -1162,9 +1162,10 @@ func (n *CreateUserStmt) SecureText() string {
 type AlterUserStmt struct {
 	stmtNode
 
-	IfExists    bool
-	CurrentAuth *AuthOption
-	Specs       []*UserSpec
+	IfExists              bool
+	CurrentAuth           *AuthOption
+	Specs                 []*UserSpec
+	PasswordOrLockOptions []*PasswordOrLockOption
 }
 
 // Restore implements Node interface.
@@ -1186,6 +1187,12 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.Specs[%d]", i)
+		}
+	}
+	for i, v := range n.PasswordOrLockOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.PasswordOrLockOptions[%d]", i)
 		}
 	}
 	return nil
