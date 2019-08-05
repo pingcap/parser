@@ -982,6 +982,9 @@ func (s *testParserSuite) TestSetVariable(c *C) {
 		c.Assert(v.IsGlobal, Equals, t.IsGlobal)
 		c.Assert(v.IsSystem, Equals, t.IsSystem)
 	}
+
+	_, err := parser.ParseOneStmt("set xx.xx.xx = 666", "", "")
+	c.Assert(err, NotNil)
 }
 
 func (s *testParserSuite) TestFlushTable(c *C) {

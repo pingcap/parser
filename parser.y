@@ -6439,7 +6439,7 @@ EqOrAssignmentEq:
 
 VariableName:
 	Identifier
-|	Identifier '.' VariableName
+|	Identifier '.' Identifier
 	{
 		$$ = $1 + "." + $3
 	}
