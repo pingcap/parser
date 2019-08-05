@@ -2477,7 +2477,7 @@ CreateTableStmt:
 			Table:          $5.(*ast.TableName),
 			ReferTable:	$6.(*ast.TableName),
 			IfNotExists:    $4.(bool),
-			IfTemporary:		$2.(bool),
+			IfTemporary:    $2.(bool),
 		}
 	}
 
