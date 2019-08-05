@@ -1280,7 +1280,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT GET_FORMAT(DATE, 'USA');", true, "SELECT GET_FORMAT(DATE, 'USA')"},
 		{"SELECT GET_FORMAT(DATETIME, 'USA');", true, "SELECT GET_FORMAT(DATETIME, 'USA')"},
 		{"SELECT GET_FORMAT(TIME, 'USA');", true, "SELECT GET_FORMAT(TIME, 'USA')"},
-		{"SELECT GET_FORMAT(TIMESTAMP, 'USA');", true, "SELECT GET_FORMAT(TIMESTAMP, 'USA')"},
+		{"SELECT GET_FORMAT(TIMESTAMP, 'USA');", true, "SELECT GET_FORMAT(DATETIME, 'USA')"},
 
 		// for LOCALTIME, LOCALTIMESTAMP
 		{"SELECT LOCALTIME(), LOCALTIME(1)", true, "SELECT LOCALTIME(),LOCALTIME(1)"},
@@ -1810,6 +1810,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (c int) PACK_KEYS = DEFAULT", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) STORAGE DISK", true, "CREATE TABLE `t` (`c` INT) STORAGE DISK"},
 		{"create table t (c int) STORAGE MEMORY", true, "CREATE TABLE `t` (`c` INT) STORAGE MEMORY"},
+		{"create table t (c int) SECONDARY_ENGINE null", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = NULL"},
+		{"create table t (c int) SECONDARY_ENGINE = innodb", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'innodb'"},
+		{"create table t (c int) SECONDARY_ENGINE 'null'", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'null'"},
 		{`create table testTableCompression (c VARCHAR(15000)) compression="ZLIB";`, true, "CREATE TABLE `testTableCompression` (`c` VARCHAR(15000)) COMPRESSION = 'ZLIB'"},
 		{`create table t1 (c1 int) compression="zlib";`, true, "CREATE TABLE `t1` (`c1` INT) COMPRESSION = 'zlib'"},
 
@@ -2112,8 +2115,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD FULLTEXT INDEX `FullText` (`name` ASC)", true, "ALTER TABLE `t` ADD FULLTEXT `FullText`(`name`)"},
 		{"ALTER TABLE t ADD INDEX (a) USING BTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING BTREE COMMENT 'a'"},
 		{"ALTER TABLE t ADD INDEX IF NOT EXISTS (a) USING BTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING BTREE COMMENT 'a'"},
+		{"ALTER TABLE t ADD INDEX (a) USING RTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING RTREE COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING HASH COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY IF NOT EXISTS (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING HASH COMMENT 'a'"},
+		{"ALTER TABLE t ADD PRIMARY KEY ident USING RTREE ( a DESC , b   )", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) USING RTREE"},
+		{"ALTER TABLE t ADD KEY USING RTREE   ( a ) ", true, "ALTER TABLE `t` ADD INDEX(`a`) USING RTREE"},
+		{"ALTER TABLE t ADD KEY USING RTREE ( ident ASC , ident ( 123 ) )", true, "ALTER TABLE `t` ADD INDEX(`ident`, `ident`(123)) USING RTREE"},
 		{"ALTER TABLE t ADD PRIMARY KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
@@ -2172,6 +2179,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t comment 'cmt' partition by hash(a)", true, "ALTER TABLE `t` COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt' partition by hash(a)", true, "ALTER TABLE `t` ENABLE KEYS, COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt', partition by hash(a)", false, ""},
+
+		{"alter table t with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t without validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t without validation, with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t with validation, modify column b int as (a + 2) ", true, "ALTER TABLE `t` WITH VALIDATION, MODIFY COLUMN `b` INT GENERATED ALWAYS AS(`a`+2) VIRTUAL"},
+		{"alter table t with validation, change column b c int as (a + 2)", true, "ALTER TABLE `t` WITH VALIDATION, CHANGE COLUMN `b` `c` INT GENERATED ALWAYS AS(`a`+2) VIRTUAL"},
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
@@ -2971,12 +2984,12 @@ func (s *testParserSuite) TestTimestampDiffUnit(c *C) {
 	expr := fields[0].Expr
 	f, ok := expr.(*ast.FuncCallExpr)
 	c.Assert(ok, IsTrue)
-	c.Assert(f.Args[0].(ast.ValueExpr).GetDatumString(), Equals, "MONTH")
+	c.Assert(f.Args[0].(*ast.TimeUnitExpr).Unit, Equals, ast.TimeUnitMonth)
 
 	expr = fields[1].Expr
 	f, ok = expr.(*ast.FuncCallExpr)
 	c.Assert(ok, IsTrue)
-	c.Assert(f.Args[0].(ast.ValueExpr).GetDatumString(), Equals, "MONTH")
+	c.Assert(f.Args[0].(*ast.TimeUnitExpr).Unit, Equals, ast.TimeUnitMonth)
 
 	// Test Illegal TimeUnit for TimestampDiff
 	table := []testCase{
@@ -3467,17 +3480,17 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 }
 
 type windowFrameBoundChecker struct {
-	fb         *ast.FrameBound
-	exprRc     int
-	timeUnitRc int
-	c          *C
+	fb     *ast.FrameBound
+	exprRc int
+	unit   ast.TimeUnitType
+	c      *C
 }
 
 // Enter implements ast.Visitor interface.
 func (wfc *windowFrameBoundChecker) Enter(inNode ast.Node) (outNode ast.Node, skipChildren bool) {
 	if _, ok := inNode.(*ast.FrameBound); ok {
 		wfc.fb = inNode.(*ast.FrameBound)
-		if wfc.fb.Unit != nil {
+		if wfc.fb.Unit != ast.TimeUnitInvalid {
 			_, ok := wfc.fb.Expr.(ast.ValueExpr)
 			wfc.c.Assert(ok, IsFalse)
 		}
@@ -3492,10 +3505,9 @@ func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bo
 	}
 	if wfc.fb != nil {
 		if inNode == wfc.fb.Expr {
-			wfc.exprRc += 1
-		} else if inNode == wfc.fb.Unit {
-			wfc.timeUnitRc += 1
+			wfc.exprRc++
 		}
+		wfc.unit = wfc.fb.Unit
 	}
 	return inNode, true
 }
@@ -3506,13 +3518,13 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 	parser := parser.New()
 	parser.EnableWindowFunc(true)
 	table := []struct {
-		s          string
-		exprRc     int
-		timeUnitRc int
+		s      string
+		exprRc int
+		unit   ast.TimeUnitType
 	}{
-		{`SELECT AVG(val) OVER (RANGE INTERVAL 1+3 MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
-		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, 0},
-		{`SELECT AVG(val) OVER () FROM t;`, 0, 0},
+		{`SELECT AVG(val) OVER (RANGE INTERVAL 1+3 MINUTE_SECOND PRECEDING) FROM t;`, 1, ast.TimeUnitMinuteSecond},
+		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, ast.TimeUnitInvalid},
+		{`SELECT AVG(val) OVER () FROM t;`, 0, ast.TimeUnitInvalid},
 	}
 	for _, t := range table {
 		stmt, err := parser.ParseOneStmt(t.s, "", "")
@@ -3520,7 +3532,7 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 		checker := windowFrameBoundChecker{c: c}
 		stmt.Accept(&checker)
 		c.Assert(checker.exprRc, Equals, t.exprRc)
-		c.Assert(checker.timeUnitRc, Equals, t.timeUnitRc)
+		c.Assert(checker.unit, Equals, t.unit)
 	}
 
 }
