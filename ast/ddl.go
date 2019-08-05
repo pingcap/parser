@@ -819,6 +819,7 @@ type CreateTableStmt struct {
 	ddlNode
 
 	IfNotExists bool
+	IfTemporary bool
 	Table       *TableName
 	ReferTable  *TableName
 	Cols        []*ColumnDef
@@ -831,7 +832,11 @@ type CreateTableStmt struct {
 
 // Restore implements Node interface.
 func (n *CreateTableStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CREATE TABLE ")
+	if n.IfTemporary {
+		ctx.WriteKeyWord("CREATE TEMPORARY TABLE ")
+	} else {
+		ctx.WriteKeyWord("CREATE TABLE ")
+	}
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXISTS ")
 	}
