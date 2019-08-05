@@ -9298,10 +9298,6 @@ yynewstate:
 			stmt.Table = yyS[yypt-6].item.(*ast.TableName)
 			stmt.IfNotExists = yyS[yypt-7].item.(bool)
 			stmt.IsTemporary = yyS[yypt-9].item.(bool)
-			if yyS[yypt-9].item.(bool) {
-				yylex.AppendError(yylex.Errorf("TiDB doesn't support CREATE TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
-				parser.lastErrorAsWarn()
-			}
 			stmt.Options = yyS[yypt-4].item.([]*ast.TableOption)
 			if yyS[yypt-3].item != nil {
 				stmt.Partition = yyS[yypt-3].item.(*ast.PartitionOptions)
@@ -9317,10 +9313,6 @@ yynewstate:
 				ReferTable:  yyS[yypt-0].item.(*ast.TableName),
 				IfNotExists: yyS[yypt-2].item.(bool),
 				IsTemporary: yyS[yypt-4].item.(bool),
-			}
-			if yyS[yypt-4].item.(bool) {
-				yylex.AppendError(yylex.Errorf("TiDB doesn't support CREATE TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
-				parser.lastErrorAsWarn()
 			}
 		}
 	case 215:
@@ -9805,10 +9797,6 @@ yynewstate:
 	case 302:
 		{
 			parser.yyVAL.statement = &ast.DropTableStmt{IfExists: yyS[yypt-2].item.(bool), Tables: yyS[yypt-1].item.([]*ast.TableName), IsView: false, IsTemporary: yyS[yypt-4].item.(bool)}
-			if yyS[yypt-4].item.(bool) {
-				yylex.AppendError(yylex.Errorf("TiDB doesn't support DROP TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
-				parser.lastErrorAsWarn()
-			}
 		}
 	case 303:
 		{
@@ -9817,6 +9805,8 @@ yynewstate:
 	case 304:
 		{
 			parser.yyVAL.item = true
+			yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 305:
 		{
