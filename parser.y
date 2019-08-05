@@ -6888,7 +6888,7 @@ ShowStmt:
                         User:	$4.(*auth.UserIdentity),
                 }
         }
-|	"SHOW" "TABLE" TableName "REGIONS" ShowLikeOrWhereOpt
+|	"SHOW" "TABLE" TableName "REGIONS" WhereClauseOptional
 	{
 
 		stmt := &ast.ShowStmt{
@@ -6896,11 +6896,7 @@ ShowStmt:
 			Table:	$3.(*ast.TableName),
 		}
 		if $5 != nil {
-			if x, ok := $5.(*ast.PatternLikeExpr); ok && x.Expr == nil {
-				stmt.Pattern = x
-			} else {
-				stmt.Where = $5.(ast.ExprNode)
-			}
+			stmt.Where = $5.(ast.ExprNode)
 		}
 		$$ = stmt
 	}
