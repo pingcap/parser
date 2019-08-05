@@ -2462,7 +2462,11 @@ CreateTableStmt:
 		stmt := $6.(*ast.CreateTableStmt)
 		stmt.Table = $5.(*ast.TableName)
 		stmt.IfNotExists = $4.(bool)
-		stmt.IfTemporary = $2.(bool)
+		stmt.IsTemporary = $2.(bool)
+		if $2.(bool) {
+			yylex.AppendError(yylex.Errorf("TiDB doesn't support CREATE TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
+			parser.lastErrorAsWarn()
+		}
 		stmt.Options = $7.([]*ast.TableOption)
 		if $8 != nil {
 			stmt.Partition = $8.(*ast.PartitionOptions)
@@ -2477,7 +2481,11 @@ CreateTableStmt:
 			Table:          $5.(*ast.TableName),
 			ReferTable:	$6.(*ast.TableName),
 			IfNotExists:    $4.(bool),
-			IfTemporary:    $2.(bool),
+			IsTemporary:    $2.(bool),
+		}
+		if $2.(bool) {
+			yylex.AppendError(yylex.Errorf("TiDB doesn't support CREATE TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	}
 
@@ -3062,6 +3070,10 @@ DropTableStmt:
 	"DROP" OptTemporary TableOrTables IfExists TableNameList RestrictOrCascadeOpt
 	{
 		$$ = &ast.DropTableStmt{IfExists: $4.(bool), Tables: $5.([]*ast.TableName), IsView: false, IsTemporary: $2.(bool)}
+		if $2.(bool) {
+			yylex.AppendError(yylex.Errorf("TiDB doesn't support DROP TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
+			parser.lastErrorAsWarn()
+		}
 	}
 
 OptTemporary:
