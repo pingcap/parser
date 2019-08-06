@@ -416,7 +416,9 @@ import (
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
 	rowFormat	"ROW_FORMAT"
+	rtree		"RTREE"
 	second		"SECOND"
+	secondaryEngine	"SECONDARY_ENGINE"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
 	serializable	"SERIALIZABLE"
@@ -465,12 +467,14 @@ import (
 	unknown 	"UNKNOWN"
 	user		"USER"
 	undefined	"UNDEFINED"
+	validation	"VALIDATION"
 	value		"VALUE"
 	variables	"VARIABLES"
 	view		"VIEW"
 	binding		"BINDING"
 	bindings	"BINDINGS"
 	warnings	"WARNINGS"
+	without		"WITHOUT"
 	identSQLErrors	"ERRORS"
 	week		"WEEK"
 	yearType	"YEAR"
@@ -541,6 +545,7 @@ import (
 	optimistic	"OPTIMISTIC"
 	pessimistic	"PESSIMISTIC"
 	pump		"PUMP"
+	samples		"SAMPLES"
 	stats		"STATS"
 	statsMeta       "STATS_META"
 	statsHistograms "STATS_HISTOGRAMS"
@@ -771,6 +776,7 @@ import (
 	FieldItem			"Field item for load data clause"
 	FieldItemList			"Field items for load data clause"
 	FuncDatetimePrec		"Function datetime precision"
+	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
 	GlobalScope			"The scope of variable"
 	GroupByClause			"GROUP BY clause"
 	HashString			"Hashed string"
@@ -915,6 +921,8 @@ import (
 	TableRefs 			"table references"
 	TableToTable 			"rename table to table"
 	TableToTableList 		"rename table to table by list"
+	TimeUnit		"Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
+	TimestampUnit		"Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	LockType			"Table locks type"
 
 	TransactionChar		"Transaction characteristic"
@@ -1028,8 +1036,6 @@ import (
 	IntoOpt			"INTO or EmptyString"
 	ValueSym		"Value or Values"
 	Varchar			"{NATIONAL VARCHAR|VARCHAR|NVARCHAR}"
-	TimeUnit		"Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
-	TimestampUnit		"Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	DeallocateSym		"Deallocate or drop"
 	OuterOpt		"optional OUTER clause"
 	CrossOpt		"Cross join option"
@@ -1047,7 +1053,6 @@ import (
 	logOr			"logical or operator"
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
-	GetFormatSelector	"{DATE|DATETIME|TIME|TIMESTAMP}"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -1401,6 +1406,24 @@ AlterTableSpec:
 			Tp:    		ast.AlterTableForce,
 		}
 	}
+| "WITH" "VALIDATION"
+	{
+		// Parse it and ignore it. Just for compatibility.
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableWithValidation,
+		}
+		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+| "WITHOUT" "VALIDATION"
+	{
+		// Parse it and ignore it. Just for compatibility.
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableWithoutValidation,
+		}
+		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 
 
 AlterAlgorithm:
@@ -1710,6 +1733,10 @@ AnalyzeOption:
 |	NUM "CMSKETCH" "WIDTH"
 	{
 		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptCMSketchWidth, Value: getUint64FromNUM($1)}
+	}
+|	NUM "SAMPLES"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptNumSamples, Value: getUint64FromNUM($1)}
 	}
 
 /*******************************************************************************************/
@@ -2435,25 +2462,27 @@ DatabaseOptionList:
  *******************************************************************/
 
 CreateTableStmt:
-	"CREATE" "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt
+	"CREATE" OptTemporary "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt
 	{
-		stmt := $5.(*ast.CreateTableStmt)
-		stmt.Table = $4.(*ast.TableName)
-		stmt.IfNotExists = $3.(bool)
-		stmt.Options = $6.([]*ast.TableOption)
-		if $7 != nil {
-			stmt.Partition = $7.(*ast.PartitionOptions)
+		stmt := $6.(*ast.CreateTableStmt)
+		stmt.Table = $5.(*ast.TableName)
+		stmt.IfNotExists = $4.(bool)
+		stmt.IsTemporary = $2.(bool)
+		stmt.Options = $7.([]*ast.TableOption)
+		if $8 != nil {
+			stmt.Partition = $8.(*ast.PartitionOptions)
 		}
-		stmt.OnDuplicate = $8.(ast.OnDuplicateKeyHandlingType)
-		stmt.Select = $10.(*ast.CreateTableStmt).Select
+		stmt.OnDuplicate = $9.(ast.OnDuplicateKeyHandlingType)
+		stmt.Select = $11.(*ast.CreateTableStmt).Select
 		$$ = stmt
 	}
-|	"CREATE" "TABLE" IfNotExists TableName LikeTableWithOrWithoutParen
+|	"CREATE" OptTemporary "TABLE" IfNotExists TableName LikeTableWithOrWithoutParen
 	{
 		$$ = &ast.CreateTableStmt{
-			Table:          $4.(*ast.TableName),
-			ReferTable:	$5.(*ast.TableName),
-			IfNotExists:    $3.(bool),
+			Table:          $5.(*ast.TableName),
+			ReferTable:	$6.(*ast.TableName),
+			IfNotExists:    $4.(bool),
+			IsTemporary:    $2.(bool),
 		}
 	}
 
@@ -2546,7 +2575,7 @@ PartitionMethod:
 		$$ = &ast.PartitionMethod{
 			Tp:    model.PartitionTypeSystemTime,
 			Expr:  $3.(ast.ExprNode),
-			Unit:  ast.NewValueExpr($4),
+			Unit:  $4.(ast.TimeUnitType),
 		}
 	}
 |	"SYSTEM_TIME" "LIMIT" LengthNum
@@ -3041,8 +3070,13 @@ DropTableStmt:
 	}
 
 OptTemporary:
-	  /* empty */ { $$= false; }
-	| "TEMPORARY" { $$= true;  }
+	  /* empty */ { $$ = false; }
+	| "TEMPORARY" 
+	{ 
+		$$ = true
+		yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
+		parser.lastErrorAsWarn()
+	}
 	;
 
 DropViewStmt:
@@ -3703,6 +3737,10 @@ IndexType:
 	{
 		$$ = model.IndexTypeHash
 	}
+|	"USING" "RTREE"
+	{
+		$$ = model.IndexTypeRtree
+	}
 
 IndexTypeOpt:
 	{
@@ -3732,11 +3770,12 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
+| "WITHOUT" | "RTREE"
 
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
+ "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
 | "TIDB_SMJ" | "TIDB_INLJ" | "TIDB_HASHAGG" | "TIDB_STREAMAGG" | "TOPN" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
@@ -4085,7 +4124,7 @@ BitExpr:
 			Args: []ast.ExprNode{
 				$1,
 				$4,
-				ast.NewValueExpr($5),
+				&ast.TimeUnitExpr{Unit: $5.(ast.TimeUnitType)},
 			},
 		}
 	}
@@ -4096,7 +4135,7 @@ BitExpr:
 			Args: []ast.ExprNode{
 				$1,
 				$4,
-				ast.NewValueExpr($5),
+				&ast.TimeUnitExpr{Unit: $5.(ast.TimeUnitType)},
 			},
 		}
 	}
@@ -4487,7 +4526,7 @@ FunctionCallNonKeyword:
 			Args: []ast.ExprNode{
 				$3,
 				$5,
-				ast.NewValueExpr("DAY"),
+				&ast.TimeUnitExpr{Unit: ast.TimeUnitDay},
 			},
 		}
 	}
@@ -4498,7 +4537,7 @@ FunctionCallNonKeyword:
 			Args: []ast.ExprNode{
 				$3,
 				$6,
-				ast.NewValueExpr($7),
+				&ast.TimeUnitExpr{Unit: $7.(ast.TimeUnitType)},
 			},
 		}
 	}
@@ -4509,13 +4548,13 @@ FunctionCallNonKeyword:
 			Args: []ast.ExprNode{
 				$3,
 				$6,
-				ast.NewValueExpr($7),
+				&ast.TimeUnitExpr{Unit: $7.(ast.TimeUnitType)},
 			},
 		}
 	}
 |	builtinExtract '(' TimeUnit "FROM" Expression ')'
 	{
-		timeUnit := ast.NewValueExpr($3)
+		timeUnit := &ast.TimeUnitExpr{Unit: $3.(ast.TimeUnitType)}
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args: []ast.ExprNode{timeUnit, $5},
@@ -4525,7 +4564,10 @@ FunctionCallNonKeyword:
 	{
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
-			Args: []ast.ExprNode{ast.NewValueExpr($3), $5},
+			Args: []ast.ExprNode{
+				&ast.GetFormatSelectorExpr{Selector: $3.(ast.GetFormatSelectorType)},
+				$5,
+			},
 		}
 	}
 |	builtinPosition '(' BitExpr "IN" Expression ')'
@@ -4564,14 +4606,14 @@ FunctionCallNonKeyword:
 	{
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
-			Args: []ast.ExprNode{ast.NewValueExpr($3), $5, $7},
+			Args: []ast.ExprNode{&ast.TimeUnitExpr{Unit: $3.(ast.TimeUnitType)}, $5, $7},
 		}
 	}
 |	"TIMESTAMPDIFF" '(' TimestampUnit ',' Expression ',' Expression ')'
 	{
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
-			Args: []ast.ExprNode{ast.NewValueExpr($3), $5, $7},
+			Args: []ast.ExprNode{&ast.TimeUnitExpr{Unit: $3.(ast.TimeUnitType)}, $5, $7},
 		}
 	}
 |	builtinTrim '(' Expression ')'
@@ -4591,7 +4633,7 @@ FunctionCallNonKeyword:
 |	builtinTrim '(' TrimDirection "FROM" Expression ')'
 	{
 		nilVal := ast.NewValueExpr(nil)
-		direction := ast.NewValueExpr(int($3.(ast.TrimDirectionType)))
+		direction := &ast.TrimDirectionExpr{Direction: $3.(ast.TrimDirectionType)}
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args: []ast.ExprNode{$5, nilVal, direction},
@@ -4599,7 +4641,7 @@ FunctionCallNonKeyword:
 	}
 |	builtinTrim '(' TrimDirection Expression "FROM" Expression ')'
 	{
-		direction := ast.NewValueExpr(int($3.(ast.TrimDirectionType)))
+		direction := &ast.TrimDirectionExpr{Direction: $3.(ast.TrimDirectionType)}
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args: []ast.ExprNode{$6, $4, direction},
@@ -4609,19 +4651,19 @@ FunctionCallNonKeyword:
 GetFormatSelector:
 	"DATE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorDate
 	}
 | 	"DATETIME"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorDatetime
 	}
 |	"TIME"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorTime
 	}
 |	"TIMESTAMP"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.GetFormatSelectorDatetime
 	}
 
 
@@ -4821,123 +4863,91 @@ FuncDatetimePrec:
 	}
 
 TimeUnit:
-	"MICROSECOND"
+	TimestampUnit
 	{
-		$$ = strings.ToUpper($1)
-	}
-|	"SECOND"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"MINUTE"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"HOUR"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"DAY"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"WEEK"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"MONTH"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"QUARTER"
-	{
-		$$ = strings.ToUpper($1)
-	}
-|	"YEAR"
-	{
-		$$ = strings.ToUpper($1)
+		$$ = $1
 	}
 |	"SECOND_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitSecondMicrosecond
 	}
 |	"MINUTE_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMinuteMicrosecond
 	}
 |	"MINUTE_SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMinuteSecond
 	}
 |	"HOUR_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHourMicrosecond
 	}
 |	"HOUR_SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHourSecond
 	}
 |	"HOUR_MINUTE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHourMinute
 	}
 |	"DAY_MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDayMicrosecond
 	}
 |	"DAY_SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDaySecond
 	}
 |	"DAY_MINUTE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDayMinute
 	}
 |	"DAY_HOUR"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDayHour
 	}
 |	"YEAR_MONTH"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitYearMonth
 	}
 
 TimestampUnit:
 	"MICROSECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMicrosecond
 	}
 |	"SECOND"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitSecond
 	}
 |	"MINUTE"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMinute
 	}
 |	"HOUR"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitHour
 	}
 |	"DAY"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitDay
 	}
 |	"WEEK"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitWeek
 	}
 |	"MONTH"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitMonth
 	}
 |	"QUARTER"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitQuarter
 	}
 |	"YEAR"
 	{
-		$$ = strings.ToUpper($1)
+		$$ = ast.TimeUnitYear
 	}
 
 ExpressionOpt:
@@ -5090,6 +5100,20 @@ CastType:
 		if fopt.Flen >= 54 {
 			yylex.AppendError(ErrTooBigPrecision.GenWithStackByArgs(fopt.Flen,"CAST",53))
 		} else if fopt.Flen >= 25 {
+			x = types.NewFieldType(mysql.TypeDouble)
+		}
+		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(x.Tp)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|	"REAL"
+	{
+		var x *types.FieldType
+		if parser.lexer.GetSQLMode().HasRealAsFloatMode() {
+			x = types.NewFieldType(mysql.TypeFloat)
+		} else {
 			x = types.NewFieldType(mysql.TypeDouble)
 		}
 		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(x.Tp)
@@ -5490,7 +5514,7 @@ WindowFrameStart:
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: $3.(ast.TimeUnitType),}
 	}
 |	"CURRENT" "ROW"
 	{
@@ -5522,7 +5546,7 @@ WindowFrameBound:
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: $3.(ast.TimeUnitType),}
 	}
 
 OptWindowingClause:
@@ -7674,6 +7698,22 @@ TableOption:
 		// Parse it but will ignore it.
 		$$ = &ast.TableOption{Tp: ast.TableOptionStorageMedia, StrValue: "DISK"}
 		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"SECONDARY_ENGINE" EqOpt "NULL"
+	{
+		// Parse it but will ignore it
+		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
+		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngineNull}
+		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"SECONDARY_ENGINE" EqOpt StringName
+	{
+		// Parse it but will ignore it
+		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
+		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: $3.(string)}
+		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
 
