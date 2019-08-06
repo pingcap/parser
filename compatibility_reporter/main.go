@@ -92,7 +92,12 @@ type caseReport struct {
 }
 
 func mysqlParserTest(mysqlSource *sql.DB, report *caseReport) {
-	_, parserErr := mysqlSource.Query(report.Sql)
+	rows, parserErr := mysqlSource.Query(report.Sql)
+	defer func() {
+		if rows != nil {
+			rows.Close()
+		}
+	}()
 	if parserErr == nil {
 		report.MySQLPass = true
 		return
