@@ -8432,7 +8432,7 @@ CreateUserStmt:
 	"CREATE" "USER" IfNotExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
-		stmt := &ast.CreateUserStmt{
+		$$ = &ast.CreateUserStmt{
 			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
@@ -8440,11 +8440,6 @@ CreateUserStmt:
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
-		if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
-			yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
-			parser.lastErrorAsWarn()
-		}
-		$$ = stmt
 	}
 
 CreateRoleStmt:
@@ -8462,18 +8457,13 @@ CreateRoleStmt:
 AlterUserStmt:
 	"ALTER" "USER" IfExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
 	{
-		stmt := &ast.AlterUserStmt{
+		$$ = &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
 			TslOptions: $5.([]*ast.TslOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
-		if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
-			yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
-			parser.lastErrorAsWarn()
-		}
-		$$ = stmt
 	}
 | 	"ALTER" "USER" IfExists "USER" '(' ')' "IDENTIFIED" "BY" AuthString
 	{
@@ -8517,6 +8507,8 @@ ConnectionOptions:
 |	"WITH" ConnectionOptionList
 	{
 		$$ = $2
+		yylex.AppendError(yylex.Errorf("TiDB does not support WITH ConnectionOptions now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 ConnectionOptionList:
@@ -8572,6 +8564,8 @@ RequireClause:
 			Type: ast.TslNone,
 		}
 		$$ = []*ast.TslOption{t}
+		yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 |	"REQUIRE" "SSL"
 	{
@@ -8579,6 +8573,8 @@ RequireClause:
 			Type: ast.Ssl,
 		}
 		$$ = []*ast.TslOption{t}
+		yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 |	"REQUIRE" "X509"
 	{
@@ -8586,10 +8582,14 @@ RequireClause:
 			Type: ast.X509,
 		}
 		$$ = []*ast.TslOption{t}
+		yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 |	"REQUIRE" RequireList
 	{
 		$$ = $2
+		yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 RequireList:
@@ -8635,6 +8635,8 @@ PasswordOrLockOptions:
 |	PasswordOrLockOptionList
 	{
 		$$ = $1
+		yylex.AppendError(yylex.Errorf("TiDB does not support PASSWORD now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 PasswordOrLockOptionList:

@@ -14384,7 +14384,7 @@ yynewstate:
 	case 1576:
 		{
 			// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
-			stmt := &ast.CreateUserStmt{
+			parser.yyVAL.statement = &ast.CreateUserStmt{
 				IsCreateRole:          false,
 				IfNotExists:           yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
@@ -14392,11 +14392,6 @@ yynewstate:
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
-			if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
-				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
-				parser.lastErrorAsWarn()
-			}
-			parser.yyVAL.statement = stmt
 		}
 	case 1577:
 		{
@@ -14409,18 +14404,13 @@ yynewstate:
 		}
 	case 1578:
 		{
-			stmt := &ast.AlterUserStmt{
+			parser.yyVAL.statement = &ast.AlterUserStmt{
 				IfExists:              yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
 				TslOptions:            yyS[yypt-2].item.([]*ast.TslOption),
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
-			if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
-				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
-				parser.lastErrorAsWarn()
-			}
-			parser.yyVAL.statement = stmt
 		}
 	case 1579:
 		{
@@ -14459,6 +14449,8 @@ yynewstate:
 	case 1584:
 		{
 			parser.yyVAL.item = yyS[yypt-0].item
+			yylex.AppendError(yylex.Errorf("TiDB does not support WITH ConnectionOptions now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 1585:
 		{
@@ -14509,6 +14501,8 @@ yynewstate:
 				Type: ast.TslNone,
 			}
 			parser.yyVAL.item = []*ast.TslOption{t}
+			yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 1593:
 		{
@@ -14516,6 +14510,8 @@ yynewstate:
 				Type: ast.Ssl,
 			}
 			parser.yyVAL.item = []*ast.TslOption{t}
+			yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 1594:
 		{
@@ -14523,10 +14519,14 @@ yynewstate:
 				Type: ast.X509,
 			}
 			parser.yyVAL.item = []*ast.TslOption{t}
+			yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 1595:
 		{
 			parser.yyVAL.item = yyS[yypt-0].item
+			yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 1596:
 		{
@@ -14567,6 +14567,8 @@ yynewstate:
 	case 1602:
 		{
 			parser.yyVAL.item = yyS[yypt-0].item
+			yylex.AppendError(yylex.Errorf("TiDB does not support PASSWORD now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
 		}
 	case 1603:
 		{
