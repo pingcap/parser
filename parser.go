@@ -14392,11 +14392,11 @@ yynewstate:
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
-			parser.yyVAL.statement = stmt
 			if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
-				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD, they would be parsed but ignored."))
+				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
 				parser.lastErrorAsWarn()
 			}
+			parser.yyVAL.statement = stmt
 		}
 	case 1577:
 		{
@@ -14416,11 +14416,11 @@ yynewstate:
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
-			parser.yyVAL.statement = stmt
 			if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
-				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD, they would be parsed but ignored."))
+				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
 				parser.lastErrorAsWarn()
 			}
+			parser.yyVAL.statement = stmt
 		}
 	case 1579:
 		{
