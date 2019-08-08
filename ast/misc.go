@@ -1165,6 +1165,8 @@ type AlterUserStmt struct {
 	IfExists              bool
 	CurrentAuth           *AuthOption
 	Specs                 []*UserSpec
+	TslOptions            []*TslOption
+	ResourceOptions       []*ResourceOption
 	PasswordOrLockOptions []*PasswordOrLockOption
 }
 
@@ -1189,6 +1191,34 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.Specs[%d]", i)
 		}
 	}
+
+	tslOptionLen := len(n.TslOptions)
+
+	if tslOptionLen != 0 {
+		ctx.WriteKeyWord(" REQUIRE ")
+	}
+
+	// Restore `tslOptions` reversely to keep order the same with original sql
+	for i := tslOptionLen; i > 0; i-- {
+		if i != tslOptionLen {
+			ctx.WriteKeyWord(" AND ")
+		}
+		if err := n.TslOptions[i-1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.TslOptions[%d]", i)
+		}
+	}
+
+	if len(n.ResourceOptions) != 0 {
+		ctx.WriteKeyWord(" WITH")
+	}
+
+	for i, v := range n.ResourceOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.ResourceOptions[%d]", i)
+		}
+	}
+
 	for i, v := range n.PasswordOrLockOptions {
 		ctx.WritePlain(" ")
 		if err := v.Restore(ctx); err != nil {

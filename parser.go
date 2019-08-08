@@ -14407,6 +14407,8 @@ yynewstate:
 			parser.yyVAL.statement = &ast.AlterUserStmt{
 				IfExists:              yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
+				TslOptions:            yyS[yypt-2].item.([]*ast.TslOption),
+				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
 		}
