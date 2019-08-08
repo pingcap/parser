@@ -2647,11 +2647,11 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 3)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[0].MemoryQuota, Equals, 1)
+	c.Assert(hints[0].MemoryQuota, Equals, uint64(1))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[1].MemoryQuota, Equals, 1024)
+	c.Assert(hints[1].MemoryQuota, Equals, uint64(1024))
 	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[2].MemoryQuota, Equals, 0)
+	c.Assert(hints[2].MemoryQuota, Equals, uint64(0))
 
 	// Test HASH_AGG
 	stmt, _, err = parser.Parse("select /*+ HASH_AGG, hash_agg */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
