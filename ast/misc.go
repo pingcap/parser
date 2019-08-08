@@ -2062,7 +2062,7 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WriteName(table.String())
 		}
-		for index := range n.Indexes {
+		for _, index := range n.Indexes {
 			ctx.WritePlain(", ")
 			ctx.WriteName(index.String())
 		}

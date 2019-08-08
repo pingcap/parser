@@ -6159,6 +6159,7 @@ TableOptimizerHintOpt:
 	}
 |	hintUsePlanCache '(' ')'
 	{
+		// arguments not decided yet.
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
 	}
 |	hintQueryType '(' HintQueryType ')'
@@ -6217,13 +6218,18 @@ HintQueryType:
 	}
 
 HintMemoryQuota:
-	NUM 'M'
+	NUM Identifier
 	{
-		$$ = getUint64FromNUM($1)
-	}
-|	NUM 'G'
-	{
-		$$ = getUint64FromNUM($1) * 1024
+		// May change into MB/MiB or GB/GiB
+		switch model.NewCIStr($2).L {
+		case "m":
+			$$ = getUint64FromNUM($1)
+		case "g":
+			$$ = getUint64FromNUM($1) * 1024
+		default:
+			// Trigger warning in TiDB Planner
+			$$ = uint64(0)
+		}
 	}
 
 SelectStmtCalcFoundRows:
