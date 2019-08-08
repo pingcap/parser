@@ -1748,6 +1748,7 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableExchangePartition
 
 	// TODO: Add more actions
 )
@@ -1807,6 +1808,17 @@ func (a AlterAlgorithm) String() string {
 	}
 }
 
+// ValidationType represents validation types of alter command
+type ValidationType byte
+
+// Validation types.
+// TiDB does not support validation now.
+const (
+	ValidationDefault ValidationType = iota
+	ValidationWith
+	ValidationWithout
+)
+
 // AlterTableSpec represents alter table specification.
 type AlterTableSpec struct {
 	node
@@ -1837,6 +1849,7 @@ type AlterTableSpec struct {
 	Partition       *PartitionOptions
 	PartitionNames  []model.CIStr
 	PartDefinitions []*PartitionDefinition
+	ValidationType  ValidationType
 	Num             uint64
 }
 
@@ -2055,6 +2068,16 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("WITH VALIDATION")
 	case AlterTableWithoutValidation:
 		ctx.WriteKeyWord("WITHOUT VALIDATION")
+	case AlterTableExchangePartition:
+		ctx.WriteKeyWord("EXCHANGE PARTITION ")
+		ctx.WriteName(n.PartitionNames[0].O)
+		ctx.WriteKeyWord(" WITH TABLE ")
+		n.NewTable.Restore(ctx)
+		if n.ValidationType == ValidationWith {
+			ctx.WriteKeyWord(" WITH VALIDATION")
+		} else if n.ValidationType == ValidationWithout {
+			ctx.WriteKeyWord(" WITHOUT VALIDATION")
+		}
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
