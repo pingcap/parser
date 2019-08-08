@@ -8635,7 +8635,7 @@ PasswordOrLockOptions:
 |	PasswordOrLockOptionList
 	{
 		$$ = $1
-		yylex.AppendError(yylex.Errorf("TiDB does not support PASSWORD now, they would be parsed but ignored."))
+		yylex.AppendError(yylex.Errorf("TiDB does not support PASSWORD EXPIRE and ACCOUNT LOCK now, they would be parsed but ignored."))
 		parser.lastErrorAsWarn()
 	}
 
