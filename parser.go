@@ -14384,13 +14384,18 @@ yynewstate:
 	case 1576:
 		{
 			// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
-			parser.yyVAL.statement = &ast.CreateUserStmt{
+			stmt := &ast.CreateUserStmt{
 				IsCreateRole:          false,
 				IfNotExists:           yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
 				TslOptions:            yyS[yypt-2].item.([]*ast.TslOption),
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
+			}
+			parser.yyVAL.statement = stmt
+			if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
+				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD, they would be parsed but ignored."))
+				parser.lastErrorAsWarn()
 			}
 		}
 	case 1577:
@@ -14404,12 +14409,17 @@ yynewstate:
 		}
 	case 1578:
 		{
-			parser.yyVAL.statement = &ast.AlterUserStmt{
+			stmt := &ast.AlterUserStmt{
 				IfExists:              yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
 				TslOptions:            yyS[yypt-2].item.([]*ast.TslOption),
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
+			}
+			parser.yyVAL.statement = stmt
+			if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
+				yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD, they would be parsed but ignored."))
+				parser.lastErrorAsWarn()
 			}
 		}
 	case 1579:

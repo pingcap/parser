@@ -8432,7 +8432,7 @@ CreateUserStmt:
 	"CREATE" "USER" IfNotExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
-		$$ = &ast.CreateUserStmt{
+		stmt := &ast.CreateUserStmt{
 			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
@@ -8440,6 +8440,11 @@ CreateUserStmt:
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
+		if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
+			yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
+		}
+		$$ = stmt
 	}
 
 CreateRoleStmt:
@@ -8457,13 +8462,18 @@ CreateRoleStmt:
 AlterUserStmt:
 	"ALTER" "USER" IfExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
 	{
-		$$ = &ast.AlterUserStmt{
+		stmt := &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
 			TslOptions: $5.([]*ast.TslOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
+		if len(stmt.TslOptions) > 0 || len(stmt.ResourceOptions) > 0 || len(stmt.PasswordOrLockOptions) > 0 {
+			yylex.AppendError(yylex.Errorf("TiDB does not support WITH, REQUIRE and PASSWORD now, they would be parsed but ignored."))
+			parser.lastErrorAsWarn()
+		}
+		$$ = stmt
 	}
 | 	"ALTER" "USER" IfExists "USER" '(' ')' "IDENTIFIED" "BY" AuthString
 	{
