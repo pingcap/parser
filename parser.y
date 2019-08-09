@@ -763,7 +763,6 @@ import (
 	ExplainFormatType		"explain format type"
 	ExpressionList			"expression list"
 	MaxValueOrExpressionList	"maxvalue or expression list"
-	EncryptionOption		"database encryption option"
 	ExpressionListOpt		"expression list opt"
 	FuncDatetimePrecListOpt	        "Function datetime precision list opt"
 	FuncDatetimePrecList	        "Function datetime precision list"
@@ -2434,9 +2433,9 @@ DatabaseOption:
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4.(string)}
 	}
-|	DefaultKwdOpt "ENCRYPTION" EqOpt EncryptionOption
+|	DefaultKwdOpt "ENCRYPTION" EqOpt stringLit
 	{
-		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4.(string)}
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
 	}
 
 DatabaseOptionListOpt:
@@ -2453,12 +2452,6 @@ DatabaseOptionList:
 |	DatabaseOptionList DatabaseOption
 	{
 		$$ = append($1.([]*ast.DatabaseOption), $2.(*ast.DatabaseOption))
-	}
-
-EncryptionOption:
-	stringLit
-	{
-		$$ = $1
 	}
 
 /*******************************************************************
