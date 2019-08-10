@@ -1728,6 +1728,7 @@ const (
 	AlterTableCoalescePartitions
 	AlterTableDropPartition
 	AlterTableTruncatePartition
+	AlterTableTruncateAllPartition
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
@@ -2019,6 +2020,8 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WriteName(name.O)
 		}
+	case AlterTableTruncateAllPartition:
+		ctx.WriteKeyWord("TRUNCATE PARTITION ALL")
 	case AlterTablePartition:
 		if err := n.Partition.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Partition")

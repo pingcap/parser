@@ -1275,6 +1275,14 @@ AlterTableSpec:
 			PartitionNames: $3.([]model.CIStr),
 		}
 	}
+|	"TRUNCATE" "PARTITION" "ALL"
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableTruncateAllPartition,
+		}
+		yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 |	"DROP" KeyOrIndex IfExists Identifier
 	{
 		$$ = &ast.AlterTableSpec{
