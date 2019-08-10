@@ -1200,6 +1200,17 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// IndexKeyType is the type for index key.
+type IndexKeyType int
+
+// Index key types.
+const (
+	IndexKeyTypeNone IndexKeyType = iota
+	IndexKeyTypeUnique
+	IndexKeyTypeSpatial
+	IndexKeyTypeFullText
+)
+
 // CreateIndexStmt is a statement to create an index.
 // See https://dev.mysql.com/doc/refman/5.7/en/create-index.html
 type CreateIndexStmt struct {
@@ -1214,13 +1225,19 @@ type CreateIndexStmt struct {
 	Unique        bool
 	IndexColNames []*IndexColName
 	IndexOption   *IndexOption
+	KeyType       IndexKeyType
 }
 
 // Restore implements Node interface.
 func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord("CREATE ")
-	if n.Unique {
+	switch n.KeyType {
+	case IndexKeyTypeUnique:
 		ctx.WriteKeyWord("UNIQUE ")
+	case IndexKeyTypeSpatial:
+		ctx.WriteKeyWord("SPATIAL ")
+	case IndexKeyTypeFullText:
+		ctx.WriteKeyWord("FULLTEXT ")
 	}
 	ctx.WriteKeyWord("INDEX ")
 	if n.IfNotExists {

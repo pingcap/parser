@@ -227,6 +227,7 @@ import (
 	set			"SET"
 	show			"SHOW"
 	smallIntType		"SMALLINT"
+	spatial			"SPATIAL"
 	sql			"SQL"
 	sqlBigResult		"SQL_BIG_RESULT"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
@@ -744,7 +745,6 @@ import (
 	Constraint			"table constraint"
 	ConstraintElem			"table constraint element"
 	ConstraintKeywordOpt		"Constraint Keyword or empty"
-	CreateIndexStmtUnique		"CREATE INDEX optional UNIQUE clause"
 	CreateTableOptionListOpt	"create table option list opt"
 	CreateTableSelectOpt	        "Select/Union statement in CREATE TABLE ... SELECT"
 	DatabaseOption			"CREATE Database specification"
@@ -794,6 +794,7 @@ import (
 	IndexHintListOpt		"index hint list opt"
 	IndexHintScope			"index hint scope"
 	IndexHintType			"index hint type"
+	IndexKeyTypeOpt			"index key type"
 	IndexName			"index name"
 	IndexNameList			"index name list"
 	IndexOption			"Index Option"
@@ -2311,7 +2312,7 @@ NumLiteral:
 
 
 CreateIndexStmt:
-	"CREATE" CreateIndexStmtUnique "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt
+	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt
 	{
 		var indexOption *ast.IndexOption
 		if $12 != nil {
@@ -2328,22 +2329,14 @@ CreateIndexStmt:
 			}
 		}
 		$$ = &ast.CreateIndexStmt{
-			Unique:        $2.(bool),
+			Unique:	       $2.(ast.IndexKeyType) == ast.IndexKeyTypeUnique,
 			IfNotExists:   $4.(bool),
 			IndexName:     $5,
 			Table:         $8.(*ast.TableName),
 			IndexColNames: $10.([]*ast.IndexColName),
 			IndexOption:   indexOption,
+			KeyType:       $2.(ast.IndexKeyType),
 		}
-	}
-
-CreateIndexStmtUnique:
-	{
-		$$ = false
-	}
-|	"UNIQUE"
-	{
-		$$ = true
 	}
 
 IndexColName:
@@ -2363,7 +2356,22 @@ IndexColNameList:
 		$$ = append($1.([]*ast.IndexColName), $3.(*ast.IndexColName))
 	}
 
-
+IndexKeyTypeOpt:
+	{
+		$$ = ast.IndexKeyTypeNone
+	}
+|	"UNIQUE"
+	{
+		$$ = ast.IndexKeyTypeUnique
+	}
+|	"SPATIAL"
+	{
+		$$ = ast.IndexKeyTypeSpatial
+	}
+|	"FULLTEXT"
+	{
+		$$ = ast.IndexKeyTypeFullText
+	}
 
 /**************************************AlterDatabaseStmt***************************************
  * See https://dev.mysql.com/doc/refman/5.7/en/alter-database.html
