@@ -1734,6 +1734,7 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableRebuildPartition
 
 	// TODO: Add more actions
 )
@@ -1804,6 +1805,9 @@ type AlterTableSpec struct {
 	// only supported by MariaDB 10.0.2+ (ADD COLUMN, ADD PARTITION)
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfNotExists bool
+
+	NoWriteToBinlog bool
+	OnAllPartitions bool
 
 	Tp              AlterTableType
 	Name            string
@@ -2033,6 +2037,21 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("WITH VALIDATION")
 	case AlterTableWithoutValidation:
 		ctx.WriteKeyWord("WITHOUT VALIDATION")
+	case AlterTableRebuildPartition:
+		ctx.WriteKeyWord("REBUILD PARTITION ")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+		}
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)

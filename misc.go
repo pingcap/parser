@@ -434,6 +434,7 @@ var tokenMap = map[string]int{
 	"PRE_SPLIT_REGIONS":        preSplitRegions,
 	"RANGE":                    rangeKwd,
 	"RECOVER":                  recover,
+	"REBUILD":                  rebuild,
 	"READ":                     read,
 	"REAL":                     realType,
 	"RECENT":                   recent,

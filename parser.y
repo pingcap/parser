@@ -357,11 +357,11 @@ import (
 	ipc		"IPC"
 	jsonType	"JSON"
 	keyBlockSize	"KEY_BLOCK_SIZE"
-	local		"LOCAL"
 	last		"LAST"
 	less		"LESS"
 	level		"LEVEL"
 	list		"LIST"
+	local		"LOCAL"
 	master		"MASTER"
 	microsecond	"MICROSECOND"
 	minute		"MINUTE"
@@ -403,6 +403,7 @@ import (
 	query		"QUERY"
 	queries		"QUERIES"
 	quick		"QUICK"
+	rebuild 	"REBUILD"
 	recover 	"RECOVER"
 	redundant	"REDUNDANT"
 	reload		"RELOAD"
@@ -816,7 +817,7 @@ import (
 	LocalOpt			"Local opt"
 	LockClause         		"Alter table lock clause"
 	NumLiteral			"Num/Int/Float/Decimal Literal"
-	NoWriteToBinLogAliasOpt 	"NO_WRITE_TO_BINLOG alias LOCAL or empty"
+	NoWriteToBinLogAliasOpt		"NO_WRITE_TO_BINLOG alias LOCAL or empty"
 	ObjectType			"Grant statement object type"
 	OnDuplicateKeyUpdate		"ON DUPLICATE KEY UPDATE value list"
 	DuplicateOpt			"[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
@@ -1274,6 +1275,26 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableTruncatePartition,
 			PartitionNames: $3.([]model.CIStr),
+		}
+	}
+|	"REBUILD" "PARTITION" NoWriteToBinLogAliasOpt "ALL"
+	{
+		yylex.AppendError(yylex.Errorf("REBUILD PARTITION syntax is parsed but not implement for now."))
+		parser.lastErrorAsWarn()
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableRebuildPartition,
+			NoWriteToBinlog: $3.(bool),
+			OnAllPartitions: true,
+		}
+	}
+|	"REBUILD" "PARTITION" NoWriteToBinLogAliasOpt PartitionNameList %prec lowerThanComma
+	{
+		yylex.AppendError(yylex.Errorf("REBUILD PARTITION syntax is parsed but not implement for now."))
+		parser.lastErrorAsWarn()
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableRebuildPartition,
+			NoWriteToBinlog: $3.(bool),
+			PartitionNames: $4.([]model.CIStr),
 		}
 	}
 |	"DROP" KeyOrIndex IfExists Identifier
@@ -3761,7 +3782,7 @@ UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
-| "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
+| "HASH" | "HOUR" | "LESS" | "LAST" | "LOCAL" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
@@ -7410,7 +7431,7 @@ NoWriteToBinLogAliasOpt:
 	{
 		$$ = true
 	}
-|	"LOCAL"
+|	"LOCAL" 
 	{
 		$$ = true
 	}
