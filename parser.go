@@ -8315,27 +8315,42 @@ yynewstate:
 			if yyS[yypt-0].item != nil {
 				defs = yyS[yypt-0].item.([]*ast.PartitionDefinition)
 			}
+			noWriteToBinlog := yyS[yypt-1].item.(bool)
+			if noWriteToBinlog {
+				yylex.AppendError(yylex.Errorf("The NO_WRITE_TO_BINLOG option is parsed but ignored for now."))
+				parser.lastErrorAsWarn()
+			}
 			parser.yyVAL.item = &ast.AlterTableSpec{
 				IfNotExists:     yyS[yypt-2].item.(bool),
-				NoWriteToBinlog: yyS[yypt-1].item.(bool),
+				NoWriteToBinlog: noWriteToBinlog,
 				Tp:              ast.AlterTableAddPartitions,
 				PartDefinitions: defs,
 			}
 		}
 	case 13:
 		{
+			noWriteToBinlog := yyS[yypt-2].item.(bool)
+			if noWriteToBinlog {
+				yylex.AppendError(yylex.Errorf("The NO_WRITE_TO_BINLOG option is parsed but ignored for now."))
+				parser.lastErrorAsWarn()
+			}
 			parser.yyVAL.item = &ast.AlterTableSpec{
 				IfNotExists:     yyS[yypt-3].item.(bool),
-				NoWriteToBinlog: yyS[yypt-2].item.(bool),
+				NoWriteToBinlog: noWriteToBinlog,
 				Tp:              ast.AlterTableAddPartitions,
 				Num:             getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
 	case 14:
 		{
+			noWriteToBinlog := yyS[yypt-1].item.(bool)
+			if noWriteToBinlog {
+				yylex.AppendError(yylex.Errorf("The NO_WRITE_TO_BINLOG option is parsed but ignored for now."))
+				parser.lastErrorAsWarn()
+			}
 			parser.yyVAL.item = &ast.AlterTableSpec{
 				Tp:              ast.AlterTableCoalescePartitions,
-				NoWriteToBinlog: yyS[yypt-1].item.(bool),
+				NoWriteToBinlog: noWriteToBinlog,
 				Num:             getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
