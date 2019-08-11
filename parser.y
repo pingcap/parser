@@ -1222,31 +1222,34 @@ AlterTableSpec:
 			Constraint: constraint,
 		}
 	}
-|	"ADD" "PARTITION" IfNotExists PartitionDefinitionListOpt
+|	"ADD" "PARTITION"  IfNotExists NoWriteToBinLogAliasOpt PartitionDefinitionListOpt
 	{
 		var defs []*ast.PartitionDefinition
-		if $4 != nil {
-			defs = $4.([]*ast.PartitionDefinition)
+		if $5 != nil {
+			defs = $5.([]*ast.PartitionDefinition)
 		}
 		$$ = &ast.AlterTableSpec{
 			IfNotExists: 	$3.(bool),
+			NoWriteToBinlog: 	$4.(bool),
 			Tp: ast.AlterTableAddPartitions,
 			PartDefinitions: defs,
 		}
 	}
-|	"ADD" "PARTITION" IfNotExists "PARTITIONS" NUM
+|	"ADD" "PARTITION" IfNotExists NoWriteToBinLogAliasOpt "PARTITIONS" NUM
 	{
 		$$ = &ast.AlterTableSpec{
 			IfNotExists: 	$3.(bool),
+			NoWriteToBinlog: 	$4.(bool),
 			Tp: ast.AlterTableAddPartitions,
-			Num: getUint64FromNUM($5),
+			Num: getUint64FromNUM($6),
 		}
 	}
-|	"COALESCE" "PARTITION" NUM
+|	"COALESCE" "PARTITION" NoWriteToBinLogAliasOpt NUM
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableCoalescePartitions,
-			Num: getUint64FromNUM($3),
+			NoWriteToBinlog: 	$3.(bool),
+			Num: getUint64FromNUM($4),
 		}
 	}
 |	"DROP" ColumnKeywordOpt IfExists ColumnName RestrictOrCascadeOpt
