@@ -1734,6 +1734,7 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableCheckPartitions
 
 	// TODO: Add more actions
 )
@@ -1793,6 +1794,11 @@ func (a AlterAlgorithm) String() string {
 	}
 }
 
+type AllOrPartitionNames struct {
+	All            bool
+	PartitionNames []model.CIStr
+}
+
 // AlterTableSpec represents alter table specification.
 type AlterTableSpec struct {
 	node
@@ -1804,6 +1810,8 @@ type AlterTableSpec struct {
 	// only supported by MariaDB 10.0.2+ (ADD COLUMN, ADD PARTITION)
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfNotExists bool
+
+	OnAllPartitions bool
 
 	Tp              AlterTableType
 	Name            string
@@ -2013,6 +2021,18 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableTruncatePartition:
 		ctx.WriteKeyWord("TRUNCATE PARTITION ")
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
+	case AlterTableCheckPartitions:
+		ctx.WriteKeyWord("CHECK PARTITION ")
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
 		for i, name := range n.PartitionNames {
 			if i != 0 {
 				ctx.WritePlain(",")

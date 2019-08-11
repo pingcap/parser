@@ -702,6 +702,7 @@ import (
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
+	AllOrPartitionNameList	"All or partition list"
 	AlterAlgorithm			"Alter table algorithm"
 	AlterTablePartitionOpt		"Alter table partition option"
 	AlterTableSpec			"Alter table specification"
@@ -1242,6 +1243,21 @@ AlterTableSpec:
 			Num: getUint64FromNUM($5),
 		}
 	}
+|	"CHECK" "PARTITION" AllOrPartitionNameList
+	{
+		yylex.AppendError(yylex.Errorf("The CHECK PARTITIONING clause is parsed but not implement yet."))
+		parser.lastErrorAsWarn()
+		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
+		ret := &ast.AlterTableSpec{
+			Tp: ast.AlterTableCheckPartitions,
+		}
+		if allOrPartitionNames.All {
+			ret.OnAllPartitions = true
+		} else {
+			ret.PartitionNames = allOrPartitionNames.PartitionNames
+		}
+		$$ = ret
+	}
 |	"COALESCE" "PARTITION" NUM
 	{
 		$$ = &ast.AlterTableSpec{
@@ -1427,6 +1443,20 @@ AlterTableSpec:
 		parser.lastErrorAsWarn()
 	}
 
+AllOrPartitionNameList:
+	"ALL"
+	{
+		$$ = &ast.AllOrPartitionNames{
+			All: true,
+		}
+	}
+| PartitionNameList %prec lowerThanComma
+	{
+		$$ = &ast.AllOrPartitionNames{
+			All: false,
+			PartitionNames: $1.([]model.CIStr),
+		}
+	}
 
 AlterAlgorithm:
 	"DEFAULT"
