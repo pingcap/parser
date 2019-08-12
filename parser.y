@@ -702,6 +702,7 @@ import (
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
+	AllOrPartitionNameList		"All or partition name list"
 	AlterAlgorithm			"Alter table algorithm"
 	AlterTablePartitionOpt		"Alter table partition option"
 	AlterTableSpec			"Alter table specification"
@@ -1268,21 +1269,20 @@ AlterTableSpec:
 			PartitionNames: $4.([]model.CIStr),
 		}
 	}
-|	"TRUNCATE" "PARTITION" PartitionNameList %prec lowerThanComma
+|	"TRUNCATE" "PARTITION" AllOrPartitionNameList
 	{
-		$$ = &ast.AlterTableSpec{
+		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
+		ret := &ast.AlterTableSpec{
 			Tp: ast.AlterTableTruncatePartition,
-			PartitionNames: $3.([]model.CIStr),
 		}
-	}
-|	"TRUNCATE" "PARTITION" "ALL"
-	{
-		$$ = &ast.AlterTableSpec{
-			Tp: ast.AlterTableTruncatePartition,
-			OnAllPartitions: true,
+		if allOrPartitionNames.All {
+			ret.OnAllPartitions = true
+			yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
+		} else {
+			ret.PartitionNames = allOrPartitionNames.PartitionNames
 		}
-		yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
+		$$ = ret
 	}
 |	"DROP" KeyOrIndex IfExists Identifier
 	{
@@ -1435,6 +1435,20 @@ AlterTableSpec:
 		parser.lastErrorAsWarn()
 	}
 
+AllOrPartitionNameList:
+	"ALL"
+	{
+		$$ = &ast.AllOrPartitionNames{
+			All: true,
+		}
+	}
+|	PartitionNameList %prec lowerThanComma
+	{
+		$$ = &ast.AllOrPartitionNames{
+			All: false,
+			PartitionNames: $1.([]model.CIStr),
+		}
+	}
 
 AlterAlgorithm:
 	"DEFAULT"

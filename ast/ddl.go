@@ -1793,6 +1793,11 @@ func (a AlterAlgorithm) String() string {
 	}
 }
 
+type AllOrPartitionNames struct {
+	All            bool
+	PartitionNames []model.CIStr
+}
+
 // AlterTableSpec represents alter table specification.
 type AlterTableSpec struct {
 	node
