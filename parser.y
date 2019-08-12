@@ -408,6 +408,7 @@ import (
 	redundant	"REDUNDANT"
 	reload		"RELOAD"
 	remove 		"REMOVE"
+	repair		"REPAIR"
 	repeatable	"REPEATABLE"
 	respect		"RESPECT"
 	replication	"REPLICATION"
@@ -1298,6 +1299,21 @@ AlterTableSpec:
 		}
 		$$ = ret
                 yylex.AppendError(yylex.Errorf("The OPTIMIZE PARTITION clause is parsed but ignored by all storage engines."))
+                parser.lastErrorAsWarn()
+	}
+|	"REPAIR" "PARTITION" AllOrPartitionNameList
+	{
+		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
+		ret := &ast.AlterTableSpec{
+			Tp: ast.AlterTableRepairPartition,
+		}
+		if allOrPartitionNames.All {
+			ret.OnAllPartitions = true
+		} else {
+			ret.PartitionNames = allOrPartitionNames.PartitionNames
+		}
+		$$ = ret
+                yylex.AppendError(yylex.Errorf("The REPAIR PARTITION clause is parsed but ignored by all storage engines."))
                 parser.lastErrorAsWarn()
 	}
 |	"DROP" KeyOrIndex IfExists Identifier
@@ -3811,7 +3827,7 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
-| "WITHOUT" | "RTREE"
+| "WITHOUT" | "RTREE" | "REPAIR"
 
 
 TiDBKeyword:
