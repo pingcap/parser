@@ -324,6 +324,7 @@ import (
 	duplicate	"DUPLICATE"
 	dynamic		"DYNAMIC"
 	enable		"ENABLE"
+	encryption	"ENCRYPTION"
 	end		"END"
 	engine		"ENGINE"
 	engines		"ENGINES"
@@ -1111,6 +1112,7 @@ import (
 %precedence lowerThanNot
 %right 	not not2
 %right	collate
+%right	encryption
 
 %left splitOptionPriv
 %precedence '('
@@ -1235,11 +1237,12 @@ AlterTableSpec:
 			PartDefinitions: defs,
 		}
 	}
-|	"ADD" "PARTITION" "PARTITIONS" NUM
+|	"ADD" "PARTITION" IfNotExists "PARTITIONS" NUM
 	{
 		$$ = &ast.AlterTableSpec{
+			IfNotExists: 	$3.(bool),
 			Tp: ast.AlterTableAddPartitions,
-			Num: getUint64FromNUM($4),
+			Num: getUint64FromNUM($5),
 		}
 	}
 |	"COALESCE" "PARTITION" NUM
@@ -2376,6 +2379,7 @@ IndexColNameList:
  *  alter_specification:
  *   [DEFAULT] CHARACTER SET [=] charset_name
  * | [DEFAULT] COLLATE [=] collation_name
+ * | [DEFAULT] ENCRYPTION [=] {'Y' | 'N'}
  *******************************************************************************************/
  AlterDatabaseStmt:
 	"ALTER" DatabaseSym DBName DatabaseOptionList
@@ -2404,6 +2408,7 @@ IndexColNameList:
  *  create_specification:
  *      [DEFAULT] CHARACTER SET [=] charset_name
  *    | [DEFAULT] COLLATE [=] collation_name
+ *    | [DEFAULT] ENCRYPTION [=] {'Y' | 'N'}
  *******************************************************************/
 CreateDatabaseStmt:
 	"CREATE" DatabaseSym IfNotExists DBName DatabaseOptionListOpt
@@ -2429,6 +2434,10 @@ DatabaseOption:
 |	DefaultKwdOpt "COLLATE" EqOpt CollationName
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4.(string)}
+	}
+|	DefaultKwdOpt "ENCRYPTION" EqOpt stringLit
+	{
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
 	}
 
 DatabaseOptionListOpt:
@@ -3764,7 +3773,7 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
