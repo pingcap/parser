@@ -189,6 +189,7 @@ import (
 	ntile			"NTILE"
 	null			"NULL"
 	numericType		"NUMERIC"
+	ncharType		"NCHAR"
 	nvarcharType		"NVARCHAR"
 	on			"ON"
 	option			"OPTION"
@@ -260,6 +261,7 @@ import (
 	long			"LONG"
 	varcharType		"VARCHAR"
 	varbinaryType		"VARBINARY"
+	varying			"VARYING"
 	virtual			"VIRTUAL"
 	when			"WHEN"
 	where			"WHERE"
@@ -1038,7 +1040,10 @@ import (
 	RegexpSym		"REGEXP or RLIKE"
 	IntoOpt			"INTO or EmptyString"
 	ValueSym		"Value or Values"
-	Varchar			"{NATIONAL VARCHAR|VARCHAR|NVARCHAR}"
+	Char			"{CHAR|CHARACTER}"
+	NChar			"{NCHAR|NATIONAL CHARACTER|NATIONAL CHAR}"
+	Varchar			"{VARCHAR|CHARACTER VARYING|CHAR VARYING}"
+	NVarchar		"{NATIONAL VARCHAR|NVARCHAR|NCHAR VARCHAR|NATIONAL CHARACTER VARYING|NATIONAL CHAR VARYING|NCHAR VARYING}"
 	DeallocateSym		"Deallocate or drop"
 	OuterOpt		"optional OUTER clause"
 	CrossOpt		"Cross join option"
@@ -8043,36 +8048,55 @@ BitValueType:
 	}
 
 StringType:
-	NationalOpt "CHAR" FieldLen OptBinary
+	Char FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $3.(int)
-		x.Charset = $4.(*ast.OptBinary).Charset
-		if $4.(*ast.OptBinary).IsBinary {
-			x.Flag |= mysql.BinaryFlag
-		}
-		$$ = x
-	}
-|	NationalOpt "CHAR" OptBinary
-	{
-		x := types.NewFieldType(mysql.TypeString)
+		x.Flen = $2.(int)
 		x.Charset = $3.(*ast.OptBinary).Charset
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
-|	"NATIONAL" "CHARACTER" FieldLen OptBinary
+|	Char OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $3.(int)
-		x.Charset = $4.(*ast.OptBinary).Charset
-		if $4.(*ast.OptBinary).IsBinary {
+		x.Charset = $2.(*ast.OptBinary).Charset
+		if $2.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	NChar FieldLen OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeString)
+		x.Flen = $2.(int)
+		x.Charset = $3.(*ast.OptBinary).Charset
+		if $3.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	NChar OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeString)
+		x.Charset = $2.(*ast.OptBinary).Charset
+		if $2.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
 |	Varchar FieldLen OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeVarchar)
+		x.Flen = $2.(int)
+		x.Charset = $3.(*ast.OptBinary).Charset
+		if $3.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	NVarchar FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeVarchar)
 		x.Flen = $2.(int)
@@ -8144,10 +8168,27 @@ NationalOpt:
 	{}
 |	"NATIONAL"
 
+Char:
+	"CHARACTER"
+|	"CHAR"
+
+NChar:
+	"NCHAR"
+|	"NATIONAL" "CHARACTER"
+|	"NATIONAL" "CHAR"
+
 Varchar:
-"NATIONAL" "VARCHAR"
-| "VARCHAR"
-| "NVARCHAR"
+	"CHARACTER" "VARYING"
+|	"CHAR" "VARYING"
+| 	"VARCHAR"
+
+NVarchar:
+	"NATIONAL" "VARCHAR"
+| 	"NVARCHAR"
+|	"NCHAR" "VARCHAR"
+| 	"NATIONAL" "CHARACTER" "VARYING"
+| 	"NATIONAL" "CHAR" "VARYING"
+| 	"NCHAR" "VARYING"
 
 
 BlobType:
