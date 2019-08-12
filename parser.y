@@ -789,7 +789,7 @@ import (
 	IfExists			"If Exists"
 	IfNotExists			"If Not Exists"
 	IgnoreOptional			"IGNORE or empty"
-	IndexAlgorithmOpt		"index algorithm option"
+	IndexAlgorithm			"index algorithm option"
 	IndexColName			"Index column name"
 	IndexColNameList		"List of index column name"
 	IndexHint			"index hint"
@@ -798,6 +798,7 @@ import (
 	IndexHintScope			"index hint scope"
 	IndexHintType			"index hint type"
 	IndexKeyTypeOpt			"index key type"
+	IndexLockAndAlgorithmOpt	"index lock and algorithm"
 	IndexName			"index name"
 	IndexNameList			"index name list"
 	IndexOption			"Index Option"
@@ -1473,10 +1474,6 @@ AlterAlgorithm:
 		yylex.AppendError(ErrUnknownAlterAlgorithm.GenWithStackByArgs($1))
 		return 1
 	}
-
-LockClauseOpt:
-	{}
-| 	LockClause {}
 
 LockClause:
 	"LOCK" EqOpt "NONE"
@@ -2335,7 +2332,7 @@ NumLiteral:
 
 
 CreateIndexStmt:
-	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt IndexAlgorithmOpt
+	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList IndexLockAndAlgorithmOpt
 	{
 		var indexOption *ast.IndexOption
 		if $12 != nil {
@@ -2358,15 +2355,12 @@ CreateIndexStmt:
 			IndexColNames: $10.([]*ast.IndexColName),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
-			Algorithm:     $14.(*ast.AlterAlgorithm),
+			Algorithm:     $13.(*ast.AlterAlgorithm),
 		}
 	}
 
-IndexAlgorithmOpt:
-	{
-		$$ = (*ast.AlterAlgorithm)(nil)
-	}
-|	"ALGORITHM" EqOpt AlterAlgorithm
+IndexAlgorithm:
+	"ALGORITHM" EqOpt AlterAlgorithm
 	{
 		indexAlgorithm := $3.(ast.AlterAlgorithm)
 		$$ = &indexAlgorithm
@@ -2387,6 +2381,27 @@ IndexColNameList:
 |	IndexColNameList ',' IndexColName
 	{
 		$$ = append($1.([]*ast.IndexColName), $3.(*ast.IndexColName))
+	}
+
+IndexLockAndAlgorithmOpt:
+	{
+		$$ = (*ast.AlterAlgorithm)(nil)
+	}
+|	LockClause
+	{
+		$$ = (*ast.AlterAlgorithm)(nil)
+	}
+|	IndexAlgorithm
+	{
+		$$ = $1
+	}
+|	LockClause IndexAlgorithm
+	{
+		$$ = $2
+	}
+|	IndexAlgorithm LockClause
+	{
+		$$ = $1
 	}
 
 IndexKeyTypeOpt:
