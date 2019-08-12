@@ -1859,6 +1859,18 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create database xxx", true, "CREATE DATABASE `xxx`"},
 		{"create database if exists xxx", false, ""},
 		{"create database if not exists xxx", true, "CREATE DATABASE IF NOT EXISTS `xxx`"},
+
+		// for create database with encryption
+		{"create database xxx encryption = 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx encryption 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx default encryption = 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx default encryption 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx encryption = 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx encryption 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx default encryption = 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx default encryption 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx encryption = N", false, ""},
+
 		{"create schema xxx", true, "CREATE DATABASE `xxx`"},
 		{"create schema if exists xxx", false, ""},
 		{"create schema if not exists xxx", true, "CREATE DATABASE IF NOT EXISTS `xxx`"},
@@ -2076,6 +2088,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t add partition (partition x values in ((3, 4), (5, 6)))", true, "ALTER TABLE `t` ADD PARTITION (PARTITION `x` VALUES IN ((3, 4), (5, 6)))"},
 		{"ALTER TABLE employees ADD PARTITION NO_WRITE_TO_BINLOG", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG"},
 		{"ALTER TABLE employees ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10"},
+		// LOCAL is alias to NO_WRITE_TO_BINLOG
+		{"ALTER TABLE employees ADD PARTITION LOCAL", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG"},
+		{"ALTER TABLE employees ADD PARTITION LOCAL PARTITIONS 10", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10"},
 
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true, "ALTER TABLE `t` DROP PARTITION `p1`"},
