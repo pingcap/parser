@@ -704,7 +704,7 @@ import (
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
-	AllOrPartitionNameList	"All or partition list"
+	AllOrPartitionNameList		"All or partition name list"
 	AlterAlgorithm			"Alter table algorithm"
 	AlterTablePartitionOpt		"Alter table partition option"
 	AlterTableSpec			"Alter table specification"
