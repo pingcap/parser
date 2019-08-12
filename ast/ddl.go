@@ -1822,6 +1822,7 @@ type AlterTableSpec struct {
 	IfNotExists bool
 
 	OnAllPartitions bool
+	NoWriteToBinlog bool
 
 	Tp              AlterTableType
 	Name            string
@@ -2000,6 +2001,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		if n.IfNotExists {
 			ctx.WriteKeyWord(" IF NOT EXISTS")
 		}
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord(" NO_WRITE_TO_BINLOG")
+		}
 		if n.PartDefinitions != nil {
 			ctx.WritePlain(" (")
 			for i, def := range n.PartDefinitions {
@@ -2017,6 +2021,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableCoalescePartitions:
 		ctx.WriteKeyWord("COALESCE PARTITION ")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+		}
 		ctx.WritePlainf("%d", n.Num)
 	case AlterTableDropPartition:
 		ctx.WriteKeyWord("DROP PARTITION ")
