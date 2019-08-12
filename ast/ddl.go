@@ -1734,6 +1734,7 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableOptimizePartition
 
 	// TODO: Add more actions
 )
@@ -2020,6 +2021,18 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableTruncatePartition:
 		ctx.WriteKeyWord("TRUNCATE PARTITION ")
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
+	case AlterTableOptimizePartition:
+		ctx.WriteKeyWord("OPTIMIZE PARTITION ")
 		if n.OnAllPartitions {
 			ctx.WriteKeyWord("ALL")
 			return nil

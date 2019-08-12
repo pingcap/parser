@@ -191,6 +191,7 @@ import (
 	numericType		"NUMERIC"
 	nvarcharType		"NVARCHAR"
 	on			"ON"
+	optimize		"OPTIMIZE"
 	option			"OPTION"
 	optionally		"OPTIONALLY"
 	or			"OR"
@@ -1283,6 +1284,21 @@ AlterTableSpec:
 			ret.PartitionNames = allOrPartitionNames.PartitionNames
 		}
 		$$ = ret
+	}
+|	"OPTIMIZE" "PARTITION" AllOrPartitionNameList
+	{
+		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
+		ret := &ast.AlterTableSpec{
+			Tp: ast.AlterTableOptimizePartition,
+		}
+		if allOrPartitionNames.All {
+			ret.OnAllPartitions = true
+		} else {
+			ret.PartitionNames = allOrPartitionNames.PartitionNames
+		}
+		$$ = ret
+                yylex.AppendError(yylex.Errorf("The OPTIMIZE PARTITION clause is parsed but ignored by all storage engines."))
+                parser.lastErrorAsWarn()
 	}
 |	"DROP" KeyOrIndex IfExists Identifier
 	{

@@ -400,6 +400,7 @@ var tokenMap = map[string]int{
 	"ON":                       on,
 	"ONLY":                     only,
 	"OPTIMISTIC":               optimistic,
+	"OPTIMIZE":                 optimize,
 	"OPTION":                   option,
 	"OPTIONALLY":               optionally,
 	"OR":                       or,
