@@ -787,6 +787,7 @@ import (
 	IfExists			"If Exists"
 	IfNotExists			"If Not Exists"
 	IgnoreOptional			"IGNORE or empty"
+	IndexAlgorithmOpt		"index algorithm option"
 	IndexColName			"Index column name"
 	IndexColNameList		"List of index column name"
 	IndexHint			"index hint"
@@ -2312,7 +2313,7 @@ NumLiteral:
 
 
 CreateIndexStmt:
-	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt
+	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList LockClauseOpt IndexAlgorithmOpt
 	{
 		var indexOption *ast.IndexOption
 		if $12 != nil {
@@ -2329,14 +2330,24 @@ CreateIndexStmt:
 			}
 		}
 		$$ = &ast.CreateIndexStmt{
-			Unique:	       $2.(ast.IndexKeyType) == ast.IndexKeyTypeUnique,
 			IfNotExists:   $4.(bool),
 			IndexName:     $5,
 			Table:         $8.(*ast.TableName),
 			IndexColNames: $10.([]*ast.IndexColName),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
+			Algorithm:     $14.(*ast.AlterAlgorithm),
 		}
+	}
+
+IndexAlgorithmOpt:
+	{
+		$$ = (*ast.AlterAlgorithm)(nil)
+	}
+|	"ALGORITHM" EqOpt AlterAlgorithm
+	{
+		indexAlgorithm := $3.(ast.AlterAlgorithm)
+		$$ = &indexAlgorithm
 	}
 
 IndexColName:

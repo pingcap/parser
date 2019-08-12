@@ -2210,6 +2210,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`) USING BTREE"},
 
+		// For create index with algorithm
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = DEFAULT"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = DEFAULT"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = COPY", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = COPY"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM COPY", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = COPY"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = ident", false, ""},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM ident", false, ""},
+
 		//For dorp index statement
 		{"drop index a on t", true, "DROP INDEX `a` ON `t`"},
 		{"drop index a on db.t", true, "DROP INDEX `a` ON `db`.`t`"},

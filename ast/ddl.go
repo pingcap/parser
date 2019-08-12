@@ -1222,9 +1222,9 @@ type CreateIndexStmt struct {
 
 	IndexName     string
 	Table         *TableName
-	Unique        bool
 	IndexColNames []*IndexColName
 	IndexOption   *IndexOption
+	Algorithm     *AlterAlgorithm
 	KeyType       IndexKeyType
 }
 
@@ -1265,6 +1265,11 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
 		}
+	}
+
+	if n.Algorithm != nil {
+		ctx.WriteKeyWord(" ALGORITHM = ")
+		ctx.WriteKeyWord(n.Algorithm.String())
 	}
 
 	return nil
