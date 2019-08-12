@@ -1859,6 +1859,18 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create database xxx", true, "CREATE DATABASE `xxx`"},
 		{"create database if exists xxx", false, ""},
 		{"create database if not exists xxx", true, "CREATE DATABASE IF NOT EXISTS `xxx`"},
+
+		// for create database with encryption
+		{"create database xxx encryption = 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx encryption 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx default encryption = 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx default encryption 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx encryption = 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx encryption 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx default encryption = 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx default encryption 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx encryption = N", false, ""},
+
 		{"create schema xxx", true, "CREATE DATABASE `xxx`"},
 		{"create schema if exists xxx", false, ""},
 		{"create schema if not exists xxx", true, "CREATE DATABASE IF NOT EXISTS `xxx`"},
@@ -2148,6 +2160,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ENGINE = 'innodb'", true, "ALTER TABLE `t` ENGINE = innodb"},
 		{"ALTER TABLE t ENGINE = innodb", true, "ALTER TABLE `t` ENGINE = innodb"},
 		{"ALTER TABLE `db`.`t` ENGINE = ``", true, "ALTER TABLE `db`.`t` ENGINE = ''"},
+		{"ALTER TABLE t INSERT_METHOD = FIRST", true, "ALTER TABLE `t` INSERT_METHOD = 'FIRST'"},
+		{"ALTER TABLE t INSERT_METHOD LAST", true, "ALTER TABLE `t` INSERT_METHOD = 'LAST'"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, ADD COLUMN a SMALLINT", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, ADD COLUMN `a` SMALLINT"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT, ENGINE = '', default COLLATE = UTF8_GENERAL_CI", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT, ENGINE = '', DEFAULT COLLATE = UTF8_GENERAL_CI"},
 		{"ALTER TABLE t ENGINE = '', COMMENT='', default COLLATE = UTF8_GENERAL_CI", true, "ALTER TABLE `t` ENGINE = '', COMMENT = '', DEFAULT COLLATE = UTF8_GENERAL_CI"},
