@@ -1728,7 +1728,6 @@ const (
 	AlterTableCoalescePartitions
 	AlterTableDropPartition
 	AlterTableTruncatePartition
-	AlterTableTruncateAllPartition
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
@@ -1805,6 +1804,8 @@ type AlterTableSpec struct {
 	// only supported by MariaDB 10.0.2+ (ADD COLUMN, ADD PARTITION)
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfNotExists bool
+
+	OnAllPartitions bool
 
 	Tp              AlterTableType
 	Name            string
@@ -2014,14 +2015,16 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableTruncatePartition:
 		ctx.WriteKeyWord("TRUNCATE PARTITION ")
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
 		for i, name := range n.PartitionNames {
 			if i != 0 {
 				ctx.WritePlain(",")
 			}
 			ctx.WriteName(name.O)
 		}
-	case AlterTableTruncateAllPartition:
-		ctx.WriteKeyWord("TRUNCATE PARTITION ALL")
 	case AlterTablePartition:
 		if err := n.Partition.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Partition")

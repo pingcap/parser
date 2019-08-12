@@ -1278,7 +1278,8 @@ AlterTableSpec:
 |	"TRUNCATE" "PARTITION" "ALL"
 	{
 		$$ = &ast.AlterTableSpec{
-			Tp: ast.AlterTableTruncateAllPartition,
+			Tp: ast.AlterTableTruncatePartition,
+			OnAllPartitions: true,
 		}
 		yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
