@@ -2205,6 +2205,17 @@ MatchOpt:
 	}
 
 ReferDef:
+	"REFERENCES" TableName MatchOpt OnDeleteUpdateOpt
+	{
+		onDeleteUpdate := $4.([2]interface{})
+		$$ = &ast.ReferenceDef{
+			Table: $2.(*ast.TableName),
+			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
+			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
+			Match: $3.(ast.MatchType),
+		}
+	}
+|
 	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
 	{
 		onDeleteUpdate := $7.([2]interface{})
@@ -2216,6 +2227,8 @@ ReferDef:
 			Match: $6.(ast.MatchType),
 		}
 	}
+
+
 
 OnDelete:
 	"ON" "DELETE" ReferOpt

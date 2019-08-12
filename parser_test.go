@@ -2297,6 +2297,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t remove partitioning", true, "ALTER TABLE `t` REMOVE PARTITIONING"},
 		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident` REMOVE PARTITIONING"},
 		{"alter table t lock = default remove partitioning", true, "ALTER TABLE `t` LOCK = DEFAULT REMOVE PARTITIONING"},
+
+		// for match
+		{"alter table t add column a double (4,2) zerofill references b match full on update set null first", true, "ALTER TABLE `t` ADD COLUMN `a` DOUBLE(4,2) ZEROFILL REFERENCES `b` MATCH FULL ON UPDATE SET NULL FIRST"},
+		// {"alter table t add constraint foreign key (charset desc) references b match partial on update restrict on delete set default", true, "ALTER TABLE t ADD CONSTRAINT FOREIGN KEY ( CHARSET DESC ) REFERENCES b MATCH PARTIAL ON UPDATE RESTRICT ON DELETE SET DEFAULT"},
+		// {"alter table t add constraint a foreign key (b(123) desc, c) references  f match full on delete cascade on update cascade", true, "ALTER TABLE `t` ADD CONSTRAINT `a` FOREIGN KEY (`b`(123) DESC , `c` ) REFERENCES `f` MATCH FULL ON DELETE CASCADE ON UPDATE CASCADE"},
 	}
 	s.RunTest(c, table)
 }
