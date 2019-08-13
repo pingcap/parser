@@ -962,7 +962,7 @@ import (
 	WithReadLockOpt		"With Read Lock opt"
 	WithGrantOptionOpt	"With Grant Option opt"
 	WithValidation		"with validation"
-	WithValidationOpt		"optional with validation"
+	WithValidationOpt	"optional with validation"
 	ElseOpt			"Optional else clause"
 	Type			"Types"
 
