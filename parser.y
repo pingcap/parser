@@ -1304,7 +1304,7 @@ AlterTableSpec:
 			Tp: ast.AlterTableExchangePartition,
 			PartitionNames: []model.CIStr{model.NewCIStr($3)},
 			NewTable: $6.(*ast.TableName),
-			ValidationType: $7.(ast.ValidationType),
+			WithValidation: $7.(bool),
 		}
 		yylex.AppendError(yylex.Errorf("TiDB does not support EXCHANGE PARTITION now, it would be parsed but ignored."))
 		parser.lastErrorAsWarn()
@@ -1469,7 +1469,7 @@ AlterTableSpec:
 
 WithValidationOpt:
 	{
-		$$ = ast.ValidationDefault
+		$$ = true
 	}
 |	WithValidation
 	{
@@ -1479,11 +1479,11 @@ WithValidationOpt:
 WithValidation:
 	"WITH" "VALIDATION"
 	{
-		$$ = ast.ValidationWith
+		$$ = true
 	}
 |	"WITHOUT" "VALIDATION"
 	{
-		$$ = ast.ValidationWithout
+		$$ = false
 	}
 
 

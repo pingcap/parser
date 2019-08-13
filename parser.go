@@ -8474,7 +8474,7 @@ yynewstate:
 				Tp:             ast.AlterTableExchangePartition,
 				PartitionNames: []model.CIStr{model.NewCIStr(yyS[yypt-4].ident)},
 				NewTable:       yyS[yypt-1].item.(*ast.TableName),
-				ValidationType: yyS[yypt-0].item.(ast.ValidationType),
+				WithValidation: yyS[yypt-0].item.(bool),
 			}
 			yylex.AppendError(yylex.Errorf("TiDB does not support EXCHANGE PARTITION now, it would be parsed but ignored."))
 			parser.lastErrorAsWarn()
@@ -8638,7 +8638,7 @@ yynewstate:
 		}
 	case 38:
 		{
-			parser.yyVAL.item = ast.ValidationDefault
+			parser.yyVAL.item = true
 		}
 	case 39:
 		{
@@ -8646,11 +8646,11 @@ yynewstate:
 		}
 	case 40:
 		{
-			parser.yyVAL.item = ast.ValidationWith
+			parser.yyVAL.item = true
 		}
 	case 41:
 		{
-			parser.yyVAL.item = ast.ValidationWithout
+			parser.yyVAL.item = false
 		}
 	case 42:
 		{
