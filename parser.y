@@ -793,7 +793,7 @@ import (
 	IgnoreOptional			"IGNORE or empty"
 	IndexColName		"Index column name"
 	IndexColNameList		"List of index column name"
-	IndexColNameListOpt	    "List of index column name opt"
+	IndexColNameListOpt		"List of index column name opt"
 	IndexHint			"index hint"
 	IndexHintList			"index hint list"
 	IndexHintListOpt		"index hint list opt"
