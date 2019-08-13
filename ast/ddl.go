@@ -58,6 +58,7 @@ const (
 	DatabaseOptionNone DatabaseOptionType = iota
 	DatabaseOptionCharset
 	DatabaseOptionCollate
+	DatabaseOptionEncryption
 )
 
 // DatabaseOption represents database option.
@@ -77,6 +78,10 @@ func (n *DatabaseOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("COLLATE")
 		ctx.WritePlain(" = ")
 		ctx.WritePlain(n.Value)
+	case DatabaseOptionEncryption:
+		ctx.WriteKeyWord("ENCRYPTION")
+		ctx.WritePlain(" = ")
+		ctx.WriteString(n.Value)
 	default:
 		return errors.Errorf("invalid DatabaseOptionType: %d", n.Tp)
 	}
@@ -251,16 +256,20 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing ReferenceDef")
 		}
 	}
-	ctx.WritePlain("(")
-	for i, indexColNames := range n.IndexColNames {
-		if i > 0 {
-			ctx.WritePlain(", ")
+
+	if n.IndexColNames != nil {
+		ctx.WritePlain("(")
+		for i, indexColNames := range n.IndexColNames {
+			if i > 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := indexColNames.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
+			}
 		}
-		if err := indexColNames.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
-		}
+		ctx.WritePlain(")")
 	}
-	ctx.WritePlain(")")
+
 	if n.Match != MatchNone {
 		ctx.WriteKeyWord(" MATCH ")
 		switch n.Match {
@@ -1456,6 +1465,7 @@ const (
 	TableOptionStatsSamplePages
 	TableOptionSecondaryEngine
 	TableOptionSecondaryEngineNull
+	TableOptionInsertMethod
 )
 
 // RowFormat types
@@ -1644,6 +1654,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("SECONDARY_ENGINE ")
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord("NULL")
+	case TableOptionInsertMethod:
+		ctx.WriteKeyWord("INSERT_METHOD ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
@@ -1986,6 +2000,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		if n.IfNotExists {
 			ctx.WriteKeyWord(" IF NOT EXISTS")
 		}
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord(" NO_WRITE_TO_BINLOG")
+		}
 		if n.PartDefinitions != nil {
 			ctx.WritePlain(" (")
 			for i, def := range n.PartDefinitions {
@@ -2003,6 +2020,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableCoalescePartitions:
 		ctx.WriteKeyWord("COALESCE PARTITION ")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+		}
 		ctx.WritePlainf("%d", n.Num)
 	case AlterTableDropPartition:
 		ctx.WriteKeyWord("DROP PARTITION ")
