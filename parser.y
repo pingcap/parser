@@ -791,7 +791,7 @@ import (
 	IfExists			"If Exists"
 	IfNotExists			"If Not Exists"
 	IgnoreOptional			"IGNORE or empty"
-	IndexColName			"Index column name"
+	IndexColName		"Index column name"
 	IndexColNameList		"List of index column name"
 	IndexColNameListOpt	    "List of index column name opt"
 	IndexHint			"index hint"
