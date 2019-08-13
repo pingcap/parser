@@ -2056,11 +2056,8 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 			ctx.WriteName(table.String())
 		}
 	case "use_index_merge":
-		for i, table := range n.Tables {
-			if i != 0 {
-				ctx.WritePlain(", ")
-			}
-			ctx.WriteName(table.String())
+		if len(n.Tables) != 0 {
+			ctx.WriteName(n.Tables[0].String())
 		}
 		for _, index := range n.Indexes {
 			ctx.WritePlain(", ")
@@ -2068,9 +2065,9 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 		}
 	case "use_toja", "enable_plan_cache":
 		if n.HintFlag {
-			ctx.WritePlain("true")
+			ctx.WritePlain("TRUE")
 		} else {
-			ctx.WritePlain("false")
+			ctx.WritePlain("FALSE")
 		}
 	case "query_type":
 		ctx.WriteKeyWord(n.QueryType.String())
