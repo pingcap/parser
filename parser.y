@@ -2224,7 +2224,7 @@ ReferDef:
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
 			Match: $4.(ast.MatchType),
-		}		
+		}
 	}
 
 IndexColNameListOpt:
