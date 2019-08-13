@@ -1813,6 +1813,7 @@ type AlterTableSpec struct {
 	IfNotExists bool
 
 	OnAllPartitions bool
+	NoWriteToBinlog bool
 
 	Tp              AlterTableType
 	Name            string
@@ -2034,6 +2035,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableOptimizePartition:
 		ctx.WriteKeyWord("OPTIMIZE PARTITION ")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+		}
 		if n.OnAllPartitions {
 			ctx.WriteKeyWord("ALL")
 			return nil
@@ -2046,6 +2050,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableRepairPartition:
 		ctx.WriteKeyWord("REPAIR PARTITION ")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+		}
 		if n.OnAllPartitions {
 			ctx.WriteKeyWord("ALL")
 			return nil

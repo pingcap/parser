@@ -1286,10 +1286,11 @@ AlterTableSpec:
 		}
 		$$ = ret
 	}
-|	"OPTIMIZE" "PARTITION" AllOrPartitionNameList
+|	"OPTIMIZE" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
-		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
+		allOrPartitionNames := $4.(*ast.AllOrPartitionNames)
 		ret := &ast.AlterTableSpec{
+			NoWriteToBinlog: $3.(bool),
 			Tp: ast.AlterTableOptimizePartition,
 		}
 		if allOrPartitionNames.All {
@@ -1301,10 +1302,11 @@ AlterTableSpec:
                 yylex.AppendError(yylex.Errorf("The OPTIMIZE PARTITION clause is parsed but ignored by all storage engines."))
                 parser.lastErrorAsWarn()
 	}
-|	"REPAIR" "PARTITION" AllOrPartitionNameList
+|	"REPAIR" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
-		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
+		allOrPartitionNames := $4.(*ast.AllOrPartitionNames)
 		ret := &ast.AlterTableSpec{
+			NoWriteToBinlog: $3.(bool),
 			Tp: ast.AlterTableRepairPartition,
 		}
 		if allOrPartitionNames.All {
