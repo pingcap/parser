@@ -2316,6 +2316,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a national varchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
 		{"create table t (a nchar varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
 		{"create table t (a nvarchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table nchar (a int);", true, "CREATE TABLE `nchar` (`a` INT)"},
+		{"create table nchar (a int, b nchar);", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR)"},
+		{"create table nchar (a int, b nchar(50));", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR(50))"},
 	}
 	s.RunTest(c, table)
 }
