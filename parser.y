@@ -7480,7 +7480,7 @@ NoWriteToBinLogAliasOpt:
 	{
 		$$ = true
 	}
-|	"LOCAL" 
+|	"LOCAL"
 	{
 		$$ = true
 	}
