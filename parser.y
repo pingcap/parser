@@ -2214,13 +2214,9 @@ ReferDef:
 	"REFERENCES" TableName IndexColNameListOpt MatchOpt OnDeleteUpdateOpt
 	{
 		onDeleteUpdate := $5.([2]interface{})
-		var indexColNames []*ast.IndexColName
-		if $3 != nil {
-			indexColNames = $3.([]*ast.IndexColName)
-		}
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
-			IndexColNames: indexColNames,
+			IndexColNames: $3.([]*ast.IndexColName),
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
 			Match: $4.(ast.MatchType),
@@ -2229,7 +2225,7 @@ ReferDef:
 
 IndexColNameListOpt:
 {
-	$$ = nil
+	$$ = ([]*ast.IndexColName)(nil)
 }
 |
 '(' IndexColNameList ')'
