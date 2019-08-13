@@ -791,6 +791,7 @@ import (
 	IgnoreOptional			"IGNORE or empty"
 	IndexColName			"Index column name"
 	IndexColNameList		"List of index column name"
+	IndexColNameListOpt	    "List of index column name opt"
 	IndexHint			"index hint"
 	IndexHintList			"index hint list"
 	IndexHintListOpt		"index hint list opt"
@@ -2205,30 +2206,31 @@ MatchOpt:
 	}
 
 ReferDef:
-	"REFERENCES" TableName MatchOpt OnDeleteUpdateOpt
+	"REFERENCES" TableName IndexColNameListOpt MatchOpt OnDeleteUpdateOpt
 	{
-		onDeleteUpdate := $4.([2]interface{})
+		onDeleteUpdate := $5.([2]interface{})
+		var indexColNames []*ast.IndexColName
+		if $3 != nil {
+			indexColNames = $3.([]*ast.IndexColName)
+		}
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
+			IndexColNames: indexColNames,
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
-			Match: $3.(ast.MatchType),
-		}
+			Match: $4.(ast.MatchType),
+		}		
 	}
+
+IndexColNameListOpt:
+{
+	$$ = nil
+}
 |
-	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
-	{
-		onDeleteUpdate := $7.([2]interface{})
-		$$ = &ast.ReferenceDef{
-			Table: $2.(*ast.TableName),
-			IndexColNames: $4.([]*ast.IndexColName),
-			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
-			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
-			Match: $6.(ast.MatchType),
-		}
-	}
-
-
+'(' IndexColNameList ')'
+{
+	$$ = $2
+}
 
 OnDelete:
 	"ON" "DELETE" ReferOpt
