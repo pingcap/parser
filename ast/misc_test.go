@@ -205,6 +205,7 @@ func (ts *testMiscSuite) TestUserSpec(c *C) {
 
 func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
+		{"INDEX(t1, c1)", "INDEX(`t1`, `c1`)"},
 		{"TIDB_SMJ(`t1`)", "TIDB_SMJ(`t1`)"},
 		{"TIDB_SMJ(t1)", "TIDB_SMJ(`t1`)"},
 		{"TIDB_SMJ(t1,t2)", "TIDB_SMJ(`t1`, `t2`)"},

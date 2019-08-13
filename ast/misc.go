@@ -2055,7 +2055,7 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WriteName(table.String())
 		}
-	case "use_index_merge":
+	case "index", "use_index_merge":
 		if len(n.Tables) != 0 {
 			ctx.WriteName(n.Tables[0].String())
 		}

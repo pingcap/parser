@@ -6125,7 +6125,15 @@ TableOptimizerHintList:
 	}
 
 TableOptimizerHintOpt:
-	hintSMJ '(' HintTableAndIndexList ')'
+	index '(' HintTableAndIndexList ')'
+	{
+		$$ = &ast.TableOptimizerHint{
+			HintName: model.NewCIStr($1),
+			Tables:   $3.([]model.CIStr)[:1],
+			Indexes:  $3.([]model.CIStr)[1:],
+		}
+	}
+|	hintSMJ '(' HintTableAndIndexList ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
 	}
