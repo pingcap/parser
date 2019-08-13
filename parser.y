@@ -1055,7 +1055,6 @@ import (
 	FromOrIn		"From or In"
 	OptTable		"Optional table keyword"
 	OptInteger		"Optional Integer keyword"
-	NationalOpt		"National option"
 	CharsetKw		"charset or charater set"
 	CommaOpt		"optional comma"
 	logAnd			"logical and operator"
@@ -8174,10 +8173,6 @@ StringType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
-
-NationalOpt:
-	{}
-|	"NATIONAL"
 
 Char:
 	"CHARACTER"
