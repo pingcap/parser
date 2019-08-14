@@ -2251,6 +2251,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t enable keys, comment = 'cmt' partition by hash(a)", true, "ALTER TABLE `t` ENABLE KEYS, COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt', partition by hash(a)", false, ""},
 
+		{"alter table t partition by range FIELDS(a)", false, ""},
+		{"alter table t partition by list FIELDS(a)", false, ""},
+		{"alter table t partition by range FIELDS(a,b,c)", false, ""},
+		{"alter table t partition by list FIELDS(a,b,c)", false, ""},
+
 		{"alter table t with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
 		{"alter table t without validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
 		{"alter table t without validation, with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
@@ -2449,6 +2454,18 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("ALTER SCHEMA `ANY_DB_NAME`", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\" ")
+
+	_, _, err = parser.Parse("alter table t partition by range FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For RANGE partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a,b,c)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {

@@ -2627,7 +2627,7 @@ PartitionMethod:
 			Expr: $3.(ast.ExprNode),
 		}
 	}
-|	"RANGE" "COLUMNS" '(' ColumnNameList ')'
+|	"RANGE" FieldsOrColumns '(' ColumnNameList ')'
 	{
 		$$ = &ast.PartitionMethod{
 			Tp:          model.PartitionTypeRange,
@@ -2641,7 +2641,7 @@ PartitionMethod:
 			Expr: $3.(ast.ExprNode),
 		}
 	}
-|	"LIST" "COLUMNS" '(' ColumnNameList ')'
+|	"LIST" FieldsOrColumns '(' ColumnNameList ')'
 	{
 		$$ = &ast.PartitionMethod{
 			Tp:          model.PartitionTypeList,
