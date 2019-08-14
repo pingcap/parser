@@ -426,6 +426,7 @@ import (
 	secondaryEngine	"SECONDARY_ENGINE"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
+	serial		"SERIAL"
 	serializable	"SERIALIZABLE"
 	session		"SESSION"
 	share		"SHARE"
@@ -1877,6 +1878,22 @@ ColumnDef:
 		}
         $$ = colDef
 	}
+|	ColumnName "SERIAL" ColumnOptionListOpt
+	{
+		// TODO: check flen 0
+		tp := types.NewFieldType(mysql.TypeLonglong)
+		options := []*ast.ColumnOption{&ast.ColumnOption{Tp: ast.ColumnOptionNotNull},
+		&ast.ColumnOption{Tp: ast.ColumnOptionAutoIncrement},
+		&ast.ColumnOption{Tp: ast.ColumnOptionUniqKey}}
+		options = append(options, $3.([]*ast.ColumnOption)...)
+		tp.Flag |= mysql.UnsignedFlag
+		colDef := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: tp, Options: options}
+		if !colDef.Validate() {
+			yylex.AppendError(yylex.Errorf("Invalid column definition"))
+			return 1
+		}
+		$$ = colDef
+	}
 
 ColumnName:
 	Identifier
@@ -2029,6 +2046,12 @@ ColumnOption:
 |	"DEFAULT" DefaultValueExpr
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionDefaultValue, Expr: $2}
+	}
+|	"SERIAL" "DEFAULT" "VALUE"
+	{
+		$$ = []*ast.ColumnOption{&ast.ColumnOption{Tp: ast.ColumnOptionNotNull},
+		&ast.ColumnOption{Tp: ast.ColumnOptionAutoIncrement},
+		&ast.ColumnOption{Tp: ast.ColumnOptionUniqKey}}
 	}
 |	"ON" "UPDATE" NowSymOptionFraction
 	{
@@ -3846,7 +3869,7 @@ UnReservedKeyword:
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "NCHAR" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
-| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
+| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIAL" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILE" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
