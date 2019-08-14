@@ -260,6 +260,7 @@ import (
 	long			"LONG"
 	varcharType		"VARCHAR"
 	varbinaryType		"VARBINARY"
+	varying			"VARYING"
 	virtual			"VIRTUAL"
 	when			"WHEN"
 	where			"WHERE"
@@ -324,6 +325,7 @@ import (
 	duplicate	"DUPLICATE"
 	dynamic		"DYNAMIC"
 	enable		"ENABLE"
+	encryption	"ENCRYPTION"
 	end		"END"
 	engine		"ENGINE"
 	engines		"ENGINES"
@@ -331,6 +333,7 @@ import (
 	event		"EVENT"
 	events		"EVENTS"
 	escape 		"ESCAPE"
+	exchange	"EXCHANGE"
 	exclusive       "EXCLUSIVE"
 	execute		"EXECUTE"
 	expire		"EXPIRE"
@@ -348,6 +351,7 @@ import (
 	history		"HISTORY"
 	hour		"HOUR"
 	identified	"IDENTIFIED"
+	insertMethod 	"INSERT_METHOD"
 	isolation	"ISOLATION"
 	issuer		"ISSUER"
 	incremental	"INCREMENTAL"
@@ -378,6 +382,7 @@ import (
 	minRows		"MIN_ROWS"
 	names		"NAMES"
 	national	"NATIONAL"
+	ncharType	"NCHAR"
 	never		"NEVER"
 	no		"NO"
 	nodegroup	"NODEGROUP"
@@ -545,6 +550,7 @@ import (
 	optimistic	"OPTIMISTIC"
 	pessimistic	"PESSIMISTIC"
 	pump		"PUMP"
+	samples		"SAMPLES"
 	stats		"STATS"
 	statsMeta       "STATS_META"
 	statsHistograms "STATS_HISTOGRAMS"
@@ -755,6 +761,7 @@ import (
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
 	RequireClause			"Encrypted connections options"
+	RequireClauseOpt	"optional Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
 	ExplainFormatType		"explain format type"
@@ -787,6 +794,7 @@ import (
 	IgnoreOptional			"IGNORE or empty"
 	IndexColName			"Index column name"
 	IndexColNameList		"List of index column name"
+	IndexColNameListOpt		"List of index column name opt"
 	IndexHint			"index hint"
 	IndexHintList			"index hint list"
 	IndexHintListOpt		"index hint list opt"
@@ -953,6 +961,8 @@ import (
 	WhenClauseList		"When clause list"
 	WithReadLockOpt		"With Read Lock opt"
 	WithGrantOptionOpt	"With Grant Option opt"
+	WithValidation		"with validation"
+	WithValidationOpt	"optional with validation"
 	ElseOpt			"Optional else clause"
 	Type			"Types"
 
@@ -1034,7 +1044,10 @@ import (
 	RegexpSym		"REGEXP or RLIKE"
 	IntoOpt			"INTO or EmptyString"
 	ValueSym		"Value or Values"
-	Varchar			"{NATIONAL VARCHAR|VARCHAR|NVARCHAR}"
+	Char			"{CHAR|CHARACTER}"
+	NChar			"{NCHAR|NATIONAL CHARACTER|NATIONAL CHAR}"
+	Varchar			"{VARCHAR|CHARACTER VARYING|CHAR VARYING}"
+	NVarchar		"{NATIONAL VARCHAR|NVARCHAR|NCHAR VARCHAR|NATIONAL CHARACTER VARYING|NATIONAL CHAR VARYING|NCHAR VARYING}"
 	DeallocateSym		"Deallocate or drop"
 	OuterOpt		"optional OUTER clause"
 	CrossOpt		"Cross join option"
@@ -1045,7 +1058,6 @@ import (
 	FromOrIn		"From or In"
 	OptTable		"Optional table keyword"
 	OptInteger		"Optional Integer keyword"
-	NationalOpt		"National option"
 	CharsetKw		"charset or charater set"
 	CommaOpt		"optional comma"
 	logAnd			"logical and operator"
@@ -1109,6 +1121,7 @@ import (
 %precedence lowerThanNot
 %right 	not not2
 %right	collate
+%right	encryption
 
 %left splitOptionPriv
 %precedence '('
@@ -1221,30 +1234,49 @@ AlterTableSpec:
 			Constraint: constraint,
 		}
 	}
-|	"ADD" "PARTITION" IfNotExists PartitionDefinitionListOpt
+|	"ADD" "PARTITION" IfNotExists NoWriteToBinLogAliasOpt PartitionDefinitionListOpt
 	{
 		var defs []*ast.PartitionDefinition
-		if $4 != nil {
-			defs = $4.([]*ast.PartitionDefinition)
+		if $5 != nil {
+			defs = $5.([]*ast.PartitionDefinition)
+		}
+		noWriteToBinlog := $4.(bool)
+		if noWriteToBinlog {
+			yylex.AppendError(yylex.Errorf("The NO_WRITE_TO_BINLOG option is parsed but ignored for now."))
+			parser.lastErrorAsWarn()
 		}
 		$$ = &ast.AlterTableSpec{
-			IfNotExists: 	$3.(bool),
+			IfNotExists: $3.(bool),
+			NoWriteToBinlog: noWriteToBinlog,
 			Tp: ast.AlterTableAddPartitions,
 			PartDefinitions: defs,
 		}
 	}
-|	"ADD" "PARTITION" "PARTITIONS" NUM
+|	"ADD" "PARTITION" IfNotExists NoWriteToBinLogAliasOpt "PARTITIONS" NUM
 	{
+		noWriteToBinlog := $4.(bool)
+		if noWriteToBinlog {
+			yylex.AppendError(yylex.Errorf("The NO_WRITE_TO_BINLOG option is parsed but ignored for now."))
+			parser.lastErrorAsWarn()
+		}
 		$$ = &ast.AlterTableSpec{
+			IfNotExists: $3.(bool),
+			NoWriteToBinlog: noWriteToBinlog,
 			Tp: ast.AlterTableAddPartitions,
-			Num: getUint64FromNUM($4),
+			Num: getUint64FromNUM($6),
 		}
 	}
-|	"COALESCE" "PARTITION" NUM
+|	"COALESCE" "PARTITION" NoWriteToBinLogAliasOpt NUM
 	{
+		noWriteToBinlog := $3.(bool)
+		if noWriteToBinlog {
+			yylex.AppendError(yylex.Errorf("The NO_WRITE_TO_BINLOG option is parsed but ignored for now."))
+			parser.lastErrorAsWarn()
+		}
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableCoalescePartitions,
-			Num: getUint64FromNUM($3),
+			NoWriteToBinlog: noWriteToBinlog,
+			Num: getUint64FromNUM($4),
 		}
 	}
 |	"DROP" ColumnKeywordOpt IfExists ColumnName RestrictOrCascadeOpt
@@ -1266,6 +1298,17 @@ AlterTableSpec:
 			Tp: ast.AlterTableDropPartition,
 			PartitionNames: $4.([]model.CIStr),
 		}
+	}
+|	"EXCHANGE" "PARTITION" Identifier "WITH" "TABLE" TableName WithValidationOpt
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableExchangePartition,
+			PartitionNames: []model.CIStr{model.NewCIStr($3)},
+			NewTable: $6.(*ast.TableName),
+			WithValidation: $7.(bool),
+		}
+		yylex.AppendError(yylex.Errorf("TiDB does not support EXCHANGE PARTITION now, it would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 |	"TRUNCATE" "PARTITION" PartitionNameList %prec lowerThanComma
 	{
@@ -1423,6 +1466,25 @@ AlterTableSpec:
 		}
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
+	}
+
+WithValidationOpt:
+	{
+		$$ = true
+	}
+|	WithValidation
+	{
+		$$ = $1
+	}
+
+WithValidation:
+	"WITH" "VALIDATION"
+	{
+		$$ = true
+	}
+|	"WITHOUT" "VALIDATION"
+	{
+		$$ = false
 	}
 
 
@@ -1733,6 +1795,10 @@ AnalyzeOption:
 |	NUM "CMSKETCH" "WIDTH"
 	{
 		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptCMSketchWidth, Value: getUint64FromNUM($1)}
+	}
+|	NUM "SAMPLES"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptNumSamples, Value: getUint64FromNUM($1)}
 	}
 
 /*******************************************************************************************/
@@ -2178,17 +2244,27 @@ MatchOpt:
 	}
 
 ReferDef:
-	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
+	"REFERENCES" TableName IndexColNameListOpt MatchOpt OnDeleteUpdateOpt
 	{
-		onDeleteUpdate := $7.([2]interface{})
+		onDeleteUpdate := $5.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
-			IndexColNames: $4.([]*ast.IndexColName),
+			IndexColNames: $3.([]*ast.IndexColName),
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
-			Match: $6.(ast.MatchType),
+			Match: $4.(ast.MatchType),
 		}
 	}
+
+IndexColNameListOpt:
+{
+	$$ = ([]*ast.IndexColName)(nil)
+}
+|
+'(' IndexColNameList ')'
+{
+	$$ = $2
+}
 
 OnDelete:
 	"ON" "DELETE" ReferOpt
@@ -2370,6 +2446,7 @@ IndexColNameList:
  *  alter_specification:
  *   [DEFAULT] CHARACTER SET [=] charset_name
  * | [DEFAULT] COLLATE [=] collation_name
+ * | [DEFAULT] ENCRYPTION [=] {'Y' | 'N'}
  *******************************************************************************************/
  AlterDatabaseStmt:
 	"ALTER" DatabaseSym DBName DatabaseOptionList
@@ -2398,6 +2475,7 @@ IndexColNameList:
  *  create_specification:
  *      [DEFAULT] CHARACTER SET [=] charset_name
  *    | [DEFAULT] COLLATE [=] collation_name
+ *    | [DEFAULT] ENCRYPTION [=] {'Y' | 'N'}
  *******************************************************************/
 CreateDatabaseStmt:
 	"CREATE" DatabaseSym IfNotExists DBName DatabaseOptionListOpt
@@ -2423,6 +2501,10 @@ DatabaseOption:
 |	DefaultKwdOpt "COLLATE" EqOpt CollationName
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4.(string)}
+	}
+|	DefaultKwdOpt "ENCRYPTION" EqOpt stringLit
+	{
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
 	}
 
 DatabaseOptionListOpt:
@@ -2458,25 +2540,27 @@ DatabaseOptionList:
  *******************************************************************/
 
 CreateTableStmt:
-	"CREATE" "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt
+	"CREATE" OptTemporary "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt
 	{
-		stmt := $5.(*ast.CreateTableStmt)
-		stmt.Table = $4.(*ast.TableName)
-		stmt.IfNotExists = $3.(bool)
-		stmt.Options = $6.([]*ast.TableOption)
-		if $7 != nil {
-			stmt.Partition = $7.(*ast.PartitionOptions)
+		stmt := $6.(*ast.CreateTableStmt)
+		stmt.Table = $5.(*ast.TableName)
+		stmt.IfNotExists = $4.(bool)
+		stmt.IsTemporary = $2.(bool)
+		stmt.Options = $7.([]*ast.TableOption)
+		if $8 != nil {
+			stmt.Partition = $8.(*ast.PartitionOptions)
 		}
-		stmt.OnDuplicate = $8.(ast.OnDuplicateKeyHandlingType)
-		stmt.Select = $10.(*ast.CreateTableStmt).Select
+		stmt.OnDuplicate = $9.(ast.OnDuplicateKeyHandlingType)
+		stmt.Select = $11.(*ast.CreateTableStmt).Select
 		$$ = stmt
 	}
-|	"CREATE" "TABLE" IfNotExists TableName LikeTableWithOrWithoutParen
+|	"CREATE" OptTemporary "TABLE" IfNotExists TableName LikeTableWithOrWithoutParen
 	{
 		$$ = &ast.CreateTableStmt{
-			Table:          $4.(*ast.TableName),
-			ReferTable:	$5.(*ast.TableName),
-			IfNotExists:    $3.(bool),
+			Table:          $5.(*ast.TableName),
+			ReferTable:	$6.(*ast.TableName),
+			IfNotExists:    $4.(bool),
+			IsTemporary:    $2.(bool),
 		}
 	}
 
@@ -2714,6 +2798,10 @@ PartDefOption:
 |	"ENGINE" EqOpt StringName
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $3.(string)}
+	}
+|	"INSERT_METHOD" EqOpt StringName
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionInsertMethod, StrValue: $3.(string)}
 	}
 |	"DATA" "DIRECTORY" EqOpt stringLit
 	{
@@ -3064,8 +3152,13 @@ DropTableStmt:
 	}
 
 OptTemporary:
-	  /* empty */ { $$= false; }
-	| "TEMPORARY" { $$= true;  }
+	  /* empty */ { $$ = false; }
+	| "TEMPORARY" 
+	{ 
+		$$ = true
+		yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
+		parser.lastErrorAsWarn()
+	}
 	;
 
 DropViewStmt:
@@ -3747,12 +3840,12 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
-| "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
+| "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
-| "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
+| "MIN_ROWS" | "NATIONAL" | "NCHAR" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
 | "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILE" | "PROFILES"
@@ -3760,11 +3853,11 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
-| "WITHOUT" | "RTREE"
+| "WITHOUT" | "RTREE" | "EXCHANGE"
 
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
+ "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
 | "TIDB_SMJ" | "TIDB_INLJ" | "TIDB_HASHAGG" | "TIDB_STREAMAGG" | "TOPN" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
@@ -7500,6 +7593,7 @@ TraceableStmt:
 |	InsertIntoStmt
 |	ReplaceIntoStmt
 |	UnionStmt
+|	LoadDataStmt
 
 ExplainableStmt:
 	SelectStmt
@@ -8005,36 +8099,55 @@ BitValueType:
 	}
 
 StringType:
-	NationalOpt "CHAR" FieldLen OptBinary
+	Char FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $3.(int)
-		x.Charset = $4.(*ast.OptBinary).Charset
-		if $4.(*ast.OptBinary).IsBinary {
-			x.Flag |= mysql.BinaryFlag
-		}
-		$$ = x
-	}
-|	NationalOpt "CHAR" OptBinary
-	{
-		x := types.NewFieldType(mysql.TypeString)
+		x.Flen = $2.(int)
 		x.Charset = $3.(*ast.OptBinary).Charset
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
-|	"NATIONAL" "CHARACTER" FieldLen OptBinary
+|	Char OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeString)
-		x.Flen = $3.(int)
-		x.Charset = $4.(*ast.OptBinary).Charset
-		if $4.(*ast.OptBinary).IsBinary {
+		x.Charset = $2.(*ast.OptBinary).Charset
+		if $2.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	NChar FieldLen OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeString)
+		x.Flen = $2.(int)
+		x.Charset = $3.(*ast.OptBinary).Charset
+		if $3.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	NChar OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeString)
+		x.Charset = $2.(*ast.OptBinary).Charset
+		if $2.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
 		$$ = x
 	}
 |	Varchar FieldLen OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeVarchar)
+		x.Flen = $2.(int)
+		x.Charset = $3.(*ast.OptBinary).Charset
+		if $3.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	NVarchar FieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeVarchar)
 		x.Flen = $2.(int)
@@ -8102,14 +8215,27 @@ StringType:
 		$$ = x
 	}
 
-NationalOpt:
-	{}
-|	"NATIONAL"
+Char:
+	"CHARACTER"
+|	"CHAR"
+
+NChar:
+	"NCHAR"
+|	"NATIONAL" "CHARACTER"
+|	"NATIONAL" "CHAR"
 
 Varchar:
-"NATIONAL" "VARCHAR"
-| "VARCHAR"
-| "NVARCHAR"
+	"CHARACTER" "VARYING"
+|	"CHAR" "VARYING"
+| 	"VARCHAR"
+
+NVarchar:
+	"NATIONAL" "VARCHAR"
+| 	"NVARCHAR"
+|	"NCHAR" "VARCHAR"
+| 	"NATIONAL" "CHARACTER" "VARYING"
+| 	"NATIONAL" "CHAR" "VARYING"
+| 	"NCHAR" "VARYING"
 
 
 BlobType:
@@ -8424,7 +8550,7 @@ CommaOpt:
  *  https://dev.mysql.com/doc/refman/5.7/en/account-management-sql.html
  ************************************************************************************/
 CreateUserStmt:
-	"CREATE" "USER" IfNotExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
+	"CREATE" "USER" IfNotExists UserSpecList RequireClauseOpt ConnectionOptions PasswordOrLockOptions
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 		$$ = &ast.CreateUserStmt{
@@ -8450,11 +8576,14 @@ CreateRoleStmt:
 
 /* See http://dev.mysql.com/doc/refman/5.7/en/alter-user.html */
 AlterUserStmt:
-	"ALTER" "USER" IfExists UserSpecList
+	"ALTER" "USER" IfExists UserSpecList RequireClauseOpt ConnectionOptions PasswordOrLockOptions
 	{
 		$$ = &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
+			TslOptions: $5.([]*ast.TslOption),
+			ResourceOptions: $6.([]*ast.ResourceOption),
+			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
 	}
 | 	"ALTER" "USER" IfExists "USER" '(' ')' "IDENTIFIED" "BY" AuthString
@@ -8499,6 +8628,8 @@ ConnectionOptions:
 |	"WITH" ConnectionOptionList
 	{
 		$$ = $2
+		yylex.AppendError(yylex.Errorf("TiDB does not support WITH ConnectionOptions now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 ConnectionOptionList:
@@ -8543,12 +8674,19 @@ ConnectionOption:
 		}
 	}
 
-RequireClause:
+RequireClauseOpt:
 	{
-		l := []*ast.TslOption{}
-		$$ = l
+		$$ = []*ast.TslOption{}
 	}
-|	"REQUIRE" "NONE"
+| RequireClause
+	{
+		$$ = $1
+		yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
+	}
+
+RequireClause:
+	"REQUIRE" "NONE"
 	{
 		t := &ast.TslOption {
 			Type: ast.TslNone,
@@ -8617,6 +8755,8 @@ PasswordOrLockOptions:
 |	PasswordOrLockOptionList
 	{
 		$$ = $1
+		yylex.AppendError(yylex.Errorf("TiDB does not support PASSWORD EXPIRE and ACCOUNT LOCK now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 PasswordOrLockOptionList:
