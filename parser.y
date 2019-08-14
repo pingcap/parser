@@ -536,11 +536,21 @@ import (
 	statsBuckets    "STATS_BUCKETS"
 	statsHealthy    "STATS_HEALTHY"
 	tidb		"TIDB"
-	tidbHJ		"TIDB_HJ"
-	tidbSMJ		"TIDB_SMJ"
-	tidbINLJ	"TIDB_INLJ"
-	tidbHASHAGG 	"TIDB_HASHAGG"
-	tidbSTREAMAGG	"TIDB_STREAMAGG" 
+	hintHJ		"HASH_JOIN"
+	hintSMJ		"SM_JOIN"
+	hintINLJ	"INL_JOIN"
+	hintHASHAGG	"HASH_AGG"
+	hintSTREAMAGG	"STREAM_AGG"
+	hintUseIndexMerge	"USE_INDEX_MERGE"
+	hintNoIndexMerge	"NO_INDEX_MERGE"
+	hintUseToja	"USE_TOJA"
+	hintEnablePlanCache	"ENABLE_PLAN_CACHE"
+	hintUsePlanCache	"USE_PLAN_CACHE"
+	hintReadConsistentReplica	"READ_CONSISTENT_REPLICA"
+	hintQueryType	"QUERY_TYPE"
+	hintMemoryQuota	"MEMORY_QUOTA"
+	hintOLAP	"OLAP"
+	hintOLTP	"OLTP"
 	split		"SPLIT"
 	regions         "REGIONS"
 
@@ -984,10 +994,13 @@ import (
 	NUM			"A number"
 	NumList			"Some numbers"
 	LengthNum		"Field length num(uint64)"
-	HintTableList		"Table list in optimizer hint"
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
 	TableOptimizerHintList	"Table level optimizer hint list"
+	HintTableAndIndexList	"Table list in optimizer hint"
+	HintTrueOrFalse	"True or false in optimizer hint"
+	HintQueryType	"Query type in optimizer hint"
+	HintMemoryQuota	"Memory quota in optimizer hint"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -3517,8 +3530,9 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "TIDB_HASHAGG" | "TIDB_STREAMAGG" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
+ "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
+| "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
+| "READ_CONSISTENT_REPLICA" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -5747,16 +5761,6 @@ TableOptimizerHints:
 		$$ = nil
 	}
 
-HintTableList:
-	Identifier
-	{
-		$$ = []model.CIStr{model.NewCIStr($1)}
-	}
-|	HintTableList ',' Identifier
-	{
-		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
-	}
-
 TableOptimizerHintList:
 	TableOptimizerHintOpt
 	{
@@ -5766,31 +5770,125 @@ TableOptimizerHintList:
 	{
 		$$ = append($1.([]*ast.TableOptimizerHint), $2.(*ast.TableOptimizerHint))
 	}
+|	TableOptimizerHintList ',' TableOptimizerHintOpt
+	{
+		$$ = append($1.([]*ast.TableOptimizerHint), $3.(*ast.TableOptimizerHint))
+	}
 
 TableOptimizerHintOpt:
-	tidbSMJ '(' HintTableList ')'
+	index '(' HintTableAndIndexList ')'
+	{
+		$$ = &ast.TableOptimizerHint{
+			HintName: model.NewCIStr($1),
+			Tables:   $3.([]model.CIStr)[:1],
+			Indexes:  $3.([]model.CIStr)[1:],
+		}
+	}
+|	hintSMJ '(' HintTableAndIndexList ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
 	}
-|	tidbINLJ '(' HintTableList ')'
+|	hintINLJ '(' HintTableAndIndexList ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
 	}
-|	tidbHJ '(' HintTableList ')'
+|	hintHJ '(' HintTableAndIndexList ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
 	}
-|	tidbHASHAGG '(' ')'
+|	hintUseIndexMerge '(' HintTableAndIndexList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{
+			HintName: model.NewCIStr($1),
+			Tables:   $3.([]model.CIStr)[:1],
+			Indexes:  $3.([]model.CIStr)[1:],
+		}
 	}
-|	tidbSTREAMAGG '(' ')'
+|	hintUseToja '(' HintTrueOrFalse ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), HintFlag: $3.(bool)}
+	}
+|	hintEnablePlanCache '(' HintTrueOrFalse ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), HintFlag: $3.(bool)}
 	}
 |	maxExecutionTime '(' NUM ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MaxExecutionTime: getUint64FromNUM($3)}
+	}
+|	hintUsePlanCache '(' ')'
+	{
+		// arguments not decided yet.
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+	}
+|	hintQueryType '(' HintQueryType ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QueryType: model.NewCIStr($3.(string))}
+	}
+|	hintMemoryQuota '(' HintMemoryQuota ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MemoryQuota: $3.(uint64)}
+	}
+|	hintHASHAGG
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+	}
+|	hintSTREAMAGG
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+	}
+|	hintNoIndexMerge
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+	}
+|	hintReadConsistentReplica
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+	}
+
+HintTableAndIndexList:
+	Identifier
+	{
+		$$ = []model.CIStr{model.NewCIStr($1)}
+	}
+|	HintTableAndIndexList ',' Identifier
+	{
+		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
+	}
+
+HintTrueOrFalse:
+	"TRUE"
+	{
+		$$ = true
+	}
+|	"FALSE"
+	{
+		$$ = false
+	}
+
+HintQueryType:
+	hintOLAP
+	{
+		$$ = $1
+	}
+|	hintOLTP
+	{
+		$$ = $1
+	}
+
+HintMemoryQuota:
+	NUM Identifier
+	{
+		// May change into MB/MiB or GB/GiB
+		switch model.NewCIStr($2).L {
+		case "m":
+			$$ = getUint64FromNUM($1)
+		case "g":
+			$$ = getUint64FromNUM($1) * 1024
+		default:
+			// Trigger warning in TiDB Planner
+			$$ = uint64(0)
+		}
 	}
 
 SelectStmtCalcFoundRows:
