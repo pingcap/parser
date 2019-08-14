@@ -705,7 +705,7 @@ import (
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
-	AlterAlgorithm			"Alter table algorithm"
+	AlgorithmClause			"Alter table algorithm"
 	AlterTablePartitionOpt		"Alter table partition option"
 	AlterTableSpec			"Alter table specification"
 	AlterTableSpecList		"Alter table specification list"
@@ -789,7 +789,6 @@ import (
 	IfExists			"If Exists"
 	IfNotExists			"If Not Exists"
 	IgnoreOptional			"IGNORE or empty"
-	IndexAlgorithm			"index algorithm option"
 	IndexColName			"Index column name"
 	IndexColNameList		"List of index column name"
 	IndexHint			"index hint"
@@ -1417,12 +1416,12 @@ AlterTableSpec:
 			LockType:   $1.(ast.LockType),
 		}
 	}
-| "ALGORITHM" EqOpt AlterAlgorithm
+|	AlgorithmClause
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableAlgorithm,
-			Algorithm:	$3.(ast.AlterAlgorithm),
+			Algorithm:	$1.(ast.AlgorithmType),
 		}
 	}
 | "FORCE"
@@ -1452,24 +1451,24 @@ AlterTableSpec:
 	}
 
 
-AlterAlgorithm:
-	"DEFAULT"
+AlgorithmClause:
+	"ALGORITHM" EqOpt "DEFAULT"
 	{
-		$$ = ast.AlterAlgorithmDefault
+		$$ = ast.AlgorithmTypeDefault
 	}
-| 	"COPY"
+| 	"ALGORITHM" EqOpt "COPY"
 	{
-		$$ = ast.AlterAlgorithmCopy
+		$$ = ast.AlgorithmTypeCopy
 	}
-| 	"INPLACE"
+| 	"ALGORITHM" EqOpt "INPLACE"
 	{
-		$$ = ast.AlterAlgorithmInplace
+		$$ = ast.AlgorithmTypeInplace
 	}
-|	"INSTANT"
+|	"ALGORITHM" EqOpt "INSTANT"
 	{
-		$$ = ast.AlterAlgorithmInstant
+		$$ = ast.AlgorithmTypeInstant
 	}
-|	identifier
+|	"ALGORITHM" EqOpt identifier
 	{
 		yylex.AppendError(ErrUnknownAlterAlgorithm.GenWithStackByArgs($1))
 		return 1
@@ -2330,7 +2329,31 @@ NumLiteral:
 |	floatLit
 |	decLit
 
-
+/**************************************CreateIndexStmt***************************************
+ * See https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+ *
+ * CREATE [UNIQUE | FULLTEXT | SPATIAL] INDEX index_name
+ *     [index_type]
+ *     ON tbl_name (key_part,...)
+ *     [index_option]
+ *     [algorithm_option | lock_option] ...
+ *
+ * key_part: {col_name [(length)] | (expr)} [ASC | DESC]
+ *
+ * index_option:
+ *     KEY_BLOCK_SIZE [=] value
+ *   | index_type
+ *   | COMMENT 'string'
+ *
+ * index_type:
+ *     USING {BTREE | HASH}
+ *
+ * algorithm_option:
+ *     ALGORITHM [=] {DEFAULT | INPLACE | COPY}
+ *
+ * lock_option:
+ *     LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
+ *******************************************************************************************/
 CreateIndexStmt:
 	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList IndexLockAndAlgorithmOpt
 	{
@@ -2355,15 +2378,8 @@ CreateIndexStmt:
 			IndexColNames: $10.([]*ast.IndexColName),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
-			Algorithm:     $13.(*ast.AlterAlgorithm),
+			LockAlg:       $13.(*ast.IndexLockAndAlgorithm),
 		}
-	}
-
-IndexAlgorithm:
-	"ALGORITHM" EqOpt AlterAlgorithm
-	{
-		indexAlgorithm := $3.(ast.AlterAlgorithm)
-		$$ = &indexAlgorithm
 	}
 
 IndexColName:
@@ -2385,23 +2401,44 @@ IndexColNameList:
 
 IndexLockAndAlgorithmOpt:
 	{
-		$$ = (*ast.AlterAlgorithm)(nil)
+		$$ = &ast.IndexLockAndAlgorithm{
+			LockTp:		nil,
+			AlgorithmTp:	nil,
+		}
 	}
 |	LockClause
 	{
-		$$ = (*ast.AlterAlgorithm)(nil)
+		lockType := $1.(ast.LockType)
+		$$ = &ast.IndexLockAndAlgorithm{
+			LockTp:		&lockType,
+			AlgorithmTp:	nil,
+		}
 	}
-|	IndexAlgorithm
+|	AlgorithmClause
 	{
-		$$ = $1
+		algorithmType := $1.(ast.AlgorithmType)
+		$$ = &ast.IndexLockAndAlgorithm{
+			LockTp:		nil,
+			AlgorithmTp:	&algorithmType,
+		}
 	}
-|	LockClause IndexAlgorithm
+|	LockClause AlgorithmClause
 	{
-		$$ = $2
+		lockType := $1.(ast.LockType)
+		algorithmType := $2.(ast.AlgorithmType)
+		$$ = &ast.IndexLockAndAlgorithm{
+			LockTp:		&lockType,
+			AlgorithmTp:	&algorithmType,
+		}
 	}
-|	IndexAlgorithm LockClause
+|	AlgorithmClause LockClause
 	{
-		$$ = $1
+		lockType := $2.(ast.LockType)
+		algorithmType := $1.(ast.AlgorithmType)
+		$$ = &ast.IndexLockAndAlgorithm{
+			LockTp:		&lockType,
+			AlgorithmTp:	&algorithmType,
+		}
 	}
 
 IndexKeyTypeOpt:
