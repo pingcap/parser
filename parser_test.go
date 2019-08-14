@@ -3255,6 +3255,11 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL"},
 		{"ALTER TABLE t1 OPTIMIZE PARTITION ALL, p0", false, ""},
 		{"ALTER TABLE t1 OPTIMIZE PARTITION p0, ALL", false, ""},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL local", true, "ALTER TABLE `t_n` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
 
 		{"ALTER TABLE t1 REPAIR PARTITION p0", true, "ALTER TABLE `t1` REPAIR PARTITION `p0`"},
 		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG p0", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`"},
@@ -3268,6 +3273,12 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 		{"ALTER TABLE t1 REPAIR PARTITION LOCAL ALL", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG ALL"},
 		{"ALTER TABLE t1 REPAIR PARTITION ALL, p0", false, ""},
 		{"ALTER TABLE t1 REPAIR PARTITION p0, ALL", false, ""},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL local", true, "ALTER TABLE `t_n` REPAIR PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` REPAIR PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
+
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT 'APSTART \\' APEND')", true, "ALTER TABLE `t1` ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'APSTART '' APEND')"},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')", true, "ALTER TABLE `t1` ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')"},
 		{`CREATE TABLE t1 (a int not null,b int not null,c int not null,primary key(a,b))
