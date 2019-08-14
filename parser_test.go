@@ -946,6 +946,47 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 	s.RunTest(c, table)
 }
 
+func (s *testParserSuite) TestSetVariable(c *C) {
+	table := []struct {
+		Input    string
+		Name     string
+		IsGlobal bool
+		IsSystem bool
+	}{
+
+		// Set system variable xx.xx, although xx.xx isn't a system variable, the parser should accept it.
+		{"set xx.xx = 666", "xx.xx", false, true},
+		// Set session system variable xx.xx
+		{"set session xx.xx = 666", "xx.xx", false, true},
+		{"set global xx.xx = 666", "xx.xx", true, true},
+
+		{"set @@xx.xx = 666", "xx.xx", false, true},
+		{"set @@session.xx.xx = 666", "xx.xx", false, true},
+		{"set @@global.xx.xx = 666", "xx.xx", true, true},
+
+		// Set user defined variable xx.xx
+		{"set @xx.xx = 666", "xx.xx", false, false},
+	}
+
+	parser := parser.New()
+	for _, t := range table {
+		stmt, err := parser.ParseOneStmt(t.Input, "", "")
+		c.Assert(err, IsNil)
+
+		setStmt, ok := stmt.(*ast.SetStmt)
+		c.Assert(ok, IsTrue)
+		c.Assert(setStmt.Variables, HasLen, 1)
+
+		v := setStmt.Variables[0]
+		c.Assert(v.Name, Equals, t.Name)
+		c.Assert(v.IsGlobal, Equals, t.IsGlobal)
+		c.Assert(v.IsSystem, Equals, t.IsSystem)
+	}
+
+	_, err := parser.ParseOneStmt("set xx.xx.xx = 666", "", "")
+	c.Assert(err, NotNil)
+}
+
 func (s *testParserSuite) TestFlushTable(c *C) {
 	parser := parser.New()
 	stmt, _, err := parser.Parse("flush local tables tbl1,tbl2 with read lock", "", "")
@@ -2219,6 +2260,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE d_n.t_n ADD PARTITION NO_WRITE_TO_BINLOG", true, "ALTER TABLE `d_n`.`t_n` ADD PARTITION NO_WRITE_TO_BINLOG"},
 		{"ALTER TABLE d_n.t_n ADD PARTITION LOCAL", true, "ALTER TABLE `d_n`.`t_n` ADD PARTITION NO_WRITE_TO_BINLOG"},
 
+		{"alter table t with validation, exchange partition p with table nt without validation;", true, "ALTER TABLE `t` WITH VALIDATION, EXCHANGE PARTITION `p` WITH TABLE `nt` WITHOUT VALIDATION"},
+		{"alter table t exchange partition p with table nt with validation;", true, "ALTER TABLE `t` EXCHANGE PARTITION `p` WITH TABLE `nt`"},
+
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
@@ -2313,6 +2357,35 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t remove partitioning", true, "ALTER TABLE `t` REMOVE PARTITIONING"},
 		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident` REMOVE PARTITIONING"},
 		{"alter table t lock = default remove partitioning", true, "ALTER TABLE `t` LOCK = DEFAULT REMOVE PARTITIONING"},
+
+		// for references without IndexColNameList
+		{"alter table t add column a double (4,2) zerofill references b match full on update set null first", true, "ALTER TABLE `t` ADD COLUMN `a` DOUBLE(4,2) UNSIGNED ZEROFILL REFERENCES `b` MATCH FULL ON UPDATE SET NULL FIRST"},
+		{"alter table d_n.t_n add constraint foreign key ident (ident(1)) references d_n.t_n match full on delete set null", true, "ALTER TABLE `d_n`.`t_n` ADD CONSTRAINT `ident` FOREIGN KEY (`ident`(1)) REFERENCES `d_n`.`t_n` MATCH FULL ON DELETE SET NULL"},
+		{"alter table t_n add constraint ident foreign key (ident,ident(1)) references t_n match full on update set null on delete restrict", true, "ALTER TABLE `t_n` ADD CONSTRAINT `ident` FOREIGN KEY (`ident`, `ident`(1)) REFERENCES `t_n` MATCH FULL ON DELETE RESTRICT ON UPDATE SET NULL"},
+		{"alter table d_n.t_n add foreign key ident (ident, ident(1) asc) references t_n match partial on delete cascade remove partitioning", true, "ALTER TABLE `d_n`.`t_n` ADD CONSTRAINT `ident` FOREIGN KEY (`ident`, `ident`(1)) REFERENCES `t_n` MATCH PARTIAL ON DELETE CASCADE REMOVE PARTITIONING"},
+		{"alter table d_n.t_n add constraint foreign key (ident asc) references d_n.t_n match simple on update cascade on delete cascade", true, "ALTER TABLE `d_n`.`t_n` ADD CONSTRAINT FOREIGN KEY (`ident`) REFERENCES `d_n`.`t_n` MATCH SIMPLE ON DELETE CASCADE ON UPDATE CASCADE"},
+
+		// for character vary syntax
+		{"create table t (a character varying(1));", true, "CREATE TABLE `t` (`a` VARCHAR(1))"},
+		{"create table t (a character varying(255));", true, "CREATE TABLE `t` (`a` VARCHAR(255))"},
+		{"create table t (a char varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a char);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a character);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a character varying(50), b int);", true, "CREATE TABLE `t` (`a` VARCHAR(50),`b` INT)"},
+		{"create table t (a character, b int);", true, "CREATE TABLE `t` (`a` CHAR,`b` INT)"},
+		{"create table t (a national character varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national char varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national char);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a national character);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a nchar);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a nchar varchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national varchar);", false, ""},
+		{"create table t (a national varchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a nchar varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a nvarchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table nchar (a int);", true, "CREATE TABLE `nchar` (`a` INT)"},
+		{"create table nchar (a int, b nchar);", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR)"},
+		{"create table nchar (a int, b nchar(50));", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR(50))"},
 	}
 	s.RunTest(c, table)
 }
