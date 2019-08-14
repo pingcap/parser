@@ -2251,7 +2251,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t enable keys, comment = 'cmt' partition by hash(a)", true, "ALTER TABLE `t` ENABLE KEYS, COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt', partition by hash(a)", false, ""},
 
-		{"alter table t partition by range FIELDS(a)", false, ""},
+		{"alter table t partition by range FIELDS(a) (partition x values less than maxvalue)", true, "ALTER TABLE `t` PARTITION BY RANGE COLUMNS (`a`) (PARTITION `x` VALUES LESS THAN (MAXVALUE))"},
 		{"alter table t partition by list FIELDS(a)", false, ""},
 		{"alter table t partition by range FIELDS(a,b,c)", false, ""},
 		{"alter table t partition by list FIELDS(a,b,c)", false, ""},
