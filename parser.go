@@ -9092,9 +9092,9 @@ yynewstate:
 		{
 			// TODO: check flen 0
 			tp := types.NewFieldType(mysql.TypeLonglong)
-			options := []*ast.ColumnOption{&ast.ColumnOption{Tp: ast.ColumnOptionNotNull},
-				&ast.ColumnOption{Tp: ast.ColumnOptionAutoIncrement},
-				&ast.ColumnOption{Tp: ast.ColumnOptionUniqKey}}
+			options := []*ast.ColumnOption{{Tp: ast.ColumnOptionNotNull},
+				{Tp: ast.ColumnOptionAutoIncrement},
+				{Tp: ast.ColumnOptionUniqKey}}
 			options = append(options, yyS[yypt-0].item.([]*ast.ColumnOption)...)
 			tp.Flag |= mysql.UnsignedFlag
 			colDef := &ast.ColumnDef{Name: yyS[yypt-2].item.(*ast.ColumnName), Tp: tp, Options: options}
@@ -9229,9 +9229,9 @@ yynewstate:
 		}
 	case 145:
 		{
-			parser.yyVAL.item = []*ast.ColumnOption{&ast.ColumnOption{Tp: ast.ColumnOptionNotNull},
-				&ast.ColumnOption{Tp: ast.ColumnOptionAutoIncrement},
-				&ast.ColumnOption{Tp: ast.ColumnOptionUniqKey}}
+			parser.yyVAL.item = []*ast.ColumnOption{{Tp: ast.ColumnOptionNotNull},
+				{Tp: ast.ColumnOptionAutoIncrement},
+				{Tp: ast.ColumnOptionUniqKey}}
 		}
 	case 146:
 		{
