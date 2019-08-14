@@ -8517,30 +8517,28 @@ yynewstate:
 		}
 	case 19:
 		{
-			allOrPartitionNames := yyS[yypt-0].item.(*ast.AllOrPartitionNames)
 			ret := &ast.AlterTableSpec{
 				Tp: ast.AlterTableTruncatePartition,
 			}
-			if allOrPartitionNames.All {
+			if yyS[yypt-0].item == nil {
 				ret.OnAllPartitions = true
 				yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
 				parser.lastErrorAsWarn()
 			} else {
-				ret.PartitionNames = allOrPartitionNames.PartitionNames
+				ret.PartitionNames = yyS[yypt-0].item.([]model.CIStr)
 			}
 			parser.yyVAL.item = ret
 		}
 	case 20:
 		{
-			allOrPartitionNames := yyS[yypt-0].item.(*ast.AllOrPartitionNames)
 			ret := &ast.AlterTableSpec{
 				NoWriteToBinlog: yyS[yypt-1].item.(bool),
 				Tp:              ast.AlterTableOptimizePartition,
 			}
-			if allOrPartitionNames.All {
+			if yyS[yypt-0].item == nil {
 				ret.OnAllPartitions = true
 			} else {
-				ret.PartitionNames = allOrPartitionNames.PartitionNames
+				ret.PartitionNames = yyS[yypt-0].item.([]model.CIStr)
 			}
 			parser.yyVAL.item = ret
 			yylex.AppendError(yylex.Errorf("The OPTIMIZE PARTITION clause is parsed but ignored by all storage engines."))
@@ -8548,15 +8546,14 @@ yynewstate:
 		}
 	case 21:
 		{
-			allOrPartitionNames := yyS[yypt-0].item.(*ast.AllOrPartitionNames)
 			ret := &ast.AlterTableSpec{
 				NoWriteToBinlog: yyS[yypt-1].item.(bool),
 				Tp:              ast.AlterTableRepairPartition,
 			}
-			if allOrPartitionNames.All {
+			if yyS[yypt-0].item == nil {
 				ret.OnAllPartitions = true
 			} else {
-				ret.PartitionNames = allOrPartitionNames.PartitionNames
+				ret.PartitionNames = yyS[yypt-0].item.([]model.CIStr)
 			}
 			parser.yyVAL.item = ret
 			yylex.AppendError(yylex.Errorf("The REPAIR PARTITION clause is parsed but ignored by all storage engines."))
@@ -8714,16 +8711,11 @@ yynewstate:
 		}
 	case 40:
 		{
-			parser.yyVAL.item = &ast.AllOrPartitionNames{
-				All: true,
-			}
+			parser.yyVAL.item = nil
 		}
 	case 41:
 		{
-			parser.yyVAL.item = &ast.AllOrPartitionNames{
-				All:            false,
-				PartitionNames: yyS[yypt-0].item.([]model.CIStr),
-			}
+			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 42:
 		{

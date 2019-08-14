@@ -1317,30 +1317,28 @@ AlterTableSpec:
 	}
 |	"TRUNCATE" "PARTITION" AllOrPartitionNameList
 	{
-		allOrPartitionNames := $3.(*ast.AllOrPartitionNames)
 		ret := &ast.AlterTableSpec{
 			Tp: ast.AlterTableTruncatePartition,
 		}
-		if allOrPartitionNames.All {
+		if $3 == nil {
 			ret.OnAllPartitions = true
 			yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
 			parser.lastErrorAsWarn()
 		} else {
-			ret.PartitionNames = allOrPartitionNames.PartitionNames
+			ret.PartitionNames = $3.([]model.CIStr)
 		}
 		$$ = ret
 	}
 |	"OPTIMIZE" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
-		allOrPartitionNames := $4.(*ast.AllOrPartitionNames)
 		ret := &ast.AlterTableSpec{
 			NoWriteToBinlog: $3.(bool),
 			Tp: ast.AlterTableOptimizePartition,
 		}
-		if allOrPartitionNames.All {
+		if $4 == nil {
 			ret.OnAllPartitions = true
 		} else {
-			ret.PartitionNames = allOrPartitionNames.PartitionNames
+			ret.PartitionNames = $4.([]model.CIStr)
 		}
 		$$ = ret
 		yylex.AppendError(yylex.Errorf("The OPTIMIZE PARTITION clause is parsed but ignored by all storage engines."))
@@ -1348,15 +1346,14 @@ AlterTableSpec:
 	}
 |	"REPAIR" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
-		allOrPartitionNames := $4.(*ast.AllOrPartitionNames)
 		ret := &ast.AlterTableSpec{
 			NoWriteToBinlog: $3.(bool),
 			Tp: ast.AlterTableRepairPartition,
 		}
-		if allOrPartitionNames.All {
+		if $4 == nil {
 			ret.OnAllPartitions = true
 		} else {
-			ret.PartitionNames = allOrPartitionNames.PartitionNames
+			ret.PartitionNames = $4.([]model.CIStr)
 		}
 		$$ = ret
 		yylex.AppendError(yylex.Errorf("The REPAIR PARTITION clause is parsed but ignored by all storage engines."))
@@ -1516,16 +1513,11 @@ AlterTableSpec:
 AllOrPartitionNameList:
 	"ALL"
 	{
-		$$ = &ast.AllOrPartitionNames{
-			All: true,
-		}
+		$$ = nil
 	}
 |	PartitionNameList %prec lowerThanComma
 	{
-		$$ = &ast.AllOrPartitionNames{
-			All: false,
-			PartitionNames: $1.([]model.CIStr),
-		}
+		$$ = $1
 	}
 
 WithValidationOpt:
