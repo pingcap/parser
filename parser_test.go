@@ -946,6 +946,47 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 	s.RunTest(c, table)
 }
 
+func (s *testParserSuite) TestSetVariable(c *C) {
+	table := []struct {
+		Input    string
+		Name     string
+		IsGlobal bool
+		IsSystem bool
+	}{
+
+		// Set system variable xx.xx, although xx.xx isn't a system variable, the parser should accept it.
+		{"set xx.xx = 666", "xx.xx", false, true},
+		// Set session system variable xx.xx
+		{"set session xx.xx = 666", "xx.xx", false, true},
+		{"set global xx.xx = 666", "xx.xx", true, true},
+
+		{"set @@xx.xx = 666", "xx.xx", false, true},
+		{"set @@session.xx.xx = 666", "xx.xx", false, true},
+		{"set @@global.xx.xx = 666", "xx.xx", true, true},
+
+		// Set user defined variable xx.xx
+		{"set @xx.xx = 666", "xx.xx", false, false},
+	}
+
+	parser := parser.New()
+	for _, t := range table {
+		stmt, err := parser.ParseOneStmt(t.Input, "", "")
+		c.Assert(err, IsNil)
+
+		setStmt, ok := stmt.(*ast.SetStmt)
+		c.Assert(ok, IsTrue)
+		c.Assert(setStmt.Variables, HasLen, 1)
+
+		v := setStmt.Variables[0]
+		c.Assert(v.Name, Equals, t.Name)
+		c.Assert(v.IsGlobal, Equals, t.IsGlobal)
+		c.Assert(v.IsSystem, Equals, t.IsSystem)
+	}
+
+	_, err := parser.ParseOneStmt("set xx.xx.xx = 666", "", "")
+	c.Assert(err, NotNil)
+}
+
 func (s *testParserSuite) TestFlushTable(c *C) {
 	parser := parser.New()
 	stmt, _, err := parser.Parse("flush local tables tbl1,tbl2 with read lock", "", "")
@@ -2219,17 +2260,38 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE d_n.t_n ADD PARTITION NO_WRITE_TO_BINLOG", true, "ALTER TABLE `d_n`.`t_n` ADD PARTITION NO_WRITE_TO_BINLOG"},
 		{"ALTER TABLE d_n.t_n ADD PARTITION LOCAL", true, "ALTER TABLE `d_n`.`t_n` ADD PARTITION NO_WRITE_TO_BINLOG"},
 
+		{"alter table t with validation, exchange partition p with table nt without validation;", true, "ALTER TABLE `t` WITH VALIDATION, EXCHANGE PARTITION `p` WITH TABLE `nt` WITHOUT VALIDATION"},
+		{"alter table t exchange partition p with table nt with validation;", true, "ALTER TABLE `t` EXCHANGE PARTITION `p` WITH TABLE `nt`"},
+
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
 		{"CREATE UNIQUE INDEX idx ON t (a)", true, "CREATE UNIQUE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE UNIQUE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE UNIQUE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
+		{"CREATE SPATIAL INDEX idx ON t (a)", true, "CREATE SPATIAL INDEX `idx` ON `t` (`a`)"},
+		{"CREATE SPATIAL INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE SPATIAL INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
+		{"CREATE FULLTEXT INDEX idx ON t (a)", true, "CREATE FULLTEXT INDEX `idx` ON `t` (`a`)"},
+		{"CREATE FULLTEXT INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE FULLTEXT INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
 		{"CREATE INDEX idx ON t (a) USING HASH", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH"},
 		{"CREATE INDEX idx ON t (a) COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) COMMENT 'foo'"},
 		{"CREATE INDEX idx ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
-		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, "CREATE INDEX `idx` ON `t` (`a`) LOCK = NONE"},
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`) USING BTREE"},
+
+		// For create index with algorithm
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = COPY", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = COPY"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM COPY", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = COPY"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT LOCK = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) LOCK = DEFAULT ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = INPLACE LOCK = EXCLUSIVE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"CREATE INDEX idx ON t ( a ) LOCK = EXCLUSIVE ALGORITHM = INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = ident", false, ""},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM ident", false, ""},
 
 		//For dorp index statement
 		{"drop index a on t", true, "DROP INDEX `a` ON `t`"},
@@ -2326,6 +2388,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table nchar (a int);", true, "CREATE TABLE `nchar` (`a` INT)"},
 		{"create table nchar (a int, b nchar);", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR)"},
 		{"create table nchar (a int, b nchar(50));", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR(50))"},
+
+		// for LONG syntax
+		{"create table t (a long);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a long varchar);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a mediumtext, b long varchar, c long);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT,`b` MEDIUMTEXT,`c` MEDIUMTEXT)"},
 	}
 	s.RunTest(c, table)
 }
@@ -2409,62 +2476,109 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
 	parser := parser.New()
-	stmt, _, err := parser.Parse("select /*+ tidb_SMJ(T1,t2) tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test TIDB_SMJ
+	stmt, _, err := parser.Parse("select /*+ TIDB_SMJ(T1,t2), tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt := stmt[0].(*ast.SelectStmt)
 
 	hints := selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_smj")
-	c.Assert(len(hints[0].Tables), Equals, 2)
+	c.Assert(hints[0].Tables, HasLen, 2)
 	c.Assert(hints[0].Tables[0].L, Equals, "t1")
 	c.Assert(hints[0].Tables[1].L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_smj")
+	c.Assert(hints[1].Tables, HasLen, 2)
 	c.Assert(hints[1].Tables[0].L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].L, Equals, "t4")
 
-	c.Assert(len(selectStmt.TableHints), Equals, 2)
-
-	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) tidb_inlj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
-	c.Assert(err, IsNil)
-	selectStmt = stmt[0].(*ast.SelectStmt)
-
-	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
-	c.Assert(hints[0].HintName.L, Equals, "tidb_inlj")
-	c.Assert(len(hints[0].Tables), Equals, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
-
-	c.Assert(hints[1].HintName.L, Equals, "tidb_inlj")
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
-
-	stmt, _, err = parser.Parse("select /*+ TIDB_HJ(t1, T2) tidb_hj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
-	c.Assert(err, IsNil)
-	selectStmt = stmt[0].(*ast.SelectStmt)
-
-	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
-	c.Assert(hints[0].HintName.L, Equals, "tidb_hj")
-	c.Assert(len(hints[0].Tables), Equals, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
-
-	c.Assert(hints[1].HintName.L, Equals, "tidb_hj")
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
-
-	stmt, _, err = parser.Parse("select /*+ TIDB_HASHAGG() tidb_streamagg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test SM_JOIN
+	stmt, _, err = parser.Parse("select /*+ SM_JOIN(t1, T2), sm_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
-	c.Assert(hints[0].HintName.L, Equals, "tidb_hashagg")
-	c.Assert(hints[1].HintName.L, Equals, "tidb_streamagg")
+	c.Assert(hints[0].HintName.L, Equals, "sm_join")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].L, Equals, "t2")
 
+	c.Assert(hints[1].HintName.L, Equals, "sm_join")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+
+	// Test TIDB_INLJ
+	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2), tidb_inlj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "tidb_inlj")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "tidb_inlj")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+
+	// Test INL_JOIN
+	stmt, _, err = parser.Parse("select /*+ INL_JOIN(t1, T2), inl_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "inl_join")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "inl_join")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+
+	// Test TIDB_HJ
+	stmt, _, err = parser.Parse("select /*+ TIDB_HJ(t1, T2), tidb_hj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "tidb_hj")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "tidb_hj")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+
+	// Test HASH_JOIN
+	stmt, _, err = parser.Parse("select /*+ HASH_JOIN(t1, T2), hash_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "hash_join")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "hash_join")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+
+	// Test MAX_EXECUTION_TIME
 	queries := []string{
 		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t1 INNER JOIN t2 where t1.c1 = t2.c1",
 		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ 1",
@@ -2480,6 +2594,127 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 		c.Assert(hints[0].HintName.L, Equals, "max_execution_time", Commentf("case", i))
 		c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
 	}
+
+	// Test USE_INDEX_MERGE
+	stmt, _, err = parser.Parse("select /*+ USE_INDEX_MERGE(t1, c1), use_index_merge(t2, c1) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_index_merge")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "c1")
+
+	c.Assert(hints[1].HintName.L, Equals, "use_index_merge")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].L, Equals, "t2")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
+
+	// Test USE_TOJA
+	stmt, _, err = parser.Parse("select /*+ USE_TOJA(true), use_toja(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_toja")
+	c.Assert(hints[0].HintFlag, IsTrue)
+
+	c.Assert(hints[1].HintName.L, Equals, "use_toja")
+	c.Assert(hints[1].HintFlag, IsFalse)
+
+	// Test ENABLE_PLAN_CACHE
+	stmt, _, err = parser.Parse("select /*+ ENABLE_PLAN_CACHE(true), enable_plan_cache(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "enable_plan_cache")
+	c.Assert(hints[0].HintFlag, IsTrue)
+
+	c.Assert(hints[1].HintName.L, Equals, "enable_plan_cache")
+	c.Assert(hints[1].HintFlag, IsFalse)
+
+	// Test USE_PLAN_CACHE
+	stmt, _, err = parser.Parse("select /*+ USE_PLAN_CACHE(), use_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_plan_cache")
+	c.Assert(hints[1].HintName.L, Equals, "use_plan_cache")
+
+	// Test QUERY_TYPE
+	stmt, _, err = parser.Parse("select /*+ QUERY_TYPE(OLAP), query_type(OLTP) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "query_type")
+	c.Assert(hints[0].QueryType.L, Equals, "olap")
+	c.Assert(hints[1].HintName.L, Equals, "query_type")
+	c.Assert(hints[1].QueryType.L, Equals, "oltp")
+
+	// Test MEMORY_QUOTA
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 M), memory_quota(1 G), memory_quota(1 MG) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 3)
+	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
+	c.Assert(hints[0].MemoryQuota, Equals, uint64(1))
+	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
+	c.Assert(hints[1].MemoryQuota, Equals, uint64(1024))
+	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
+	c.Assert(hints[2].MemoryQuota, Equals, uint64(0))
+
+	// Test HASH_AGG
+	stmt, _, err = parser.Parse("select /*+ HASH_AGG, hash_agg */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "hash_agg")
+	c.Assert(hints[1].HintName.L, Equals, "hash_agg")
+
+	// Test STREAM_AGG
+	stmt, _, err = parser.Parse("select /*+ STREAM_AGG, stream_agg */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "stream_agg")
+	c.Assert(hints[1].HintName.L, Equals, "stream_agg")
+
+	// Test NO_INDEX_MERGE
+	stmt, _, err = parser.Parse("select /*+ NO_INDEX_MERGE, no_index_merge */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "no_index_merge")
+	c.Assert(hints[1].HintName.L, Equals, "no_index_merge")
+
+	// Test READ_CONSISTENT_REPLICA
+	stmt, _, err = parser.Parse("select /*+ READ_CONSISTENT_REPLICA, read_consistent_replica */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "read_consistent_replica")
+	c.Assert(hints[1].HintName.L, Equals, "read_consistent_replica")
 }
 
 func (s *testParserSuite) TestType(c *C) {
