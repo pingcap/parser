@@ -299,7 +299,7 @@ import (
 	client		"CLIENT"
 	coalesce	"COALESCE"
 	collation	"COLLATION"
-	columnFormat "COLUMN_FORMAT"
+	columnFormat	"COLUMN_FORMAT"
 	columns		"COLUMNS"
 	comment 	"COMMENT"
 	commit		"COMMIT"
@@ -739,6 +739,7 @@ import (
 	CollationName			"Collation name"
 	ColumnDef			"table column definition"
 	ColumnDefList			"table column definition list"
+	ColumnFormat			"Column format"
 	ColumnName			"column name"
 	ColumnNameOrUserVariable	"column name or user variable"
 	ColumnNameList			"column name list"
@@ -2101,19 +2102,23 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2.(string)}
 	}
-|   "COLUMN_FORMAT" "DEFAULT"
+|   "COLUMN_FORMAT" ColumnFormat
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: "DEFAULT"}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
 	}
-|
-    "COLUMN_FORMAT" "FIXED"
+
+ColumnFormat: 
+	"DEFAULT"
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: "FIXED"}
+		$$ = "DEFAULT"
 	}
-|
-    "COLUMN_FORMAT" "DYNAMIC"
+|   "FIXED"
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: "DYNAMIC"}
+		$$ = "FIXED"
+	}
+|   "DYNAMIC"
+	{
+		$$ = "DYNAMIC"
 	}
 
 GeneratedAlways: | "GENERATED" "ALWAYS"
