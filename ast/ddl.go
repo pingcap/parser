@@ -1543,6 +1543,7 @@ const (
 	TableOptionDelayKeyWrite
 	TableOptionRowFormat
 	TableOptionStatsPersistent
+	TableOptionStatsAutoRecalc
 	TableOptionShardRowID
 	TableOptionPreSplitRegion
 	TableOptionPackKeys
@@ -1698,6 +1699,14 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
+	case TableOptionStatsAutoRecalc:
+		ctx.WriteKeyWord("STATS_AUTO_RECALC ")
+		ctx.WritePlain("= ")
+		if n.StrValue != "" {
+			ctx.WritePlain(n.StrValue)
+		} else {
+			ctx.WritePlainf("%d", n.UintValue)
+		}
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlainf("= %d", n.UintValue)
