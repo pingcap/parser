@@ -112,7 +112,7 @@ import (
 	distinct		"DISTINCT"
 	distinctRow		"DISTINCTROW"
 	div 			"DIV"
-	doubleType		"DOUBLE"
+	doubleType		"DOUBLE / FLOAT8"
 	drop			"DROP"
 	dual 			"DUAL"
 	elseKwd			"ELSE"
@@ -123,7 +123,7 @@ import (
 	except			"EXCEPT"
 	falseKwd		"FALSE"
 	firstValue		"FIRST_VALUE"
-	floatType		"FLOAT"
+	floatType		"FLOAT / FLOAT4"
 	forKwd			"FOR"
 	force			"FORCE"
 	foreign			"FOREIGN"
@@ -774,6 +774,7 @@ import (
 	DistinctOpt			"Explicit distinct option"
 	DefaultFalseDistinctOpt		"Distinct option which defaults to false"
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
+	DoubleWithPrecisionOpt		"DOUBLE type, with optional keyword precision"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
 	RequireClause			"Encrypted connections options"
 	RequireClauseOpt	"optional Encrypted connections options"
@@ -5329,7 +5330,7 @@ CastType:
 		x.Collate = mysql.DefaultCollationName
 		$$ = x
 	}
-|	"DOUBLE"
+|	DoubleWithPrecisionOpt
 	{
 		x := types.NewFieldType(mysql.TypeDouble)
 		x.Flen, x.Decimal = mysql.GetDefaultFieldLengthAndDecimalForCast(mysql.TypeDouble)
@@ -5338,7 +5339,7 @@ CastType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
-|	"FLOAT" FloatOpt
+|	floatType FloatOpt
 	{
 		x := types.NewFieldType(mysql.TypeFloat)
 		fopt := $2.(*ast.FloatOpt)
@@ -8319,7 +8320,7 @@ FixedPointType:
 	}
 
 FloatingPointType:
-	"FLOAT"
+	floatType
 	{
 		$$ = mysql.TypeFloat
 	}
@@ -8331,11 +8332,17 @@ FloatingPointType:
 		    $$ = mysql.TypeDouble
 	    }
 	}
-|	"DOUBLE"
+|	DoubleWithPrecisionOpt
+	{
+		$$ = $1
+	}
+
+DoubleWithPrecisionOpt:
+	doubleType
 	{
 		$$ = mysql.TypeDouble
 	}
-|	"DOUBLE" "PRECISION"
+|	doubleType "PRECISION"
 	{
 		$$ = mysql.TypeDouble
 	}

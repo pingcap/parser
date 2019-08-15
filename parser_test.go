@@ -53,7 +53,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"current_timestamp", "current_user", "database", "databases", "day_hour", "day_microsecond",
 		"day_minute", "day_second", "decimal", "default", "delete", "desc", "describe",
 		"distinct", "distinctRow", "div", "double", "drop", "dual", "else", "enclosed", "escaped",
-		"exists", "explain", "false", "float", "for", "force", "foreign", "from",
+		"exists", "explain", "false", "float", "float4", "float8", "for", "force", "foreign", "from",
 		"fulltext", "grant", "group", "having", "hour_microsecond", "hour_minute",
 		"hour_second", "if", "ignore", "in", "index", "infile", "inner", "insert", "int", "into", "integer",
 		"interval", "is", "join", "key", "keys", "kill", "leading", "left", "like", "limit", "lines", "load",
@@ -1196,9 +1196,13 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		// for cast as double
 		{"select cast(1 as double);", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as double precision);", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float8);", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float8 precision);", true, "SELECT CAST(1 AS DOUBLE)"},
 
 		// for cast as float
 		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float4);", true, "SELECT CAST(1 AS FLOAT)"},
 		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
 		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
 		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
@@ -1784,8 +1788,6 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 func (s *testParserSuite) TestDDL(c *C) {
 	table := []testCase{
 		{"CREATE", false, ""},
-		{"CREATE TABLE", false, ""},
-		{"CREATE TABLE foo (", false, ""},
 		{"CREATE TABLE foo ()", false, ""},
 		{"CREATE TABLE foo ();", false, ""},
 		{"CREATE TABLE foo (a varchar(50), b int);", true, "CREATE TABLE `foo` (`a` VARCHAR(50),`b` INT)"},
@@ -1813,6 +1815,17 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (a.b, b);", false, ""},
 		{"CREATE TABLE foo (a, b.c);", false, ""},
 		{"CREATE TABLE (name CHAR(50) BINARY)", false, ""},
+		// test float4, float8
+		{"create table t (a float4)", true, "CREATE TABLE `t` (`a` FLOAT)"},
+		{"create table t (a float4(4, 2))", true, "CREATE TABLE `t` (`a` FLOAT(4,2))"},
+		{"create table t (a float4, b float)", true, "CREATE TABLE `t` (`a` FLOAT,`b` FLOAT)"},
+		{"create table t (a float, b float4 as (a + 1))", true, "CREATE TABLE `t` (`a` FLOAT,`b` FLOAT GENERATED ALWAYS AS(`a`+1) VIRTUAL)"},
+		{"create table t (a float8)", true, "CREATE TABLE `t` (`a` DOUBLE)"},
+		{"create table t (a float8 precision(4, 2))", true, "CREATE TABLE `t` (`a` DOUBLE(4,2))"},
+		{"create table t (a double precision)", true, "CREATE TABLE `t` (`a` DOUBLE)"},
+		{"create table t (a float8, b float)", true, "CREATE TABLE `t` (`a` DOUBLE,`b` FLOAT)"},
+		{"create table t (a float8, b float8 precision)", true, "CREATE TABLE `t` (`a` DOUBLE,`b` DOUBLE)"},
+		{"create table t (a float, b float8 as (a + 1))", true, "CREATE TABLE `t` (`a` FLOAT,`b` DOUBLE GENERATED ALWAYS AS(`a`+1) VIRTUAL)"},
 		// for create temporary table
 		{"CREATE TEMPORARY TABLE t (a varchar(50), b int);", true, "CREATE TEMPORARY TABLE `t` (`a` VARCHAR(50),`b` INT)"},
 		{"CREATE TEMPORARY TABLE t LIKE t1", true, "CREATE TEMPORARY TABLE `t` LIKE `t1`"},
@@ -2256,6 +2269,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t partition by list FIELDS(a) (PARTITION p0 VALUES IN (5, 10, 15))", true, "ALTER TABLE `t` PARTITION BY LIST COLUMNS (`a`) (PARTITION `p0` VALUES IN (5, 10, 15))"},
 		{"alter table t partition by range FIELDS(a,b,c) (partition p1 values less than (1,1,1));", true, "ALTER TABLE `t` PARTITION BY RANGE COLUMNS (`a`,`b`,`c`) (PARTITION `p1` VALUES LESS THAN (1, 1, 1))"},
 		{"alter table t partition by list FIELDS(a,b,c) (PARTITION p0 VALUES IN ((5, 10, 15)))", true, "ALTER TABLE `t` PARTITION BY LIST COLUMNS (`a`,`b`,`c`) (PARTITION `p0` VALUES IN ((5, 10, 15)))"},
+
+		// Test keyword `float4`, `float8`
+		{"alter table t modify a float4;", true, "ALTER TABLE `t` MODIFY COLUMN `a` FLOAT"},
+		{"alter table t modify a float8;", true, "ALTER TABLE `t` MODIFY COLUMN `a` DOUBLE"},
+		{"alter table t modify a float8 precision;", true, "ALTER TABLE `t` MODIFY COLUMN `a` DOUBLE"},
 
 		{"alter table t with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
 		{"alter table t without validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},

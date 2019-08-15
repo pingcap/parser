@@ -278,6 +278,8 @@ var tokenMap = map[string]int{
 	"FIRST":                    first,
 	"FIXED":                    fixed,
 	"FLOAT":                    floatType,
+	"FLOAT4":                   floatType,
+	"FLOAT8":                   doubleType,
 	"FLUSH":                    flush,
 	"FOLLOWING":                following,
 	"FOR":                      forKwd,
@@ -698,6 +700,8 @@ var aliases = map[string]string{
 	"TIDB_HJ":   "HASH_JOIN",
 	"TIDB_INLJ": "INL_JOIN",
 	"TIDB_SMJ":  "SM_JOIN",
+	"FLOAT4":    "FLOAT",
+	"FLOAT8":    "DOUBLE",
 }
 
 func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
