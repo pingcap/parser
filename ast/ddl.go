@@ -1703,7 +1703,7 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("STATS_AUTO_RECALC ")
 		ctx.WritePlain("= ")
 		if n.StrValue != "" {
-			ctx.WritePlain(n.StrValue)
+			ctx.WriteKeyWord(n.StrValue)
 		} else {
 			ctx.WritePlainf("%d", n.UintValue)
 		}
