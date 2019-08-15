@@ -942,6 +942,9 @@ func (n *CreateTableStmt) Accept(v Visitor) (Node, bool) {
 		n.Cols[i] = node.(*ColumnDef)
 	}
 	for i, val := range n.Constraints {
+		if val.Refer != nil {
+			val.Refer.Table.Schema = n.Table.Schema
+		}
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
