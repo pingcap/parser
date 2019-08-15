@@ -1702,11 +1702,7 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionStatsAutoRecalc:
 		ctx.WriteKeyWord("STATS_AUTO_RECALC ")
 		ctx.WritePlain("= ")
-		if n.UintValue == 0 {
-			ctx.WriteKeyWord("DEFAULT")
-		} else {
-			ctx.WritePlainf("%d", n.UintValue)
-		}
+		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlainf("= %d", n.UintValue)
