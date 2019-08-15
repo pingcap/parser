@@ -1213,27 +1213,27 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 type IndexLockAndAlgorithm struct {
 	node
 
-	LockTp      *LockType
-	AlgorithmTp *AlgorithmType
+	LockTp      LockType
+	AlgorithmTp AlgorithmType
 }
 
 // Restore implements Node interface.
 func (n *IndexLockAndAlgorithm) Restore(ctx *RestoreCtx) error {
 	hasPrevOption := false
-	if n.AlgorithmTp != nil {
+	if n.AlgorithmTp != AlgorithmTypeDefault {
 		ctx.WriteKeyWord("ALGORITHM")
 		ctx.WritePlain(" = ")
-		ctx.WritePlain(n.AlgorithmTp.String())
+		ctx.WriteKeyWord(n.AlgorithmTp.String())
 		hasPrevOption = true
 	}
 
-	if n.LockTp != nil {
+	if n.LockTp != LockTypeDefault {
 		if hasPrevOption {
 			ctx.WritePlain(" ")
 		}
 		ctx.WriteKeyWord("LOCK")
 		ctx.WritePlain(" = ")
-		ctx.WritePlain(n.LockTp.String())
+		ctx.WriteKeyWord(n.LockTp.String())
 	}
 	return nil
 }
@@ -1315,7 +1315,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if n.LockAlg.LockTp != nil || n.LockAlg.AlgorithmTp != nil {
+	if n.LockAlg != nil {
 		ctx.WritePlain(" ")
 		if err := n.LockAlg.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.LockAlg")

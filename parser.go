@@ -9521,6 +9521,13 @@ yynewstate:
 					indexOption.Tp = yyS[yypt-7].item.(model.IndexType)
 				}
 			}
+			var indexLockAndAlgorithm *ast.IndexLockAndAlgorithm
+			if yyS[yypt-0].item != nil {
+				indexLockAndAlgorithm = yyS[yypt-0].item.(*ast.IndexLockAndAlgorithm)
+				if indexLockAndAlgorithm.LockTp == ast.LockTypeDefault && indexLockAndAlgorithm.AlgorithmTp == ast.AlgorithmTypeDefault {
+					indexLockAndAlgorithm = nil
+				}
+			}
 			parser.yyVAL.statement = &ast.CreateIndexStmt{
 				IfNotExists:   yyS[yypt-9].item.(bool),
 				IndexName:     yyS[yypt-8].ident,
@@ -9528,7 +9535,7 @@ yynewstate:
 				IndexColNames: yyS[yypt-3].item.([]*ast.IndexColName),
 				IndexOption:   indexOption,
 				KeyType:       yyS[yypt-11].item.(ast.IndexKeyType),
-				LockAlg:       yyS[yypt-0].item.(*ast.IndexLockAndAlgorithm),
+				LockAlg:       indexLockAndAlgorithm,
 			}
 		}
 	case 202:
@@ -9546,43 +9553,34 @@ yynewstate:
 		}
 	case 205:
 		{
-			parser.yyVAL.item = &ast.IndexLockAndAlgorithm{
-				LockTp:      nil,
-				AlgorithmTp: nil,
-			}
+			parser.yyVAL.item = nil
 		}
 	case 206:
 		{
-			lockType := yyS[yypt-0].item.(ast.LockType)
 			parser.yyVAL.item = &ast.IndexLockAndAlgorithm{
-				LockTp:      &lockType,
-				AlgorithmTp: nil,
+				LockTp:      yyS[yypt-0].item.(ast.LockType),
+				AlgorithmTp: ast.AlgorithmTypeDefault,
 			}
 		}
 	case 207:
 		{
-			algorithmType := yyS[yypt-0].item.(ast.AlgorithmType)
 			parser.yyVAL.item = &ast.IndexLockAndAlgorithm{
-				LockTp:      nil,
-				AlgorithmTp: &algorithmType,
+				LockTp:      ast.LockTypeDefault,
+				AlgorithmTp: yyS[yypt-0].item.(ast.AlgorithmType),
 			}
 		}
 	case 208:
 		{
-			lockType := yyS[yypt-1].item.(ast.LockType)
-			algorithmType := yyS[yypt-0].item.(ast.AlgorithmType)
 			parser.yyVAL.item = &ast.IndexLockAndAlgorithm{
-				LockTp:      &lockType,
-				AlgorithmTp: &algorithmType,
+				LockTp:      yyS[yypt-1].item.(ast.LockType),
+				AlgorithmTp: yyS[yypt-0].item.(ast.AlgorithmType),
 			}
 		}
 	case 209:
 		{
-			lockType := yyS[yypt-0].item.(ast.LockType)
-			algorithmType := yyS[yypt-1].item.(ast.AlgorithmType)
 			parser.yyVAL.item = &ast.IndexLockAndAlgorithm{
-				LockTp:      &lockType,
-				AlgorithmTp: &algorithmType,
+				LockTp:      yyS[yypt-0].item.(ast.LockType),
+				AlgorithmTp: yyS[yypt-1].item.(ast.AlgorithmType),
 			}
 		}
 	case 210:

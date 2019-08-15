@@ -2433,6 +2433,13 @@ CreateIndexStmt:
 				indexOption.Tp = $6.(model.IndexType)
 			}
 		}
+		var indexLockAndAlgorithm *ast.IndexLockAndAlgorithm
+		if $13 != nil {
+			indexLockAndAlgorithm = $13.(*ast.IndexLockAndAlgorithm)
+			if indexLockAndAlgorithm.LockTp == ast.LockTypeDefault && indexLockAndAlgorithm.AlgorithmTp == ast.AlgorithmTypeDefault {
+				indexLockAndAlgorithm = nil
+			}
+		}
 		$$ = &ast.CreateIndexStmt{
 			IfNotExists:   $4.(bool),
 			IndexName:     $5,
@@ -2440,7 +2447,7 @@ CreateIndexStmt:
 			IndexColNames: $10.([]*ast.IndexColName),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
-			LockAlg:       $13.(*ast.IndexLockAndAlgorithm),
+			LockAlg:       indexLockAndAlgorithm,
 		}
 	}
 
@@ -2463,43 +2470,34 @@ IndexColNameList:
 
 IndexLockAndAlgorithmOpt:
 	{
-		$$ = &ast.IndexLockAndAlgorithm{
-			LockTp:		nil,
-			AlgorithmTp:	nil,
-		}
+		$$ = nil
 	}
 |	LockClause
 	{
-		lockType := $1.(ast.LockType)
 		$$ = &ast.IndexLockAndAlgorithm{
-			LockTp:		&lockType,
-			AlgorithmTp:	nil,
+			LockTp:		$1.(ast.LockType),
+			AlgorithmTp:	ast.AlgorithmTypeDefault,
 		}
 	}
 |	AlgorithmClause
 	{
-		algorithmType := $1.(ast.AlgorithmType)
 		$$ = &ast.IndexLockAndAlgorithm{
-			LockTp:		nil,
-			AlgorithmTp:	&algorithmType,
+			LockTp:		ast.LockTypeDefault,
+			AlgorithmTp:	$1.(ast.AlgorithmType),
 		}
 	}
 |	LockClause AlgorithmClause
 	{
-		lockType := $1.(ast.LockType)
-		algorithmType := $2.(ast.AlgorithmType)
 		$$ = &ast.IndexLockAndAlgorithm{
-			LockTp:		&lockType,
-			AlgorithmTp:	&algorithmType,
+			LockTp:		$1.(ast.LockType),
+			AlgorithmTp:	$2.(ast.AlgorithmType),
 		}
 	}
 |	AlgorithmClause LockClause
 	{
-		lockType := $2.(ast.LockType)
-		algorithmType := $1.(ast.AlgorithmType)
 		$$ = &ast.IndexLockAndAlgorithm{
-			LockTp:		&lockType,
-			AlgorithmTp:	&algorithmType,
+			LockTp:		$2.(ast.LockType),
+			AlgorithmTp:	$1.(ast.AlgorithmType),
 		}
 	}
 
