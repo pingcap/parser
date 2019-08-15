@@ -8143,13 +8143,18 @@ TableOption:
 	}
 |	"STATS_AUTO_RECALC" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, UintValue: $3.(uint64)}
+		n := $3.(uint64)
+		if n != 0 && n != 1 {
+			yylex.AppendError(yylex.Errorf("The value of STATS_AUTO_RECALC must be one of [0|1|DEFAULT]."))
+			return 1
+		}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, UintValue: n}
 		yylex.AppendError(yylex.Errorf("The STATS_AUTO_RECALC is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
 |	"STATS_AUTO_RECALC" EqOpt "DEFAULT"
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, StrValue: "DEFAULT"}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, UintValue: 0}
 		yylex.AppendError(yylex.Errorf("The STATS_AUTO_RECALC is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}

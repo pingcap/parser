@@ -1702,8 +1702,8 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionStatsAutoRecalc:
 		ctx.WriteKeyWord("STATS_AUTO_RECALC ")
 		ctx.WritePlain("= ")
-		if n.StrValue != "" {
-			ctx.WriteKeyWord(n.StrValue)
+		if n.UintValue == 0 {
+			ctx.WriteKeyWord("DEFAULT")
 		} else {
 			ctx.WritePlainf("%d", n.UintValue)
 		}
