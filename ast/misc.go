@@ -2056,10 +2056,12 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(n.HintName.String())
 	ctx.WritePlain("(")
 	if n.QBName.L != "" {
-		ctx.WriteKeyWord("@")
+		if n.HintName.L != "qb_name" {
+			ctx.WriteKeyWord("@")
+		}
 		ctx.WriteName(n.QBName.String())
 	}
-	// Hints without args.
+	// Hints without args except query block.
 	switch n.HintName.L {
 	case "hash_agg", "stream_agg", "read_consistent_replica", "no_index_merge", "qb_name":
 		ctx.WritePlain(")")
@@ -2068,7 +2070,7 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	if n.QBName.L != "" {
 		ctx.WritePlain(" ")
 	}
-	// Hints with args.
+	// Hints with args except query block.
 	switch n.HintName.L {
 	case "max_execution_time":
 		ctx.WritePlainf("%d", n.MaxExecutionTime)

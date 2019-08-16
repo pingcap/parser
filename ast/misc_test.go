@@ -243,6 +243,7 @@ func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 		{"NO_INDEX_MERGE(@sel1)", "NO_INDEX_MERGE(@`sel1`)"},
 		{"READ_CONSISTENT_REPLICA()", "READ_CONSISTENT_REPLICA()"},
 		{"READ_CONSISTENT_REPLICA(@sel1)", "READ_CONSISTENT_REPLICA(@`sel1`)"},
+		{"QB_NAME(sel1)", "QB_NAME(`sel1`)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).TableHints[0]

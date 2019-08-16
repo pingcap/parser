@@ -2133,12 +2133,27 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE employees ADD PARTITION LOCAL", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG"},
 		{"ALTER TABLE employees ADD PARTITION LOCAL PARTITIONS 10", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10"},
 
+		// For rebuild table partition statement.
+		{"ALTER TABLE t_n REBUILD PARTITION ALL", true, "ALTER TABLE `t_n` REBUILD PARTITION ALL"},
+		{"ALTER TABLE d_n.t_n REBUILD PARTITION LOCAL ALL", true, "ALTER TABLE `d_n`.`t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL ident", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `ident`"},
+		{"ALTER TABLE t_n REBUILD PARTITION NO_WRITE_TO_BINLOG ident , ident", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `ident`,`ident`"},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL local", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
+
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true, "ALTER TABLE `t` DROP PARTITION `p1`"},
 		{"alter table t drop partition p2;", true, "ALTER TABLE `t` DROP PARTITION `p2`"},
 		{"alter table t drop partition if exists p2;", true, "ALTER TABLE `t` DROP PARTITION IF EXISTS `p2`"},
 		{"alter table t drop partition p1, p2;", true, "ALTER TABLE `t` DROP PARTITION `p1`,`p2`"},
 		{"alter table t drop partition if exists p1, p2;", true, "ALTER TABLE `t` DROP PARTITION IF EXISTS `p1`,`p2`"},
+		// For check table partition statement
+		{"alter table t check partition all;", true, "ALTER TABLE `t` CHECK PARTITION ALL"},
+		{"alter table t check partition p;", true, "ALTER TABLE `t` CHECK PARTITION `p`"},
+		{"alter table t check partition p1, p2;", true, "ALTER TABLE `t` CHECK PARTITION `p1`,`p2`"},
 		{"alter table employees add partition partitions 1;", true, "ALTER TABLE `employees` ADD PARTITION PARTITIONS 1"},
 		{"alter table employees add partition partitions 2;", true, "ALTER TABLE `employees` ADD PARTITION PARTITIONS 2"},
 		{"alter table clients coalesce partition 3;", true, "ALTER TABLE `clients` COALESCE PARTITION 3"},
@@ -2251,6 +2266,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t enable keys, comment = 'cmt' partition by hash(a)", true, "ALTER TABLE `t` ENABLE KEYS, COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt', partition by hash(a)", false, ""},
 
+		// Test keyword `FIELDS`
+		{"alter table t partition by range FIELDS(a) (partition x values less than maxvalue)", true, "ALTER TABLE `t` PARTITION BY RANGE COLUMNS (`a`) (PARTITION `x` VALUES LESS THAN (MAXVALUE))"},
+		{"alter table t partition by list FIELDS(a) (PARTITION p0 VALUES IN (5, 10, 15))", true, "ALTER TABLE `t` PARTITION BY LIST COLUMNS (`a`) (PARTITION `p0` VALUES IN (5, 10, 15))"},
+		{"alter table t partition by range FIELDS(a,b,c) (partition p1 values less than (1,1,1));", true, "ALTER TABLE `t` PARTITION BY RANGE COLUMNS (`a`,`b`,`c`) (PARTITION `p1` VALUES LESS THAN (1, 1, 1))"},
+		{"alter table t partition by list FIELDS(a,b,c) (PARTITION p0 VALUES IN ((5, 10, 15)))", true, "ALTER TABLE `t` PARTITION BY LIST COLUMNS (`a`,`b`,`c`) (PARTITION `p0` VALUES IN ((5, 10, 15)))"},
+
 		{"alter table t with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
 		{"alter table t without validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
 		{"alter table t without validation, with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
@@ -2300,6 +2321,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop index if exists a on t", true, "DROP INDEX IF EXISTS `a` ON `t`"},
 		{"drop index if exists a on db.t", true, "DROP INDEX IF EXISTS `a` ON `db`.`t`"},
 		{"drop index if exists a on db.`tb-ttb`", true, "DROP INDEX IF EXISTS `a` ON `db`.`tb-ttb`"},
+		{"drop index idx on t algorithm = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t algorithm default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t algorithm = inplace", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE"},
+		{"drop index idx on t algorithm inplace", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE"},
+		{"drop index idx on t lock = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t lock default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t lock = shared", true, "DROP INDEX `idx` ON `t` LOCK = SHARED"},
+		{"drop index idx on t lock shared", true, "DROP INDEX `idx` ON `t` LOCK = SHARED"},
+		{"drop index idx on t algorithm = default lock = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t lock = default algorithm = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t algorithm = inplace lock = exclusive", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"drop index idx on t lock = exclusive algorithm = inplace", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"drop index idx on t algorithm = algorithm_type", false, ""},
+		{"drop index idx on t algorithm algorithm_type", false, ""},
+		{"drop index idx on t lock = lock_type", false, ""},
+		{"drop index idx on t lock lock_type", false, ""},
 
 		// for rename table statement
 		{"RENAME TABLE t TO t1", true, "RENAME TABLE `t` TO `t1`"},
@@ -2472,6 +2509,18 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("ALTER SCHEMA `ANY_DB_NAME`", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\" ")
+
+	_, _, err = parser.Parse("alter table t partition by range FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For RANGE partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a,b,c)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -3528,6 +3577,58 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 	table := []testCase{
 		{"ALTER TABLE t1 TRUNCATE PARTITION p0", true, "ALTER TABLE `t1` TRUNCATE PARTITION `p0`"},
 		{"ALTER TABLE t1 TRUNCATE PARTITION p0, p1", true, "ALTER TABLE `t1` TRUNCATE PARTITION `p0`,`p1`"},
+		{"ALTER TABLE t1 TRUNCATE PARTITION ALL", true, "ALTER TABLE `t1` TRUNCATE PARTITION ALL"},
+		{"ALTER TABLE t1 TRUNCATE PARTITION ALL, p0", false, ""},
+		{"ALTER TABLE t1 TRUNCATE PARTITION p0, ALL", false, ""},
+
+		{"ALTER TABLE t1 OPTIMIZE PARTITION p0", true, "ALTER TABLE `t1` OPTIMIZE PARTITION `p0`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION NO_WRITE_TO_BINLOG p0", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		// LOCAL is alias to NO_WRITE_TO_BINLOG
+		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL p0", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION p0, p1", true, "ALTER TABLE `t1` OPTIMIZE PARTITION `p0`,`p1`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION NO_WRITE_TO_BINLOG p0, p1", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL p0, p1", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION ALL"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION ALL, p0", false, ""},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION p0, ALL", false, ""},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL local", true, "ALTER TABLE `t_n` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
+
+		{"ALTER TABLE t1 REPAIR PARTITION p0", true, "ALTER TABLE `t1` REPAIR PARTITION `p0`"},
+		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG p0", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		// LOCAL is alias to NO_WRITE_TO_BINLOG
+		{"ALTER TABLE t1 REPAIR PARTITION LOCAL p0", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		{"ALTER TABLE t1 REPAIR PARTITION p0, p1", true, "ALTER TABLE `t1` REPAIR PARTITION `p0`,`p1`"},
+		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG p0, p1", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 REPAIR PARTITION LOCAL p0, p1", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 REPAIR PARTITION ALL", true, "ALTER TABLE `t1` REPAIR PARTITION ALL"},
+		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG ALL", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 REPAIR PARTITION LOCAL ALL", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 REPAIR PARTITION ALL, p0", false, ""},
+		{"ALTER TABLE t1 REPAIR PARTITION p0, ALL", false, ""},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL local", true, "ALTER TABLE `t_n` REPAIR PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` REPAIR PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
+
+		{"ALTER TABLE t1 IMPORT PARTITION p0 TABLESPACE", true, "ALTER TABLE `t1` IMPORT PARTITION `p0` TABLESPACE"},
+		{"ALTER TABLE t1 IMPORT PARTITION p0, p1 TABLESPACE", true, "ALTER TABLE `t1` IMPORT PARTITION `p0`,`p1` TABLESPACE"},
+		{"ALTER TABLE t1 IMPORT PARTITION ALL TABLESPACE", true, "ALTER TABLE `t1` IMPORT PARTITION ALL TABLESPACE"},
+		{"ALTER TABLE t1 IMPORT PARTITION ALL, p0 TABLESPACE", false, ""},
+		{"ALTER TABLE t1 IMPORT PARTITION p0, ALL TABLESPACE", false, ""},
+
+		{"ALTER TABLE t1 DISCARD PARTITION p0 TABLESPACE", true, "ALTER TABLE `t1` DISCARD PARTITION `p0` TABLESPACE"},
+		{"ALTER TABLE t1 DISCARD PARTITION p0, p1 TABLESPACE", true, "ALTER TABLE `t1` DISCARD PARTITION `p0`,`p1` TABLESPACE"},
+		{"ALTER TABLE t1 DISCARD PARTITION ALL TABLESPACE", true, "ALTER TABLE `t1` DISCARD PARTITION ALL TABLESPACE"},
+		{"ALTER TABLE t1 DISCARD PARTITION ALL, p0 TABLESPACE", false, ""},
+		{"ALTER TABLE t1 DISCARD PARTITION p0, ALL TABLESPACE", false, ""},
+
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT 'APSTART \\' APEND')", true, "ALTER TABLE `t1` ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'APSTART '' APEND')"},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')", true, "ALTER TABLE `t1` ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')"},
 		{`CREATE TABLE t1 (a int not null,b int not null,c int not null,primary key(a,b))
