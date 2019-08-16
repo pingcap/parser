@@ -7892,6 +7892,8 @@ TraceableStmt:
 |	ReplaceIntoStmt
 |	UnionStmt
 |	LoadDataStmt
+|	BeginTransactionStmt
+|	CommitStmt
 
 ExplainableStmt:
 	SelectStmt
