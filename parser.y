@@ -1407,8 +1407,6 @@ AlterTableSpec:
 	}
 |	"REBUILD" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
-		yylex.AppendError(yylex.Errorf("REBUILD PARTITION syntax is parsed but not implement for now."))
-		parser.lastErrorAsWarn()
 		ret := &ast.AlterTableSpec{
 			Tp: ast.AlterTableRebuildPartition,
 			NoWriteToBinlog: $3.(bool),
@@ -4022,7 +4020,7 @@ UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
-| "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" %prec local | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT"
+| "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"

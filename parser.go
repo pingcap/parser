@@ -8750,8 +8750,6 @@ yynewstate:
 		}
 	case 24:
 		{
-			yylex.AppendError(yylex.Errorf("REBUILD PARTITION syntax is parsed but not implement for now."))
-			parser.lastErrorAsWarn()
 			ret := &ast.AlterTableSpec{
 				Tp:              ast.AlterTableRebuildPartition,
 				NoWriteToBinlog: yyS[yypt-1].item.(bool),
