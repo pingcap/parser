@@ -7894,6 +7894,7 @@ TraceableStmt:
 |	LoadDataStmt
 |	BeginTransactionStmt
 |	CommitStmt
+|	RollbackStmt
 
 ExplainableStmt:
 	SelectStmt
