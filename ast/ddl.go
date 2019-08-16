@@ -1819,6 +1819,7 @@ const (
 	AlterTableWithValidation
 	AlterTableWithoutValidation
 	AlterTableRebuildPartition
+	AlterTableCheckPartitions
 	AlterTableExchangePartition
 	AlterTableOptimizePartition
 	AlterTableRepairPartition
@@ -2113,6 +2114,18 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableTruncatePartition:
 		ctx.WriteKeyWord("TRUNCATE PARTITION ")
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
+	case AlterTableCheckPartitions:
+		ctx.WriteKeyWord("CHECK PARTITION ")
 		if n.OnAllPartitions {
 			ctx.WriteKeyWord("ALL")
 			return nil
