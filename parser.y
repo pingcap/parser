@@ -8154,7 +8154,7 @@ TableOption:
 	}
 |	"STATS_AUTO_RECALC" EqOpt "DEFAULT"
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, UintValue: 0}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, Default: true}
 		yylex.AppendError(yylex.Errorf("The STATS_AUTO_RECALC is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
@@ -8169,9 +8169,9 @@ TableOption:
 	}
 |	"STATS_SAMPLE_PAGES" EqOpt "DEFAULT"
 	{
-		// Parse it but will ignore it.	
+		// Parse it but will ignore it.
 		// In MySQL, default value of STATS_SAMPLE_PAGES is 0.
-		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, UintValue: 0}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, Default: true}
 		yylex.AppendError(yylex.Errorf("The STATS_SAMPLE_PAGES is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
