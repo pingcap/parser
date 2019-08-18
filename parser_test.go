@@ -70,7 +70,6 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"sql_tsi_year", "sql_tsi_quarter", "sql_tsi_month", "sql_tsi_week", "sql_tsi_day", "sql_tsi_hour", "sql_tsi_minute", "sql_tsi_second",
 		// TODO: support the following keywords
 		// "with",
 	}
