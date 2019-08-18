@@ -1838,6 +1838,8 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableSecondaryLoad
+	AlterTableSecondaryUnLoad
 	AlterTableRebuildPartition
 	AlterTableCheckPartitions
 	AlterTableExchangePartition
@@ -2249,6 +2251,10 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		if !n.WithValidation {
 			ctx.WriteKeyWord(" WITHOUT VALIDATION")
 		}
+	case AlterTableSecondaryLoad:
+		ctx.WriteKeyWord("SECONDARY_LOAD")
+	case AlterTableSecondaryUnLoad:
+		ctx.WriteKeyWord("SECONDARY_UNLOAD")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
