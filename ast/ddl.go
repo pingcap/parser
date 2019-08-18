@@ -1839,7 +1839,7 @@ const (
 	AlterTableWithValidation
 	AlterTableWithoutValidation
 	AlterTableSecondaryLoad
-	AlterTableSecondaryUnLoad
+	AlterTableSecondaryUnload
 	AlterTableRebuildPartition
 	AlterTableCheckPartitions
 	AlterTableExchangePartition
@@ -2253,7 +2253,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 	case AlterTableSecondaryLoad:
 		ctx.WriteKeyWord("SECONDARY_LOAD")
-	case AlterTableSecondaryUnLoad:
+	case AlterTableSecondaryUnload:
 		ctx.WriteKeyWord("SECONDARY_UNLOAD")
 	default:
 		// TODO: not support

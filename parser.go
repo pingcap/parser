@@ -508,7 +508,7 @@ const (
 	secondMicrosecond          = 57517
 	secondaryEngine            = 57721
 	secondaryLoad              = 57722
-	secondaryUnLoad            = 57723
+	secondaryUnload            = 57723
 	security                   = 57724
 	selectKwd                  = 57518
 	separator                  = 57725
@@ -817,7 +817,7 @@ var (
 		57715: 158,  // rollback (1103x)
 		57716: 159,  // routine (1103x)
 		57722: 160,  // secondaryLoad (1103x)
-		57723: 161,  // secondaryUnLoad (1103x)
+		57723: 161,  // secondaryUnload (1103x)
 		57729: 162,  // shared (1103x)
 		57732: 163,  // slave (1103x)
 		57747: 164,  // source (1103x)
@@ -1893,7 +1893,7 @@ var (
 		"rollback",
 		"routine",
 		"secondaryLoad",
-		"secondaryUnLoad",
+		"secondaryUnload",
 		"shared",
 		"slave",
 		"source",
@@ -8972,7 +8972,7 @@ yynewstate:
 		{
 			// Parse it and ignore it. Just for compatibility.
 			parser.yyVAL.item = &ast.AlterTableSpec{
-				Tp: ast.AlterTableSecondaryUnLoad,
+				Tp: ast.AlterTableSecondaryUnload,
 			}
 			yylex.AppendError(yylex.Errorf("The SECONDARY_UNLOAD VALIDATION clause is parsed but not implement yet."))
 			parser.lastErrorAsWarn()

@@ -488,7 +488,7 @@ var tokenMap = map[string]int{
 	"SECOND":                   second,
 	"SECONDARY_ENGINE":         secondaryEngine,
 	"SECONDARY_LOAD":           secondaryLoad,
-	"SECONDARY_UNLOAD":         secondaryUnLoad,
+	"SECONDARY_UNLOAD":         secondaryUnload,
 	"SECOND_MICROSECOND":       secondMicrosecond,
 	"SECURITY":                 security,
 	"SELECT":                   selectKwd,

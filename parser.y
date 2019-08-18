@@ -431,7 +431,7 @@ import (
 	second		"SECOND"
 	secondaryEngine	"SECONDARY_ENGINE"
 	secondaryLoad	"SECONDARY_LOAD"
-	secondaryUnLoad	"SECONDARY_UNLOAD"
+	secondaryUnload	"SECONDARY_UNLOAD"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
 	serializable	"SERIALIZABLE"
@@ -1602,7 +1602,7 @@ AlterTableSpec:
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
-			Tp:               ast.AlterTableSecondaryUnLoad,
+			Tp:               ast.AlterTableSecondaryUnload,
 		}
 		yylex.AppendError(yylex.Errorf("The SECONDARY_UNLOAD VALIDATION clause is parsed but not implement yet."))
 		parser.lastErrorAsWarn()
