@@ -233,6 +233,14 @@ import (
 	sqlBigResult		"SQL_BIG_RESULT"
 	sqlCalcFoundRows	"SQL_CALC_FOUND_ROWS"
 	sqlSmallResult		"SQL_SMALL_RESULT"
+	sqlTsiDay		"SQL_TSI_DAY"
+        sqlTsiHour		"SQL_TSI_HOUR"
+        sqlTsiMinute		"SQL_TSI_MINUTE"
+        sqlTsiMonth		"SQL_TSI_MONTH"
+        sqlTsiQuarter		"SQL_TSI_QUARTER"
+        sqlTsiSecond		"SQL_TSI_SECOND"
+        sqlTsiWeek		"SQL_TSI_WEEK"
+        sqlTsiYear		"SQL_TSI_YEAR"
 	ssl			"SSL"
 	starting		"STARTING"
 	straightJoin		"STRAIGHT_JOIN"
@@ -5242,6 +5250,38 @@ TimestampUnit:
 		$$ = ast.TimeUnitQuarter
 	}
 |	"YEAR"
+	{
+		$$ = ast.TimeUnitYear
+	}
+|	"SQL_TSI_SECOND"
+	{
+		$$ = ast.TimeUnitSecond
+	}
+|	"SQL_TSI_MINUTE"
+	{
+		$$ = ast.TimeUnitMinute
+	}
+|	"SQL_TSI_HOUR"
+	{
+		$$ = ast.TimeUnitHour
+	}
+|	"SQL_TSI_DAY"
+	{
+		$$ = ast.TimeUnitDay
+	}
+|	"SQL_TSI_WEEK"
+	{
+		$$ = ast.TimeUnitWeek
+	}
+|	"SQL_TSI_MONTH"
+	{
+		$$ = ast.TimeUnitMonth
+	}
+|	"SQL_TSI_QUARTER"
+	{
+		$$ = ast.TimeUnitQuarter
+	}
+|	"SQL_TSI_YEAR"
 	{
 		$$ = ast.TimeUnitYear
 	}
