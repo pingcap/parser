@@ -1369,6 +1369,7 @@ type DropIndexStmt struct {
 	IfExists  bool
 	IndexName string
 	Table     *TableName
+	LockAlg   *IndexLockAndAlgorithm
 }
 
 // Restore implements Node interface.
@@ -1382,6 +1383,13 @@ func (n *DropIndexStmt) Restore(ctx *RestoreCtx) error {
 
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while add index")
+	}
+
+	if n.LockAlg != nil {
+		ctx.WritePlain(" ")
+		if err := n.LockAlg.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.LockAlg")
+		}
 	}
 
 	return nil
@@ -1399,6 +1407,13 @@ func (n *DropIndexStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
+	if n.LockAlg != nil {
+		node, ok := n.LockAlg.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.LockAlg = node.(*IndexLockAndAlgorithm)
+	}
 	return v.Leave(n)
 }
 
@@ -1536,6 +1551,7 @@ const (
 	TableOptionSecondaryEngine
 	TableOptionSecondaryEngineNull
 	TableOptionInsertMethod
+	TableOptionTableCheckSum
 )
 
 // RowFormat types
@@ -1728,6 +1744,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("INSERT_METHOD ")
 		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
+	case TableOptionTableCheckSum:
+		ctx.WriteKeyWord("TABLE_CHECKSUM ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
@@ -1818,6 +1838,8 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableRebuildPartition
+	AlterTableCheckPartitions
 	AlterTableExchangePartition
 	AlterTableOptimizePartition
 	AlterTableRepairPartition
@@ -1894,8 +1916,8 @@ type AlterTableSpec struct {
 	// see https://mariadb.com/kb/en/library/alter-table/
 	IfNotExists bool
 
-	OnAllPartitions bool
 	NoWriteToBinlog bool
+	OnAllPartitions bool
 
 	Tp              AlterTableType
 	Name            string
@@ -2122,6 +2144,18 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WriteName(name.O)
 		}
+	case AlterTableCheckPartitions:
+		ctx.WriteKeyWord("CHECK PARTITION ")
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
 	case AlterTableOptimizePartition:
 		ctx.WriteKeyWord("OPTIMIZE PARTITION ")
 		if n.NoWriteToBinlog {
@@ -2192,6 +2226,21 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("WITH VALIDATION")
 	case AlterTableWithoutValidation:
 		ctx.WriteKeyWord("WITHOUT VALIDATION")
+	case AlterTableRebuildPartition:
+		ctx.WriteKeyWord("REBUILD PARTITION ")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord("NO_WRITE_TO_BINLOG ")
+		}
+		if n.OnAllPartitions {
+			ctx.WriteKeyWord("ALL")
+			return nil
+		}
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
 	case AlterTableExchangePartition:
 		ctx.WriteKeyWord("EXCHANGE PARTITION ")
 		ctx.WriteName(n.PartitionNames[0].O)
