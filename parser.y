@@ -301,6 +301,7 @@ import (
 	client		"CLIENT"
 	coalesce	"COALESCE"
 	collation	"COLLATION"
+	columnFormat	"COLUMN_FORMAT"
 	columns		"COLUMNS"
 	comment 	"COMMENT"
 	commit		"COMMIT"
@@ -445,6 +446,14 @@ import (
 	sqlBufferResult	"SQL_BUFFER_RESULT"
 	sqlCache	"SQL_CACHE"
 	sqlNoCache	"SQL_NO_CACHE"
+	sqlTsiDay	"SQL_TSI_DAY"
+	sqlTsiHour	"SQL_TSI_HOUR"
+	sqlTsiMinute	"SQL_TSI_MINUTE"
+	sqlTsiMonth	"SQL_TSI_MONTH"
+	sqlTsiQuarter	"SQL_TSI_QUARTER"
+	sqlTsiSecond	"SQL_TSI_SECOND"
+	sqlTsiWeek	"SQL_TSI_WEEK"
+	sqlTsiYear	"SQL_TSI_YEAR"
 	start		"START"
 	statsPersistent	"STATS_PERSISTENT"
 	statsSamplePages	"STATS_SAMPLE_PAGES"
@@ -747,6 +756,7 @@ import (
 	CollationName			"Collation name"
 	ColumnDef			"table column definition"
 	ColumnDefList			"table column definition list"
+	ColumnFormat			"Column format"
 	ColumnName			"column name"
 	ColumnNameOrUserVariable	"column name or user variable"
 	ColumnNameList			"column name list"
@@ -2239,6 +2249,24 @@ ColumnOption:
 |	"COLLATE" CollationName
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2.(string)}
+	}
+|	"COLUMN_FORMAT" ColumnFormat
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
+	}
+
+ColumnFormat: 
+	"DEFAULT"
+	{
+		$$ = "DEFAULT"
+	}
+|	"FIXED"
+	{
+		$$ = "FIXED"
+	}
+|	"DYNAMIC"
+	{
+		$$ = "DYNAMIC"
 	}
 
 GeneratedAlways: | "GENERATED" "ALWAYS"
@@ -4082,7 +4110,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
+ "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET"
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"
@@ -4097,7 +4125,8 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
+| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR"
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -5272,6 +5301,38 @@ TimestampUnit:
 		$$ = ast.TimeUnitQuarter
 	}
 |	"YEAR"
+	{
+		$$ = ast.TimeUnitYear
+	}
+|	"SQL_TSI_SECOND"
+	{
+		$$ = ast.TimeUnitSecond
+	}
+|	"SQL_TSI_MINUTE"
+	{
+		$$ = ast.TimeUnitMinute
+	}
+|	"SQL_TSI_HOUR"
+	{
+		$$ = ast.TimeUnitHour
+	}
+|	"SQL_TSI_DAY"
+	{
+		$$ = ast.TimeUnitDay
+	}
+|	"SQL_TSI_WEEK"
+	{
+		$$ = ast.TimeUnitWeek
+	}
+|	"SQL_TSI_MONTH"
+	{
+		$$ = ast.TimeUnitMonth
+	}
+|	"SQL_TSI_QUARTER"
+	{
+		$$ = ast.TimeUnitQuarter
+	}
+|	"SQL_TSI_YEAR"
 	{
 		$$ = ast.TimeUnitYear
 	}
