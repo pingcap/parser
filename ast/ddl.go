@@ -1849,6 +1849,8 @@ const (
 	AlterTableRepairPartition
 	AlterTableImportPartitionTablespace
 	AlterTableDiscardPartitionTablespace
+	AlterTableAlterCheck
+	AlterTableDropCheck
 
 	// TODO: Add more actions
 )
@@ -2253,6 +2255,16 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		if !n.WithValidation {
 			ctx.WriteKeyWord(" WITHOUT VALIDATION")
 		}
+	case AlterTableAlterCheck:
+		ctx.WriteKeyWord("ALTER CHECK ")
+		ctx.WriteName(n.Constraint.Name)
+		if n.Constraint.Enforced == false {
+			ctx.WriteKeyWord(" NOT")
+		}
+		ctx.WriteKeyWord(" ENFORCED")
+	case AlterTableDropCheck:
+		ctx.WriteKeyWord("DROP CHECK ")
+		ctx.WriteName(n.Constraint.Name)
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)

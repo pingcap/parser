@@ -1595,6 +1595,36 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
+| "ALTER" "CHECK" Identifier EnforcedOrNot
+	{
+		// Parse it and ignore it. Just for compatibility.
+		c := &ast.Constraint{
+        	Name: $3,
+			Enforced: $4.(bool),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableAlterCheck,
+			Constraint:       c,
+		}
+		yylex.AppendError(yylex.Errorf("The ALTER CHECK clause is parsed but not implemented yet."))
+		parser.lastErrorAsWarn()
+	}
+| "DROP" "CHECK" Identifier
+	{
+		// Parse it and ignore it. Just for compatibility.
+		c := &ast.Constraint{
+        	Name: $3,
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableDropCheck,
+			Constraint:       c,
+		}
+		yylex.AppendError(yylex.Errorf("The DROP CHECK clause is parsed but not implemented yet."))
+		parser.lastErrorAsWarn()
+	}
+
+
+
 
 AllOrPartitionNameList:
 	"ALL"
