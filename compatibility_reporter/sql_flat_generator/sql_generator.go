@@ -154,8 +154,9 @@ func initProductionMap(productions []Production) map[string]Production {
 		if pm, exist := productionMap[production.Head]; exist {
 			pm.Alter = append(pm.Alter, production.Alter...)
 			productionMap[production.Head] = pm
+		} else {
+			productionMap[production.Head] = production
 		}
-		productionMap[production.Head] = production
 	}
 	checkProductionMap(productionMap)
 	return productionMap
