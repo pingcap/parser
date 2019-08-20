@@ -1543,6 +1543,7 @@ const (
 	TableOptionDelayKeyWrite
 	TableOptionRowFormat
 	TableOptionStatsPersistent
+	TableOptionStatsAutoRecalc
 	TableOptionShardRowID
 	TableOptionPreSplitRegion
 	TableOptionPackKeys
@@ -1591,6 +1592,7 @@ const (
 // TableOption is used for parsing table option from SQL.
 type TableOption struct {
 	Tp        TableOptionType
+	Default   bool
 	StrValue  string
 	UintValue uint64
 }
@@ -1698,6 +1700,14 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord("DEFAULT")
 		ctx.WritePlain(" /* TableOptionStatsPersistent is not supported */ ")
+	case TableOptionStatsAutoRecalc:
+		ctx.WriteKeyWord("STATS_AUTO_RECALC ")
+		ctx.WritePlain("= ")
+		if n.Default {
+			ctx.WriteKeyWord("DEFAULT")
+		} else {
+			ctx.WritePlainf("%d", n.UintValue)
+		}
 	case TableOptionShardRowID:
 		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
 		ctx.WritePlainf("= %d", n.UintValue)
@@ -1731,7 +1741,7 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionStatsSamplePages:
 		ctx.WriteKeyWord("STATS_SAMPLE_PAGES ")
 		ctx.WritePlain("= ")
-		if n.UintValue == 0 {
+		if n.Default {
 			ctx.WriteKeyWord("DEFAULT")
 		} else {
 			ctx.WritePlainf("%d", n.UintValue)
@@ -1842,13 +1852,18 @@ const (
 	AlterTableRemovePartitioning
 	AlterTableWithValidation
 	AlterTableWithoutValidation
+	AlterTableSecondaryLoad
+	AlterTableSecondaryUnload
 	AlterTableRebuildPartition
+	AlterTableReorganizePartition
 	AlterTableCheckPartitions
 	AlterTableExchangePartition
 	AlterTableOptimizePartition
 	AlterTableRepairPartition
 	AlterTableImportPartitionTablespace
 	AlterTableDiscardPartitionTablespace
+	AlterTableAlterCheck
+	AlterTableDropCheck
 
 	// TODO: Add more actions
 )
@@ -2245,6 +2260,35 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WriteName(name.O)
 		}
+	case AlterTableReorganizePartition:
+		ctx.WriteKeyWord("REORGANIZE PARTITION")
+		if n.NoWriteToBinlog {
+			ctx.WriteKeyWord(" NO_WRITE_TO_BINLOG")
+		}
+		if n.OnAllPartitions {
+			return nil
+		}
+		for i, name := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			} else {
+				ctx.WritePlain(" ")
+			}
+			ctx.WriteName(name.O)
+		}
+		ctx.WriteKeyWord(" INTO ")
+		if n.PartDefinitions != nil {
+			ctx.WritePlain("(")
+			for i, def := range n.PartDefinitions {
+				if i != 0 {
+					ctx.WritePlain(", ")
+				}
+				if err := def.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PartDefinitions[%d]", i)
+				}
+			}
+			ctx.WritePlain(")")
+		}
 	case AlterTableExchangePartition:
 		ctx.WriteKeyWord("EXCHANGE PARTITION ")
 		ctx.WriteName(n.PartitionNames[0].O)
@@ -2253,6 +2297,20 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		if !n.WithValidation {
 			ctx.WriteKeyWord(" WITHOUT VALIDATION")
 		}
+	case AlterTableSecondaryLoad:
+		ctx.WriteKeyWord("SECONDARY_LOAD")
+	case AlterTableSecondaryUnload:
+		ctx.WriteKeyWord("SECONDARY_UNLOAD")
+	case AlterTableAlterCheck:
+		ctx.WriteKeyWord("ALTER CHECK ")
+		ctx.WriteName(n.Constraint.Name)
+		if n.Constraint.Enforced == false {
+			ctx.WriteKeyWord(" NOT")
+		}
+		ctx.WriteKeyWord(" ENFORCED")
+	case AlterTableDropCheck:
+		ctx.WriteKeyWord("DROP CHECK ")
+		ctx.WriteName(n.Constraint.Name)
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
