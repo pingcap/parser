@@ -1582,14 +1582,14 @@ AlterTableSpec:
 			Algorithm:	$1.(ast.AlgorithmType),
 		}
 	}
-| "FORCE"
+|	"FORCE"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableForce,
 		}
 	}
-| "WITH" "VALIDATION"
+|	"WITH" "VALIDATION"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
@@ -1598,7 +1598,7 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
-| "WITHOUT" "VALIDATION"
+|	"WITHOUT" "VALIDATION"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
@@ -1607,7 +1607,7 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
-| "ALTER" "CHECK" Identifier EnforcedOrNot
+|	"ALTER" "CHECK" Identifier EnforcedOrNot
 	{
 		// Parse it and ignore it. Just for compatibility.
 		c := &ast.Constraint{
@@ -1621,7 +1621,7 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The ALTER CHECK clause is parsed but not implemented yet."))
 		parser.lastErrorAsWarn()
 	}
-| "DROP" "CHECK" Identifier
+|	"DROP" "CHECK" Identifier
 	{
 		// Parse it and ignore it. Just for compatibility.
 		c := &ast.Constraint{
@@ -2151,7 +2151,7 @@ CommitStmt:
 
 PrimaryOpt:
 	{}
-| "PRIMARY"
+|	"PRIMARY"
 
 EnforcedOrNot:
 	"ENFORCED"
@@ -8091,8 +8091,7 @@ TableElementListOpt:
 			Constraints:    constraints,
 		}
 	}
-|
-	'(' TableElementList ')'
+|	'(' TableElementList ')'
 	{
 		tes := $2.([]interface {})
 		var columnDefs []*ast.ColumnDef
@@ -9339,7 +9338,7 @@ RoleSpecList:
  *******************************************************************/
 CreateBindingStmt:
 	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
-    	{
+	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
         	endOffset := parser.startOffset(&yyS[yypt-1])
         	selStmt := $5.(*ast.SelectStmt)
@@ -9712,7 +9711,7 @@ LocalOpt:
 	}
 
 Fields:
-     	{
+	{
 		escape := "\\"
 		$$ = &ast.FieldsClause{
 			Terminated: "\t",
@@ -9896,11 +9895,11 @@ UnlockTablesStmt:
 
 LockTablesStmt:
 	"LOCK" TablesTerminalSym TableLockList
-        {
+	{
 		$$ = &ast.LockTablesStmt{
 			TableLocks: $3.([]ast.TableLock),
 		}
-        }
+	}
 
 TablesTerminalSym:
 	"TABLES"
