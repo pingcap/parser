@@ -2076,7 +2076,7 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	case "memory_quota":
 		ctx.WritePlainf("%d M", n.MemoryQuota)
 	case "read_consistent_storage":
-		ctx.WritePlain(n.StoreType.O)
+		ctx.WriteKeyWord(n.StoreType.String())
 		for i, table := range n.Tables {
 			if i == 0 {
 				ctx.WritePlain("[")
