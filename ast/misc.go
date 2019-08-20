@@ -2025,9 +2025,10 @@ type TableOptimizerHint struct {
 	// HintName is the name or alias of the table(s) which the hint will affect.
 	// Table hints has no schema info
 	// It allows only table name or alias (if table has an alias)
-	HintName model.CIStr
-	Tables   []model.CIStr
-	Indexes  []model.CIStr
+	HintName  model.CIStr
+	Tables    []model.CIStr
+	Indexes   []model.CIStr
+	StoreType model.CIStr
 	// Statement Execution Time Optimizer Hints
 	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
 	MaxExecutionTime uint64
@@ -2074,6 +2075,19 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.QueryType.String())
 	case "memory_quota":
 		ctx.WritePlainf("%d M", n.MemoryQuota)
+	case "read_consistent_storage":
+		ctx.WritePlain(n.StoreType.O)
+		for i, table := range n.Tables {
+			if i == 0 {
+				ctx.WritePlain("[")
+			}
+			ctx.WriteName(table.String())
+			if i == len(n.Tables)-1 {
+				ctx.WritePlain("]")
+			} else {
+				ctx.WritePlain(", ")
+			}
+		}
 	}
 	ctx.WritePlain(")")
 	return nil

@@ -585,10 +585,13 @@ import (
 	hintEnablePlanCache	"ENABLE_PLAN_CACHE"
 	hintUsePlanCache	"USE_PLAN_CACHE"
 	hintReadConsistentReplica	"READ_CONSISTENT_REPLICA"
+	hintReadConsistentStorage   "READ_CONSISTENT_STORAGE"
 	hintQueryType	"QUERY_TYPE"
 	hintMemoryQuota	"MEMORY_QUOTA"
 	hintOLAP	"OLAP"
 	hintOLTP	"OLTP"
+	hintTiKV    "TIKV"
+	hintTiFlash "TIFLASH"
 	topn		"TOPN"
 	split		"SPLIT"
 	width		"WIDTH"
@@ -1052,10 +1055,14 @@ import (
 	NUM			"A number"
 	NumList			"Some numbers"
 	LengthNum		"Field length num(uint64)"
+	StorageOptimizerHintOpt "Storage level optimizer hint"
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
-	TableOptimizerHintList	"Table level optimizer hint list"
+	OptimizerHintList	"optimizer hint list"
 	HintTableAndIndexList	"Table list in optimizer hint"
+	HintStorageType "storage type in optimizer hint"
+	HintStorageTypeAndTable  "storage type and tables in optimizer hint"
+	HintStorageTypeAndTableList  "storage type and tables list in optimizer hint"
 	HintTrueOrFalse	"True or false in optimizer hint"
 	HintQueryType	"Query type in optimizer hint"
 	HintMemoryQuota	"Memory quota in optimizer hint"
@@ -4131,7 +4138,7 @@ UnReservedKeyword:
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
-| "READ_CONSISTENT_REPLICA" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" |"TOPN" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
+| "READ_CONSISTENT_REPLICA" | "READ_CONSISTENT_STORAGE" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6390,7 +6397,7 @@ TableOptimizerHints:
 	{
 		$$ = nil
 	}
-|	hintBegin TableOptimizerHintList hintEnd
+|	hintBegin OptimizerHintList hintEnd
 	{
 		$$ = $2
 	}
@@ -6401,18 +6408,30 @@ TableOptimizerHints:
 		$$ = nil
 	}
 
-TableOptimizerHintList:
+OptimizerHintList:
 	TableOptimizerHintOpt
 	{
 		$$ = []*ast.TableOptimizerHint{$1.(*ast.TableOptimizerHint)}
 	}
-|	TableOptimizerHintList TableOptimizerHintOpt
+|	StorageOptimizerHintOpt
+	{
+		$$ = $1.([]*ast.TableOptimizerHint)
+	}
+|	OptimizerHintList TableOptimizerHintOpt
 	{
 		$$ = append($1.([]*ast.TableOptimizerHint), $2.(*ast.TableOptimizerHint))
 	}
-|	TableOptimizerHintList ',' TableOptimizerHintOpt
+|	OptimizerHintList ',' TableOptimizerHintOpt
 	{
 		$$ = append($1.([]*ast.TableOptimizerHint), $3.(*ast.TableOptimizerHint))
+	}
+|	OptimizerHintList StorageOptimizerHintOpt
+	{
+		$$ = append($1.([]*ast.TableOptimizerHint), $2.([]*ast.TableOptimizerHint)...)
+	}
+|	OptimizerHintList ',' StorageOptimizerHintOpt
+	{
+		$$ = append($1.([]*ast.TableOptimizerHint), $3.([]*ast.TableOptimizerHint)...)
 	}
 
 TableOptimizerHintOpt:
@@ -6486,6 +6505,37 @@ TableOptimizerHintOpt:
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
 	}
 
+StorageOptimizerHintOpt:
+	hintReadConsistentStorage '(' HintStorageTypeAndTableList ')'
+	{
+		$$ = $3.([]*ast.TableOptimizerHint)
+		for _, hint := range $$.([]*ast.TableOptimizerHint) {
+			hint.HintName = model.NewCIStr($1)
+		}
+	}
+
+HintStorageTypeAndTableList:
+	HintStorageTypeAndTable
+	{
+		$$ = []*ast.TableOptimizerHint{{
+			StoreType: $1.([]model.CIStr)[0],
+			Tables:    $1.([]model.CIStr)[1:],
+		}}
+	}
+|	HintStorageTypeAndTableList ',' HintStorageTypeAndTable
+	{
+		$$ = append($1.([]*ast.TableOptimizerHint), &ast.TableOptimizerHint{
+			StoreType: $3.([]model.CIStr)[0],
+			Tables:    $3.([]model.CIStr)[1:],
+		})
+	}
+
+HintStorageTypeAndTable:
+	HintStorageType '[' HintTableAndIndexList ']'
+	{
+		$$ = append([]model.CIStr{model.NewCIStr($1.(string))}, $3.([]model.CIStr)...)
+	}
+
 HintTableAndIndexList:
 	Identifier
 	{
@@ -6504,6 +6554,16 @@ HintTrueOrFalse:
 |	"FALSE"
 	{
 		$$ = false
+	}
+
+HintStorageType:
+	hintTiKV
+	{
+		$$ = $1
+	}
+|	hintTiFlash
+	{
+		$$ = $1
 	}
 
 HintQueryType:

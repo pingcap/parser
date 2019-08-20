@@ -225,6 +225,7 @@ func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 		{"STREAM_AGG", "STREAM_AGG"},
 		{"NO_INDEX_MERGE", "NO_INDEX_MERGE"},
 		{"READ_CONSISTENT_REPLICA", "READ_CONSISTENT_REPLICA"},
+		{"READ_CONSISTENT_STORAGE(TIFLASH[t1, t2])", "READ_CONSISTENT_STORAGE(TIFLASH[`t1`, `t2`])"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).TableHints[0]
