@@ -457,7 +457,7 @@ var tokenMap = map[string]int{
 	"REBUILD":                  rebuild,
 	"READ":                     read,
 	"READ_CONSISTENT_REPLICA":  hintReadConsistentReplica,
-	"READ_CONSISTENT_STORAGE":  hintReadConsistentStorage,
+	"READ_FROM_STORAGE":        hintReadFromStorage,
 	"REAL":                     realType,
 	"RECENT":                   recent,
 	"REDUNDANT":                redundant,

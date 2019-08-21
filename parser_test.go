@@ -2740,19 +2740,19 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Indexes, HasLen, 1)
 	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
 
-	// Test READ_CONSISTENT_STORAGE
-	stmt, _, err = parser.Parse("select /*+ READ_CONSISTENT_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")
+	// Test READ_FROM_STORAGE
+	stmt, _, err = parser.Parse("select /*+ READ_FROM_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
-	c.Assert(hints[0].HintName.L, Equals, "read_consistent_storage")
+	c.Assert(hints[0].HintName.L, Equals, "read_from_storage")
 	c.Assert(hints[0].StoreType.L, Equals, "tiflash")
 	c.Assert(hints[0].Tables, HasLen, 2)
 	c.Assert(hints[0].Tables[0].L, Equals, "t1")
 	c.Assert(hints[0].Tables[1].L, Equals, "t2")
-	c.Assert(hints[1].HintName.L, Equals, "read_consistent_storage")
+	c.Assert(hints[1].HintName.L, Equals, "read_from_storage")
 	c.Assert(hints[1].StoreType.L, Equals, "tikv")
 	c.Assert(hints[1].Tables, HasLen, 1)
 	c.Assert(hints[1].Tables[0].L, Equals, "t3")

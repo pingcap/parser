@@ -281,7 +281,7 @@ const (
 	hintOLTP                   = 57880
 	hintQueryType              = 57877
 	hintReadConsistentReplica  = 57875
-	hintReadConsistentStorage  = 57876
+	hintReadFromStorage        = 57876
 	hintSMJ                    = 57866
 	hintSTREAMAGG              = 57869
 	hintTiFlash                = 57882
@@ -713,7 +713,7 @@ var (
 		57871: 39,   // hintNoIndexMerge (1155x)
 		57877: 40,   // hintQueryType (1155x)
 		57875: 41,   // hintReadConsistentReplica (1155x)
-		57876: 42,   // hintReadConsistentStorage (1155x)
+		57876: 42,   // hintReadFromStorage (1155x)
 		57866: 43,   // hintSMJ (1155x)
 		57869: 44,   // hintSTREAMAGG (1155x)
 		57870: 45,   // hintUseIndexMerge (1155x)
@@ -1812,7 +1812,7 @@ var (
 		"hintNoIndexMerge",
 		"hintQueryType",
 		"hintReadConsistentReplica",
-		"hintReadConsistentStorage",
+		"hintReadFromStorage",
 		"hintSMJ",
 		"hintSTREAMAGG",
 		"hintUseIndexMerge",

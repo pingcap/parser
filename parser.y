@@ -588,7 +588,7 @@ import (
 	hintEnablePlanCache	"ENABLE_PLAN_CACHE"
 	hintUsePlanCache	"USE_PLAN_CACHE"
 	hintReadConsistentReplica	"READ_CONSISTENT_REPLICA"
-	hintReadConsistentStorage   "READ_CONSISTENT_STORAGE"
+	hintReadFromStorage   "READ_FROM_STORAGE"
 	hintQueryType	"QUERY_TYPE"
 	hintMemoryQuota	"MEMORY_QUOTA"
 	hintOLAP	"OLAP"
@@ -4196,7 +4196,7 @@ UnReservedKeyword:
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
-| "READ_CONSISTENT_REPLICA" | "READ_CONSISTENT_STORAGE" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
+| "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6564,7 +6564,7 @@ TableOptimizerHintOpt:
 	}
 
 StorageOptimizerHintOpt:
-	hintReadConsistentStorage '(' HintStorageTypeAndTableList ')'
+	hintReadFromStorage '(' HintStorageTypeAndTableList ')'
 	{
 		$$ = $3.([]*ast.TableOptimizerHint)
 		for _, hint := range $$.([]*ast.TableOptimizerHint) {
