@@ -301,6 +301,7 @@ import (
 	client		"CLIENT"
 	coalesce	"COALESCE"
 	collation	"COLLATION"
+	columnFormat	"COLUMN_FORMAT"
 	columns		"COLUMNS"
 	comment 	"COMMENT"
 	commit		"COMMIT"
@@ -417,6 +418,7 @@ import (
 	redundant	"REDUNDANT"
 	reload		"RELOAD"
 	remove 		"REMOVE"
+	reorganize	"REORGANIZE"
 	repair		"REPAIR"
 	repeatable	"REPEATABLE"
 	respect		"RESPECT"
@@ -430,8 +432,11 @@ import (
 	rtree		"RTREE"
 	second		"SECOND"
 	secondaryEngine	"SECONDARY_ENGINE"
+	secondaryLoad	"SECONDARY_LOAD"
+	secondaryUnload	"SECONDARY_UNLOAD"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
+	serial		"SERIAL"
 	serializable	"SERIALIZABLE"
 	session		"SESSION"
 	share		"SHARE"
@@ -444,7 +449,16 @@ import (
 	sqlBufferResult	"SQL_BUFFER_RESULT"
 	sqlCache	"SQL_CACHE"
 	sqlNoCache	"SQL_NO_CACHE"
+	sqlTsiDay	"SQL_TSI_DAY"
+	sqlTsiHour	"SQL_TSI_HOUR"
+	sqlTsiMinute	"SQL_TSI_MINUTE"
+	sqlTsiMonth	"SQL_TSI_MONTH"
+	sqlTsiQuarter	"SQL_TSI_QUARTER"
+	sqlTsiSecond	"SQL_TSI_SECOND"
+	sqlTsiWeek	"SQL_TSI_WEEK"
+	sqlTsiYear	"SQL_TSI_YEAR"
 	start		"START"
+	statsAutoRecalc	"STATS_AUTO_RECALC"
 	statsPersistent	"STATS_PERSISTENT"
 	statsSamplePages	"STATS_SAMPLE_PAGES"
 	status		"STATUS"
@@ -460,6 +474,7 @@ import (
 	super		"SUPER"
 	some 		"SOME"
 	global		"GLOBAL"
+	tableChecksum	"TABLE_CHECKSUM"
 	tables		"TABLES"
 	tablespace	"TABLESPACE"
 	temporary	"TEMPORARY"
@@ -746,6 +761,7 @@ import (
 	CollationName			"Collation name"
 	ColumnDef			"table column definition"
 	ColumnDefList			"table column definition list"
+	ColumnFormat			"Column format"
 	ColumnName			"column name"
 	ColumnNameOrUserVariable	"column name or user variable"
 	ColumnNameList			"column name list"
@@ -885,6 +901,7 @@ import (
 	OnDeleteUpdateOpt		"optional ON DELETE and UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
+	ReorganizePartitionRuleOpt	"optional reorganize partition partition list and definitions"
 	RequireList			"require list"
 	RequireListElement		"require list element"
 	Rolename            "Rolename"
@@ -1124,6 +1141,8 @@ import (
 %precedence key
 %precedence lowerThanLocal
 %precedence local
+%precedence lowerThanRemove
+%precedence remove
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
@@ -1437,6 +1456,13 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("REBUILD PARTITION syntax is parsed but not implement for now."))
 		parser.lastErrorAsWarn()
 	}
+|	"REORGANIZE" "PARTITION" NoWriteToBinLogAliasOpt ReorganizePartitionRuleOpt {
+		ret := $4.(*ast.AlterTableSpec)
+		ret.NoWriteToBinlog = $3.(bool)
+		$$ = ret
+		yylex.AppendError(yylex.Errorf("REORGANIZE PARTITION syntax is parsed but not implement for now."))
+		parser.lastErrorAsWarn()
+	}
 |	"DROP" KeyOrIndex IfExists Identifier
 	{
 		$$ = &ast.AlterTableSpec{
@@ -1518,6 +1544,14 @@ AlterTableSpec:
 			NewColumns:	[]*ast.ColumnDef{colDef},
 		}
 	}
+|	"RENAME" "COLUMN" ColumnName "TO" ColumnName
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:    	    ast.AlterTableRenameColumn,
+			OldColumnName:    $3.(*ast.ColumnName),
+			NewColumnName:    $5.(*ast.ColumnName),
+		}
+	}
 |	"RENAME" "TO" TableName
 	{
 		$$ = &ast.AlterTableSpec{
@@ -1525,11 +1559,11 @@ AlterTableSpec:
 			NewTable:      $3.(*ast.TableName),
 		}
 	}
-|	"RENAME" TableName
+|	"RENAME" EqOpt TableName
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableRenameTable,
-			NewTable:      $2.(*ast.TableName),
+			NewTable:      $3.(*ast.TableName),
 		}
 	}
 |	"RENAME" "AS" TableName
@@ -1562,14 +1596,14 @@ AlterTableSpec:
 			Algorithm:	$1.(ast.AlgorithmType),
 		}
 	}
-| "FORCE"
+|	"FORCE"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
 			Tp:    		ast.AlterTableForce,
 		}
 	}
-| "WITH" "VALIDATION"
+|	"WITH" "VALIDATION"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
@@ -1578,7 +1612,7 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
-| "WITHOUT" "VALIDATION"
+|	"WITHOUT" "VALIDATION"
 	{
 		// Parse it and ignore it. Just for compatibility.
 		$$ = &ast.AlterTableSpec{
@@ -1586,6 +1620,72 @@ AlterTableSpec:
 		}
 		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
+	}
+// Added in MySQL 8.0.13, see: https://dev.mysql.com/doc/refman/8.0/en/keywords.html for details
+|	"SECONDARY_LOAD"
+	{
+		// Parse it and ignore it. Just for compatibility.
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableSecondaryLoad,
+		}
+		yylex.AppendError(yylex.Errorf("The SECONDARY_LOAD clause is parsed but not implement yet."))
+		parser.lastErrorAsWarn()
+	}
+// Added in MySQL 8.0.13, see: https://dev.mysql.com/doc/refman/8.0/en/keywords.html for details
+|	"SECONDARY_UNLOAD"
+	{
+		// Parse it and ignore it. Just for compatibility.
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableSecondaryUnload,
+		}
+		yylex.AppendError(yylex.Errorf("The SECONDARY_UNLOAD VALIDATION clause is parsed but not implement yet."))
+		parser.lastErrorAsWarn()
+	}
+|	"ALTER" "CHECK" Identifier EnforcedOrNot
+	{
+		// Parse it and ignore it. Just for compatibility.
+		c := &ast.Constraint{
+			Name: $3,
+			Enforced: $4.(bool),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableAlterCheck,
+			Constraint:       c,
+		}
+		yylex.AppendError(yylex.Errorf("The ALTER CHECK clause is parsed but not implemented yet."))
+		parser.lastErrorAsWarn()
+	}
+|	"DROP" "CHECK" Identifier
+	{
+		// Parse it and ignore it. Just for compatibility.
+		c := &ast.Constraint{
+			Name: $3,
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableDropCheck,
+			Constraint:       c,
+		}
+		yylex.AppendError(yylex.Errorf("The DROP CHECK clause is parsed but not implemented yet."))
+		parser.lastErrorAsWarn()
+	}
+
+ReorganizePartitionRuleOpt:
+	/* empty */ %prec lowerThanRemove
+	{
+		ret := &ast.AlterTableSpec{
+			Tp: ast.AlterTableReorganizePartition,
+			OnAllPartitions: true,
+		}
+		$$ = ret
+	}
+|	PartitionNameList "INTO" '(' PartitionDefinitionList ')'
+	{
+		ret := &ast.AlterTableSpec{
+			Tp: ast.AlterTableReorganizePartition,
+			PartitionNames: $1.([]model.CIStr),
+			PartDefinitions: $4.([]*ast.PartitionDefinition),
+		}
+		$$ = ret
 	}
 
 AllOrPartitionNameList:
@@ -2002,6 +2102,20 @@ ColumnDef:
 		}
         $$ = colDef
 	}
+|	ColumnName "SERIAL" ColumnOptionListOpt
+	{
+		// TODO: check flen 0
+		tp := types.NewFieldType(mysql.TypeLonglong)
+		options := []*ast.ColumnOption{{Tp: ast.ColumnOptionNotNull}, {Tp: ast.ColumnOptionAutoIncrement}, {Tp: ast.ColumnOptionUniqKey}}
+		options = append(options, $3.([]*ast.ColumnOption)...)
+		tp.Flag |= mysql.UnsignedFlag
+		colDef := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: tp, Options: options}
+		if !colDef.Validate() {
+			yylex.AppendError(yylex.Errorf("Invalid column definition"))
+			return 1
+		}
+		$$ = colDef
+	}
 
 ColumnName:
 	Identifier
@@ -2085,7 +2199,7 @@ CommitStmt:
 
 PrimaryOpt:
 	{}
-| "PRIMARY"
+|	"PRIMARY"
 
 EnforcedOrNot:
 	"ENFORCED"
@@ -2155,6 +2269,10 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionDefaultValue, Expr: $2}
 	}
+|	"SERIAL" "DEFAULT" "VALUE"
+	{
+		$$ = []*ast.ColumnOption{{Tp: ast.ColumnOptionNotNull}, {Tp: ast.ColumnOptionAutoIncrement}, {Tp: ast.ColumnOptionUniqKey}}
+	}
 |	"ON" "UPDATE" NowSymOptionFraction
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionOnUpdate, Expr: $3}
@@ -2211,6 +2329,24 @@ ColumnOption:
 |	"COLLATE" CollationName
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2.(string)}
+	}
+|	"COLUMN_FORMAT" ColumnFormat
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
+	}
+
+ColumnFormat: 
+	"DEFAULT"
+	{
+		$$ = "DEFAULT"
+	}
+|	"FIXED"
+	{
+		$$ = "FIXED"
+	}
+|	"DYNAMIC"
+	{
+		$$ = "DYNAMIC"
 	}
 
 GeneratedAlways: | "GENERATED" "ALWAYS"
@@ -4054,22 +4190,23 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
+ "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET"
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
-| "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT"
+| "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "NCHAR" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
-| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
+| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIAL" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
-| "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILE" | "PROFILES"
+| "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "STATS_AUTO_RECALC" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILE" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "REPAIR" | "IMPORT" | "DISCARD"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
+| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR"
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -5244,6 +5381,38 @@ TimestampUnit:
 		$$ = ast.TimeUnitQuarter
 	}
 |	"YEAR"
+	{
+		$$ = ast.TimeUnitYear
+	}
+|	"SQL_TSI_SECOND"
+	{
+		$$ = ast.TimeUnitSecond
+	}
+|	"SQL_TSI_MINUTE"
+	{
+		$$ = ast.TimeUnitMinute
+	}
+|	"SQL_TSI_HOUR"
+	{
+		$$ = ast.TimeUnitHour
+	}
+|	"SQL_TSI_DAY"
+	{
+		$$ = ast.TimeUnitDay
+	}
+|	"SQL_TSI_WEEK"
+	{
+		$$ = ast.TimeUnitWeek
+	}
+|	"SQL_TSI_MONTH"
+	{
+		$$ = ast.TimeUnitMonth
+	}
+|	"SQL_TSI_QUARTER"
+	{
+		$$ = ast.TimeUnitQuarter
+	}
+|	"SQL_TSI_YEAR"
 	{
 		$$ = ast.TimeUnitYear
 	}
@@ -7995,8 +8164,7 @@ TableElementListOpt:
 			Constraints:    constraints,
 		}
 	}
-|
-	'(' TableElementList ')'
+|	'(' TableElementList ')'
 	{
 		tes := $2.([]interface {})
 		var columnDefs []*ast.ColumnDef
@@ -8044,6 +8212,10 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionCheckSum, UintValue: $3.(uint64)}
 	}
+|	"TABLE_CHECKSUM" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionTableCheckSum, UintValue: $3.(uint64)}
+	}
 |	"PASSWORD" EqOpt stringLit
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionPassword, StrValue: $3}
@@ -8068,9 +8240,26 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionStatsPersistent}
 	}
+|	"STATS_AUTO_RECALC" EqOpt LengthNum
+	{
+		n := $3.(uint64)
+		if n != 0 && n != 1 {
+			yylex.AppendError(yylex.Errorf("The value of STATS_AUTO_RECALC must be one of [0|1|DEFAULT]."))
+			return 1
+		}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, UintValue: n}
+		yylex.AppendError(yylex.Errorf("The STATS_AUTO_RECALC is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"STATS_AUTO_RECALC" EqOpt "DEFAULT"
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsAutoRecalc, Default: true}
+		yylex.AppendError(yylex.Errorf("The STATS_AUTO_RECALC is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 |	"STATS_SAMPLE_PAGES" EqOpt LengthNum
 	{
-		// Parse it but will ignore it.	
+		// Parse it but will ignore it.
 		// In MySQL, STATS_SAMPLE_PAGES=N(Where 0<N<=65535) or STAS_SAMPLE_PAGES=DEFAULT.
 		// Cause we don't support it, so we don't check range of the value.
 		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, UintValue: $3.(uint64)}
@@ -8079,9 +8268,9 @@ TableOption:
 	}
 |	"STATS_SAMPLE_PAGES" EqOpt "DEFAULT"
 	{
-		// Parse it but will ignore it.	
+		// Parse it but will ignore it.
 		// In MySQL, default value of STATS_SAMPLE_PAGES is 0.
-		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, UintValue: 0}
+		$$ = &ast.TableOption{Tp: ast.TableOptionStatsSamplePages, Default: true}
 		yylex.AppendError(yylex.Errorf("The STATS_SAMPLE_PAGES is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
@@ -9222,7 +9411,7 @@ RoleSpecList:
  *******************************************************************/
 CreateBindingStmt:
 	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
-    	{
+	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
         	endOffset := parser.startOffset(&yyS[yypt-1])
         	selStmt := $5.(*ast.SelectStmt)
@@ -9595,7 +9784,7 @@ LocalOpt:
 	}
 
 Fields:
-     	{
+	{
 		escape := "\\"
 		$$ = &ast.FieldsClause{
 			Terminated: "\t",
@@ -9779,11 +9968,11 @@ UnlockTablesStmt:
 
 LockTablesStmt:
 	"LOCK" TablesTerminalSym TableLockList
-        {
+	{
 		$$ = &ast.LockTablesStmt{
 			TableLocks: $3.([]ast.TableLock),
 		}
-        }
+	}
 
 TablesTerminalSym:
 	"TABLES"
