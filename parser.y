@@ -1547,6 +1547,14 @@ AlterTableSpec:
 			NewColumns:	[]*ast.ColumnDef{colDef},
 		}
 	}
+|	"RENAME" "COLUMN" ColumnName "TO" ColumnName
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:    	    ast.AlterTableRenameColumn,
+			OldColumnName:    $3.(*ast.ColumnName),
+			NewColumnName:    $5.(*ast.ColumnName),
+		}
+	}
 |	"RENAME" "TO" TableName
 	{
 		$$ = &ast.AlterTableSpec{
