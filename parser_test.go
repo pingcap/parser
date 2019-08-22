@@ -2210,13 +2210,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_smj")
 	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_smj")
 	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// Test SM_JOIN
 	stmt, _, err = parser.Parse("select /*+ SM_JOIN(t1, T2), sm_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2227,13 +2227,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "sm_join")
 	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "sm_join")
 	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// Test TIDB_INLJ
 	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2), tidb_inlj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2244,13 +2244,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_inlj")
 	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_inlj")
 	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// Test INL_JOIN
 	stmt, _, err = parser.Parse("select /*+ INL_JOIN(t1, T2), inl_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2261,13 +2261,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "inl_join")
 	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "inl_join")
 	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// Test TIDB_HJ
 	stmt, _, err = parser.Parse("select /*+ TIDB_HJ(t1, T2), tidb_hj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2278,13 +2278,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_hj")
 	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_hj")
 	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// Test HASH_JOIN
 	stmt, _, err = parser.Parse("select /*+ HASH_JOIN(t1, T2), hash_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2295,13 +2295,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "hash_join")
 	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "hash_join")
 	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// Test MAX_EXECUTION_TIME
 	queries := []string{
@@ -2329,13 +2329,13 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "use_index_merge")
 	c.Assert(hints[0].Tables, HasLen, 1)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
 	c.Assert(hints[0].Indexes, HasLen, 1)
 	c.Assert(hints[0].Indexes[0].L, Equals, "c1")
 
 	c.Assert(hints[1].HintName.L, Equals, "use_index_merge")
 	c.Assert(hints[1].Tables, HasLen, 1)
-	c.Assert(hints[1].Tables[0].L, Equals, "t2")
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t2")
 	c.Assert(hints[1].Indexes, HasLen, 1)
 	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
 
@@ -2402,7 +2402,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[2].MemoryQuota, Equals, uint64(0))
 
 	// Test HASH_AGG
-	stmt, _, err = parser.Parse("select /*+ HASH_AGG, hash_agg */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ HASH_AGG(), hash_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
@@ -2412,7 +2412,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].HintName.L, Equals, "hash_agg")
 
 	// Test STREAM_AGG
-	stmt, _, err = parser.Parse("select /*+ STREAM_AGG, stream_agg */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ STREAM_AGG(), stream_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
@@ -2422,7 +2422,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].HintName.L, Equals, "stream_agg")
 
 	// Test NO_INDEX_MERGE
-	stmt, _, err = parser.Parse("select /*+ NO_INDEX_MERGE, no_index_merge */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ NO_INDEX_MERGE(), no_index_merge() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
@@ -2432,7 +2432,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].HintName.L, Equals, "no_index_merge")
 
 	// Test READ_CONSISTENT_REPLICA
-	stmt, _, err = parser.Parse("select /*+ READ_CONSISTENT_REPLICA, read_consistent_replica */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ READ_CONSISTENT_REPLICA(), read_consistent_replica() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 

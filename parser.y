@@ -547,6 +547,7 @@ import (
 	hintEnablePlanCache	"ENABLE_PLAN_CACHE"
 	hintUsePlanCache	"USE_PLAN_CACHE"
 	hintReadConsistentReplica	"READ_CONSISTENT_REPLICA"
+	hintQBName	"QB_NAME"
 	hintQueryType	"QUERY_TYPE"
 	hintMemoryQuota	"MEMORY_QUOTA"
 	hintOLAP	"OLAP"
@@ -814,6 +815,7 @@ import (
 	OrderByOptional			"Optional ORDER BY clause optional"
 	ByList				"BY list"
 	QuickOptional			"QUICK or empty"
+	QueryBlockOpt			"Query block identifier optional"
 	PartitionDefinition		"Partition definition"
 	PartitionDefinitionList 	"Partition definition list"
 	PartitionDefinitionListOpt	"Partition definition list option"
@@ -997,10 +999,11 @@ import (
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
 	TableOptimizerHintList	"Table level optimizer hint list"
-	HintTableAndIndexList	"Table list in optimizer hint"
-	HintTrueOrFalse	"True or false in optimizer hint"
-	HintQueryType	"Query type in optimizer hint"
-	HintMemoryQuota	"Memory quota in optimizer hint"
+	HintTable		"Table in optimizer hint"
+	HintTableList		"Table list in optimizer hint"
+	HintTrueOrFalse		"True or false in optimizer hint"
+	HintQueryType		"Query type in optimizer hint"
+	HintMemoryQuota		"Memory quota in optimizer hint"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -3532,7 +3535,7 @@ UnReservedKeyword:
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
-| "READ_CONSISTENT_REPLICA" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
+| "READ_CONSISTENT_REPLICA" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -5776,84 +5779,105 @@ TableOptimizerHintList:
 	}
 
 TableOptimizerHintOpt:
-	index '(' HintTableAndIndexList ')'
+	index '(' QueryBlockOpt HintTable IndexNameList ')'
 	{
 		$$ = &ast.TableOptimizerHint{
 			HintName: model.NewCIStr($1),
-			Tables:   $3.([]model.CIStr)[:1],
-			Indexes:  $3.([]model.CIStr)[1:],
+			QBName:   $3.(model.CIStr),
+			Tables:   []ast.HintTable{$4.(ast.HintTable)},
+			Indexes:  $5.([]model.CIStr),
 		}
 	}
-|	hintSMJ '(' HintTableAndIndexList ')'
+|	hintSMJ '(' QueryBlockOpt HintTableList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), Tables: $4.([]ast.HintTable)}
 	}
-|	hintINLJ '(' HintTableAndIndexList ')'
+|	hintINLJ '(' QueryBlockOpt HintTableList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), Tables: $4.([]ast.HintTable)}
 	}
-|	hintHJ '(' HintTableAndIndexList ')'
+|	hintHJ '(' QueryBlockOpt HintTableList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), Tables: $4.([]ast.HintTable)}
 	}
-|	hintUseIndexMerge '(' HintTableAndIndexList ')'
+|	hintUseIndexMerge '(' QueryBlockOpt HintTable IndexNameList ')'
 	{
 		$$ = &ast.TableOptimizerHint{
 			HintName: model.NewCIStr($1),
-			Tables:   $3.([]model.CIStr)[:1],
-			Indexes:  $3.([]model.CIStr)[1:],
+			QBName:   $3.(model.CIStr),
+			Tables:   []ast.HintTable{$4.(ast.HintTable)},
+			Indexes:  $5.([]model.CIStr),
 		}
 	}
-|	hintUseToja '(' HintTrueOrFalse ')'
+|	hintUseToja '(' QueryBlockOpt HintTrueOrFalse ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), HintFlag: $3.(bool)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), HintFlag: $4.(bool)}
 	}
-|	hintEnablePlanCache '(' HintTrueOrFalse ')'
+|	hintEnablePlanCache '(' QueryBlockOpt HintTrueOrFalse ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), HintFlag: $3.(bool)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), HintFlag: $4.(bool)}
 	}
-|	maxExecutionTime '(' NUM ')'
+|	maxExecutionTime '(' QueryBlockOpt NUM ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MaxExecutionTime: getUint64FromNUM($3)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), MaxExecutionTime: getUint64FromNUM($4)}
 	}
-|	hintUsePlanCache '(' ')'
+|	hintUsePlanCache '(' QueryBlockOpt ')'
 	{
 		// arguments not decided yet.
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintQueryType '(' HintQueryType ')'
+|	hintQueryType '(' QueryBlockOpt HintQueryType ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QueryType: model.NewCIStr($3.(string))}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), QueryType: model.NewCIStr($4.(string))}
 	}
-|	hintMemoryQuota '(' HintMemoryQuota ')'
+|	hintMemoryQuota '(' QueryBlockOpt HintMemoryQuota ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MemoryQuota: $3.(uint64)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), MemoryQuota: $4.(uint64)}
 	}
-|	hintHASHAGG
+|	hintHASHAGG '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintSTREAMAGG
+|	hintSTREAMAGG '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintNoIndexMerge
+|	hintNoIndexMerge '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintReadConsistentReplica
+|	hintReadConsistentReplica '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
+	}
+|	hintQBName '(' Identifier ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: model.NewCIStr($3)}
 	}
 
-HintTableAndIndexList:
-	Identifier
+QueryBlockOpt:
 	{
-		$$ = []model.CIStr{model.NewCIStr($1)}
+		$$ = model.NewCIStr("")
 	}
-|	HintTableAndIndexList ',' Identifier
+|	singleAtIdentifier
 	{
-		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
+		$$ = model.NewCIStr($1)
+	}
+
+HintTable:
+	Identifier QueryBlockOpt
+	{
+		$$ = ast.HintTable{TableName: model.NewCIStr($1), QBName: $2.(model.CIStr)}
+	}
+
+HintTableList:
+	HintTable
+	{
+		$$ = []ast.HintTable{$1.(ast.HintTable)}
+	}
+|	HintTableList ',' HintTable
+	{
+		$$ = append($1.([]ast.HintTable), $3.(ast.HintTable))
 	}
 
 HintTrueOrFalse:
