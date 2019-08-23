@@ -89,6 +89,8 @@ func init() {
 	initTokenByte('<', int('<'))
 	initTokenByte('(', int('('))
 	initTokenByte(')', int(')'))
+	initTokenByte('[', int('['))
+	initTokenByte(']', int(']'))
 	initTokenByte(';', int(';'))
 	initTokenByte(',', int(','))
 	initTokenByte('&', int('&'))
@@ -441,6 +443,7 @@ var tokenMap = map[string]int{
 	"RECOVER":                  recover,
 	"READ":                     read,
 	"READ_CONSISTENT_REPLICA":  hintReadConsistentReplica,
+	"READ_FROM_STORAGE":        hintReadFromStorage,
 	"REAL":                     realType,
 	"RECENT":                   recent,
 	"REDUNDANT":                redundant,
@@ -537,6 +540,8 @@ var tokenMap = map[string]int{
 	"TIDB_HJ":                  hintHJ,
 	"TIDB_INLJ":                hintINLJ,
 	"TIDB_SMJ":                 hintSMJ,
+	"TIKV":                     hintTiKV,
+	"TIFLASH":                  hintTiFlash,
 	"TIME":                     timeType,
 	"TIMESTAMP":                timestampType,
 	"TIMESTAMPADD":             timestampAdd,
