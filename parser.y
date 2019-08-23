@@ -579,6 +579,7 @@ import (
 	statsBuckets    "STATS_BUCKETS"
 	statsHealthy    "STATS_HEALTHY"
 	tidb		"TIDB"
+	hintAggToCop	"AGG_TO_COP"
 	hintHJ		"HASH_JOIN"
 	hintSMJ		"SM_JOIN"
 	hintINLJ	"INL_JOIN"
@@ -4215,7 +4216,7 @@ UnReservedKeyword:
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR"
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
+ "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
 | "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
@@ -6567,13 +6568,17 @@ TableOptimizerHintOpt:
 	}
 |	hintMemoryQuota '(' QueryBlockOpt HintMemoryQuota ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), MemoryQuota: $4.(uint64)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), MemoryQuota: $4.(int64)}
 	}
 |	hintHASHAGG '(' QueryBlockOpt ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
 |	hintSTREAMAGG '(' QueryBlockOpt ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
+	}
+|	hintAggToCop '(' QueryBlockOpt ')'
 	{
 		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
@@ -6677,15 +6682,14 @@ HintQueryType:
 HintMemoryQuota:
 	NUM Identifier
 	{
-		// May change into MB/MiB or GB/GiB
 		switch model.NewCIStr($2).L {
-		case "m":
-			$$ = getUint64FromNUM($1)
-		case "g":
-			$$ = getUint64FromNUM($1) * 1024
+		case "mb":
+			$$ = $1.(int64) * 1024 * 1024
+		case "gb":
+			$$ = $1.(int64) * 1024 * 1024 * 1024
 		default:
-			// Trigger warning in TiDB Planner
-			$$ = uint64(0)
+			// Executor handle memory quota < 0 as no memory limit, here use it to trigger warning in TiDB.
+			$$ = int64(-1)
 		}
 	}
 

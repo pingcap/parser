@@ -140,6 +140,7 @@ var tokenMap = map[string]int{
 	"ADDDATE":                  addDate,
 	"ADMIN":                    admin,
 	"AFTER":                    after,
+	"AGG_TO_COP":               hintAggToCop,
 	"ALL":                      all,
 	"ALGORITHM":                algorithm,
 	"ALTER":                    alter,

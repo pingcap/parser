@@ -2034,7 +2034,7 @@ type TableOptimizerHint struct {
 	// Statement Execution Time Optimizer Hints
 	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
 	MaxExecutionTime uint64
-	MemoryQuota      uint64
+	MemoryQuota      int64
 	QueryType        model.CIStr
 	HintFlag         bool
 }
@@ -2065,7 +2065,7 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	}
 	// Hints without args except query block.
 	switch n.HintName.L {
-	case "hash_agg", "stream_agg", "read_consistent_replica", "no_index_merge", "qb_name":
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name":
 		ctx.WritePlain(")")
 		return nil
 	}
@@ -2101,7 +2101,7 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	case "query_type":
 		ctx.WriteKeyWord(n.QueryType.String())
 	case "memory_quota":
-		ctx.WritePlainf("%d M", n.MemoryQuota)
+		ctx.WritePlainf("%d MB", n.MemoryQuota/1024/1024)
 	case "read_from_storage":
 		ctx.WriteKeyWord(n.StoreType.String())
 		for i, table := range n.Tables {
