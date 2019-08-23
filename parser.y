@@ -261,6 +261,7 @@ import (
 	values			"VALUES"
 	long			"LONG"
 	varcharType		"VARCHAR"
+	varcharacter		"VARCHARACTER"
 	varbinaryType		"VARBINARY"
 	varying			"VARYING"
 	virtual			"VIRTUAL"
@@ -436,6 +437,7 @@ import (
 	secondaryUnload	"SECONDARY_UNLOAD"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
+	serial		"SERIAL"
 	serializable	"SERIALIZABLE"
 	session		"SESSION"
 	share		"SHARE"
@@ -589,6 +591,7 @@ import (
 	hintUsePlanCache	"USE_PLAN_CACHE"
 	hintReadConsistentReplica	"READ_CONSISTENT_REPLICA"
 	hintReadFromStorage   "READ_FROM_STORAGE"
+	hintQBName	"QB_NAME"
 	hintQueryType	"QUERY_TYPE"
 	hintMemoryQuota	"MEMORY_QUOTA"
 	hintOLAP	"OLAP"
@@ -871,6 +874,7 @@ import (
 	OrderByOptional			"Optional ORDER BY clause optional"
 	ByList				"BY list"
 	QuickOptional			"QUICK or empty"
+	QueryBlockOpt			"Query block identifier optional"
 	PartitionDefinition		"Partition definition"
 	PartitionDefinitionList 	"Partition definition list"
 	PartitionDefinitionListOpt	"Partition definition list option"
@@ -1062,13 +1066,14 @@ import (
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
 	OptimizerHintList	"optimizer hint list"
-	HintTableAndIndexList	"Table list in optimizer hint"
+	HintTable		"Table in optimizer hint"
+	HintTableList		"Table list in optimizer hint"
 	HintStorageType "storage type in optimizer hint"
 	HintStorageTypeAndTable  "storage type and tables in optimizer hint"
 	HintStorageTypeAndTableList  "storage type and tables list in optimizer hint"
-	HintTrueOrFalse	"True or false in optimizer hint"
-	HintQueryType	"Query type in optimizer hint"
-	HintMemoryQuota	"Memory quota in optimizer hint"
+	HintTrueOrFalse		"True or false in optimizer hint"
+	HintQueryType		"Query type in optimizer hint"
+	HintMemoryQuota		"Memory quota in optimizer hint"
 	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
@@ -1090,8 +1095,8 @@ import (
 	ValueSym		"Value or Values"
 	Char			"{CHAR|CHARACTER}"
 	NChar			"{NCHAR|NATIONAL CHARACTER|NATIONAL CHAR}"
-	Varchar			"{VARCHAR|CHARACTER VARYING|CHAR VARYING}"
-	NVarchar		"{NATIONAL VARCHAR|NVARCHAR|NCHAR VARCHAR|NATIONAL CHARACTER VARYING|NATIONAL CHAR VARYING|NCHAR VARYING}"
+	Varchar			"{VARCHAR|VARCHARACTER|CHARACTER VARYING|CHAR VARYING}"
+	NVarchar		"{NATIONAL VARCHAR|NATIONAL VARCHARACTER|NVARCHAR|NCHAR VARCHAR|NATIONAL CHARACTER VARYING|NATIONAL CHAR VARYING|NCHAR VARYING}"
 	DeallocateSym		"Deallocate or drop"
 	OuterOpt		"optional OUTER clause"
 	CrossOpt		"Cross join option"
@@ -1744,26 +1749,24 @@ AlgorithmClause:
 	}
 
 LockClause:
-	"LOCK" EqOpt "NONE"
-	{
-		$$ = ast.LockTypeNone
-	}
-|	"LOCK" EqOpt "DEFAULT"
+	"LOCK" EqOpt "DEFAULT"
 	{
 		$$ = ast.LockTypeDefault
 	}
-|	"LOCK" EqOpt "SHARED"
+|	"LOCK" EqOpt Identifier
 	{
-		$$ = ast.LockTypeShared
-	}
-|	"LOCK" EqOpt "EXCLUSIVE"
-	{
-		$$ = ast.LockTypeExclusive
-	}
-|	"LOCK" EqOpt identifier
-	{
-		yylex.AppendError(ErrUnknownAlterLock.GenWithStackByArgs($3))
-		return 1
+		id := strings.ToUpper($3)
+
+		if id == "NONE" {
+			$$ = ast.LockTypeNone
+		} else if id == "SHARED" {
+			$$ = ast.LockTypeShared
+		} else if id == "EXCLUSIVE" {
+			$$ = ast.LockTypeExclusive
+		} else {
+			yylex.AppendError(ErrUnknownAlterLock.GenWithStackByArgs($3))
+			return 1
+		}
 	}
 
 KeyOrIndex: "KEY" | "INDEX"
@@ -2105,6 +2108,20 @@ ColumnDef:
 		}
         $$ = colDef
 	}
+|	ColumnName "SERIAL" ColumnOptionListOpt
+	{
+		// TODO: check flen 0
+		tp := types.NewFieldType(mysql.TypeLonglong)
+		options := []*ast.ColumnOption{{Tp: ast.ColumnOptionNotNull}, {Tp: ast.ColumnOptionAutoIncrement}, {Tp: ast.ColumnOptionUniqKey}}
+		options = append(options, $3.([]*ast.ColumnOption)...)
+		tp.Flag |= mysql.UnsignedFlag
+		colDef := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: tp, Options: options}
+		if !colDef.Validate() {
+			yylex.AppendError(yylex.Errorf("Invalid column definition"))
+			return 1
+		}
+		$$ = colDef
+	}
 
 ColumnName:
 	Identifier
@@ -2257,6 +2274,10 @@ ColumnOption:
 |	"DEFAULT" DefaultValueExpr
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionDefaultValue, Expr: $2}
+	}
+|	"SERIAL" "DEFAULT" "VALUE"
+	{
+		$$ = []*ast.ColumnOption{{Tp: ast.ColumnOptionNotNull}, {Tp: ast.ColumnOptionAutoIncrement}, {Tp: ast.ColumnOptionUniqKey}}
 	}
 |	"ON" "UPDATE" NowSymOptionFraction
 	{
@@ -4183,7 +4204,7 @@ UnReservedKeyword:
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "NCHAR" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
-| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
+| "REPEATABLE" | "RESPECT" | "COMMITTED" | "UNCOMMITTED" | "ONLY" | "SERIAL" | "SERIALIZABLE" | "LEVEL" | "VARIABLES" | "SQL_CACHE" | "INDEXES" | "PROCESSLIST"
 | "SQL_NO_CACHE" | "DISABLE"  | "ENABLE" | "REVERSE" | "PRIVILEGES" | "NO" | "BINLOG" | "FUNCTION" | "VIEW" | "BINDING" | "BINDINGS" | "MODIFY" | "EVENTS" | "PARTITIONS"
 | "NONE" | "NULLS" | "SUPER" | "EXCLUSIVE" | "STATS_PERSISTENT" | "STATS_AUTO_RECALC" | "ROW_COUNT" | "COALESCE" | "MONTH" | "PROCESS" | "PROFILE" | "PROFILES"
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
@@ -4196,7 +4217,7 @@ UnReservedKeyword:
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
-| "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
+| "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -6493,115 +6514,134 @@ OptimizerHintList:
 	}
 
 TableOptimizerHintOpt:
-	index '(' HintTableAndIndexList ')'
+	index '(' QueryBlockOpt HintTable IndexNameList ')'
 	{
 		$$ = &ast.TableOptimizerHint{
 			HintName: model.NewCIStr($1),
-			Tables:   $3.([]model.CIStr)[:1],
-			Indexes:  $3.([]model.CIStr)[1:],
+			QBName:   $3.(model.CIStr),
+			Tables:   []ast.HintTable{$4.(ast.HintTable)},
+			Indexes:  $5.([]model.CIStr),
 		}
 	}
-|	hintSMJ '(' HintTableAndIndexList ')'
+|	hintSMJ '(' QueryBlockOpt HintTableList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), Tables: $4.([]ast.HintTable)}
 	}
-|	hintINLJ '(' HintTableAndIndexList ')'
+|	hintINLJ '(' QueryBlockOpt HintTableList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), Tables: $4.([]ast.HintTable)}
 	}
-|	hintHJ '(' HintTableAndIndexList ')'
+|	hintHJ '(' QueryBlockOpt HintTableList ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), Tables: $4.([]ast.HintTable)}
 	}
-|	hintUseIndexMerge '(' HintTableAndIndexList ')'
+|	hintUseIndexMerge '(' QueryBlockOpt HintTable IndexNameList ')'
 	{
 		$$ = &ast.TableOptimizerHint{
 			HintName: model.NewCIStr($1),
-			Tables:   $3.([]model.CIStr)[:1],
-			Indexes:  $3.([]model.CIStr)[1:],
+			QBName:   $3.(model.CIStr),
+			Tables:   []ast.HintTable{$4.(ast.HintTable)},
+			Indexes:  $5.([]model.CIStr),
 		}
 	}
-|	hintUseToja '(' HintTrueOrFalse ')'
+|	hintUseToja '(' QueryBlockOpt HintTrueOrFalse ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), HintFlag: $3.(bool)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), HintFlag: $4.(bool)}
 	}
-|	hintEnablePlanCache '(' HintTrueOrFalse ')'
+|	hintEnablePlanCache '(' QueryBlockOpt HintTrueOrFalse ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), HintFlag: $3.(bool)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), HintFlag: $4.(bool)}
 	}
-|	maxExecutionTime '(' NUM ')'
+|	maxExecutionTime '(' QueryBlockOpt NUM ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MaxExecutionTime: getUint64FromNUM($3)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), MaxExecutionTime: getUint64FromNUM($4)}
 	}
-|	hintUsePlanCache '(' ')'
+|	hintUsePlanCache '(' QueryBlockOpt ')'
 	{
 		// arguments not decided yet.
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintQueryType '(' HintQueryType ')'
+|	hintQueryType '(' QueryBlockOpt HintQueryType ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QueryType: model.NewCIStr($3.(string))}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), QueryType: model.NewCIStr($4.(string))}
 	}
-|	hintMemoryQuota '(' HintMemoryQuota ')'
+|	hintMemoryQuota '(' QueryBlockOpt HintMemoryQuota ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MemoryQuota: $3.(uint64)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr), MemoryQuota: $4.(uint64)}
 	}
-|	hintHASHAGG
+|	hintHASHAGG '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintSTREAMAGG
+|	hintSTREAMAGG '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintNoIndexMerge
+|	hintNoIndexMerge '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
 	}
-|	hintReadConsistentReplica
+|	hintReadConsistentReplica '(' QueryBlockOpt ')'
 	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1)}
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: $3.(model.CIStr)}
+	}
+|	hintQBName '(' Identifier ')'
+	{
+		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), QBName: model.NewCIStr($3)}
 	}
 
 StorageOptimizerHintOpt:
-	hintReadFromStorage '(' HintStorageTypeAndTableList ')'
+	hintReadFromStorage '(' QueryBlockOpt HintStorageTypeAndTableList ')'
 	{
-		$$ = $3.([]*ast.TableOptimizerHint)
+		$$ = $4.([]*ast.TableOptimizerHint)
 		for _, hint := range $$.([]*ast.TableOptimizerHint) {
 			hint.HintName = model.NewCIStr($1)
+			hint.QBName = $3.(model.CIStr)
 		}
 	}
 
 HintStorageTypeAndTableList:
 	HintStorageTypeAndTable
 	{
-		$$ = []*ast.TableOptimizerHint{{
-			StoreType: $1.([]model.CIStr)[0],
-			Tables:    $1.([]model.CIStr)[1:],
-		}}
+		$$ = []*ast.TableOptimizerHint{$1.(*ast.TableOptimizerHint)}
 	}
 |	HintStorageTypeAndTableList ',' HintStorageTypeAndTable
 	{
-		$$ = append($1.([]*ast.TableOptimizerHint), &ast.TableOptimizerHint{
-			StoreType: $3.([]model.CIStr)[0],
-			Tables:    $3.([]model.CIStr)[1:],
-		})
+		$$ = append($1.([]*ast.TableOptimizerHint), $3.(*ast.TableOptimizerHint))
 	}
 
 HintStorageTypeAndTable:
-	HintStorageType '[' HintTableAndIndexList ']'
+	HintStorageType '[' HintTableList ']'
 	{
-		$$ = append([]model.CIStr{model.NewCIStr($1.(string))}, $3.([]model.CIStr)...)
+		$$ = &ast.TableOptimizerHint{
+			StoreType: model.NewCIStr($1.(string)),
+			Tables:    $3.([]ast.HintTable),
+		}
+	}
+	
+QueryBlockOpt:
+	{
+		$$ = model.NewCIStr("")
+	}
+|	singleAtIdentifier
+	{
+		$$ = model.NewCIStr($1)
 	}
 
-HintTableAndIndexList:
-	Identifier
+HintTable:
+	Identifier QueryBlockOpt
 	{
-		$$ = []model.CIStr{model.NewCIStr($1)}
+		$$ = ast.HintTable{TableName: model.NewCIStr($1), QBName: $2.(model.CIStr)}
 	}
-|	HintTableAndIndexList ',' Identifier
+
+HintTableList:
+	HintTable
 	{
-		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
+		$$ = []ast.HintTable{$1.(ast.HintTable)}
+	}
+|	HintTableList ',' HintTable
+	{
+		$$ = append($1.([]ast.HintTable), $3.(ast.HintTable))
 	}
 
 HintTrueOrFalse:
@@ -8742,6 +8782,24 @@ StringType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
+|	"LONG" Varchar OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeMediumBlob)
+		x.Charset = $3.(*ast.OptBinary).Charset
+		if $3.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
+|	"LONG" OptBinary
+	{
+		x := types.NewFieldType(mysql.TypeMediumBlob)
+		x.Charset = $2.(*ast.OptBinary).Charset
+		if $2.(*ast.OptBinary).IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
+		$$ = x
+	}
 
 Char:
 	"CHARACTER"
@@ -8756,11 +8814,14 @@ Varchar:
 	"CHARACTER" "VARYING"
 |	"CHAR" "VARYING"
 | 	"VARCHAR"
+|	"VARCHARACTER"
 
 NVarchar:
 	"NATIONAL" "VARCHAR"
+|	"NATIONAL" "VARCHARACTER"
 | 	"NVARCHAR"
 |	"NCHAR" "VARCHAR"
+|	"NCHAR" "VARCHARACTER"
 | 	"NATIONAL" "CHARACTER" "VARYING"
 | 	"NATIONAL" "CHAR" "VARYING"
 | 	"NCHAR" "VARYING"
@@ -8788,6 +8849,11 @@ BlobType:
 		x := types.NewFieldType(mysql.TypeLongBlob)
 		$$ = x
 	}
+|	"LONG" "VARBINARY"
+	{
+		x := types.NewFieldType(mysql.TypeMediumBlob)
+		$$ = x
+	}
 
 TextType:
 	"TINYTEXT"
@@ -8810,16 +8876,6 @@ TextType:
 |	"LONGTEXT"
 	{
 		x := types.NewFieldType(mysql.TypeLongBlob)
-		$$ = x
-	}
-|	"LONG"
-	{
-		x := types.NewFieldType(mysql.TypeMediumBlob)
-		$$ = x
-	}
-|	"LONG" "VARCHAR"
-	{
-		x := types.NewFieldType(mysql.TypeMediumBlob)
 		$$ = x
 	}
 
