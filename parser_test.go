@@ -2299,6 +2299,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, "CREATE INDEX `idx` ON `t` (`a`) LOCK = NONE"},
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`) USING BTREE"},
+		{"CREATE INDEX idx ON t ( a ) VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) INVISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) USING HASH VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH"},
+		{"CREATE INDEX idx ON t ( a ) USING HASH INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH INVISIBLE"},
 
 		// For create index with algorithm
 		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},

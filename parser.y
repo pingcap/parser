@@ -360,6 +360,7 @@ import (
 	issuer		"ISSUER"
 	incremental	"INCREMENTAL"
 	indexes		"INDEXES"
+	invisible	"INVISIBLE"
 	invoker		"INVOKER"
 	io		"IO"
 	ipc		"IPC"
@@ -482,6 +483,7 @@ import (
 	value		"VALUE"
 	variables	"VARIABLES"
 	view		"VIEW"
+	visible		"VISIBLE"
 	binding		"BINDING"
 	bindings	"BINDINGS"
 	warnings	"WARNINGS"
@@ -816,6 +818,7 @@ import (
 	IndexHintListOpt		"index hint list opt"
 	IndexHintScope			"index hint scope"
 	IndexHintType			"index hint type"
+	IndexInvisible			"index visible/invisible"
 	IndexKeyTypeOpt			"index key type"
 	IndexLockAndAlgorithmOpt	"index lock and algorithm"
 	IndexName			"index name"
@@ -2517,6 +2520,7 @@ NumLiteral:
  *     KEY_BLOCK_SIZE [=] value
  *   | index_type
  *   | COMMENT 'string'
+ *   | {VISIBLE | INVISIBLE}
  *
  * index_type:
  *     USING {BTREE | HASH}
@@ -3996,7 +4000,9 @@ IndexOptionList:
 			} else if opt2.Tp != 0 {
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
-			    opt1.KeyBlockSize = opt2.KeyBlockSize
+			    	opt1.KeyBlockSize = opt2.KeyBlockSize
+			} else if opt2.Invisible {
+				opt1.Invisible = opt2.Invisible
 			}
 			$$ = opt1
 		}
@@ -4020,6 +4026,12 @@ IndexOption:
 	{
 		$$ = &ast.IndexOption {
 			Comment: $2,
+		}
+	}
+|	IndexInvisible
+	{
+		$$ = &ast.IndexOption {
+			Invisible: $1.(bool),
 		}
 	}
 
@@ -4046,6 +4058,16 @@ IndexTypeOpt:
 		$$ = $1
 	}
 
+IndexInvisible:
+	"VISIBLE"
+	{
+		$$ = false
+	}
+|	"INVISIBLE"
+	{
+		$$ = true
+	}
+
 /**********************************Identifier********************************************/
 Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
@@ -4066,7 +4088,7 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "REPAIR" | "IMPORT" | "DISCARD"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "REPAIR" | "IMPORT" | "DISCARD" | "INVISIBLE" | "VISIBLE"
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"

@@ -556,6 +556,7 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
+	Invisible    bool
 }
 
 // Restore implements Node interface.
@@ -582,6 +583,13 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
+	}
+
+	if n.Invisible {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("INVISIBLE")
 	}
 	return nil
 }
@@ -1308,7 +1316,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WritePlain(")")
 
-	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" {
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || n.IndexOption.Invisible {
 		ctx.WritePlain(" ")
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
