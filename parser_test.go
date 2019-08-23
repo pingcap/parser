@@ -2869,7 +2869,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].HintName.L, Equals, "stream_agg")
 
 	// Test AGG_TO_COP
-	stmt, _, err := parser.Parse("select /*+ AGG_TO_COP(), agg_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ AGG_TO_COP(), agg_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
