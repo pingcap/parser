@@ -2790,6 +2790,23 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Indexes, HasLen, 1)
 	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
 
+	// Test READ_FROM_STORAGE
+	stmt, _, err = parser.Parse("select /*+ READ_FROM_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "read_from_storage")
+	c.Assert(hints[0].StoreType.L, Equals, "tiflash")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
+	c.Assert(hints[1].HintName.L, Equals, "read_from_storage")
+	c.Assert(hints[1].StoreType.L, Equals, "tikv")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+
 	// Test USE_TOJA
 	stmt, _, err = parser.Parse("select /*+ USE_TOJA(true), use_toja(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
@@ -2839,18 +2856,18 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].QueryType.L, Equals, "oltp")
 
 	// Test MEMORY_QUOTA
-	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 M), memory_quota(1 G), memory_quota(1 MG) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB), memory_quota(1 NO_SUCH_UNIT) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 3)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[0].MemoryQuota, Equals, uint64(1))
+	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[1].MemoryQuota, Equals, uint64(1024))
+	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
 	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[2].MemoryQuota, Equals, uint64(0))
+	c.Assert(hints[2].MemoryQuota, Equals, int64(-1))
 
 	// Test HASH_AGG
 	stmt, _, err = parser.Parse("select /*+ HASH_AGG(), hash_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2871,6 +2888,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "stream_agg")
 	c.Assert(hints[1].HintName.L, Equals, "stream_agg")
+
+	// Test AGG_TO_COP
+	stmt, _, err = parser.Parse("select /*+ AGG_TO_COP(), agg_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "agg_to_cop")
+	c.Assert(hints[1].HintName.L, Equals, "agg_to_cop")
 
 	// Test NO_INDEX_MERGE
 	stmt, _, err = parser.Parse("select /*+ NO_INDEX_MERGE(), no_index_merge() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3916,8 +3943,8 @@ func (s *testParserSuite) TestTablePartitionNameList(c *C) {
 		tableName, ok := source.Source.(*ast.TableName)
 		c.Assert(ok, IsTrue)
 		c.Assert(len(tableName.PartitionNames), Equals, 2)
-		c.Assert(tableName.PartitionNames[0], Equals, model.CIStr{"p0", "p0"})
-		c.Assert(tableName.PartitionNames[1], Equals, model.CIStr{"p1", "p1"})
+		c.Assert(tableName.PartitionNames[0], Equals, model.CIStr{O: "p0", L: "p0"})
+		c.Assert(tableName.PartitionNames[1], Equals, model.CIStr{O: "p1", L: "p1"})
 	}
 }
 
