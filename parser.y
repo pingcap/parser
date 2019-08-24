@@ -4147,8 +4147,8 @@ IndexOptionList:
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
 			    	opt1.KeyBlockSize = opt2.KeyBlockSize
-			} else if opt2.Invisible {
-				opt1.Invisible = opt2.Invisible
+			} else if opt2.Visibility != ast.IndexVisibilityDefault {
+				opt1.Visibility = opt2.Visibility
 			}
 			$$ = opt1
 		}
@@ -4177,7 +4177,7 @@ IndexOption:
 |	IndexInvisible
 	{
 		$$ = &ast.IndexOption {
-			Invisible: $1.(bool),
+			Visibility: $1.(ast.IndexVisibility),
 		}
 	}
 
@@ -4207,11 +4207,11 @@ IndexTypeOpt:
 IndexInvisible:
 	"VISIBLE"
 	{
-		$$ = false
+		$$ = ast.IndexVisibilityVisible
 	}
 |	"INVISIBLE"
 	{
-		$$ = true
+		$$ = ast.IndexVisibilityInvisible
 	}
 
 /**********************************Identifier********************************************/

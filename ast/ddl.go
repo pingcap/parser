@@ -548,6 +548,16 @@ func (n *ColumnOption) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// IndexVisibility is the option for index visibility.
+type IndexVisibility int
+
+// IndexVisibility options.
+const (
+	IndexVisibilityDefault IndexVisibility = iota
+	IndexVisibilityVisible
+	IndexVisibilityInvisible
+)
+
 // IndexOption is the index options.
 //    KEY_BLOCK_SIZE [=] value
 //  | index_type
@@ -560,7 +570,7 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
-	Invisible    bool
+	Visibility   IndexVisibility
 }
 
 // Restore implements Node interface.
@@ -589,11 +599,16 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteString(n.Comment)
 	}
 
-	if n.Invisible {
+	if n.Visibility != IndexVisibilityDefault {
 		if hasPrevOption {
 			ctx.WritePlain(" ")
 		}
-		ctx.WriteKeyWord("INVISIBLE")
+		switch n.Visibility {
+		case IndexVisibilityVisible:
+			ctx.WriteKeyWord("VISIBLE")
+		case IndexVisibilityInvisible:
+			ctx.WriteKeyWord("INVISIBLE")
+		}
 	}
 	return nil
 }
@@ -1320,7 +1335,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WritePlain(")")
 
-	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || n.IndexOption.Invisible {
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || n.IndexOption.Visibility != IndexVisibilityDefault {
 		ctx.WritePlain(" ")
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
