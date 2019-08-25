@@ -953,6 +953,7 @@ import (
 	SubPartitionOpt			"SubPartition option"
 	SubPartitionNumOpt		"SubPartition NUM option"
 	Symbol				"Constraint Symbol"
+	TableAliasRefList		"table alias reference list"
 	TableAsName			"table alias name"
 	TableAsNameOpt 			"table alias name optional"
 	TableElement			"table definition element"
@@ -962,6 +963,7 @@ import (
 	TableLock			"Table name and lock type"
 	TableLockList			"Table lock list"
 	TableName			"Table name"
+	TableNameOptWild		"Table name with optional wildcard"
 	TableNameList			"Table name list"
 	TableNameListOpt		"Table name list opt"
 	TableOption			"create table option"
@@ -1014,6 +1016,7 @@ import (
 	OptLeadLagInfo		"Optional LEAD/LAG info"
 	OptNullTreatment	"Optional NULL treatment"
 	OptPartitionClause	"Optional PARTITION clause"
+	OptWild			"Optional Wildcard"
 	OptWindowOrderByClause	"Optional ORDER BY clause in WINDOW"
 	OptWindowFrameClause	"Optional FRAME clause in WINDOW"
 	OptWindowingClause	"Optional OVER clause"
@@ -3428,7 +3431,7 @@ DeleteFromStmt:
 
 		$$ = x
 	}
-|	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional TableNameList "FROM" TableRefs WhereClauseOptional
+|	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional TableAliasRefList "FROM" TableRefs WhereClauseOptional
 	{
 		// Multiple Table
 		x := &ast.DeleteStmt{
@@ -3449,7 +3452,7 @@ DeleteFromStmt:
 		$$ = x
 	}
 
-|	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableNameList "USING" TableRefs WhereClauseOptional
+|	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableAliasRefList "USING" TableRefs WhereClauseOptional
 	{
 		// Multiple Table
 		x := &ast.DeleteStmt{
@@ -5614,6 +5617,12 @@ PriorityOpt:
 		$$ = mysql.DelayedPriority
 	}
 
+/***************************Prepared Statement Start******************************
+ * The '.' Identifier syntax is valid in MySQL 5.7, but deprecated in MySQL8.0.
+ * See related definition in MySQL8.0: https://github.com/mysql/mysql-server/blob/817fcb883a8457fcf507156bb1a2052e887acc4c/sql/sql_yacc.yy#L13051
+ * And corresponding definintion in MySQL5.7: https://github.com/mysql/mysql-server/blob/77306a41670543e103f94fa0db77a71d2b9f88b2/sql/sql_yacc.yy#L13789
+ */
+
 TableName:
 	Identifier
 	{
@@ -5623,9 +5632,9 @@ TableName:
 	{
 		$$ = &ast.TableName{Schema:model.NewCIStr($1),	Name:model.NewCIStr($3)}
 	}
-|	Identifier '.' '*'
+|	'.' Identifier
 	{
-		$$ = &ast.TableName{Name:model.NewCIStr($1)}
+		$$ = &ast.TableName{Name:model.NewCIStr($2)}
 	}
 
 TableNameList:
@@ -5637,6 +5646,37 @@ TableNameList:
 |	TableNameList ',' TableName
 	{
 		$$ = append($1.([]*ast.TableName), $3.(*ast.TableName))
+	}
+
+TableNameOptWild:
+	Identifier OptWild
+	{
+		$$ = &ast.TableName{Name:model.NewCIStr($1)}
+	}
+|	Identifier '.' Identifier OptWild
+	{
+		$$ = &ast.TableName{Schema:model.NewCIStr($1),	Name:model.NewCIStr($3)}
+	}
+
+TableAliasRefList:
+	TableNameOptWild
+	{
+		tbl := []*ast.TableName{$1.(*ast.TableName)}
+		$$ = tbl
+	}
+|	TableAliasRefList ',' TableNameOptWild
+	{
+		$$ = append($1.([]*ast.TableName), $3.(*ast.TableName))
+	}
+
+OptWild:
+	%prec empty
+	{
+		$$ = nil
+	}
+|	'.' '*'
+	{
+		$$ = nil
 	}
 
 QuickOptional:
