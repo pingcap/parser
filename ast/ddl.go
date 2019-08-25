@@ -1557,6 +1557,7 @@ const (
 	TableOptionSecondaryEngineNull
 	TableOptionInsertMethod
 	TableOptionTableCheckSum
+	TableOptionEncryption
 )
 
 // RowFormat types
@@ -1762,6 +1763,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("TABLE_CHECKSUM ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionEncryption:
+		ctx.WriteKeyWord("ENCRYPTION ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
