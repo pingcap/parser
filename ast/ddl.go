@@ -1557,6 +1557,7 @@ const (
 	TableOptionSecondaryEngineNull
 	TableOptionInsertMethod
 	TableOptionTableCheckSum
+	TableOptionUnion
 )
 
 // RowFormat types
@@ -1591,10 +1592,11 @@ const (
 
 // TableOption is used for parsing table option from SQL.
 type TableOption struct {
-	Tp        TableOptionType
-	Default   bool
-	StrValue  string
-	UintValue uint64
+	Tp         TableOptionType
+	Default    bool
+	StrValue   string
+	UintValue  uint64
+	TableNames []*TableName
 }
 
 func (n *TableOption) Restore(ctx *RestoreCtx) error {
@@ -1762,6 +1764,18 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("TABLE_CHECKSUM ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionUnion:
+		ctx.WriteKeyWord("UNION ")
+		ctx.WritePlain("= (")
+		for i, tableName := range n.TableNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			} else {
+				ctx.WritePlain(" ")
+			}
+			tableName.Restore(ctx)
+		}
+		ctx.WritePlain(" )")
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
