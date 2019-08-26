@@ -4165,7 +4165,7 @@ IndexOptionList:
 			} else if opt2.Tp != 0 {
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
-			    opt1.KeyBlockSize = opt2.KeyBlockSize
+			   	opt1.KeyBlockSize = opt2.KeyBlockSize
 			} else if len(opt2.ParserName.O) > 0 {
 			   	opt1.ParserName = opt2.ParserName
 			} else if opt2.Visibility != ast.IndexVisibilityDefault {

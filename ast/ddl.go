@@ -599,7 +599,6 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("WITH PARSER ")
 		ctx.WriteName(n.ParserName.O)
 		hasPrevOption = true
-
 	}
 
 	if n.Comment != "" {
