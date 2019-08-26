@@ -2684,6 +2684,7 @@ NumLiteral:
  * index_option:
  *     KEY_BLOCK_SIZE [=] value
  *   | index_type
+ *   | WITH PARSER parser_name
  *   | COMMENT 'string'
  *   | {VISIBLE | INVISIBLE}
  *
