@@ -1492,6 +1492,7 @@ AlterTableSpec:
 	{
 		$$ = &ast.AlterTableSpec{
             Tp: ast.AlterTableOrderByColumns,
+            OrderBy: $3.([]model.CIStr),
 		}
 	}
 |	"DISABLE" "KEYS"

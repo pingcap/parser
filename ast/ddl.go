@@ -1944,6 +1944,7 @@ type AlterTableSpec struct {
 	Name            string
 	Constraint      *Constraint
 	Options         []*TableOption
+	OrderBy			[]model.CIStr
 	NewTable        *TableName
 	NewColumns      []*ColumnDef
 	OldColumnName   *ColumnName
@@ -2112,7 +2113,12 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableOrderByColumns:
 		ctx.WriteKeyWord("ORDER BY ")
-		ctx.WriteName(n.Name)
+		for i, name := range n.OrderBy {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WriteName(name.O)
+		}
 	case AlterTableAlgorithm:
 		ctx.WriteKeyWord("ALGORITHM ")
 		ctx.WritePlain("= ")
