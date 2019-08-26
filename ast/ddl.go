@@ -1794,7 +1794,6 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 			if i != 0 {
 				ctx.WritePlain(",")
 			} else {
-				ctx.WritePlain(" ")
 			}
 			tableName.Restore(ctx)
 		}
