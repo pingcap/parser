@@ -1581,6 +1581,7 @@ const (
 	TableOptionInsertMethod
 	TableOptionTableCheckSum
 	TableOptionUnion
+	TableOptionEncryption
 )
 
 // RowFormat types
@@ -1793,11 +1794,14 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		for i, tableName := range n.TableNames {
 			if i != 0 {
 				ctx.WritePlain(",")
-			} else {
 			}
 			tableName.Restore(ctx)
 		}
-		ctx.WritePlain(" )")
+		ctx.WritePlain(")")
+	case TableOptionEncryption:
+		ctx.WriteKeyWord("ENCRYPTION ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
