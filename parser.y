@@ -362,6 +362,7 @@ import (
 	issuer		"ISSUER"
 	incremental	"INCREMENTAL"
 	indexes		"INDEXES"
+	invisible	"INVISIBLE"
 	invoker		"INVOKER"
 	io		"IO"
 	ipc		"IPC"
@@ -498,6 +499,7 @@ import (
 	value		"VALUE"
 	variables	"VARIABLES"
 	view		"VIEW"
+	visible		"VISIBLE"
 	binding		"BINDING"
 	bindings	"BINDINGS"
 	warnings	"WARNINGS"
@@ -838,6 +840,7 @@ import (
 	IndexHintListOpt		"index hint list opt"
 	IndexHintScope			"index hint scope"
 	IndexHintType			"index hint type"
+	IndexInvisible			"index visible/invisible"
 	IndexKeyTypeOpt			"index key type"
 	IndexLockAndAlgorithmOpt	"index lock and algorithm"
 	IndexName			"index name"
@@ -1450,6 +1453,24 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The DISCARD PARTITION TABLESPACE clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
+|	"IMPORT" "TABLESPACE"
+    {
+        ret := &ast.AlterTableSpec{
+            Tp: ast.AlterTableImportTablespace,
+        }
+        $$ = ret
+        yylex.AppendError(yylex.Errorf("The IMPORT TABLESPACE clause is parsed but ignored by all storage engines."))
+        parser.lastErrorAsWarn()
+    }
+|	"DISCARD" "TABLESPACE"
+    {
+        ret := &ast.AlterTableSpec{
+            Tp: ast.AlterTableDiscardTablespace,
+        }
+        $$ = ret
+        yylex.AppendError(yylex.Errorf("The DISCARD TABLESPACE clause is parsed but ignored by all storage engines."))
+        parser.lastErrorAsWarn()
+    }
 |	"REBUILD" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
 		ret := &ast.AlterTableSpec{
@@ -2342,7 +2363,7 @@ ColumnOption:
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
 	}
 
-ColumnFormat: 
+ColumnFormat:
 	"DEFAULT"
 	{
 		$$ = "DEFAULT"
@@ -2663,6 +2684,7 @@ NumLiteral:
  *     KEY_BLOCK_SIZE [=] value
  *   | index_type
  *   | COMMENT 'string'
+ *   | {VISIBLE | INVISIBLE}
  *
  * index_type:
  *     USING {BTREE | HASH}
@@ -4142,7 +4164,9 @@ IndexOptionList:
 			} else if opt2.Tp != 0 {
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
-			    opt1.KeyBlockSize = opt2.KeyBlockSize
+			    	opt1.KeyBlockSize = opt2.KeyBlockSize
+			} else if opt2.Visibility != ast.IndexVisibilityDefault {
+				opt1.Visibility = opt2.Visibility
 			}
 			$$ = opt1
 		}
@@ -4172,6 +4196,11 @@ IndexOption:
 	{
 		$$ = &ast.IndexOption {
 			ParserName: $3,
+    }
+|	IndexInvisible
+	{
+		$$ = &ast.IndexOption {
+			Visibility: $1.(ast.IndexVisibility),
 		}
 	}
 
@@ -4198,6 +4227,16 @@ IndexTypeOpt:
 		$$ = $1
 	}
 
+IndexInvisible:
+	"VISIBLE"
+	{
+		$$ = ast.IndexVisibilityVisible
+	}
+|	"INVISIBLE"
+	{
+		$$ = ast.IndexVisibilityInvisible
+	}
+
 /**********************************Identifier********************************************/
 Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
@@ -4219,7 +4258,7 @@ UnReservedKeyword:
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
-| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR"
+| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -8152,6 +8191,10 @@ TraceableStmt:
 |	ReplaceIntoStmt
 |	UnionStmt
 |	LoadDataStmt
+|	BeginTransactionStmt
+|	CommitStmt
+|	RollbackStmt
+|	SetStmt
 
 ExplainableStmt:
 	SelectStmt
@@ -8382,6 +8425,13 @@ TableOption:
 		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
 		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: $3.(string)}
 		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"ENCRYPTION" EqOpt stringLit
+	{
+		// Parse it but will ignore it
+		$$ = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: $3}
+		yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
 
