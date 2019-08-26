@@ -1879,7 +1879,8 @@ const (
 	AlterTableDiscardPartitionTablespace
 	AlterTableAlterCheck
 	AlterTableDropCheck
-
+	AlterTableImportTablespace
+	AlterTableDiscardTablespace
 	// TODO: Add more actions
 )
 
@@ -2336,6 +2337,10 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	case AlterTableDropCheck:
 		ctx.WriteKeyWord("DROP CHECK ")
 		ctx.WriteName(n.Constraint.Name)
+	case AlterTableImportTablespace:
+		ctx.WriteKeyWord("IMPORT TABLESPACE")
+	case AlterTableDiscardTablespace:
+		ctx.WriteKeyWord("DISCARD TABLESPACE")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -2404,7 +2409,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
 	for i, spec := range n.Specs {
-		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning {
+		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning || spec.Tp == AlterTableImportTablespace || spec.Tp == AlterTableDiscardTablespace {
 			ctx.WritePlain(" ")
 		} else {
 			ctx.WritePlain(", ")
