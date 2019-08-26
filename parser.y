@@ -5738,6 +5738,7 @@ SelectStmtBasic:
 			SelectStmtOpts: $2.(*ast.SelectStmtOpts),
 			Distinct:      $2.(*ast.SelectStmtOpts).Distinct,
 			Fields:        $3.(*ast.FieldList),
+			QueryBlockOffset: parser.queryBlockOffset(),
 		}
 		if st.SelectStmtOpts.TableHints != nil {
 			st.TableHints = st.SelectStmtOpts.TableHints
@@ -8102,6 +8103,7 @@ StatementList:
 				s.SetText(lexer.stmtText())
 			}
 			parser.result = append(parser.result, s)
+			parser.blockOffset = 0
 		}
 	}
 |	StatementList ';' Statement
@@ -8112,6 +8114,7 @@ StatementList:
 				s.SetText(lexer.stmtText())
 			}
 			parser.result = append(parser.result, s)
+			parser.blockOffset = 0
 		}
 	}
 

@@ -91,11 +91,12 @@ func TrimComment(txt string) string {
 
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
 type Parser struct {
-	charset   string
-	collation string
-	result    []ast.StmtNode
-	src       string
-	lexer     Scanner
+	charset     string
+	collation   string
+	result      []ast.StmtNode
+	src         string
+	lexer       Scanner
+	blockOffset int
 
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
@@ -134,6 +135,7 @@ func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode
 	parser.collation = collation
 	parser.src = sql
 	parser.result = parser.result[:0]
+	parser.blockOffset = 0
 
 	var l yyLexer
 	parser.lexer.reset(sql)
@@ -215,6 +217,11 @@ func (parser *Parser) endOffset(v *yySymType) int {
 		offset--
 	}
 	return offset
+}
+
+func (parser *Parser) queryBlockOffset() int {
+	parser.blockOffset++
+	return parser.blockOffset
 }
 
 func toInt(l yyLexer, lval *yySymType, str string) int {

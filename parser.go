@@ -12539,9 +12539,10 @@ yynewstate:
 	case 1080:
 		{
 			st := &ast.SelectStmt{
-				SelectStmtOpts: yyS[yypt-1].item.(*ast.SelectStmtOpts),
-				Distinct:       yyS[yypt-1].item.(*ast.SelectStmtOpts).Distinct,
-				Fields:         yyS[yypt-0].item.(*ast.FieldList),
+				SelectStmtOpts:   yyS[yypt-1].item.(*ast.SelectStmtOpts),
+				Distinct:         yyS[yypt-1].item.(*ast.SelectStmtOpts).Distinct,
+				Fields:           yyS[yypt-0].item.(*ast.FieldList),
+				QueryBlockOffset: parser.queryBlockOffset(),
 			}
 			if st.SelectStmtOpts.TableHints != nil {
 				st.TableHints = st.SelectStmtOpts.TableHints
@@ -14580,6 +14581,7 @@ yynewstate:
 					s.SetText(lexer.stmtText())
 				}
 				parser.result = append(parser.result, s)
+				parser.blockOffset = 0
 			}
 		}
 	case 1521:
@@ -14590,6 +14592,7 @@ yynewstate:
 					s.SetText(lexer.stmtText())
 				}
 				parser.result = append(parser.result, s)
+				parser.blockOffset = 0
 			}
 		}
 	case 1522:
