@@ -4195,7 +4195,6 @@ IndexOption:
 			ParserName: model.NewCIStr($3),
 		}
 	}
-
 |	"COMMENT" stringLit
 	{
 		$$ = &ast.IndexOption {
