@@ -200,6 +200,7 @@ import (
 	over			"OVER"
 	packKeys		"PACK_KEYS"
 	partition		"PARTITION"
+    parser          "PARSER"
 	percentRank		"PERCENT_RANK"
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
@@ -4164,7 +4165,9 @@ IndexOptionList:
 			} else if opt2.Tp != 0 {
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
-			    	opt1.KeyBlockSize = opt2.KeyBlockSize
+			    opt1.KeyBlockSize = opt2.KeyBlockSize
+			} else if len(opt2.ParserName.O) > 0 {
+			   	opt1.ParserName = opt2.ParserName
 			} else if opt2.Visibility != ast.IndexVisibilityDefault {
 				opt1.Visibility = opt2.Visibility
 			}
@@ -4186,17 +4189,18 @@ IndexOption:
 			Tp: $1.(model.IndexType),
 		}
 	}
+|	"WITH" "PARSER" Identifier
+	{
+		$$ = &ast.IndexOption {
+			ParserName: model.NewCIStr($3),
+		}
+    }
 |	"COMMENT" stringLit
 	{
 		$$ = &ast.IndexOption {
 			Comment: $2,
 		}
 	}
-|	"WITH" "PARSER" Identifier
-	{
-		$$ = &ast.IndexOption {
-			ParserName: $3,
-    }
 |	IndexInvisible
 	{
 		$$ = &ast.IndexOption {
