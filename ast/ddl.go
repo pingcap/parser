@@ -1867,6 +1867,7 @@ const (
 	AlterTableDropCheck
 
 	// TODO: Add more actions
+	AlterTableOrderByColumns
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2109,6 +2110,9 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("LOCK ")
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.LockType.String())
+	case AlterTableOrderByColumns:
+		ctx.WriteKeyWord("ORDER BY ")
+		ctx.WriteName(n.Name)
 	case AlterTableAlgorithm:
 		ctx.WriteKeyWord("ALGORITHM ")
 		ctx.WritePlain("= ")

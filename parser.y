@@ -212,7 +212,7 @@ import (
 	realType		"REAL"
 	references		"REFERENCES"
 	regexpKwd		"REGEXP"
-	rename         		"RENAME"
+	rename         	"RENAME"
 	repeat			"REPEAT"
 	replace			"REPLACE"
 	require			"REQUIRE"
@@ -1486,6 +1486,12 @@ AlterTableSpec:
 			IfExists: $4.(bool),
 			Tp: ast.AlterTableDropForeignKey,
 			Name: $5.(string),
+		}
+	}
+|	"ORDER" "BY" ColumnNameList
+	{
+		$$ = &ast.AlterTableSpec{
+            Tp: ast.AlterTableOrderByColumns,
 		}
 	}
 |	"DISABLE" "KEYS"
