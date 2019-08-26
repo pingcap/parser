@@ -14,6 +14,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	. "github.com/pingcap/parser/format"
@@ -1944,7 +1946,7 @@ type AlterTableSpec struct {
 	Name            string
 	Constraint      *Constraint
 	Options         []*TableOption
-	OrderBy			[]model.CIStr
+	OrderByColumns	[]ColumnName
 	NewTable        *TableName
 	NewColumns      []*ColumnDef
 	OldColumnName   *ColumnName
@@ -2113,11 +2115,14 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableOrderByColumns:
 		ctx.WriteKeyWord("ORDER BY ")
-		for i, name := range n.OrderBy {
+		for i, columnName := range n.OrderByColumns {
+			if err := columnName.Restore(ctx); err != nil {
+				return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.OrderByColumns[%d]", i))
+			}
 			if i != 0 {
 				ctx.WritePlain(",")
 			}
-			ctx.WriteName(name.O)
+			ctx.WriteName(columnName.Name.O)
 		}
 	case AlterTableAlgorithm:
 		ctx.WriteKeyWord("ALGORITHM ")

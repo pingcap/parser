@@ -9108,8 +9108,8 @@ yynewstate:
 	case 29:
 		{
 			parser.yyVAL.item = &ast.AlterTableSpec{
-				Tp:      ast.AlterTableOrderByColumns,
-				OrderBy: yyS[yypt-0].item.([]model.CIStr),
+				Tp:             ast.AlterTableOrderByColumns,
+				OrderByColumns: yyS[yypt-0].item.([]ColumnName),
 			}
 		}
 	case 30:
