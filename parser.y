@@ -4168,6 +4168,12 @@ IndexOption:
 			Comment: $2,
 		}
 	}
+|	"WITH" "PARSER" Identifier
+	{
+		$$ = &ast.IndexOption {
+			ParserName: $3,
+		}
+	}
 
 IndexType:
 	"USING" "BTREE"
