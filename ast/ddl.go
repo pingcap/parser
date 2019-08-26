@@ -548,6 +548,16 @@ func (n *ColumnOption) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// IndexVisibility is the option for index visibility.
+type IndexVisibility int
+
+// IndexVisibility options.
+const (
+	IndexVisibilityDefault IndexVisibility = iota
+	IndexVisibilityVisible
+	IndexVisibilityInvisible
+)
+
 // IndexOption is the index options.
 //    KEY_BLOCK_SIZE [=] value
 //  | index_type
@@ -560,6 +570,7 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
+	Visibility   IndexVisibility
 }
 
 // Restore implements Node interface.
@@ -586,6 +597,18 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
+	}
+
+	if n.Visibility != IndexVisibilityDefault {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		switch n.Visibility {
+		case IndexVisibilityVisible:
+			ctx.WriteKeyWord("VISIBLE")
+		case IndexVisibilityInvisible:
+			ctx.WriteKeyWord("INVISIBLE")
+		}
 	}
 	return nil
 }
@@ -1312,7 +1335,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WritePlain(")")
 
-	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" {
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || n.IndexOption.Visibility != IndexVisibilityDefault {
 		ctx.WritePlain(" ")
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
@@ -1870,7 +1893,8 @@ const (
 	AlterTableDiscardPartitionTablespace
 	AlterTableAlterCheck
 	AlterTableDropCheck
-
+	AlterTableImportTablespace
+	AlterTableDiscardTablespace
 	// TODO: Add more actions
 )
 
@@ -2327,6 +2351,10 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	case AlterTableDropCheck:
 		ctx.WriteKeyWord("DROP CHECK ")
 		ctx.WriteName(n.Constraint.Name)
+	case AlterTableImportTablespace:
+		ctx.WriteKeyWord("IMPORT TABLESPACE")
+	case AlterTableDiscardTablespace:
+		ctx.WriteKeyWord("DISCARD TABLESPACE")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -2395,7 +2423,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
 	for i, spec := range n.Specs {
-		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning {
+		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning || spec.Tp == AlterTableImportTablespace || spec.Tp == AlterTableDiscardTablespace {
 			ctx.WritePlain(" ")
 		} else {
 			ctx.WritePlain(", ")
