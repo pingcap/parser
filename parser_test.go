@@ -1888,6 +1888,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`create table testTableCompression (c VARCHAR(15000)) compression="ZLIB";`, true, "CREATE TABLE `testTableCompression` (`c` VARCHAR(15000)) COMPRESSION = 'ZLIB'"},
 		{`create table t1 (c1 int) compression="zlib";`, true, "CREATE TABLE `t1` (`c1` INT) COMPRESSION = 'zlib'"},
 
+		// for table option `UNION`
+		{"ALTER TABLE t_n UNION ( ), KEY_BLOCK_SIZE = 1", true, "ALTER TABLE `t_n` UNION = (), KEY_BLOCK_SIZE = 1"},
+		{"ALTER TABLE d_n.t_n UNION ( t_n ) REMOVE PARTITIONING", true, "ALTER TABLE `d_n`.`t_n` UNION = (`t_n`) REMOVE PARTITIONING"},
+		{"ALTER TABLE d_n.t_n LOCK DEFAULT , UNION = ( t_n , d_n.t_n ) REMOVE PARTITIONING", true, "ALTER TABLE `d_n`.`t_n` LOCK = DEFAULT, UNION = (`t_n`,`d_n`.`t_n`) REMOVE PARTITIONING"},
+		{"ALTER TABLE d_n.t_n ALGORITHM = DEFAULT , MAX_ROWS 10, UNION ( d_n.t_n ) , ROW_FORMAT REDUNDANT, STATS_PERSISTENT = DEFAULT", true, "ALTER TABLE `d_n`.`t_n` ALGORITHM = DEFAULT, MAX_ROWS = 10, UNION = (`d_n`.`t_n`), ROW_FORMAT = REDUNDANT, STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
+
 		// partition option
 		{"CREATE TABLE t (id int) ENGINE = INNDB PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));", true, "CREATE TABLE `t` (`id` INT) ENGINE = INNDB PARTITION BY RANGE (`id`) (PARTITION `p0` VALUES LESS THAN (10),PARTITION `p1` VALUES LESS THAN (20))"},
 		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true, "CREATE TABLE `t` (`c` INT) PARTITION BY HASH (`c`) PARTITIONS 32"},
@@ -2101,6 +2107,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE IF NOT EXISTS `general_log` (`event_time` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` mediumtext NOT NULL,`thread_id` bigint(20) unsigned NOT NULL,`server_id` int(10) unsigned NOT NULL,`command_type` varchar(64) NOT NULL,`argument` mediumblob NOT NULL) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log'", true, "CREATE TABLE IF NOT EXISTS `general_log` (`event_time` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` MEDIUMTEXT NOT NULL,`thread_id` BIGINT(20) UNSIGNED NOT NULL,`server_id` INT(10) UNSIGNED NOT NULL,`command_type` VARCHAR(64) NOT NULL,`argument` MEDIUMBLOB NOT NULL) ENGINE = CSV DEFAULT CHARACTER SET = UTF8 COMMENT = 'General log'"}, //TODO: The number yacc in parentheses has not been implemented yet.
 		// For reference_definition in column_definition.
 		{"CREATE TABLE followers ( f1 int NOT NULL REFERENCES user_profiles (uid) );", true, "CREATE TABLE `followers` (`f1` INT NOT NULL REFERENCES `user_profiles`(`uid`))"},
+
+		// For table option `ENCRYPTION`
+		{"create table t (a int) encryption = 'n';", true, "CREATE TABLE `t` (`a` INT) ENCRYPTION = 'n'"},
+		{"create table t (a int) encryption 'n';", true, "CREATE TABLE `t` (`a` INT) ENCRYPTION = 'n'"},
+		{"alter table t encryption = 'y';", true, "ALTER TABLE `t` ENCRYPTION = 'y'"},
+		{"alter table t encryption 'y';", true, "ALTER TABLE `t` ENCRYPTION = 'y'"},
 
 		// for alter database/schema/table
 		{"ALTER DATABASE t CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
@@ -2349,6 +2361,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, "CREATE INDEX `idx` ON `t` (`a`) LOCK = NONE"},
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`) USING BTREE"},
+		{"CREATE INDEX idx ON t ( a ) VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) VISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) INVISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) INVISIBLE VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) VISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) VISIBLE INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) INVISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) USING HASH VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH VISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) USING HASH INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH INVISIBLE"},
 
 		// For create index with algorithm
 		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
@@ -2538,6 +2556,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t modify a bigint, ENGINE=InnoDB, stats_auto_recalc = 0", true, "ALTER TABLE `t` MODIFY COLUMN `a` BIGINT, ENGINE = InnoDB, STATS_AUTO_RECALC = 0"},
 		{"create table stats_auto_recalc (a int);", true, "CREATE TABLE `stats_auto_recalc` (`a` INT)"},
 		{"create table stats_auto_recalc (a int) stats_auto_recalc=1;", true, "CREATE TABLE `stats_auto_recalc` (`a` INT) STATS_AUTO_RECALC = 1"},
+
+		// for issue 501
+		{"ALTER TABLE t IMPORT TABLESPACE;", true, "ALTER TABLE `t` IMPORT TABLESPACE"},
+		{"ALTER TABLE t DISCARD TABLESPACE;", true, "ALTER TABLE `t` DISCARD TABLESPACE"},
+		{"ALTER TABLE db.t IMPORT TABLESPACE;", true, "ALTER TABLE `db`.`t` IMPORT TABLESPACE"},
+		{"ALTER TABLE db.t DISCARD TABLESPACE;", true, "ALTER TABLE `db`.`t` DISCARD TABLESPACE"},
 	}
 	s.RunTest(c, table)
 }
@@ -2629,6 +2653,21 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("alter table t partition by list FIELDS(a,b,c)", "", "")
 	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t lock = first", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'first'")
+
+	_, _, err = parser.Parse("alter table t lock = start", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'start'")
+
+	_, _, err = parser.Parse("alter table t lock = commit", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'commit'")
+
+	_, _, err = parser.Parse("alter table t lock = binlog", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'binlog'")
+
+	_, _, err = parser.Parse("alter table t lock = randomStr123", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'randomStr123'")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -2771,6 +2810,23 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Indexes, HasLen, 1)
 	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
 
+	// Test READ_FROM_STORAGE
+	stmt, _, err = parser.Parse("select /*+ READ_FROM_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "read_from_storage")
+	c.Assert(hints[0].StoreType.L, Equals, "tiflash")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
+	c.Assert(hints[1].HintName.L, Equals, "read_from_storage")
+	c.Assert(hints[1].StoreType.L, Equals, "tikv")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+
 	// Test USE_TOJA
 	stmt, _, err = parser.Parse("select /*+ USE_TOJA(true), use_toja(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
@@ -2820,18 +2876,18 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].QueryType.L, Equals, "oltp")
 
 	// Test MEMORY_QUOTA
-	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 M), memory_quota(1 G), memory_quota(1 MG) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB), memory_quota(1 NO_SUCH_UNIT) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 3)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[0].MemoryQuota, Equals, uint64(1))
+	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[1].MemoryQuota, Equals, uint64(1024))
+	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
 	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[2].MemoryQuota, Equals, uint64(0))
+	c.Assert(hints[2].MemoryQuota, Equals, int64(-1))
 
 	// Test HASH_AGG
 	stmt, _, err = parser.Parse("select /*+ HASH_AGG(), hash_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -2852,6 +2908,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "stream_agg")
 	c.Assert(hints[1].HintName.L, Equals, "stream_agg")
+
+	// Test AGG_TO_COP
+	stmt, _, err = parser.Parse("select /*+ AGG_TO_COP(), agg_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "agg_to_cop")
+	c.Assert(hints[1].HintName.L, Equals, "agg_to_cop")
 
 	// Test NO_INDEX_MERGE
 	stmt, _, err = parser.Parse("select /*+ NO_INDEX_MERGE(), no_index_merge() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3360,6 +3426,10 @@ func (s *testParserSuite) TestExecute(c *C) {
 
 func (s *testParserSuite) TestTrace(c *C) {
 	table := []testCase{
+		{"trace begin", true, "TRACE START TRANSACTION"},
+		{"trace commit", true, "TRACE COMMIT"},
+		{"trace rollback", true, "TRACE ROLLBACK"},
+		{"trace set a = 1", true, "TRACE SET @@SESSION.`a`=1"},
 		{"trace select c1 from t1", true, "TRACE SELECT `c1` FROM `t1`"},
 		{"trace delete t1, t2 from t1 inner join t2 inner join t3 where t1.id=t2.id and t2.id=t3.id;", true, "TRACE DELETE `t1`,`t2` FROM (`t1` JOIN `t2`) JOIN `t3` WHERE `t1`.`id`=`t2`.`id` AND `t2`.`id`=`t3`.`id`"},
 		{"trace insert into t values (1), (2), (3)", true, "TRACE INSERT INTO `t` VALUES (1),(2),(3)"},
@@ -3897,8 +3967,8 @@ func (s *testParserSuite) TestTablePartitionNameList(c *C) {
 		tableName, ok := source.Source.(*ast.TableName)
 		c.Assert(ok, IsTrue)
 		c.Assert(len(tableName.PartitionNames), Equals, 2)
-		c.Assert(tableName.PartitionNames[0], Equals, model.CIStr{"p0", "p0"})
-		c.Assert(tableName.PartitionNames[1], Equals, model.CIStr{"p1", "p1"})
+		c.Assert(tableName.PartitionNames[0], Equals, model.CIStr{O: "p0", L: "p0"})
+		c.Assert(tableName.PartitionNames[1], Equals, model.CIStr{O: "p1", L: "p1"})
 	}
 }
 
