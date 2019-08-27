@@ -212,7 +212,7 @@ import (
 	realType		"REAL"
 	references		"REFERENCES"
 	regexpKwd		"REGEXP"
-	rename         	"RENAME"
+	rename          "RENAME"
 	repeat			"REPEAT"
 	replace			"REPLACE"
 	require			"REQUIRE"
@@ -1152,6 +1152,8 @@ import (
 %precedence local
 %precedence lowerThanRemove
 %precedence remove
+%precedence lowerThenOrderBy
+%precedence orderBy
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
@@ -1488,11 +1490,11 @@ AlterTableSpec:
 			Name: $5.(string),
 		}
 	}
-|	"ORDER" "BY" ColumnNameList
+|	"ORDER" "BY" ColumnNameList %prec lowerThenOrderBy
 	{
 		$$ = &ast.AlterTableSpec{
             Tp: ast.AlterTableOrderByColumns,
-            OrderByColumns: $3.([]ColumnName),
+            OrderByColumns: $3.([]*ast.ColumnName),
 		}
 	}
 |	"DISABLE" "KEYS"
@@ -4489,7 +4491,7 @@ StringLiteral:
 
 
 OrderBy:
-	"ORDER" "BY" ByList
+	"ORDER" "BY" ByList %prec orderBy
 	{
 		$$ = &ast.OrderByClause{Items: $3.([]*ast.ByItem)}
 	}
