@@ -550,6 +550,16 @@ func (n *ColumnOption) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// IndexVisibility is the option for index visibility.
+type IndexVisibility int
+
+// IndexVisibility options.
+const (
+	IndexVisibilityDefault IndexVisibility = iota
+	IndexVisibilityVisible
+	IndexVisibilityInvisible
+)
+
 // IndexOption is the index options.
 //    KEY_BLOCK_SIZE [=] value
 //  | index_type
@@ -562,6 +572,8 @@ type IndexOption struct {
 	KeyBlockSize uint64
 	Tp           model.IndexType
 	Comment      string
+	ParserName   model.CIStr
+	Visibility   IndexVisibility
 }
 
 // Restore implements Node interface.
@@ -582,12 +594,34 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		hasPrevOption = true
 	}
 
+	if len(n.ParserName.O) > 0 {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("WITH PARSER ")
+		ctx.WriteName(n.ParserName.O)
+		hasPrevOption = true
+	}
+
 	if n.Comment != "" {
 		if hasPrevOption {
 			ctx.WritePlain(" ")
 		}
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WriteString(n.Comment)
+		hasPrevOption = true
+	}
+
+	if n.Visibility != IndexVisibilityDefault {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		switch n.Visibility {
+		case IndexVisibilityVisible:
+			ctx.WriteKeyWord("VISIBLE")
+		case IndexVisibilityInvisible:
+			ctx.WriteKeyWord("INVISIBLE")
+		}
 	}
 	return nil
 }
@@ -1314,7 +1348,7 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WritePlain(")")
 
-	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" {
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || len(n.IndexOption.ParserName.O) > 0 || n.IndexOption.Visibility != IndexVisibilityDefault {
 		ctx.WritePlain(" ")
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
@@ -1559,6 +1593,8 @@ const (
 	TableOptionSecondaryEngineNull
 	TableOptionInsertMethod
 	TableOptionTableCheckSum
+	TableOptionUnion
+	TableOptionEncryption
 )
 
 // RowFormat types
@@ -1593,10 +1629,11 @@ const (
 
 // TableOption is used for parsing table option from SQL.
 type TableOption struct {
-	Tp        TableOptionType
-	Default   bool
-	StrValue  string
-	UintValue uint64
+	Tp         TableOptionType
+	Default    bool
+	StrValue   string
+	UintValue  uint64
+	TableNames []*TableName
 }
 
 func (n *TableOption) Restore(ctx *RestoreCtx) error {
@@ -1764,6 +1801,20 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("TABLE_CHECKSUM ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionUnion:
+		ctx.WriteKeyWord("UNION ")
+		ctx.WritePlain("= (")
+		for i, tableName := range n.TableNames {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			tableName.Restore(ctx)
+		}
+		ctx.WritePlain(")")
+	case TableOptionEncryption:
+		ctx.WriteKeyWord("ENCRYPTION ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
@@ -1867,7 +1918,8 @@ const (
 	AlterTableDiscardPartitionTablespace
 	AlterTableAlterCheck
 	AlterTableDropCheck
-
+	AlterTableImportTablespace
+	AlterTableDiscardTablespace
 	// TODO: Add more actions
 	AlterTableOrderByColumns
 )
@@ -2336,6 +2388,10 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	case AlterTableDropCheck:
 		ctx.WriteKeyWord("DROP CHECK ")
 		ctx.WriteName(n.Constraint.Name)
+	case AlterTableImportTablespace:
+		ctx.WriteKeyWord("IMPORT TABLESPACE")
+	case AlterTableDiscardTablespace:
+		ctx.WriteKeyWord("DISCARD TABLESPACE")
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -2404,7 +2460,7 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore AlterTableStmt.Table")
 	}
 	for i, spec := range n.Specs {
-		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning {
+		if i == 0 || spec.Tp == AlterTablePartition || spec.Tp == AlterTableRemovePartitioning || spec.Tp == AlterTableImportTablespace || spec.Tp == AlterTableDiscardTablespace {
 			ctx.WritePlain(" ")
 		} else {
 			ctx.WritePlain(", ")
