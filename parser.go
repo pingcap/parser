@@ -11370,6 +11370,8 @@ yynewstate:
 			parser.yyVAL.item = &ast.IndexOption{
 				ParserName: model.NewCIStr(yyS[yypt-0].ident),
 			}
+			yylex.AppendError(yylex.Errorf("The WITH PARASER clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
 		}
 	case 463:
 		{
