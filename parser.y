@@ -689,6 +689,7 @@ import (
 	AlterDatabaseStmt		"Alter database statement"
 	AlterTableStmt			"Alter table statement"
 	AlterUserStmt			"Alter user statement"
+	AlterViewStmt			"Alter view statement"
 	AnalyzeTableStmt		"Analyze table statement"
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
 	BinlogStmt			"Binlog base64 statement"
@@ -3450,6 +3451,48 @@ ViewCheckOption:
 	{
 		$$ = model.CheckOptionLocal
 	}
+
+/*******************************************************************
+ *
+ *  Alter View Statement
+ *
+ *  Example:
+ *      ALTER VIEW ALGORITHM = MERGE DEFINER="root@localhost" SQL SECURITY = definer view_name (col1,col2)
+ *          as select Col1,Col2 from table WITH LOCAL CHECK OPTION
+ *******************************************************************/
+AlterViewStmt:
+    "ALTER" ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" SelectStmt ViewCheckOption
+    {
+		startOffset := parser.startOffset(&yyS[yypt-1])
+		selStmt := $9.(*ast.SelectStmt)
+		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		x := &ast.AlterViewStmt {
+			ViewName:      $6.(*ast.TableName),
+			Select:        selStmt,
+			Algorithm:     -1,
+			Security:      -1,
+		}
+		if $2 != nil {
+			x.Algorithm = $2.(model.ViewAlgorithm)
+		}
+		if $3 != nil {
+                	x.Definer = $3.(*auth.UserIdentity)
+		}
+                if $4 != nil {
+                	x.Security = $4.(model.ViewSecurity)
+		}
+		if $7 != nil{
+			x.Cols = $7.([]model.CIStr)
+		}
+		if $10 !=nil {
+			x.CheckOption = $10.(model.ViewCheckOption)
+			endOffset := parser.startOffset(&yyS[yypt])
+			selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		} else {
+			x.CheckOption = -1
+		}
+		$$ = x
+    }
 
 /******************************************************************
  * Do statement
@@ -8238,6 +8281,7 @@ Statement:
 |	AlterDatabaseStmt
 |	AlterTableStmt
 |	AlterUserStmt
+|	AlterViewStmt
 |	AnalyzeTableStmt
 |	BeginTransactionStmt
 |	BinlogStmt

@@ -25,6 +25,7 @@ import (
 
 var (
 	_ DDLNode = &AlterTableStmt{}
+	_ DDLNode = &AlterViewStmt{}
 	_ DDLNode = &CreateDatabaseStmt{}
 	_ DDLNode = &CreateIndexStmt{}
 	_ DDLNode = &CreateTableStmt{}
@@ -1234,6 +1235,94 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateViewStmt)
+	node, ok := n.ViewName.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.ViewName = node.(*TableName)
+	selnode, ok := n.Select.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Select = selnode.(*SelectStmt)
+	return v.Leave(n)
+}
+
+// AlterViewStmt is a statement to alter a View.
+// https://dev.mysql.com/doc/refman/5.7/en/alter-view.html
+type AlterViewStmt struct {
+	ddlNode
+
+	ViewName    *TableName
+	Cols        []model.CIStr
+	Select      StmtNode
+	SchemaCols  []model.CIStr
+	Algorithm   model.ViewAlgorithm
+	Definer     *auth.UserIdentity
+	Security    model.ViewSecurity
+	CheckOption model.ViewCheckOption
+}
+
+// Restore implements Node interface.
+func (n *AlterViewStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("ALTER ")
+	if n.Algorithm >= 0 {
+		ctx.WriteKeyWord("ALGORITHM")
+		ctx.WritePlain(" = ")
+		ctx.WriteKeyWord(n.Algorithm.String())
+	}
+	if n.Definer != nil {
+		ctx.WriteKeyWord(" DEFINER")
+		ctx.WritePlain(" = ")
+
+		if err := n.Definer.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while create AlterViewStmt.Definer")
+		}
+	}
+	if n.Security >= 0 {
+		ctx.WriteKeyWord(" SQL SECURITY ")
+		ctx.WriteKeyWord(n.Security.String())
+	}
+
+	ctx.WriteKeyWord(" VIEW ")
+
+	if err := n.ViewName.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while create AlterViewStmt.ViewName")
+	}
+
+	for i, col := range n.Cols {
+		if i == 0 {
+			ctx.WritePlain(" (")
+		} else {
+			ctx.WritePlain(",")
+		}
+		ctx.WriteName(col.O)
+		if i == len(n.Cols)-1 {
+			ctx.WritePlain(")")
+		}
+	}
+
+	ctx.WriteKeyWord(" AS ")
+
+	if err := n.Select.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while create AlterViewStmt.Select")
+	}
+
+	if n.CheckOption != model.CheckOptionCascaded && n.CheckOption >= 0 {
+		ctx.WriteKeyWord(" WITH ")
+		ctx.WriteKeyWord(n.CheckOption.String())
+		ctx.WriteKeyWord(" CHECK OPTION")
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *AlterViewStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AlterViewStmt)
 	node, ok := n.ViewName.Accept(v)
 	if !ok {
 		return n, false
