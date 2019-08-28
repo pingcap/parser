@@ -14,8 +14,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	. "github.com/pingcap/parser/format"
@@ -1999,7 +1997,7 @@ type AlterTableSpec struct {
 	Name            string
 	Constraint      *Constraint
 	Options         []*TableOption
-	OrderByColumns  []*ColumnName
+	OrderByList     []*AlterOrderItem
 	NewTable        *TableName
 	NewColumns      []*ColumnDef
 	OldColumnName   *ColumnName
@@ -2016,6 +2014,24 @@ type AlterTableSpec struct {
 	WithValidation  bool
 	Num             uint64
 	Visibility      IndexVisibility
+}
+
+// AlterOrderItem represents an item in order by at alter table stmt.
+type AlterOrderItem struct {
+	node
+	Column *ColumnName
+	Desc   bool
+}
+
+// Restore implements Node interface.
+func (n *AlterOrderItem) Restore(ctx *RestoreCtx) error {
+	if err := n.Column.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore AlterOrderItem.Column")
+	}
+	if n.Desc {
+		ctx.WriteKeyWord(" DESC")
+	}
+	return nil
 }
 
 // Restore implements Node interface.
@@ -2169,12 +2185,12 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.LockType.String())
 	case AlterTableOrderByColumns:
 		ctx.WriteKeyWord("ORDER BY ")
-		for i, columnName := range n.OrderByColumns {
+		for i, alterOrderItem := range n.OrderByList {
 			if i != 0 {
 				ctx.WritePlain(",")
 			}
-			if err := columnName.Restore(ctx); err != nil {
-				return errors.Annotate(err, fmt.Sprintf("An error occurred while restore AlterTableSpec.OrderByColumns[%d]", i))
+			if err := alterOrderItem.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.OrderByList[%d]", i)
 			}
 		}
 	case AlterTableAlgorithm:

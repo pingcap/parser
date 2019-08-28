@@ -213,7 +213,7 @@ import (
 	realType		"REAL"
 	references		"REFERENCES"
 	regexpKwd		"REGEXP"
-	rename          "RENAME"
+	rename         		"RENAME"
 	repeat			"REPEAT"
 	replace			"REPLACE"
 	require			"REQUIRE"
@@ -878,6 +878,8 @@ import (
 	ByItem				"BY item"
 	OrderByOptional			"Optional ORDER BY clause optional"
 	ByList				"BY list"
+    AlterOrderItem  "Alter Order item"
+    AlterOrderList  "Alter Order list"
 	QuickOptional			"QUICK or empty"
 	QueryBlockOpt			"Query block identifier optional"
 	PartitionDefinition		"Partition definition"
@@ -1156,8 +1158,8 @@ import (
 %precedence local
 %precedence lowerThanRemove
 %precedence remove
-%precedence lowerThenOrderBy
-%precedence orderBy
+%precedence lowerThenOrder
+%precedence order
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
@@ -1512,11 +1514,11 @@ AlterTableSpec:
 			Name: $5.(string),
 		}
 	}
-|	"ORDER" "BY" ColumnNameList %prec lowerThenOrderBy
+|	"ORDER" "BY" AlterOrderList %prec lowerThenOrder
 	{
 		$$ = &ast.AlterTableSpec{
             Tp: ast.AlterTableOrderByColumns,
-            OrderByColumns: $3.([]*ast.ColumnName),
+            OrderByList: $3.([]*ast.AlterOrderItem),
 		}
 	}
 |	"DISABLE" "KEYS"
@@ -4549,9 +4551,24 @@ StringLiteral:
 		$$ = expr
 	}
 
+AlterOrderList:
+    AlterOrderItem
+    {
+        $$ = []*ast.AlterOrderItem{$1.(*ast.AlterOrderItem)}
+    }
+|   AlterOrderList ',' AlterOrderItem
+    {
+        $$ = append($1.([]*ast.AlterOrderItem), $3.(*ast.AlterOrderItem))
+    }
+
+AlterOrderItem:
+    ColumnName Order
+    {
+        $$ = &ast.AlterOrderItem{Column: $1.(*ast.ColumnName), Desc: $2.(bool)}
+    }
 
 OrderBy:
-	"ORDER" "BY" ByList %prec orderBy
+	"ORDER" "BY" ByList
 	{
 		$$ = &ast.OrderByClause{Items: $3.([]*ast.ByItem)}
 	}
