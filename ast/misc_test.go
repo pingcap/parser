@@ -233,17 +233,20 @@ func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 		{"QUERY_TYPE(OLAP)", "QUERY_TYPE(OLAP)"},
 		{"QUERY_TYPE(OLTP)", "QUERY_TYPE(OLTP)"},
 		{"QUERY_TYPE(@sel1 OLTP)", "QUERY_TYPE(@`sel1` OLTP)"},
-		{"MEMORY_QUOTA(1 G)", "MEMORY_QUOTA(1024 M)"},
-		{"MEMORY_QUOTA(@sel1 1 G)", "MEMORY_QUOTA(@`sel1` 1024 M)"},
+		{"MEMORY_QUOTA(1 GB)", "MEMORY_QUOTA(1024 MB)"},
+		{"MEMORY_QUOTA(@sel1 1 GB)", "MEMORY_QUOTA(@`sel1` 1024 MB)"},
 		{"HASH_AGG()", "HASH_AGG()"},
 		{"HASH_AGG(@sel1)", "HASH_AGG(@`sel1`)"},
 		{"STREAM_AGG()", "STREAM_AGG()"},
 		{"STREAM_AGG(@sel1)", "STREAM_AGG(@`sel1`)"},
+		{"AGG_TO_COP()", "AGG_TO_COP()"},
+		{"AGG_TO_COP(@sel_1)", "AGG_TO_COP(@`sel_1`)"},
 		{"NO_INDEX_MERGE()", "NO_INDEX_MERGE()"},
 		{"NO_INDEX_MERGE(@sel1)", "NO_INDEX_MERGE(@`sel1`)"},
 		{"READ_CONSISTENT_REPLICA()", "READ_CONSISTENT_REPLICA()"},
 		{"READ_CONSISTENT_REPLICA(@sel1)", "READ_CONSISTENT_REPLICA(@`sel1`)"},
 		{"QB_NAME(sel1)", "QB_NAME(`sel1`)"},
+		{"READ_FROM_STORAGE(@sel TIFLASH[t1, t2])", "READ_FROM_STORAGE(@`sel` TIFLASH[`t1`, `t2`])"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).TableHints[0]
