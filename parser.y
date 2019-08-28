@@ -200,6 +200,7 @@ import (
 	over			"OVER"
 	packKeys		"PACK_KEYS"
 	partition		"PARTITION"
+	parser          "PARSER"
 	percentRank		"PERCENT_RANK"
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
@@ -1701,6 +1702,14 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The DROP CHECK clause is parsed but not implemented yet."))
 		parser.lastErrorAsWarn()
 	}
+|	"ALTER" "INDEX" Identifier IndexInvisible
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:               ast.AlterTableIndexInvisible,
+			Name:             $3,
+			Visibility:       $4.(ast.IndexVisibility),
+		}
+	}
 
 ReorganizePartitionRuleOpt:
 	/* empty */ %prec lowerThanRemove
@@ -2686,6 +2695,7 @@ NumLiteral:
  * index_option:
  *     KEY_BLOCK_SIZE [=] value
  *   | index_type
+ *   | WITH PARSER parser_name
  *   | COMMENT 'string'
  *   | {VISIBLE | INVISIBLE}
  *
@@ -4167,7 +4177,9 @@ IndexOptionList:
 			} else if opt2.Tp != 0 {
 				opt1.Tp = opt2.Tp
 			} else if opt2.KeyBlockSize > 0 {
-			    	opt1.KeyBlockSize = opt2.KeyBlockSize
+			   	opt1.KeyBlockSize = opt2.KeyBlockSize
+			} else if len(opt2.ParserName.O) > 0 {
+			   	opt1.ParserName = opt2.ParserName
 			} else if opt2.Visibility != ast.IndexVisibilityDefault {
 				opt1.Visibility = opt2.Visibility
 			}
@@ -4188,6 +4200,14 @@ IndexOption:
 		$$ = &ast.IndexOption {
 			Tp: $1.(model.IndexType),
 		}
+	}
+|	"WITH" "PARSER" Identifier
+	{
+		$$ = &ast.IndexOption {
+			ParserName: model.NewCIStr($3),
+		}
+		yylex.AppendError(yylex.Errorf("The WITH PARASER clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 |	"COMMENT" stringLit
 	{
@@ -5657,12 +5677,6 @@ PriorityOpt:
 		$$ = mysql.DelayedPriority
 	}
 
-/***************************Prepared Statement Start******************************
- * The '.' Identifier syntax is valid in MySQL 5.7, but deprecated in MySQL8.0.
- * See related definition in MySQL8.0: https://github.com/mysql/mysql-server/blob/817fcb883a8457fcf507156bb1a2052e887acc4c/sql/sql_yacc.yy#L13051
- * And corresponding definintion in MySQL5.7: https://github.com/mysql/mysql-server/blob/77306a41670543e103f94fa0db77a71d2b9f88b2/sql/sql_yacc.yy#L13789
- */
-
 TableName:
 	Identifier
 	{
@@ -5671,10 +5685,6 @@ TableName:
 |	Identifier '.' Identifier
 	{
 		$$ = &ast.TableName{Schema:model.NewCIStr($1),	Name:model.NewCIStr($3)}
-	}
-|	'.' Identifier
-	{
-		$$ = &ast.TableName{Name:model.NewCIStr($2)}
 	}
 
 TableNameList:
@@ -8460,6 +8470,16 @@ TableOption:
 		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
 		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: $3.(string)}
 		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+|	"UNION" EqOpt '(' TableNameListOpt ')'
+	{
+		// Parse it but will ignore it
+		$$ = &ast.TableOption{
+			Tp: ast.TableOptionUnion,
+			TableNames: $4.([]*ast.TableName),
+		}
+		yylex.AppendError(yylex.Errorf("The UNION option is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
 |	"ENCRYPTION" EqOpt stringLit
