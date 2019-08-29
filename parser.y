@@ -7632,11 +7632,7 @@ ShowStmt:
 			IndexName: model.NewCIStr($5),
 		}
 		if $7 != nil {
-			if x, ok := $7.(*ast.PatternLikeExpr); ok && x.Expr == nil {
-				stmt.Pattern = x
-			} else {
-				stmt.Where = $7.(ast.ExprNode)
-			}
+			stmt.Where = $7.(ast.ExprNode)
 		}
 		$$ = stmt
 	}

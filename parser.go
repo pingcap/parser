@@ -14325,11 +14325,7 @@ yynewstate:
 				IndexName: model.NewCIStr(yyS[yypt-2].ident),
 			}
 			if yyS[yypt-0].item != nil {
-				if x, ok := yyS[yypt-0].item.(*ast.PatternLikeExpr); ok && x.Expr == nil {
-					stmt.Pattern = x
-				} else {
-					stmt.Where = yyS[yypt-0].item.(ast.ExprNode)
-				}
+				stmt.Where = yyS[yypt-0].item.(ast.ExprNode)
 			}
 			parser.yyVAL.statement = stmt
 		}
