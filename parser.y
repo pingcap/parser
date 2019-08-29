@@ -6898,7 +6898,7 @@ ShowStmt:
 		}
 		$$ = stmt
 	}
-|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS" ShowLikeOrWhereOpt
+|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS" WhereClauseOptional
 	{
 		stmt := &ast.ShowStmt{
 			Tp:	ast.ShowRegions,
