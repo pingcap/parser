@@ -2148,7 +2148,7 @@ ColumnDef:
 			yylex.AppendError(yylex.Errorf("Invalid column definition"))
 			return 1
 		}
-        	$$ = colDef
+		$$ = colDef
 	}
 |	ColumnName "SERIAL" ColumnOptionListOpt
 	{
