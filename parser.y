@@ -878,8 +878,8 @@ import (
 	ByItem				"BY item"
 	OrderByOptional			"Optional ORDER BY clause optional"
 	ByList				"BY list"
-    AlterOrderItem  "Alter Order item"
-    AlterOrderList  "Alter Order list"
+	AlterOrderItem		"Alter Order item"
+	AlterOrderList		"Alter Order list"
 	QuickOptional			"QUICK or empty"
 	QueryBlockOpt			"Query block identifier optional"
 	PartitionDefinition		"Partition definition"
@@ -1517,8 +1517,8 @@ AlterTableSpec:
 |	"ORDER" "BY" AlterOrderList %prec lowerThenOrder
 	{
 		$$ = &ast.AlterTableSpec{
-            Tp: ast.AlterTableOrderByColumns,
-            OrderByList: $3.([]*ast.AlterOrderItem),
+			Tp: ast.AlterTableOrderByColumns,
+			OrderByList: $3.([]*ast.AlterOrderItem),
 		}
 	}
 |	"DISABLE" "KEYS"
@@ -4552,20 +4552,20 @@ StringLiteral:
 	}
 
 AlterOrderList:
-    AlterOrderItem
-    {
-        $$ = []*ast.AlterOrderItem{$1.(*ast.AlterOrderItem)}
-    }
+	AlterOrderItem
+	{
+		$$ = []*ast.AlterOrderItem{$1.(*ast.AlterOrderItem)}
+	}
 |   AlterOrderList ',' AlterOrderItem
-    {
-        $$ = append($1.([]*ast.AlterOrderItem), $3.(*ast.AlterOrderItem))
-    }
+	{
+		$$ = append($1.([]*ast.AlterOrderItem), $3.(*ast.AlterOrderItem))
+	}
 
 AlterOrderItem:
-    ColumnName Order
-    {
-        $$ = &ast.AlterOrderItem{Column: $1.(*ast.ColumnName), Desc: $2.(bool)}
-    }
+	ColumnName Order
+	{
+		$$ = &ast.AlterOrderItem{Column: $1.(*ast.ColumnName), Desc: $2.(bool)}
+	}
 
 OrderBy:
 	"ORDER" "BY" ByList
