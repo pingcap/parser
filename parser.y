@@ -4556,7 +4556,7 @@ AlterOrderList:
 	{
 		$$ = []*ast.AlterOrderItem{$1.(*ast.AlterOrderItem)}
 	}
-|   AlterOrderList ',' AlterOrderItem
+|	AlterOrderList ',' AlterOrderItem
 	{
 		$$ = append($1.([]*ast.AlterOrderItem), $3.(*ast.AlterOrderItem))
 	}
