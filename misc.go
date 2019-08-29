@@ -89,6 +89,8 @@ func init() {
 	initTokenByte('<', int('<'))
 	initTokenByte('(', int('('))
 	initTokenByte(')', int(')'))
+	initTokenByte('[', int('['))
+	initTokenByte(']', int(']'))
 	initTokenByte(';', int(';'))
 	initTokenByte(',', int(','))
 	initTokenByte('&', int('&'))
@@ -138,6 +140,7 @@ var tokenMap = map[string]int{
 	"ADDDATE":                  addDate,
 	"ADMIN":                    admin,
 	"AFTER":                    after,
+	"AGG_TO_COP":               hintAggToCop,
 	"ALL":                      all,
 	"ALGORITHM":                algorithm,
 	"ALTER":                    alter,
@@ -333,6 +336,7 @@ var tokenMap = map[string]int{
 	"INTERVAL":                 interval,
 	"INTERNAL":                 internal,
 	"INTO":                     into,
+	"INVISIBLE":                invisible,
 	"INVOKER":                  invoker,
 	"IS":                       is,
 	"ISSUER":                   issuer,
@@ -424,6 +428,7 @@ var tokenMap = map[string]int{
 	"OUTER":                    outer,
 	"PACK_KEYS":                packKeys,
 	"PAGE":                     pageSym,
+	"PARSER":                   parser,
 	"PARTIAL":                  partial,
 	"PARTITION":                partition,
 	"PARTITIONING":             partitioning,
@@ -443,6 +448,7 @@ var tokenMap = map[string]int{
 	"PROFILE":                  profile,
 	"PROFILES":                 profiles,
 	"PUMP":                     pump,
+	"QB_NAME":                  hintQBName,
 	"QUARTER":                  quarter,
 	"QUERY":                    query,
 	"QUERY_TYPE":               hintQueryType,
@@ -455,6 +461,7 @@ var tokenMap = map[string]int{
 	"REBUILD":                  rebuild,
 	"READ":                     read,
 	"READ_CONSISTENT_REPLICA":  hintReadConsistentReplica,
+	"READ_FROM_STORAGE":        hintReadFromStorage,
 	"REAL":                     realType,
 	"RECENT":                   recent,
 	"REDUNDANT":                redundant,
@@ -489,9 +496,12 @@ var tokenMap = map[string]int{
 	"SCHEMAS":                  databases,
 	"SECOND":                   second,
 	"SECONDARY_ENGINE":         secondaryEngine,
+	"SECONDARY_LOAD":           secondaryLoad,
+	"SECONDARY_UNLOAD":         secondaryUnload,
 	"SECOND_MICROSECOND":       secondMicrosecond,
 	"SECURITY":                 security,
 	"SELECT":                   selectKwd,
+	"SERIAL":                   serial,
 	"SERIALIZABLE":             serializable,
 	"SESSION":                  session,
 	"SET":                      set,
@@ -571,6 +581,8 @@ var tokenMap = map[string]int{
 	"TIDB_HJ":                  hintHJ,
 	"TIDB_INLJ":                hintINLJ,
 	"TIDB_SMJ":                 hintSMJ,
+	"TIKV":                     hintTiKV,
+	"TIFLASH":                  hintTiFlash,
 	"TIME":                     timeType,
 	"TIMESTAMP":                timestampType,
 	"TIMESTAMPADD":             timestampAdd,
@@ -621,6 +633,7 @@ var tokenMap = map[string]int{
 	"VALUES":                   values,
 	"VARBINARY":                varbinaryType,
 	"VARCHAR":                  varcharType,
+	"VARCHARACTER":             varcharacter,
 	"VARIABLES":                variables,
 	"VARIANCE":                 varPop,
 	"VARYING":                  varying,
@@ -628,6 +641,7 @@ var tokenMap = map[string]int{
 	"VAR_SAMP":                 varSamp,
 	"VIEW":                     view,
 	"VIRTUAL":                  virtual,
+	"VISIBLE":                  visible,
 	"WARNINGS":                 warnings,
 	"ERRORS":                   identSQLErrors,
 	"WEEK":                     week,

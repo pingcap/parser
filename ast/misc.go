@@ -150,7 +150,7 @@ func (n *TraceStmt) Accept(v Visitor) (Node, bool) {
 	if !ok {
 		return n, false
 	}
-	n.Stmt = node.(DMLNode)
+	n.Stmt = node.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -2026,26 +2026,53 @@ type TableOptimizerHint struct {
 	// Table hints has no schema info
 	// It allows only table name or alias (if table has an alias)
 	HintName model.CIStr
-	Tables   []model.CIStr
-	Indexes  []model.CIStr
+	// QBName is the default effective query block of this hint.
+	QBName    model.CIStr
+	Tables    []HintTable
+	Indexes   []model.CIStr
+	StoreType model.CIStr
 	// Statement Execution Time Optimizer Hints
 	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
 	MaxExecutionTime uint64
-	MemoryQuota      uint64
+	MemoryQuota      int64
 	QueryType        model.CIStr
 	HintFlag         bool
+}
+
+// HintTable is table in the hint. It may have query block info.
+type HintTable struct {
+	TableName model.CIStr
+	QBName    model.CIStr
+}
+
+func (ht *HintTable) Restore(ctx *RestoreCtx) {
+	ctx.WriteName(ht.TableName.String())
+	if ht.QBName.L != "" {
+		ctx.WriteKeyWord("@")
+		ctx.WriteName(ht.QBName.String())
+	}
 }
 
 // Restore implements Node interface.
 func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(n.HintName.String())
-	// Hints without args.
+	ctx.WritePlain("(")
+	if n.QBName.L != "" {
+		if n.HintName.L != "qb_name" {
+			ctx.WriteKeyWord("@")
+		}
+		ctx.WriteName(n.QBName.String())
+	}
+	// Hints without args except query block.
 	switch n.HintName.L {
-	case "hash_agg", "stream_agg", "read_consistent_replica", "no_index_merge":
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name":
+		ctx.WritePlain(")")
 		return nil
 	}
-	// Hints with args.
-	ctx.WritePlain("(")
+	if n.QBName.L != "" {
+		ctx.WritePlain(" ")
+	}
+	// Hints with args except query block.
 	switch n.HintName.L {
 	case "max_execution_time":
 		ctx.WritePlainf("%d", n.MaxExecutionTime)
@@ -2054,14 +2081,15 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 			if i != 0 {
 				ctx.WritePlain(", ")
 			}
-			ctx.WriteName(table.String())
+			table.Restore(ctx)
 		}
 	case "index", "use_index_merge":
-		if len(n.Tables) != 0 {
-			ctx.WriteName(n.Tables[0].String())
-		}
-		for _, index := range n.Indexes {
-			ctx.WritePlain(", ")
+		n.Tables[0].Restore(ctx)
+		ctx.WritePlain(" ")
+		for i, index := range n.Indexes {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
 			ctx.WriteName(index.String())
 		}
 	case "use_toja", "enable_plan_cache":
@@ -2073,7 +2101,20 @@ func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	case "query_type":
 		ctx.WriteKeyWord(n.QueryType.String())
 	case "memory_quota":
-		ctx.WritePlainf("%d M", n.MemoryQuota)
+		ctx.WritePlainf("%d MB", n.MemoryQuota/1024/1024)
+	case "read_from_storage":
+		ctx.WriteKeyWord(n.StoreType.String())
+		for i, table := range n.Tables {
+			if i == 0 {
+				ctx.WritePlain("[")
+			}
+			table.Restore(ctx)
+			if i == len(n.Tables)-1 {
+				ctx.WritePlain("]")
+			} else {
+				ctx.WritePlain(", ")
+			}
+		}
 	}
 	ctx.WritePlain(")")
 	return nil
