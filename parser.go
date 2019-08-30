@@ -10069,14 +10069,12 @@ yynewstate:
 			if yyS[yypt-0].item != nil {
 				c.Option = yyS[yypt-0].item.(*ast.IndexOption)
 			}
-			if yyS[yypt-4].item != nil {
-				c.Name = yyS[yypt-4].item.([]interface{})[0].(string)
-				if indexType := yyS[yypt-4].item.([]interface{})[1]; indexType != nil {
-					if c.Option == nil {
-						c.Option = &ast.IndexOption{}
-					}
-					c.Option.Tp = indexType.(model.IndexType)
+			c.Name = yyS[yypt-4].item.([]interface{})[0].(string)
+			if indexType := yyS[yypt-4].item.([]interface{})[1]; indexType != nil {
+				if c.Option == nil {
+					c.Option = &ast.IndexOption{}
 				}
+				c.Option.Tp = indexType.(model.IndexType)
 			}
 			parser.yyVAL.item = c
 		}
