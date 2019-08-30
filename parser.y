@@ -2452,13 +2452,11 @@ ConstraintElem:
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
-		if $3 != nil {
-			if indexType := $3.([]interface{})[1]; indexType != nil {
-				if c.Option == nil {
-					c.Option = &ast.IndexOption{}
-				}
-				c.Option.Tp = indexType.(model.IndexType)
+		if indexType := $3.([]interface{})[1]; indexType != nil {
+			if c.Option == nil {
+				c.Option = &ast.IndexOption{}
 			}
+			c.Option.Tp = indexType.(model.IndexType)
 		}
 		$$ = c
 	}
@@ -2484,14 +2482,12 @@ ConstraintElem:
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
-		if $3 != nil {
-			c.Name = $3.([]interface{})[0].(string)
-			if indexType := $3.([]interface{})[1]; indexType != nil {
-				if c.Option == nil {
-					c.Option = &ast.IndexOption{}
-				}
-				c.Option.Tp = indexType.(model.IndexType)
+		c.Name = $3.([]interface{})[0].(string)
+		if indexType := $3.([]interface{})[1]; indexType != nil {
+			if c.Option == nil {
+				c.Option = &ast.IndexOption{}
 			}
+			c.Option.Tp = indexType.(model.IndexType)
 		}
 		$$ = c
 	}
