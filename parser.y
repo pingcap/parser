@@ -2148,7 +2148,7 @@ ColumnDef:
 			yylex.AppendError(yylex.Errorf("Invalid column definition"))
 			return 1
 		}
-        $$ = colDef
+        	$$ = colDef
 	}
 |	ColumnName "SERIAL" ColumnOptionListOpt
 	{
@@ -8671,8 +8671,6 @@ NumericType:
 		x.Flen = $2.(int)
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
-		} else if x.Flen > mysql.MaxBitDisplayWidth {
-			yylex.AppendError(ErrTooBigDisplayWidth.GenWithStackByArgs(x.Flen))
 		}
 		$$ = x
 	}
