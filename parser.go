@@ -15265,7 +15265,7 @@ yynewstate:
 		{
 			x := types.NewFieldType(yyS[yypt-1].item.(byte))
 			x.Flen = yyS[yypt-0].item.(int)
-			if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
+			if x.Flen == types.UnspecifiedLength {
 				x.Flen = 1
 			}
 			parser.yyVAL.item = x
