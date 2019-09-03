@@ -393,18 +393,40 @@ func (n *TableSource) Restore(ctx *RestoreCtx) error {
 	case *SelectStmt, *UnionStmt:
 		needParen = true
 	}
-	if needParen {
-		ctx.WritePlain("(")
-	}
-	if err := n.Source.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore TableSource.Source")
-	}
-	if needParen {
-		ctx.WritePlain(")")
-	}
-	if asName := n.AsName.String(); asName != "" {
-		ctx.WriteKeyWord(" AS ")
-		ctx.WriteName(asName)
+
+	if tn, tnCase := n.Source.(*TableName); tnCase {
+		if needParen {
+			ctx.WritePlain("(")
+		}
+
+		tn.restoreName(ctx)
+		tn.restorePartitions(ctx)
+
+		if asName := n.AsName.String(); asName != "" {
+			ctx.WriteKeyWord(" AS ")
+			ctx.WriteName(asName)
+		}
+		if err := tn.restoreIndexHints(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).IndexHints")
+		}
+
+		if needParen {
+			ctx.WritePlain(")")
+		}
+	} else {
+		if needParen {
+			ctx.WritePlain("(")
+		}
+		if err := n.Source.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableSource.Source")
+		}
+		if needParen {
+			ctx.WritePlain(")")
+		}
+		if asName := n.AsName.String(); asName != "" {
+			ctx.WriteKeyWord(" AS ")
+			ctx.WriteName(asName)
+		}
 	}
 
 	return nil
