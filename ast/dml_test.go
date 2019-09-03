@@ -122,7 +122,7 @@ func (tc *testDMLSuite) TestTableNameIndexHintsRestore(c *C) {
 		{"t use index for order by (`foo``bar`) ignore key for group by (`baz``1`, `xyz`)", "`t` USE INDEX FOR ORDER BY (`foo``bar`) IGNORE INDEX FOR GROUP BY (`baz``1`, `xyz`)"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*SelectStmt).From.TableRefs.Left.(*TableSource).Source.(*TableName)
+		return node.(*SelectStmt).From.TableRefs.Left
 	}
 	RunNodeRestoreTest(c, testCases, "SELECT * FROM %s", extractNodeFunc)
 }
