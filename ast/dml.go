@@ -187,12 +187,15 @@ type TableName struct {
 }
 
 // Restore implements Node interface.
-func (n *TableName) Restore(ctx *RestoreCtx) error {
+func (n *TableName) restoreName(ctx *RestoreCtx) {
 	if n.Schema.String() != "" {
 		ctx.WriteName(n.Schema.String())
 		ctx.WritePlain(".")
 	}
 	ctx.WriteName(n.Name.String())
+}
+
+func (n *TableName) restorePartitions(ctx *RestoreCtx) {
 	if len(n.PartitionNames) > 0 {
 		ctx.WriteKeyWord(" PARTITION")
 		ctx.WritePlain("(")
@@ -204,6 +207,9 @@ func (n *TableName) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WritePlain(")")
 	}
+}
+
+func (n *TableName) restoreIndexHints(ctx *RestoreCtx) error {
 	for _, value := range n.IndexHints {
 		ctx.WritePlain(" ")
 		if err := value.Restore(ctx); err != nil {
@@ -212,6 +218,12 @@ func (n *TableName) Restore(ctx *RestoreCtx) error {
 	}
 
 	return nil
+}
+
+func (n *TableName) Restore(ctx *RestoreCtx) error {
+	n.restoreName(ctx)
+	n.restorePartitions(ctx)
+	return n.restoreIndexHints(ctx)
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
