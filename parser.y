@@ -492,7 +492,7 @@ import (
 	now			"NOW"
 	position		"POSITION"
 	recent			"RECENT"
-	std	            "STD"
+	std			"STD"
 	stddev			"STDDEV"
 	stddevPop		"STDDEV_POP"
 	stddevSamp		"STDDEV_SAMP"
@@ -682,13 +682,13 @@ import (
 	ReplaceIntoStmt			"REPLACE INTO statement"
 	RecoverTableStmt                "recover table statement"
 	RevokeStmt			"Revoke statement"
-	RevokeRoleStmt      "Revoke role statement"
+	RevokeRoleStmt			"Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SplitRegionStmt		"Split index region statement"
+	SplitRegionStmt			"Split index region statement"
 	SetStmt				"Set variable statement"
-	ChangeStmt				"Change statement"
-	SetRoleStmt				"Set active role statement"
-	SetDefaultRoleStmt			"Set default statement for some user"
+	ChangeStmt			"Change statement"
+	SetRoleStmt			"Set active role statement"
+	SetDefaultRoleStmt		"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
@@ -1711,7 +1711,7 @@ ColumnDef:
 			yylex.AppendError(yylex.Errorf("Invalid column definition"))
 			return 1
 		}
-        $$ = colDef
+		$$ = colDef
 	}
 
 ColumnName:
@@ -7811,10 +7811,8 @@ NumericType:
 	{
 		x := types.NewFieldType($1.(byte))
 		x.Flen = $2.(int)
-		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
+		if x.Flen == types.UnspecifiedLength {
 			x.Flen = 1
-		} else if x.Flen > 64 {
-			yylex.AppendError(ErrTooBigDisplayWidth.GenWithStackByArgs(x.Flen))
 		}
 		$$ = x
 	}
