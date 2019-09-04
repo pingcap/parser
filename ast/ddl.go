@@ -641,13 +641,13 @@ type ConstraintType int
 const (
 	ConstraintNoConstraint ConstraintType = iota
 	ConstraintPrimaryKey
-	ConstraintKey
-	ConstraintIndex
+	//ConstraintKey
+	//ConstraintIndex
 	ConstraintUniq
 	ConstraintUniqKey
 	ConstraintUniqIndex
 	ConstraintForeignKey
-	ConstraintFulltext
+	//ConstraintFulltext
 	ConstraintCheck
 )
 
@@ -680,24 +680,24 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		return nil
 	case ConstraintPrimaryKey:
 		ctx.WriteKeyWord("PRIMARY KEY")
-	case ConstraintKey:
-		ctx.WriteKeyWord("KEY")
-		if n.IfNotExists {
-			ctx.WriteKeyWord(" IF NOT EXISTS")
-		}
-	case ConstraintIndex:
-		ctx.WriteKeyWord("INDEX")
-		if n.IfNotExists {
-			ctx.WriteKeyWord(" IF NOT EXISTS")
-		}
+	//case ConstraintKey:
+	//	ctx.WriteKeyWord("KEY")
+	//	if n.IfNotExists {
+	//		ctx.WriteKeyWord(" IF NOT EXISTS")
+	//	}
+	//case ConstraintIndex:
+	//	ctx.WriteKeyWord("INDEX")
+	//	if n.IfNotExists {
+	//		ctx.WriteKeyWord(" IF NOT EXISTS")
+	//	}
 	case ConstraintUniq:
 		ctx.WriteKeyWord("UNIQUE")
 	case ConstraintUniqKey:
 		ctx.WriteKeyWord("UNIQUE KEY")
 	case ConstraintUniqIndex:
 		ctx.WriteKeyWord("UNIQUE INDEX")
-	case ConstraintFulltext:
-		ctx.WriteKeyWord("FULLTEXT")
+	//case ConstraintFulltext:
+	//	ctx.WriteKeyWord("FULLTEXT")
 	case ConstraintCheck:
 		if n.Name != "" {
 			ctx.WriteKeyWord("CONSTRAINT ")
