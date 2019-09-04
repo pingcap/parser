@@ -641,13 +641,10 @@ type ConstraintType int
 const (
 	ConstraintNoConstraint ConstraintType = iota
 	ConstraintPrimaryKey
-	//ConstraintKey
-	//ConstraintIndex
 	ConstraintUniq
 	ConstraintUniqKey
 	ConstraintUniqIndex
 	ConstraintForeignKey
-	//ConstraintFulltext
 	ConstraintCheck
 )
 
