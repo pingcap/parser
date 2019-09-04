@@ -1284,14 +1284,6 @@ AlterTableSpec:
 			Position:	$5.(*ast.ColumnPosition),
 		}
 	}
-//|	"ADD" ColumnKeywordOpt IfNotExists '(' ColumnDefList ')'
-//	{
-//		$$ = &ast.AlterTableSpec{
-//			IfNotExists: 	$3.(bool),
-//			Tp: 		ast.AlterTableAddColumns,
-//			NewColumns:	$5.([]*ast.ColumnDef),
-//		}
-//	}
 |       "ADD" ColumnKeywordOpt IfNotExists '(' TableElementList ')'
 	{
 		tes := $5.([]interface {})
