@@ -2457,37 +2457,6 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-//|	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexColNameList ')' IndexOptionList
-//	{
-//		c := &ast.Constraint{
-//			Tp:	ast.ConstraintFulltext,
-//			Keys:	$5.([]*ast.IndexColName),
-//			Name:	$3.(string),
-//		}
-//		if $7 != nil {
-//			c.Option = $7.(*ast.IndexOption)
-//		}
-//		$$ = c
-//	}
-//|	KeyOrIndex IfNotExists IndexName IndexTypeOpt '(' IndexColNameList ')' IndexOptionList
-//	{
-//		c := &ast.Constraint{
-//			IfNotExists:	$2.(bool),
-//			Tp:		ast.ConstraintIndex,
-//			Keys:		$6.([]*ast.IndexColName),
-//			Name:		$3.(string),
-//		}
-//		if $8 != nil {
-//			c.Option = $8.(*ast.IndexOption)
-//		}
-//		if $4 != nil {
-//			if c.Option == nil {
-//				c.Option = &ast.IndexOption{}
-//			}
-//			c.Option.Tp = $4.(model.IndexType)
-//		}
-//		$$ = c
-//	}
 |	"UNIQUE" KeyOrIndexOpt IndexName IndexTypeOpt '(' IndexColNameList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
