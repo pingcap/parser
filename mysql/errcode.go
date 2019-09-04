@@ -886,7 +886,7 @@ const (
 	ErrInvalidFieldSize                                             = 3013
 	ErrInvalidJSONData                                              = 3069
 	ErrGeneratedColumnFunctionIsNotAllowed                          = 3102
-	ErrUnsupportedAlterInplaceONVirtualColumn                       = 3103
+	ErrUnsupportedAlterInplaceOnVirtualColumn                       = 3103
 	ErrWrongFKOptionForGeneratedColumn                              = 3104
 	ErrBadGeneratedColumn                                           = 3105
 	ErrUnsupportedOnGeneratedColumn                                 = 3106

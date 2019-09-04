@@ -880,7 +880,7 @@ var MySQLErrName = map[uint16]string{
 	ErrMustChangePasswordLogin:                               "Your password has expired. To log in you must change it using a client that supports expired passwords.",
 	ErrRowInWrongPartition:                                   "Found a row in wrong partition %s",
 	ErrGeneratedColumnFunctionIsNotAllowed:                   "Expression of generated column '%s' contains a disallowed function.",
-	ErrUnsupportedAlterInplaceONVirtualColumn:                "INPLACE ADD or DROP of virtual columns cannot be combined with other ALTER TABLE actions.",
+	ErrUnsupportedAlterInplaceOnVirtualColumn:                "INPLACE ADD or DROP of virtual columns cannot be combined with other ALTER TABLE actions.",
 	ErrWrongFKOptionForGeneratedColumn:                       "Cannot define foreign key with %s clause on a generated column.",
 	ErrBadGeneratedColumn:                                    "The value specified for generated column '%s' in table '%s' is not allowed.",
 	ErrUnsupportedOnGeneratedColumn:                          "'%s' is not supported for generated columns.",
