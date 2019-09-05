@@ -14,7 +14,6 @@
 package ast_test
 
 import (
-	"github.com/AilinKid/parser/ast"
 	. "github.com/pingcap/check"
 	. "github.com/pingcap/parser/ast"
 )
@@ -491,10 +490,11 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 func (ts *testDDLSuite) TestAdminRepairTableRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"ADMIN REPAIR TABLE t CREATE TABLE t (a int)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` INT)"},
-		{"ADMIN REPAIR TABLE t CREATE TABLE t (a char(1), b int)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` CHAR(1), b INT)"},
+		{"ADMIN REPAIR TABLE t CREATE TABLE t (a char(1), b int)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` CHAR(1),`b` INT)"},
+		{"ADMIN REPAIR TABLE t CREATE TABLE t (a TINYINT UNSIGNED)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` TINYINT UNSIGNED)"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*ast.RepairTableStmt).CreateStmt[0]
+		return node
 	}
 	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
