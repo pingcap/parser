@@ -1560,7 +1560,7 @@ func (n *CleanupTableLockStmt) Restore(ctx *RestoreCtx) error {
 	return nil
 }
 
-// RepairTableStmt is a statement to cleanup table lock.
+// RepairTableStmt is a statement to repair tableInfo.
 type RepairTableStmt struct {
 	ddlNode
 	Table      *TableName
