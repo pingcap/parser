@@ -1284,7 +1284,7 @@ AlterTableSpec:
 			Position:	$5.(*ast.ColumnPosition),
 		}
 	}
-|       "ADD" ColumnKeywordOpt IfNotExists '(' TableElementList ')'
+|	"ADD" ColumnKeywordOpt IfNotExists '(' TableElementList ')'
 	{
 		tes := $5.([]interface {})
 		var columnDefs []*ast.ColumnDef
