@@ -3199,10 +3199,10 @@ PartDefOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $3.(string)}
 	}
-|   "STORAGE" "ENGINE" EqOpt StringName
-    {
-        $$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $4.(string)}
-    }
+|	"STORAGE" "ENGINE" EqOpt StringName
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $4.(string)}
+	}
 |	"INSERT_METHOD" EqOpt StringName
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionInsertMethod, StrValue: $3.(string)}
