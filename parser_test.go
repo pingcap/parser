@@ -2650,7 +2650,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`CREATE TABLE IF NOT EXISTS table_ident (ident1 BOOL COMMENT "text_string" unique, ident2 SQL_TSI_YEAR(4) ZEROFILL);`, true, "CREATE TABLE IF NOT EXISTS `table_ident` (`ident1` TINYINT(1) COMMENT 'text_string' UNIQUE KEY,`ident2` YEAR(4))"},
 		{"create table t (y sql_tsi_year(4), y1 sql_tsi_year)", true, "CREATE TABLE `t` (`y` YEAR(4),`y1` YEAR)"},
 		{"create table t (y sql_tsi_year(4) unsigned zerofill zerofill, y1 sql_tsi_year signed unsigned zerofill)", true, "CREATE TABLE `t` (`y` YEAR(4),`y1` YEAR)"},
-		
+
 		// for issue 549
 		{"insert into t set a = default", true, "INSERT INTO `t` SET `a`=DEFAULT"},
 		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},
