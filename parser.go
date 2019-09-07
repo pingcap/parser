@@ -12801,14 +12801,6 @@ yynewstate:
 		{
 			parser.yyVAL.item = append(yyS[yypt-2].item.([]*ast.TableName), yyS[yypt-0].item.(*ast.TableName))
 		}
-	case 1094:
-		{
-			parser.yyVAL.item = nil
-		}
-	case 1095:
-		{
-			parser.yyVAL.item = nil
-		}
 	case 1096:
 		{
 			parser.yyVAL.item = false

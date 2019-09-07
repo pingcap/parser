@@ -5812,11 +5812,9 @@ TableAliasRefList:
 OptWild:
 	%prec empty
 	{
-		$$ = nil
 	}
 |	'.' '*'
 	{
-		$$ = nil
 	}
 
 QuickOptional:
