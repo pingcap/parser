@@ -641,13 +641,13 @@ type ConstraintType int
 const (
 	ConstraintNoConstraint ConstraintType = iota
 	ConstraintPrimaryKey
-	//ConstraintKey
-	//ConstraintIndex
+	ConstraintKey
+	ConstraintIndex
 	ConstraintUniq
 	ConstraintUniqKey
 	ConstraintUniqIndex
 	ConstraintForeignKey
-	//ConstraintFulltext
+	ConstraintFulltext
 	ConstraintCheck
 )
 
@@ -680,24 +680,24 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		return nil
 	case ConstraintPrimaryKey:
 		ctx.WriteKeyWord("PRIMARY KEY")
-	//case ConstraintKey:
-	//	ctx.WriteKeyWord("KEY")
-	//	if n.IfNotExists {
-	//		ctx.WriteKeyWord(" IF NOT EXISTS")
-	//	}
-	//case ConstraintIndex:
-	//	ctx.WriteKeyWord("INDEX")
-	//	if n.IfNotExists {
-	//		ctx.WriteKeyWord(" IF NOT EXISTS")
-	//	}
+	case ConstraintKey:
+		ctx.WriteKeyWord("KEY")
+		if n.IfNotExists {
+			ctx.WriteKeyWord(" IF NOT EXISTS")
+		}
+	case ConstraintIndex:
+		ctx.WriteKeyWord("INDEX")
+		if n.IfNotExists {
+			ctx.WriteKeyWord(" IF NOT EXISTS")
+		}
 	case ConstraintUniq:
 		ctx.WriteKeyWord("UNIQUE")
 	case ConstraintUniqKey:
 		ctx.WriteKeyWord("UNIQUE KEY")
 	case ConstraintUniqIndex:
 		ctx.WriteKeyWord("UNIQUE INDEX")
-	//case ConstraintFulltext:
-	//	ctx.WriteKeyWord("FULLTEXT")
+	case ConstraintFulltext:
+		ctx.WriteKeyWord("FULLTEXT")
 	case ConstraintCheck:
 		if n.Name != "" {
 			ctx.WriteKeyWord("CONSTRAINT ")
@@ -2000,6 +2000,7 @@ type AlterTableSpec struct {
 	OrderByList     []*AlterOrderItem
 	NewTable        *TableName
 	NewColumns      []*ColumnDef
+	NewConstraints  []*Constraint
 	OldColumnName   *ColumnName
 	NewColumnName   *ColumnName
 	Position        *ColumnPosition
@@ -2072,6 +2073,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
 			}
 		} else {
+			lenCols := len(n.NewColumns)
 			ctx.WritePlain("(")
 			for i, col := range n.NewColumns {
 				if i != 0 {
@@ -2079,6 +2081,14 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 				}
 				if err := col.Restore(ctx); err != nil {
 					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", i)
+				}
+			}
+			for i, constraint := range n.NewConstraints {
+				if i != 0 || lenCols >= 1 {
+					ctx.WritePlain(", ")
+				}
+				if err := constraint.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewConstraints[%d]", i)
 				}
 			}
 			ctx.WritePlain(")")
@@ -2453,6 +2463,13 @@ func (n *AlterTableSpec) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		col = node.(*ColumnDef)
+	}
+	for _, constraint := range n.NewConstraints {
+		node, ok := constraint.Accept(v)
+		if !ok {
+			return n, false
+		}
+		constraint = node.(*Constraint)
 	}
 	if n.OldColumnName != nil {
 		node, ok := n.OldColumnName.Accept(v)
