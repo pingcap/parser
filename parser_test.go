@@ -530,9 +530,11 @@ AAAAAAAAAAAA5gm5Mg==
 
 		// for show table regions.
 		{"show table t1 regions", true},
-		{"show table t1", false, },
+		{"show table t1 regions where a=1", true},
+		{"show table t1", false},
 		{"show table t1 index idx1 regions", true},
 		{"show table t1 index idx1", false},
+		{"show table t1 index idx1 regions where a=2", true},
 	}
 	s.RunTest(c, table)
 }
@@ -2715,12 +2717,12 @@ func (s *testParserSuite) TestNotExistsSubquery(c *C) {
 		{`select * from t1 where not exists (select * from t2 where t1.a = t2.a)`, true},
 	}
 
- 	parser := New()
+	parser := New()
 	for _, tt := range table {
 		stmt, _, err := parser.Parse(tt.src, "", "")
 		c.Assert(err, IsNil)
 
- 		sel := stmt[0].(*ast.SelectStmt)
+		sel := stmt[0].(*ast.SelectStmt)
 		exists, ok := sel.Where.(*ast.ExistsSubqueryExpr)
 		c.Assert(ok, IsTrue)
 		c.Assert(exists.Not, Equals, tt.ok)
