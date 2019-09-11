@@ -2067,7 +2067,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table test (create_date TIMESTAMP NOT NULL COMMENT '创建日期 create date' DEFAULT now());", true, "CREATE TABLE `test` (`create_date` TIMESTAMP NOT NULL COMMENT '创建日期 create date' DEFAULT CURRENT_TIMESTAMP())"},
 		{"create table ts (t int, v timestamp(3) default CURRENT_TIMESTAMP(3));", true, "CREATE TABLE `ts` (`t` INT,`v` TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3))"}, //TODO: The number yacc in parentheses has not been implemented yet.
 		// Create table with primary key name.
-		{"create table if not exists `t` (`id` int not null auto_increment comment '消息ID', primary key `pk_id` (`id`) );", true, "CREATE TABLE IF NOT EXISTS `t` (`id` INT NOT NULL AUTO_INCREMENT COMMENT '消息ID',PRIMARY KEY(`id`))"},
+		{"create table if not exists `t` (`id` int not null auto_increment comment '消杯ID', primary key `pk_id` (`id`) );", true, "CREATE TABLE IF NOT EXISTS `t` (`id` INT NOT NULL AUTO_INCREMENT COMMENT '消杯ID',PRIMARY KEY(`id`))"},
 		// Create table with like.
 		{"create table a like b", true, "CREATE TABLE `a` LIKE `b`"},
 		{"create table a (id int REFERENCES a (id) ON delete NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE NO ACTION)"},
@@ -2473,7 +2473,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 		// special table name
 		{"CREATE TABLE cdp_test.`test2-1` (id int(11) DEFAULT NULL,key(id));", true, "CREATE TABLE `cdp_test`.`test2-1` (`id` INT(11) DEFAULT NULL,INDEX(`id`))"},
-		{"CREATE TABLE miantiao (`扁豆焖面`       INT(11));", true, "CREATE TABLE `miantiao` (`扁豆焖面` INT(11))"},
+		{"CREATE TABLE miantiao (`扝豆焖面`       INT(11));", true, "CREATE TABLE `miantiao` (`扝豆焖面` INT(11))"},
 
 		// for create table select
 		{"CREATE TABLE bar (m INT)  SELECT n FROM foo;", true, "CREATE TABLE `bar` (`m` INT) AS SELECT `n` FROM `foo`"},
@@ -2656,6 +2656,19 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},
 		{"update t set a = default", true, "UPDATE `t` SET `a`=DEFAULT"},
 		{"insert into t set a = default on duplicate key update a = default", true, "INSERT INTO `t` SET `a`=DEFAULT ON DUPLICATE KEY UPDATE `a`=DEFAULT"},
+
+		// for issue 529
+		{"create table t (a text byte ascii)", false, ""},
+		{"create table t (a text byte charset latin1)", false, ""},
+		{"create table t (a longtext ascii)", true, "CREATE TABLE `t` (`a` LONGTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a mediumtext ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a tinytext ascii)", true, "CREATE TABLE `t` (`a` TINYTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a text byte)", true, "CREATE TABLE `t` (`a` TEXT)"},
+		{"create table t (a long byte, b text ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT,`b` TEXT CHARACTER SET LATIN1)"},
+		{"create table t (a text ascii, b mediumtext ascii, c int)", true, "CREATE TABLE `t` (`a` TEXT CHARACTER SET LATIN1,`b` MEDIUMTEXT CHARACTER SET LATIN1,`c` INT)"},
+		{"create table t (a int, b text ascii, c mediumtext ascii)", true, "CREATE TABLE `t` (`a` INT,`b` TEXT CHARACTER SET LATIN1,`c` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a long ascii, b long ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET LATIN1,`b` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a long character set utf8mb4, b long charset utf8mb4, c long char set utf8mb4)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8MB4,`b` MEDIUMTEXT CHARACTER SET UTF8MB4,`c` MEDIUMTEXT CHARACTER SET UTF8MB4)"},
 	}
 	s.RunTest(c, table)
 }
@@ -2762,6 +2775,18 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("alter table t lock = randomStr123", "", "")
 	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'randomStr123'")
+
+	_, _, err = parser.Parse("create table t (a longtext unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a long byte, b text unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a long ascii, b long unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a text unicode, b mediumtext ascii, c int)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
