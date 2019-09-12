@@ -494,6 +494,7 @@ import (
 	tp             	"TYPE"
 	unbounded	"UNBOUNDED"
 	uncommitted	"UNCOMMITTED"
+	unicodeSym	"UNICODE"
 	unknown 	"UNKNOWN"
 	user		"USER"
 	undefined	"UNDEFINED"
@@ -1068,6 +1069,7 @@ import (
 	Precision		"Floating-point precision option"
 	OptBinary		"Optional BINARY"
 	OptBinMod		"Optional BINARY mode"
+	OptCharsetWithOptBinary	"Optional BINARY or ASCII or UNICODE or BYTE"
 	OptCharset		"Optional Character setting"
 	OptCollate		"Optional Collate setting"
 	IgnoreLines		"Ignore num(int) lines"
@@ -2094,7 +2096,7 @@ AnalyzeOption:
 
 /*******************************************************************************************/
 Assignment:
-	ColumnName eq Expression
+	ColumnName eq ExprOrDefault
 	{
 		$$ = &ast.Assignment{Column: $1.(*ast.ColumnName), Expr:$3}
 	}
@@ -4349,7 +4351,7 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE"
 
 TiDBKeyword:
@@ -4473,7 +4475,7 @@ ExprOrDefault:
 	}
 
 ColumnSetValue:
-	ColumnName eq Expression
+	ColumnName eq ExprOrDefault
 	{
 		$$ = &ast.Assignment{
 			Column:	$1.(*ast.ColumnName),
@@ -8944,7 +8946,7 @@ StringType:
 		x.Flag |= mysql.BinaryFlag
 		$$ = $1.(*types.FieldType)
 	}
-|	TextType OptBinary
+|	TextType OptCharsetWithOptBinary
 	{
 		x := $1.(*types.FieldType)
 		x.Charset = $2.(*ast.OptBinary).Charset
@@ -8975,7 +8977,7 @@ StringType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
-|	"LONG" Varchar OptBinary
+|	"LONG" Varchar OptCharsetWithOptBinary
 	{
 		x := types.NewFieldType(mysql.TypeMediumBlob)
 		x.Charset = $3.(*ast.OptBinary).Charset
@@ -8984,7 +8986,7 @@ StringType:
 		}
 		$$ = x
 	}
-|	"LONG" OptBinary
+|	"LONG" OptCharsetWithOptBinary
 	{
 		x := types.NewFieldType(mysql.TypeMediumBlob)
 		x.Charset = $2.(*ast.OptBinary).Charset
@@ -9076,6 +9078,37 @@ TextType:
 		$$ = x
 	}
 
+OptCharsetWithOptBinary:
+	OptBinary
+	{
+		$$ = $1
+	}
+|	"ASCII"
+	{
+		$$ = &ast.OptBinary{
+			IsBinary: false,
+			Charset:  charset.CharsetLatin1,
+		}
+	}
+|	"UNICODE"
+	{
+		name, _, err := charset.GetCharsetInfo("ucs2")
+		if err != nil {
+			yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs("ucs2"))
+			return 1
+		}
+		$$ = &ast.OptBinary{
+			IsBinary: false,
+			Charset:  name,
+		}
+	}
+|	"BYTE"
+	{
+		$$ = &ast.OptBinary{
+			IsBinary: false,
+			Charset:  "",
+		}
+	}
 
 DateAndTimeType:
 	"DATE"
