@@ -63,6 +63,7 @@ var charsetInfos = []*Charset{
 	{CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
 	{CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
 	{CharsetBin, CollationBin, make(map[string]*Collation), "binary", 1},
+	{CharsetGBK, CollationGBK, make(map[string]*Collation), "GBK Simplified Chinese", 2},
 }
 
 // All the names supported collations should be in the following table.
@@ -72,6 +73,7 @@ var supportedCollationNames = map[string]struct{}{
 	CollationASCII:   {},
 	CollationLatin1:  {},
 	CollationBin:     {},
+	CollationGBK:     {},
 }
 
 // Desc is a charset description.
@@ -207,6 +209,10 @@ const (
 	CharsetLatin1 = "latin1"
 	// CollationLatin1 is the default collation for CharsetLatin1.
 	CollationLatin1 = "latin1_bin"
+	// CharsetGBK is a character set for simplified Chinese characters
+	CharsetGBK = "gbk"
+	// CollationGBK is the dfeault collation for CharsetGBK
+	CollationGBK = "gbk_chinese_ci"
 )
 
 var collations = []*Collation{
