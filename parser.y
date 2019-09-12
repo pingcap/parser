@@ -542,6 +542,8 @@ import (
 	hintINLJ	"INL_JOIN"
 	hintHASHAGG	"HASH_AGG"
 	hintSTREAMAGG	"STREAM_AGG"
+	hintUseIndex 		"USE_INDEX"
+	hintIgnoreIndex 	"IGNORE_INDEX"
 	hintUseIndexMerge	"USE_INDEX_MERGE"
 	hintNoIndexMerge	"NO_INDEX_MERGE"
 	hintUseToja	"USE_TOJA"
@@ -3541,8 +3543,8 @@ UnReservedKeyword:
 
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
-| "AGG_TO_COP" | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
+ "ADMIN" | "AGG_TO_COP" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
+|"HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX" | "IGNORE_INDEX" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
 | "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
 
 NotKeywordToken:
@@ -5799,7 +5801,16 @@ OptimizerHintList:
 	}
 
 TableOptimizerHintOpt:
-	index '(' QueryBlockOpt HintTable IndexNameList ')'
+	hintUseIndex '(' QueryBlockOpt HintTable IndexNameList ')'
+	{
+		$$ = &ast.TableOptimizerHint{
+			HintName: model.NewCIStr($1),
+			QBName:   $3.(model.CIStr),
+			Tables:   []ast.HintTable{$4.(ast.HintTable)},
+			Indexes:  $5.([]model.CIStr),
+		}
+	}
+|	hintIgnoreIndex '(' QueryBlockOpt HintTable IndexNameList ')'
 	{
 		$$ = &ast.TableOptimizerHint{
 			HintName: model.NewCIStr($1),
