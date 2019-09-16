@@ -2427,6 +2427,8 @@ type SplitRegionStmt struct {
 	Table     *TableName
 	IndexName model.CIStr
 
+	SplitSyntaxOpt *SplitSyntaxOption
+
 	SplitOpt *SplitOption
 }
 
@@ -2437,8 +2439,24 @@ type SplitOption struct {
 	ValueLists [][]ExprNode
 }
 
+type SplitSyntaxOption struct {
+	HasRegionFor bool
+	HasPartition bool
+}
+
 func (n *SplitRegionStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("SPLIT TABLE ")
+	ctx.WriteKeyWord("SPLIT ")
+	if n.SplitSyntaxOpt != nil {
+		if n.SplitSyntaxOpt.HasRegionFor {
+			ctx.WriteKeyWord("REGION FOR ")
+		}
+		if n.SplitSyntaxOpt.HasPartition {
+			ctx.WriteKeyWord("PARTITION ")
+
+		}
+	}
+	ctx.WriteKeyWord("TABLE ")
+
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
 	}
