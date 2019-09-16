@@ -494,6 +494,7 @@ import (
 	tp             	"TYPE"
 	unbounded	"UNBOUNDED"
 	uncommitted	"UNCOMMITTED"
+	unicodeSym	"UNICODE"
 	unknown 	"UNKNOWN"
 	user		"USER"
 	undefined	"UNDEFINED"
@@ -589,6 +590,8 @@ import (
 	hintINLJ	"INL_JOIN"
 	hintHASHAGG	"HASH_AGG"
 	hintSTREAMAGG	"STREAM_AGG"
+	hintUseIndex 		"USE_INDEX"
+	hintIgnoreIndex 	"IGNORE_INDEX"
 	hintUseIndexMerge	"USE_INDEX_MERGE"
 	hintNoIndexMerge	"NO_INDEX_MERGE"
 	hintUseToja	"USE_TOJA"
@@ -1066,6 +1069,7 @@ import (
 	Precision		"Floating-point precision option"
 	OptBinary		"Optional BINARY"
 	OptBinMod		"Optional BINARY mode"
+	OptCharsetWithOptBinary	"Optional BINARY or ASCII or UNICODE or BYTE"
 	OptCharset		"Optional Character setting"
 	OptCollate		"Optional Collate setting"
 	IgnoreLines		"Ignore num(int) lines"
@@ -4347,12 +4351,12 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
-| "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
+| "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX" | "IGNORE_INDEX" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
 | "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS"
 
 NotKeywordToken:
@@ -6665,7 +6669,16 @@ OptimizerHintList:
 	}
 
 TableOptimizerHintOpt:
-	index '(' QueryBlockOpt HintTable IndexNameList ')'
+	hintUseIndex '(' QueryBlockOpt HintTable IndexNameList ')'
+	{
+		$$ = &ast.TableOptimizerHint{
+			HintName: model.NewCIStr($1),
+			QBName:   $3.(model.CIStr),
+			Tables:   []ast.HintTable{$4.(ast.HintTable)},
+			Indexes:  $5.([]model.CIStr),
+		}
+	}
+|	hintIgnoreIndex '(' QueryBlockOpt HintTable IndexNameList ')'
 	{
 		$$ = &ast.TableOptimizerHint{
 			HintName: model.NewCIStr($1),
@@ -8933,7 +8946,7 @@ StringType:
 		x.Flag |= mysql.BinaryFlag
 		$$ = $1.(*types.FieldType)
 	}
-|	TextType OptBinary
+|	TextType OptCharsetWithOptBinary
 	{
 		x := $1.(*types.FieldType)
 		x.Charset = $2.(*ast.OptBinary).Charset
@@ -8964,7 +8977,7 @@ StringType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
-|	"LONG" Varchar OptBinary
+|	"LONG" Varchar OptCharsetWithOptBinary
 	{
 		x := types.NewFieldType(mysql.TypeMediumBlob)
 		x.Charset = $3.(*ast.OptBinary).Charset
@@ -8973,7 +8986,7 @@ StringType:
 		}
 		$$ = x
 	}
-|	"LONG" OptBinary
+|	"LONG" OptCharsetWithOptBinary
 	{
 		x := types.NewFieldType(mysql.TypeMediumBlob)
 		x.Charset = $2.(*ast.OptBinary).Charset
@@ -9065,6 +9078,37 @@ TextType:
 		$$ = x
 	}
 
+OptCharsetWithOptBinary:
+	OptBinary
+	{
+		$$ = $1
+	}
+|	"ASCII"
+	{
+		$$ = &ast.OptBinary{
+			IsBinary: false,
+			Charset:  charset.CharsetLatin1,
+		}
+	}
+|	"UNICODE"
+	{
+		name, _, err := charset.GetCharsetInfo("ucs2")
+		if err != nil {
+			yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs("ucs2"))
+			return 1
+		}
+		$$ = &ast.OptBinary{
+			IsBinary: false,
+			Charset:  name,
+		}
+	}
+|	"BYTE"
+	{
+		$$ = &ast.OptBinary{
+			IsBinary: false,
+			Charset:  "",
+		}
+	}
 
 DateAndTimeType:
 	"DATE"
