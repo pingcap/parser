@@ -1978,21 +1978,23 @@ RecoverTableStmt:
  *
  *******************************************************************/
 SplitRegionStmt:
-	"SPLIT" SplitSyntaxOption "TABLE" TableName SplitOption
+	"SPLIT" SplitSyntaxOption "TABLE" TableName PartitionNameListOpt SplitOption
 	{
 		$$ = &ast.SplitRegionStmt{
 			SplitSyntaxOpt: $2.(*ast.SplitSyntaxOption),
 			Table: $4.(*ast.TableName),
-			SplitOpt: $5.(*ast.SplitOption),
+			PartitionNames: $5.([]model.CIStr),
+			SplitOpt: $6.(*ast.SplitOption),
 		}
 	}
-|	"SPLIT" SplitSyntaxOption "TABLE" TableName "INDEX" Identifier SplitOption
+|	"SPLIT" SplitSyntaxOption "TABLE" TableName PartitionNameListOpt "INDEX" Identifier SplitOption
 	{
 		$$ = &ast.SplitRegionStmt{
 			SplitSyntaxOpt: $2.(*ast.SplitSyntaxOption),
 			Table: $4.(*ast.TableName),
-			IndexName: model.NewCIStr($6),
-			SplitOpt: $7.(*ast.SplitOption),
+			PartitionNames: $5.([]model.CIStr),
+			IndexName: model.NewCIStr($7),
+			SplitOpt: $8.(*ast.SplitOption),
 		}
 	}
 
