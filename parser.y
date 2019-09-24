@@ -511,6 +511,8 @@ import (
 	yearType	"YEAR"
 	x509		"X509"
 	enforced	"ENFORCED"
+	flashback	"FLASHBACK"
+	until		"UNTIL"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
@@ -716,6 +718,7 @@ import (
 	ExplainStmt			"EXPLAIN statement"
 	ExplainableStmt			"explainable statement"
 	FlushStmt			"Flush statement"
+	FlashbackTableStmt		"Flashback table statement"
 	GrantStmt			"Grant statement"
 	GrantRoleStmt			"Grant role statement"
 	InsertIntoStmt			"INSERT INTO statement"
@@ -982,6 +985,8 @@ import (
 	TimeUnit		"Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
 	TimestampUnit		"Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	LockType			"Table locks type"
+	FlashbackUntil			"Flashback until timestamp"
+	FlashbackToNewName		"Flashback to new name"
 
 	TransactionChar		"Transaction characteristic"
 	TransactionChars	"Transaction characteristic list"
@@ -1966,6 +1971,41 @@ RecoverTableStmt:
             JobNum: $4.(int64),
         }
     }
+
+/*******************************************************************
+ *
+ *  Flush Back Table Statement
+ *
+ *  Example:
+ *
+ *******************************************************************/
+ FlashbackTableStmt:
+ 	"FLASHBACK" "TABLE" TableName FlashbackUntil FlashbackToNewName
+ 	{
+		$$ = &ast.FlashBackTableStmt{
+			Table: $3.(*ast.TableName),
+			Timestamp: $4.(ast.ValueExpr),
+			NewName: $5.(string),
+		}
+ 	}
+
+FlashbackUntil:
+	"UNTIL" "TIMESTAMP" StringLiteral
+	{
+		$$ = $3
+	}
+
+ FlashbackToNewName:
+ 	{
+ 		$$ = ""
+ 	}
+ |	"TO" Identifier
+ 	{
+ 		$$ = $2
+ 	}
+
+
+
 
 /*******************************************************************
  *
@@ -4348,7 +4388,7 @@ UnReservedKeyword:
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
-| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE"
+| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "FLASHBACK" | "UNTIL"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -8264,6 +8304,7 @@ Statement:
 |	DropStatsStmt
 |	DropBindingStmt
 |	FlushStmt
+|	FlashbackTableStmt
 |	GrantStmt
 |	GrantRoleStmt
 |	InsertIntoStmt
