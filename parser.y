@@ -2407,7 +2407,7 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionStorage, StrValue: $2}
 		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
-                parser.lastErrorAsWarn()
+		parser.lastErrorAsWarn()
 	}
 
 StorageMedia:
