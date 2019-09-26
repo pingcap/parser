@@ -1921,6 +1921,8 @@ const (
 	AlterTableIndexInvisible
 	// TODO: Add more actions
 	AlterTableOrderByColumns
+	// AlterTableSetFlashReplica uses to set the table TiFlash replica.
+	AlterTableSetFlashReplica
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2015,6 +2017,12 @@ type AlterTableSpec struct {
 	WithValidation  bool
 	Num             uint64
 	Visibility      IndexVisibility
+	SetFlashReplica *SetFlashReplicaSpec
+}
+
+type SetFlashReplicaSpec struct {
+	Count  uint64
+	Labels []string
 }
 
 // AlterOrderItem represents an item in order by at alter table stmt.
@@ -2038,6 +2046,22 @@ func (n *AlterOrderItem) Restore(ctx *RestoreCtx) error {
 // Restore implements Node interface.
 func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
+	case AlterTableSetFlashReplica:
+		ctx.WriteKeyWord("SET FLASH REPLICA ")
+		ctx.WritePlainf("%d", n.SetFlashReplica.Count)
+		if len(n.SetFlashReplica.Labels) == 0 {
+			break
+		}
+		ctx.WriteKeyWord(" LOCATION LABELS (")
+		for i, v := range n.SetFlashReplica.Labels {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteString(v)
+		}
+		ctx.WriteKeyWord(")")
 	case AlterTableOption:
 		switch {
 		case len(n.Options) == 2 &&

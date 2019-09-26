@@ -347,6 +347,7 @@ import (
 	fields		"FIELDS"
 	first		"FIRST"
 	fixed		"FIXED"
+	flash		"FLASH"
 	flush		"FLUSH"
 	following	"FOLLOWING"
 	format		"FORMAT"
@@ -369,11 +370,13 @@ import (
 	ipc		"IPC"
 	jsonType	"JSON"
 	keyBlockSize	"KEY_BLOCK_SIZE"
+	labels		"LABELS"
 	last		"LAST"
 	less		"LESS"
 	level		"LEVEL"
 	list		"LIST"
 	local		"LOCAL"
+	location	"LOCATION"
 	master		"MASTER"
 	microsecond	"MICROSECOND"
 	minute		"MINUTE"
@@ -425,6 +428,7 @@ import (
 	repair		"REPAIR"
 	repeatable	"REPEATABLE"
 	respect		"RESPECT"
+	replica		"REPLICA"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
 	role		"ROLE"
@@ -857,6 +861,7 @@ import (
 	JoinTable 			"join table"
 	JoinType			"join type"
 	KillOrKillTiDB			"Kill or Kill TiDB"
+	LocationLabelList		"location label name list"
 	LikeEscapeOpt 			"like escape option"
 	LikeTableWithOrWithoutParen	"LIKE table_name or ( LIKE table_name )"
 	LimitClause			"LIMIT clause"
@@ -1256,12 +1261,33 @@ AlterTablePartitionOpt:
 		parser.lastErrorAsWarn()
 	}
 
+LocationLabelList:
+	{
+		$$ = []string{}
+	}
+|	"LOCATION" "LABELS" '(' StringList ')'
+	{
+		$$ = $4
+	}
+
+
 AlterTableSpec:
 	TableOptionList %prec higherThanComma
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:	ast.AlterTableOption,
 			Options:$1.([]*ast.TableOption),
+		}
+	}
+|	"SET" "FLASH" "REPLICA" LengthNum LocationLabelList
+	{
+		setFlashReplicaSpec := &ast.SetFlashReplicaSpec{
+			Count: $4.(uint64),
+			Labels: $5.([]string),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:	ast.AlterTableSetFlashReplica,
+			SetFlashReplica: setFlashReplicaSpec,
 		}
 	}
 |	"CONVERT" "TO" CharsetKw CharsetName OptCollate
@@ -4348,7 +4374,7 @@ UnReservedKeyword:
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM"
-| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE"
+| "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "FLASH" | "REPLICA" | "LOCATION" | "LABELS"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
