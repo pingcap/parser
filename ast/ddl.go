@@ -2052,16 +2052,13 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		if len(n.SetFlashReplica.Labels) == 0 {
 			break
 		}
-		ctx.WriteKeyWord(" LOCATION LABELS (")
+		ctx.WriteKeyWord(" LOCATION LABELS ")
 		for i, v := range n.SetFlashReplica.Labels {
-			if i == 0 {
-				ctx.WritePlain(" ")
-			} else {
+			if i > 0 {
 				ctx.WritePlain(", ")
 			}
 			ctx.WriteString(v)
 		}
-		ctx.WriteKeyWord(")")
 	case AlterTableOption:
 		switch {
 		case len(n.Options) == 2 &&

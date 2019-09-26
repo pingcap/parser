@@ -1194,7 +1194,7 @@ import (
 %right	collate
 %right	encryption
 
-%left splitOptionPriv
+%left labels
 %precedence '('
 %precedence quick
 %precedence escape
@@ -1265,9 +1265,9 @@ LocationLabelList:
 	{
 		$$ = []string{}
 	}
-|	"LOCATION" "LABELS" '(' StringList ')'
+|	"LOCATION" "LABELS" StringList
 	{
-		$$ = $4
+		$$ = $3
 	}
 
 

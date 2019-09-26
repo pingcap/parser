@@ -2645,7 +2645,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD a2 int CONSTRAINT ident primary key (a2))", false, ""},
 		{"ALTER TABLE t ADD a2 int CONSTRAINT ident unique key (a2))", false, ""},
 
-		{"ALTER TABLE t SET FLASH REPLICA 2 LOCATION LABELS ('a', 'b')", true, "ALTER TABLE `t` SET FLASH REPLICA 2 LOCATION LABELS ( 'a', 'b')"},
+		{"ALTER TABLE t SET FLASH REPLICA 2 LOCATION LABELS 'a','b'", true, "ALTER TABLE `t` SET FLASH REPLICA 2 LOCATION LABELS 'a', 'b'"},
 		{"ALTER TABLE t SET FLASH REPLICA 0", true, "ALTER TABLE `t` SET FLASH REPLICA 0"},
 
 		// for issue 537
