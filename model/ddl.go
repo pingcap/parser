@@ -58,6 +58,8 @@ const (
 	ActionModifySchemaCharsetAndCollate ActionType = 26
 	ActionLockTable                     ActionType = 27
 	ActionUnlockTable                   ActionType = 28
+	ActionSetFlashReplica               ActionType = 29
+	ActionUpdateFlashReplicaStatus      ActionType = 30
 )
 
 // AddIndexStr is a string related to the operation of "add index".
@@ -92,6 +94,8 @@ var actionMap = map[ActionType]string{
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
 	ActionLockTable:                     "lock table",
 	ActionUnlockTable:                   "unlock table",
+	ActionSetFlashReplica:               "set flash replica",
+	ActionUpdateFlashReplicaStatus:      "update flash replica status",
 }
 
 // String return current ddl action in string

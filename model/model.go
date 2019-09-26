@@ -236,6 +236,9 @@ type TableInfo struct {
 
 	// Version means the version of the table info.
 	Version uint16 `json:"version"`
+
+	// FlashReplica means the flash replica info.
+	FlashReplica *FlashReplicaInfo `json:"flash_replica"`
 }
 
 // TableLockInfo provides meta data describing a table lock.
@@ -321,6 +324,13 @@ func (t TableLockType) String() string {
 		return "WRITE"
 	}
 	return ""
+}
+
+// FlashReplicaInfo means the flash replica info.
+type FlashReplicaInfo struct {
+	Count          uint64
+	LocationLabels []string
+	status         bool
 }
 
 // GetPartitionInfo returns the partition information.
