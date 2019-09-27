@@ -1285,13 +1285,13 @@ AlterTableSpec:
 	}
 |	"SET" "FLASH" "REPLICA" LengthNum LocationLabelList
 	{
-		setFlashReplicaSpec := &ast.SetFlashReplicaSpec{
+		flashReplicaSpec := &ast.FlashReplicaSpec{
 			Count: $4.(uint64),
 			Labels: $5.([]string),
 		}
 		$$ = &ast.AlterTableSpec{
 			Tp:	ast.AlterTableSetFlashReplica,
-			SetFlashReplica: setFlashReplicaSpec,
+			FlashReplica: flashReplicaSpec,
 		}
 	}
 |	"CONVERT" "TO" CharsetKw CharsetName OptCollate

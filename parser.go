@@ -9052,13 +9052,13 @@ yynewstate:
 		}
 	case 10:
 		{
-			setFlashReplicaSpec := &ast.SetFlashReplicaSpec{
+			flashReplicaSpec := &ast.FlashReplicaSpec{
 				Count:  yyS[yypt-1].item.(uint64),
 				Labels: yyS[yypt-0].item.([]string),
 			}
 			parser.yyVAL.item = &ast.AlterTableSpec{
-				Tp:              ast.AlterTableSetFlashReplica,
-				SetFlashReplica: setFlashReplicaSpec,
+				Tp:           ast.AlterTableSetFlashReplica,
+				FlashReplica: flashReplicaSpec,
 			}
 		}
 	case 11:

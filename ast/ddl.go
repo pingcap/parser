@@ -2017,10 +2017,10 @@ type AlterTableSpec struct {
 	WithValidation  bool
 	Num             uint64
 	Visibility      IndexVisibility
-	SetFlashReplica *SetFlashReplicaSpec
+	FlashReplica    *FlashReplicaSpec
 }
 
-type SetFlashReplicaSpec struct {
+type FlashReplicaSpec struct {
 	Count  uint64
 	Labels []string
 }
@@ -2048,12 +2048,12 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
 	case AlterTableSetFlashReplica:
 		ctx.WriteKeyWord("SET FLASH REPLICA ")
-		ctx.WritePlainf("%d", n.SetFlashReplica.Count)
-		if len(n.SetFlashReplica.Labels) == 0 {
+		ctx.WritePlainf("%d", n.FlashReplica.Count)
+		if len(n.FlashReplica.Labels) == 0 {
 			break
 		}
 		ctx.WriteKeyWord(" LOCATION LABELS ")
-		for i, v := range n.SetFlashReplica.Labels {
+		for i, v := range n.FlashReplica.Labels {
 			if i > 0 {
 				ctx.WritePlain(", ")
 			}
