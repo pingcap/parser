@@ -328,9 +328,10 @@ func (t TableLockType) String() string {
 
 // FlashReplicaInfo means the flash replica info.
 type FlashReplicaInfo struct {
-	Count          uint64
-	LocationLabels []string
-	Status         bool
+	Count            uint64
+	LocationLabels   []string
+	RegionCount      uint64
+	FlashRegionCount uint64
 }
 
 // GetPartitionInfo returns the partition information.
