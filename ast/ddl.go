@@ -452,8 +452,9 @@ type ColumnOption struct {
 	// Stored is only for ColumnOptionGenerated, default is false.
 	Stored bool
 	// Refer is used for foreign key.
-	Refer    *ReferenceDef
-	StrValue string
+	Refer              *ReferenceDef
+	StrValue           string
+	AutoShardBitLength uint64
 	// Enforced is only for Check, default is true.
 	Enforced bool
 }
@@ -464,6 +465,9 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 	case ColumnOptionNoOption:
 		return nil
 	case ColumnOptionPrimaryKey:
+		if n.AutoShardBitLength != 0 {
+			ctx.WritePlainf("AUTO_SHARD(SHARD_BITS = %d) ", n.AutoShardBitLength)
+		}
 		ctx.WriteKeyWord("PRIMARY KEY")
 	case ColumnOptionNotNull:
 		ctx.WriteKeyWord("NOT NULL")

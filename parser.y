@@ -285,6 +285,7 @@ import (
 	any 		"ANY"
 	ascii		"ASCII"
 	autoIncrement	"AUTO_INCREMENT"
+	autoShard	"AUTO_SHARD"
 	avgRowLength	"AVG_ROW_LENGTH"
 	avg		"AVG"
 	begin		"BEGIN"
@@ -444,6 +445,7 @@ import (
 	session		"SESSION"
 	share		"SHARE"
 	shared		"SHARED"
+	shardBits	"SHARD_BITS"
 	signed		"SIGNED"
 	simple		"SIMPLE"
 	slave		"SLAVE"
@@ -770,6 +772,7 @@ import (
 	AssignmentListOpt		"assignment list opt"
 	AuthOption			"User auth option"
 	AuthString			"Password string value"
+	AutoShardOpt			"optional auto shard clause"
 	OptionalBraces			"optional braces"
 	CastType			"Cast function target type"
 	CharsetName			"Character set name"
@@ -2354,12 +2357,12 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoIncrement}
 	}
-|	PrimaryOpt "KEY"
+|	AutoShardOpt PrimaryOpt "KEY"
 	{
 		// KEY is normally a synonym for INDEX. The key attribute PRIMARY KEY
 		// can also be specified as just KEY when given in a column definition.
 		// See http://dev.mysql.com/doc/refman/5.7/en/create-table.html
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionPrimaryKey}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionPrimaryKey, AutoShardBitLength: $1.(uint64)}
 	}
 |	"UNIQUE" %prec lowerThanKey
 	{
@@ -2447,6 +2450,15 @@ ColumnOption:
 
 StorageMedia:
 	"DEFAULT" | "DISK" | "MEMORY"
+
+AutoShardOpt:
+	{
+		$$ = uint64(0)
+	}
+|	"AUTO_SHARD" '(' "SHARD_BITS" eq LengthNum ')'
+	{
+		$$ = $5
+	}
 
 ColumnFormat:
 	"DEFAULT"
@@ -4417,7 +4429,7 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE" | "AUTO_SHARD" | "SHARD_BITS"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" |
 "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT"
 
