@@ -8319,36 +8319,36 @@ Constraint:
 		$$ = cst
 	}
 |	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexColNameList ')' IndexOptionList
-        	{
-        		c := &ast.Constraint{
-        			Tp:	ast.ConstraintFulltext,
-        			Keys:	$5.([]*ast.IndexColName),
-        			Name:	$3.(string),
-        		}
-        		if $7 != nil {
-        			c.Option = $7.(*ast.IndexOption)
-        		}
-        		$$ = c
-        	}
+		{
+			c := &ast.Constraint{
+				Tp:	ast.ConstraintFulltext,
+				Keys:	$5.([]*ast.IndexColName),
+				Name:	$3.(string),
+			}
+			if $7 != nil {
+				c.Option = $7.(*ast.IndexOption)
+			}
+			$$ = c
+		}
 |	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
-        	{
-        		c := &ast.Constraint{
-        			IfNotExists:	$2.(bool),
-        			Tp:		ast.ConstraintIndex,
-        			Keys:		$5.([]*ast.IndexColName),
-        		}
-        		if $7 != nil {
-        			c.Option = $7.(*ast.IndexOption)
-        		}
-        		c.Name = $3.([]interface{})[0].(string)
-        		if indexType := $3.([]interface{})[1]; indexType != nil {
-        			if c.Option == nil {
-        				c.Option = &ast.IndexOption{}
-        			}
-        			c.Option.Tp = indexType.(model.IndexType)
-        		}
-        		$$ = c
-        	}
+		{
+			c := &ast.Constraint{
+				IfNotExists:	$2.(bool),
+				Tp:		ast.ConstraintIndex,
+				Keys:		$5.([]*ast.IndexColName),
+			}
+			if $7 != nil {
+				c.Option = $7.(*ast.IndexOption)
+			}
+			c.Name = $3.([]interface{})[0].(string)
+			if indexType := $3.([]interface{})[1]; indexType != nil {
+				if c.Option == nil {
+					c.Option = &ast.IndexOption{}
+				}
+				c.Option.Tp = indexType.(model.IndexType)
+			}
+			$$ = c
+		}
 
 
 TableElement:
