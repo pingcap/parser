@@ -428,6 +428,7 @@ const (
 	ColumnOptionCollate
 	ColumnOptionCheck
 	ColumnOptionColumnFormat
+	ColumnOptionStorage
 )
 
 var (
@@ -524,6 +525,9 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		}
 	case ColumnOptionColumnFormat:
 		ctx.WriteKeyWord("COLUMN_FORMAT ")
+		ctx.WriteKeyWord(n.StrValue)
+	case ColumnOptionStorage:
+		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
@@ -2000,6 +2004,7 @@ type AlterTableSpec struct {
 	OrderByList     []*AlterOrderItem
 	NewTable        *TableName
 	NewColumns      []*ColumnDef
+	NewConstraints  []*Constraint
 	OldColumnName   *ColumnName
 	NewColumnName   *ColumnName
 	Position        *ColumnPosition
@@ -2072,6 +2077,7 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.Position")
 			}
 		} else {
+			lenCols := len(n.NewColumns)
 			ctx.WritePlain("(")
 			for i, col := range n.NewColumns {
 				if i != 0 {
@@ -2079,6 +2085,14 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 				}
 				if err := col.Restore(ctx); err != nil {
 					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewColumns[%d]", i)
+				}
+			}
+			for i, constraint := range n.NewConstraints {
+				if i != 0 || lenCols >= 1 {
+					ctx.WritePlain(", ")
+				}
+				if err := constraint.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.NewConstraints[%d]", i)
 				}
 			}
 			ctx.WritePlain(")")
@@ -2453,6 +2467,13 @@ func (n *AlterTableSpec) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		col = node.(*ColumnDef)
+	}
+	for _, constraint := range n.NewConstraints {
+		node, ok := constraint.Accept(v)
+		if !ok {
+			return n, false
+		}
+		constraint = node.(*Constraint)
 	}
 	if n.OldColumnName != nil {
 		node, ok := n.OldColumnName.Accept(v)

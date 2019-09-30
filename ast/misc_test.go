@@ -88,6 +88,7 @@ func (ts *testMiscSuite) TestDDLVisitorCover(c *C) {
 	sql := `
 create table t (c1 smallint unsigned, c2 int unsigned);
 alter table t add column a smallint unsigned after b;
+alter table t add column (a int, constraint check (a > 0));
 create index t_i on t (id);
 create database test character set utf8;
 drop database test;
@@ -205,9 +206,12 @@ func (ts *testMiscSuite) TestUserSpec(c *C) {
 
 func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"INDEX(t1 c1)", "INDEX(`t1` `c1`)"},
-		{"INDEX(@sel_1 t1 c1)", "INDEX(@`sel_1` `t1` `c1`)"},
-		{"INDEX(t1@sel_1 c1)", "INDEX(`t1`@`sel_1` `c1`)"},
+		{"USE_INDEX(t1 c1)", "USE_INDEX(`t1` `c1`)"},
+		{"USE_INDEX(@sel_1 t1 c1)", "USE_INDEX(@`sel_1` `t1` `c1`)"},
+		{"USE_INDEX(t1@sel_1 c1)", "USE_INDEX(`t1`@`sel_1` `c1`)"},
+		{"IGNORE_INDEX(t1 c1)", "IGNORE_INDEX(`t1` `c1`)"},
+		{"IGNORE_INDEX(@sel_1 t1 c1)", "IGNORE_INDEX(@`sel_1` `t1` `c1`)"},
+		{"IGNORE_INDEX(t1@sel_1 c1)", "IGNORE_INDEX(`t1`@`sel_1` `c1`)"},
 		{"TIDB_SMJ(`t1`)", "TIDB_SMJ(`t1`)"},
 		{"TIDB_SMJ(t1)", "TIDB_SMJ(`t1`)"},
 		{"TIDB_SMJ(t1,t2)", "TIDB_SMJ(`t1`, `t2`)"},

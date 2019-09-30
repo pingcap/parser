@@ -54,6 +54,8 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&Constraint{Keys: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}, 0, 0},
 		{&IndexColName{Column: &ColumnName{}}, 0, 0},
 		{&ReferenceDef{Table: &TableName{}, IndexColNames: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, OnDelete: &OnDeleteOpt{}, OnUpdate: &OnUpdateOpt{}}, 0, 0},
+		{&AlterTableSpec{NewConstraints: []*Constraint{constraint, constraint}}, 0, 0},
+		{&AlterTableSpec{NewConstraints: []*Constraint{constraint}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}}, 0, 0},
 	}
 
 	for _, v := range stmts {
@@ -196,6 +198,9 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"generated always as(id + 1) stored", "GENERATED ALWAYS AS(`id`+1) STORED"},
 		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
 		{"COLLATE utf8_bin", "COLLATE utf8_bin"},
+		{"STORAGE DEFAULT", "STORAGE DEFAULT"},
+		{"STORAGE DISK", "STORAGE DISK"},
+		{"STORAGE MEMORY", "STORAGE MEMORY"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0].Options[0]
