@@ -8842,6 +8842,10 @@ FixedPointType:
 	{
 		$$ = mysql.TypeNewDecimal
 	}
+|	"FIXED"
+	{
+		$$ = mysql.TypeNewDecimal
+	}
 
 FloatingPointType:
 	"FLOAT"
