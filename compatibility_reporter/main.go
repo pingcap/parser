@@ -18,7 +18,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/pingcap/parser/compatibility_reporter/sql_flat_generator"
 	"os"
 	"strconv"
 	"strings"
@@ -218,8 +217,7 @@ func main() {
 	if randomlyGen {
 		sqlIter = sql_generator.GenerateSQLRandomly(allProductions, productionName)
 	} else {
-		sqlIter = sql_flat_generator.NewSQLEnumIterator(allProductions, productionName)
-		//sqlIter = sql_generator.GenerateSQLSequentially(allProductions, productionName)
+		sqlIter = sql_generator.NewSQLEnumIterator(allProductions, productionName)
 	}
 
 	db, dbErr := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
