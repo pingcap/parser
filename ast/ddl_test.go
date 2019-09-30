@@ -54,6 +54,8 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&Constraint{Keys: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}, 0, 0},
 		{&IndexColName{Column: &ColumnName{}}, 0, 0},
 		{&ReferenceDef{Table: &TableName{}, IndexColNames: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, OnDelete: &OnDeleteOpt{}, OnUpdate: &OnUpdateOpt{}}, 0, 0},
+		{&AlterTableSpec{NewConstraints: []*Constraint{constraint, constraint}}, 0, 0},
+		{&AlterTableSpec{NewConstraints: []*Constraint{constraint}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}}, 0, 0},
 	}
 
 	for _, v := range stmts {
@@ -87,6 +89,8 @@ func (ts *testDDLSuite) TestDDLOnDeleteRestore(c *C) {
 		return node.(*CreateTableStmt).Constraints[1].Refer.OnDelete
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) on update CASCADE %s)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child (id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s on update CASCADE)", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C) {
@@ -100,6 +104,8 @@ func (ts *testDDLSuite) TestDDLOnUpdateRestore(c *C) {
 		return node.(*CreateTableStmt).Constraints[1].Refer.OnUpdate
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) ON DELETE CASCADE %s )", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id) %s ON DELETE CASCADE)", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "CREATE TABLE child ( id INT, parent_id INT, INDEX par_ind (parent_id), FOREIGN KEY (parent_id) REFERENCES parent(id)  %s )", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestDDLIndexOption(c *C) {
@@ -327,6 +333,20 @@ func (ts *testDDLSuite) TestDDLTruncateTableStmtRestore(c *C) {
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*TruncateTableStmt)
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLDropTableStmtRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"drop table t1", "DROP TABLE `t1`"},
+		{"drop table if exists t1", "DROP TABLE IF EXISTS `t1`"},
+		{"drop temporary table t1", "DROP TEMPORARY TABLE `t1`"},
+		{"drop temporary table if exists t1", "DROP TEMPORARY TABLE IF EXISTS `t1`"},
+		{"DROP /*!40005 TEMPORARY */ TABLE IF EXISTS `test`", "DROP TEMPORARY TABLE IF EXISTS `test`"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*DropTableStmt)
 	}
 	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }

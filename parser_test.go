@@ -351,6 +351,54 @@ func (s *testParserSuite) RunRestoreTest(c *C, sourceSQLs, expectSQLs string) {
 	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
 }
 
+func (s *testParserSuite) RunTestInRealAsFloatMode(c *C, table []testCase) {
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	parser.SetSQLMode(mysql.ModeRealAsFloat)
+	for _, t := range table {
+		_, _, err := parser.Parse(t.src, "", "")
+		comment := Commentf("source %v", t.src)
+		if !t.ok {
+			c.Assert(err, NotNil, comment)
+			continue
+		}
+		c.Assert(err, IsNil, comment)
+		// restore correctness test
+		if t.ok {
+			s.RunRestoreTestInRealAsFloatMode(c, t.src, t.restore)
+		}
+	}
+}
+
+func (s *testParserSuite) RunRestoreTestInRealAsFloatMode(c *C, sourceSQLs, expectSQLs string) {
+	var sb strings.Builder
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	parser.SetSQLMode(mysql.ModeRealAsFloat)
+	comment := Commentf("source %v", sourceSQLs)
+	stmts, _, err := parser.Parse(sourceSQLs, "", "")
+	c.Assert(err, IsNil, comment)
+	restoreSQLs := ""
+	for _, stmt := range stmts {
+		sb.Reset()
+		err = stmt.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+		c.Assert(err, IsNil, comment)
+		restoreSQL := sb.String()
+		comment = Commentf("source %v; restore %v", sourceSQLs, restoreSQL)
+		restoreStmt, err := parser.ParseOneStmt(restoreSQL, "", "")
+		c.Assert(err, IsNil, comment)
+		CleanNodeText(stmt)
+		CleanNodeText(restoreStmt)
+		c.Assert(restoreStmt, DeepEquals, stmt, comment)
+		if restoreSQLs != "" {
+			restoreSQLs += "; "
+		}
+		restoreSQLs += restoreSQL
+	}
+	comment = Commentf("restore %v; expect %v", restoreSQLs, expectSQLs)
+	c.Assert(restoreSQLs, Equals, expectSQLs, comment)
+}
+
 func (s *testParserSuite) RunErrMsgTest(c *C, table []testErrMsgCase) {
 	parser := parser.New()
 	for _, t := range table {
@@ -487,7 +535,12 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' IGNORE 1 LINES"},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
-
+		{"load data local infile '~/1.csv' into table `t_ascii` fields terminated by X'6B6B';", true, "LOAD DATA LOCAL INFILE '~/1.csv' IGNORE INTO TABLE `t_ascii` FIELDS TERMINATED BY 'kk'"},
+		{"load data local infile '~/1.csv' into table `t_ascii` fields terminated by X'6B6B' enclosed by X'0D';", true, "LOAD DATA LOCAL INFILE '~/1.csv' IGNORE INTO TABLE `t_ascii` FIELDS TERMINATED BY 'kk' ENCLOSED BY '\r'"},
+		{"load data local infile '~/1.csv' into table `t_ascii` fields terminated by X'6B6B' enclosed by X'0D0D';", false, ""},
+		{"load data local infile '~/1.csv' into table `t_ascii` fields terminated by B'110101101101011';", true, "LOAD DATA LOCAL INFILE '~/1.csv' IGNORE INTO TABLE `t_ascii` FIELDS TERMINATED BY 'kk'"},
+		{"load data local infile '~/1.csv' into table `t_ascii` fields terminated by B'110101101101011' enclosed by B'1101';", true, "LOAD DATA LOCAL INFILE '~/1.csv' IGNORE INTO TABLE `t_ascii` FIELDS TERMINATED BY 'kk' ENCLOSED BY '\r'"},
+		{"load data local infile '~/1.csv' into table `t_ascii` fields terminated by B'110101101101011' enclosed by B'110100001101';", false, ""},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' escaped by '' enclosed by 'b' SET b = CAST(CONV(MID(@var1, 3, LENGTH(@var1)-3), 2, 10) AS UNSIGNED)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '' SET `b`=CAST(CONV(MID(@`var1`, 3, LENGTH(@`var1`)-3), 2, 10) AS UNSIGNED)"},
@@ -537,6 +590,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"delete from t1 where a=26", true, "DELETE FROM `t1` WHERE `a`=26"},
 		{"DELETE from t1 where a=1 limit 1", true, "DELETE FROM `t1` WHERE `a`=1 LIMIT 1"},
 		{"DELETE FROM t1 WHERE t1.a > 0 ORDER BY t1.a LIMIT 1", true, "DELETE FROM `t1` WHERE `t1`.`a`>0 ORDER BY `t1`.`a` LIMIT 1"},
+		{"DELETE FROM x.y z WHERE z.a > 0", true, "DELETE FROM `x`.`y` AS `z` WHERE `z`.`a`>0"},
+		{"DELETE FROM t1 AS w WHERE a > 0", true, "DELETE FROM `t1` AS `w` WHERE `a`>0"},
 
 		// multi table syntax: before from
 		{"delete low_priority t1, t2 from t1, t2", true, "DELETE LOW_PRIORITY `t1`,`t2` FROM (`t1`) JOIN `t2`"},
@@ -603,6 +658,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin show slow top all 9", true, "ADMIN SHOW SLOW TOP ALL 9"},
 		{"admin show slow recent 11", true, "ADMIN SHOW SLOW RECENT 11"},
 		{"admin reload expr_pushdown_blacklist", true, "ADMIN RELOAD EXPR_PUSHDOWN_BLACKLIST"},
+		{"admin plugins disable audit, whitelist", true, "ADMIN PLUGINS DISABLE audit, whitelist"},
+		{"admin plugins enable audit, whitelist", true, "ADMIN PLUGINS ENABLE audit, whitelist"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -697,6 +754,14 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 between ('a') and ('z') regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a') AND ('z') REGIONS 10"},
 		{"split table t1 between ('a',1) and ('z',2) regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a',1) AND ('z',2) REGIONS 10"},
 		{"split table t1 between () and () regions 10", true, "SPLIT TABLE `t1` BETWEEN () AND () REGIONS 10"},
+
+		// for show table regions.
+		{"show table t1 regions", true, "SHOW TABLE `t1` REGIONS"},
+		{"show table t1 regions where a=1", true, "SHOW TABLE `t1` REGIONS WHERE `a`=1"},
+		{"show table t1", false, ""},
+		{"show table t1 index idx1 regions", true, "SHOW TABLE `t1` INDEX `idx1` REGIONS"},
+		{"show table t1 index idx1 regions where a=2", true, "SHOW TABLE `t1` INDEX `idx1` REGIONS WHERE `a`=2"},
+		{"show table t1 index idx1", false, ""},
 
 		// for transaction mode
 		{"begin pessimistic", true, "BEGIN PESSIMISTIC"},
@@ -881,6 +946,47 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"change drainer to node_state ='paused' for node_id '127.0.0.1:8249'", true, "CHANGE DRAINER TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8249'"},
 	}
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestSetVariable(c *C) {
+	table := []struct {
+		Input    string
+		Name     string
+		IsGlobal bool
+		IsSystem bool
+	}{
+
+		// Set system variable xx.xx, although xx.xx isn't a system variable, the parser should accept it.
+		{"set xx.xx = 666", "xx.xx", false, true},
+		// Set session system variable xx.xx
+		{"set session xx.xx = 666", "xx.xx", false, true},
+		{"set global xx.xx = 666", "xx.xx", true, true},
+
+		{"set @@xx.xx = 666", "xx.xx", false, true},
+		{"set @@session.xx.xx = 666", "xx.xx", false, true},
+		{"set @@global.xx.xx = 666", "xx.xx", true, true},
+
+		// Set user defined variable xx.xx
+		{"set @xx.xx = 666", "xx.xx", false, false},
+	}
+
+	parser := parser.New()
+	for _, t := range table {
+		stmt, err := parser.ParseOneStmt(t.Input, "", "")
+		c.Assert(err, IsNil)
+
+		setStmt, ok := stmt.(*ast.SetStmt)
+		c.Assert(ok, IsTrue)
+		c.Assert(setStmt.Variables, HasLen, 1)
+
+		v := setStmt.Variables[0]
+		c.Assert(v.Name, Equals, t.Name)
+		c.Assert(v.IsGlobal, Equals, t.IsGlobal)
+		c.Assert(v.IsSystem, Equals, t.IsSystem)
+	}
+
+	_, err := parser.ParseOneStmt("set xx.xx.xx = 666", "", "")
+	c.Assert(err, NotNil)
 }
 
 func (s *testParserSuite) TestFlushTable(c *C) {
@@ -1068,6 +1174,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		{`SELECT tidb_version();`, true, "SELECT TIDB_VERSION()"},
 		{`SELECT tidb_is_ddl_owner();`, true, "SELECT TIDB_IS_DDL_OWNER()"},
+		{`SELECT tidb_decode_key('abc');`, true, "SELECT TIDB_DECODE_KEY('abc')"},
 
 		// for time fsp
 		{"CREATE TABLE t( c1 TIME(2), c2 DATETIME(2), c3 TIMESTAMP(2) );", true, "CREATE TABLE `t` (`c1` TIME(2),`c2` DATETIME(2),`c3` TIMESTAMP(2))"},
@@ -1089,6 +1196,20 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		// for cast as signed int, fix issue #3691.
 		{"select cast(1 as signed int);", true, "SELECT CAST(1 AS SIGNED)"},
+
+		// for cast as double
+		{"select cast(1 as double);", true, "SELECT CAST(1 AS DOUBLE)"},
+
+		// for cast as float
+		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(54));", false, ""},
+
+		// for cast as real
+		{"select cast(1 as real);", true, "SELECT CAST(1 AS DOUBLE)"},
 
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
@@ -1204,7 +1325,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT GET_FORMAT(DATE, 'USA');", true, "SELECT GET_FORMAT(DATE, 'USA')"},
 		{"SELECT GET_FORMAT(DATETIME, 'USA');", true, "SELECT GET_FORMAT(DATETIME, 'USA')"},
 		{"SELECT GET_FORMAT(TIME, 'USA');", true, "SELECT GET_FORMAT(TIME, 'USA')"},
-		{"SELECT GET_FORMAT(TIMESTAMP, 'USA');", true, "SELECT GET_FORMAT(TIMESTAMP, 'USA')"},
+		{"SELECT GET_FORMAT(TIMESTAMP, 'USA');", true, "SELECT GET_FORMAT(DATETIME, 'USA')"},
 
 		// for LOCALTIME, LOCALTIMESTAMP
 		{"SELECT LOCALTIME(), LOCALTIME(1)", true, "SELECT LOCALTIME(),LOCALTIME(1)"},
@@ -1234,6 +1355,16 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		// for TIMESTAMPADD
 		{"SELECT TIMESTAMPADD(WEEK,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(WEEK, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_SECOND,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(SECOND, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_MINUTE,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(MINUTE, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_HOUR,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(HOUR, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_DAY,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(DAY, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_WEEK,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(WEEK, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_MONTH,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(MONTH, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_QUARTER,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(QUARTER, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_YEAR,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(YEAR, 1, '2003-01-02')"},
+		{"SELECT TIMESTAMPADD(SQL_TSI_MICROSECOND,1,'2003-01-02');", false, ""},
+		{"SELECT TIMESTAMPADD(MICROSECOND,1,'2003-01-02');", true, "SELECT TIMESTAMPADD(MICROSECOND, 1, '2003-01-02')"},
 
 		// for TO_DAYS, TO_SECONDS
 		{"SELECT TO_DAYS('2007-10-07')", true, "SELECT TO_DAYS('2007-10-07')"},
@@ -1382,6 +1513,16 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select date_add("2011-11-11 10:10:10.123456", 10)`, false, ""},
 		{`select date_add("2011-11-11 10:10:10.123456", 0.10)`, false, ""},
 		{`select date_add("2011-11-11 10:10:10.123456", "11,11")`, false, ""},
+
+		{`select date_add("2011-11-11 10:10:10.123456", interval 10 sql_tsi_microsecond)`, false, ""},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 10 sql_tsi_second)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 10 SECOND)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 10 sql_tsi_minute)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 10 MINUTE)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 10 sql_tsi_hour)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 10 HOUR)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 10 sql_tsi_day)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 10 DAY)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 1 sql_tsi_week)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 1 WEEK)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 1 sql_tsi_month)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 1 MONTH)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 1 sql_tsi_quarter)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 1 QUARTER)"},
+		{`select date_add("2011-11-11 10:10:10.123456", interval 1 sql_tsi_year)`, true, "SELECT DATE_ADD('2011-11-11 10:10:10.123456', INTERVAL 1 YEAR)"},
 
 		// for strcmp
 		{`select strcmp('abc', 'def')`, true, "SELECT STRCMP('abc', 'def')"},
@@ -1592,6 +1733,21 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT `uuid`()", true, "SELECT UUID()"},
 	}
 	s.RunTest(c, table)
+
+	// Test in REAL_AS_FLOAT SQL mode.
+	table2 := []testCase{
+		// for cast as float
+		{"select cast(1 as float);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(0));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(24));", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as float(25));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast(1 as float(54));", false, ""},
+
+		// for cast as real
+		{"select cast(1 as real);", true, "SELECT CAST(1 AS FLOAT)"},
+	}
+	s.RunTestInRealAsFloatMode(c, table2)
 }
 
 func (s *testParserSuite) TestIdentifier(c *C) {
@@ -1680,6 +1836,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (a.b, b);", false, ""},
 		{"CREATE TABLE foo (a, b.c);", false, ""},
 		{"CREATE TABLE (name CHAR(50) BINARY)", false, ""},
+		// for create temporary table
+		{"CREATE TEMPORARY TABLE t (a varchar(50), b int);", true, "CREATE TEMPORARY TABLE `t` (`a` VARCHAR(50),`b` INT)"},
+		{"CREATE TEMPORARY TABLE t LIKE t1", true, "CREATE TEMPORARY TABLE `t` LIKE `t1`"},
+		{"DROP TEMPORARY TABLE t", true, "DROP TEMPORARY TABLE `t`"},
 		// test use key word as column name
 		{"CREATE TABLE foo (pump varchar(50), b int);", true, "CREATE TABLE `foo` (`pump` VARCHAR(50),`b` INT)"},
 		{"CREATE TABLE foo (drainer varchar(50), b int);", true, "CREATE TABLE `foo` (`drainer` VARCHAR(50),`b` INT)"},
@@ -1690,6 +1850,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (c int) avg_row_length 3", true, "CREATE TABLE `t` (`c` INT) AVG_ROW_LENGTH = 3"},
 		{"create table t (c int) checksum = 0", true, "CREATE TABLE `t` (`c` INT) CHECKSUM = 0"},
 		{"create table t (c int) checksum 1", true, "CREATE TABLE `t` (`c` INT) CHECKSUM = 1"},
+		{"create table t (c int) table_checksum = 0", true, "CREATE TABLE `t` (`c` INT) TABLE_CHECKSUM = 0"},
+		{"create table t (c int) table_checksum 1", true, "CREATE TABLE `t` (`c` INT) TABLE_CHECKSUM = 1"},
 		{"create table t (c int) compression = 'NONE'", true, "CREATE TABLE `t` (`c` INT) COMPRESSION = 'NONE'"},
 		{"create table t (c int) compression 'lz4'", true, "CREATE TABLE `t` (`c` INT) COMPRESSION = 'lz4'"},
 		{"create table t (c int) connection = 'abc'", true, "CREATE TABLE `t` (`c` INT) CONNECTION = 'abc'"},
@@ -1714,11 +1876,26 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (c int) STATS_PERSISTENT = default", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 		{"create table t (c int) STATS_PERSISTENT = 0", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 		{"create table t (c int) STATS_PERSISTENT = 1", true, "CREATE TABLE `t` (`c` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
+		{"create table t (c int) STATS_SAMPLE_PAGES 0", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 0"},
+		{"create table t (c int) STATS_SAMPLE_PAGES 10", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 10"},
+		{"create table t (c int) STATS_SAMPLE_PAGES = 10", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = 10"},
+		{"create table t (c int) STATS_SAMPLE_PAGES = default", true, "CREATE TABLE `t` (`c` INT) STATS_SAMPLE_PAGES = DEFAULT"},
 		{"create table t (c int) PACK_KEYS = 1", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) PACK_KEYS = 0", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
 		{"create table t (c int) PACK_KEYS = DEFAULT", true, "CREATE TABLE `t` (`c` INT) PACK_KEYS = DEFAULT /* TableOptionPackKeys is not supported */ "},
+		{"create table t (c int) STORAGE DISK", true, "CREATE TABLE `t` (`c` INT) STORAGE DISK"},
+		{"create table t (c int) STORAGE MEMORY", true, "CREATE TABLE `t` (`c` INT) STORAGE MEMORY"},
+		{"create table t (c int) SECONDARY_ENGINE null", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = NULL"},
+		{"create table t (c int) SECONDARY_ENGINE = innodb", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'innodb'"},
+		{"create table t (c int) SECONDARY_ENGINE 'null'", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'null'"},
 		{`create table testTableCompression (c VARCHAR(15000)) compression="ZLIB";`, true, "CREATE TABLE `testTableCompression` (`c` VARCHAR(15000)) COMPRESSION = 'ZLIB'"},
 		{`create table t1 (c1 int) compression="zlib";`, true, "CREATE TABLE `t1` (`c1` INT) COMPRESSION = 'zlib'"},
+
+		// for table option `UNION`
+		{"ALTER TABLE t_n UNION ( ), KEY_BLOCK_SIZE = 1", true, "ALTER TABLE `t_n` UNION = (), KEY_BLOCK_SIZE = 1"},
+		{"ALTER TABLE d_n.t_n UNION ( t_n ) REMOVE PARTITIONING", true, "ALTER TABLE `d_n`.`t_n` UNION = (`t_n`) REMOVE PARTITIONING"},
+		{"ALTER TABLE d_n.t_n LOCK DEFAULT , UNION = ( t_n , d_n.t_n ) REMOVE PARTITIONING", true, "ALTER TABLE `d_n`.`t_n` LOCK = DEFAULT, UNION = (`t_n`,`d_n`.`t_n`) REMOVE PARTITIONING"},
+		{"ALTER TABLE d_n.t_n ALGORITHM = DEFAULT , MAX_ROWS 10, UNION ( d_n.t_n ) , ROW_FORMAT REDUNDANT, STATS_PERSISTENT = DEFAULT", true, "ALTER TABLE `d_n`.`t_n` ALGORITHM = DEFAULT, MAX_ROWS = 10, UNION = (`d_n`.`t_n`), ROW_FORMAT = REDUNDANT, STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 
 		// partition option
 		{"CREATE TABLE t (id int) ENGINE = INNDB PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));", true, "CREATE TABLE `t` (`id` INT) ENGINE = INNDB PARTITION BY RANGE (`id`) (PARTITION `p0` VALUES LESS THAN (10),PARTITION `p1` VALUES LESS THAN (20))"},
@@ -1744,12 +1921,29 @@ func (s *testParserSuite) TestDDL(c *C) {
  PARTITION part11 VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB) */ ;`, true, "CREATE TABLE `app_channel_daily_report` (`id` BIGINT(20) NOT NULL AUTO_INCREMENT,`app_version` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',`gmt_create` DATETIME NOT NULL COMMENT '创建时间',PRIMARY KEY(`id`)) ENGINE = InnoDB AUTO_INCREMENT = 33703438 DEFAULT CHARACTER SET = UTF8 DEFAULT COLLATE = UTF8_UNICODE_CI PARTITION BY RANGE (MONTH(`gmt_create`)-1) (PARTITION `part0` VALUES LESS THAN (1) COMMENT = '1月份' ENGINE = InnoDB,PARTITION `part1` VALUES LESS THAN (2) COMMENT = '2月份' ENGINE = InnoDB,PARTITION `part2` VALUES LESS THAN (3) COMMENT = '3月份' ENGINE = InnoDB,PARTITION `part3` VALUES LESS THAN (4) COMMENT = '4月份' ENGINE = InnoDB,PARTITION `part4` VALUES LESS THAN (5) COMMENT = '5月份' ENGINE = InnoDB,PARTITION `part5` VALUES LESS THAN (6) COMMENT = '6月份' ENGINE = InnoDB,PARTITION `part6` VALUES LESS THAN (7) COMMENT = '7月份' ENGINE = InnoDB,PARTITION `part7` VALUES LESS THAN (8) COMMENT = '8月份' ENGINE = InnoDB,PARTITION `part8` VALUES LESS THAN (9) COMMENT = '9月份' ENGINE = InnoDB,PARTITION `part9` VALUES LESS THAN (10) COMMENT = '10月份' ENGINE = InnoDB,PARTITION `part10` VALUES LESS THAN (11) COMMENT = '11月份' ENGINE = InnoDB,PARTITION `part11` VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB)"},
 
 		// for check clause
-		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)), check (c2 in (0, 1)))", true, "CREATE TABLE `t` (`c1` TINYINT(1),`c2` TINYINT(1))"},        //TODO: Check in ColumnOption, yacc is not implemented
-		{"CREATE TABLE Customer (SD integer CHECK (SD > 0), First_Name varchar(30));", true, "CREATE TABLE `Customer` (`SD` INT ,`First_Name` VARCHAR(30))"}, //TODO: Check in ColumnOption, yacc is not implemented
+		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)) not enforced, check (c2 in (0, 1)))", true, "CREATE TABLE `t` (`c1` TINYINT(1),`c2` TINYINT(1),CHECK(`c1` IN (0,1)) NOT ENFORCED,CHECK(`c2` IN (0,1)) ENFORCED)"},
+		{"CREATE TABLE Customer (SD integer CHECK (SD > 0), First_Name varchar(30));", true, "CREATE TABLE `Customer` (`SD` INT CHECK(`SD`>0) ENFORCED,`First_Name` VARCHAR(30))"},
+		{"CREATE TABLE Customer (SD integer CHECK (SD > 0) not enforced, SS varchar(30) check(ss='test') enforced);", true, "CREATE TABLE `Customer` (`SD` INT CHECK(`SD`>0) NOT ENFORCED,`SS` VARCHAR(30) CHECK(`ss`='test') ENFORCED)"},
+		{"CREATE TABLE Customer (SD integer CHECK (SD > 0) not null, First_Name varchar(30) comment 'string' not null);", true, "CREATE TABLE `Customer` (`SD` INT CHECK(`SD`>0) ENFORCED NOT NULL,`First_Name` VARCHAR(30) COMMENT 'string' NOT NULL)"},
+		{"CREATE TABLE Customer (SD integer comment 'string' CHECK (SD > 0) not null);", true, "CREATE TABLE `Customer` (`SD` INT COMMENT 'string' CHECK(`SD`>0) ENFORCED NOT NULL)"},
+		{"CREATE TABLE Customer (SD integer comment 'string' not enforced, First_Name varchar(30));", false, ""},
+		{"CREATE TABLE Customer (SD integer not enforced, First_Name varchar(30));", false, ""},
 
 		{"create database xxx", true, "CREATE DATABASE `xxx`"},
 		{"create database if exists xxx", false, ""},
 		{"create database if not exists xxx", true, "CREATE DATABASE IF NOT EXISTS `xxx`"},
+
+		// for create database with encryption
+		{"create database xxx encryption = 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx encryption 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx default encryption = 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx default encryption 'N'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'N'"},
+		{"create database xxx encryption = 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx encryption 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx default encryption = 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx default encryption 'Y'", true, "CREATE DATABASE `xxx` ENCRYPTION = 'Y'"},
+		{"create database xxx encryption = N", false, ""},
+
 		{"create schema xxx", true, "CREATE DATABASE `xxx`"},
 		{"create schema if exists xxx", false, ""},
 		{"create schema if not exists xxx", true, "CREATE DATABASE IF NOT EXISTS `xxx`"},
@@ -1877,6 +2071,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table if not exists `t` (`id` int not null auto_increment comment '消息ID', primary key `pk_id` (`id`) );", true, "CREATE TABLE IF NOT EXISTS `t` (`id` INT NOT NULL AUTO_INCREMENT COMMENT '消息ID',PRIMARY KEY(`id`))"},
 		// Create table with like.
 		{"create table a like b", true, "CREATE TABLE `a` LIKE `b`"},
+		{"create table a (id int REFERENCES a (id) ON delete NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) ON update set default )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON UPDATE SET DEFAULT)"},
+		{"create table a (id int REFERENCES a (id) ON delete set null on update CASCADE)", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE SET NULL ON UPDATE CASCADE)"},
+		{"create table a (id int REFERENCES a (id) ON update set default on delete RESTRICT)", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE RESTRICT ON UPDATE SET DEFAULT)"},
+		{"create table a (id int REFERENCES a (id) MATCH FULL ON delete NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) MATCH FULL ON DELETE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) MATCH PARTIAL ON update NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) MATCH PARTIAL ON UPDATE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) MATCH SIMPLE ON update NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) MATCH SIMPLE ON UPDATE NO ACTION)"},
+		{"create table a (id int REFERENCES a (id) ON update set default )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON UPDATE SET DEFAULT)"},
+		{"create table a (id int REFERENCES a (id) ON update set default on update CURRENT_TIMESTAMP)", false, ""},
+		{"create table a (id int REFERENCES a (id) ON delete set default on update CURRENT_TIMESTAMP)", false, ""},
 		{"create table a (like b)", true, "CREATE TABLE `a` LIKE `b`"},
 		{"create table if not exists a like b", true, "CREATE TABLE IF NOT EXISTS `a` LIKE `b`"},
 		{"create table if not exists a (like b)", true, "CREATE TABLE IF NOT EXISTS `a` LIKE `b`"},
@@ -1906,6 +2110,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE IF NOT EXISTS `general_log` (`event_time` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` mediumtext NOT NULL,`thread_id` bigint(20) unsigned NOT NULL,`server_id` int(10) unsigned NOT NULL,`command_type` varchar(64) NOT NULL,`argument` mediumblob NOT NULL) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log'", true, "CREATE TABLE IF NOT EXISTS `general_log` (`event_time` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),`user_host` MEDIUMTEXT NOT NULL,`thread_id` BIGINT(20) UNSIGNED NOT NULL,`server_id` INT(10) UNSIGNED NOT NULL,`command_type` VARCHAR(64) NOT NULL,`argument` MEDIUMBLOB NOT NULL) ENGINE = CSV DEFAULT CHARACTER SET = UTF8 COMMENT = 'General log'"}, //TODO: The number yacc in parentheses has not been implemented yet.
 		// For reference_definition in column_definition.
 		{"CREATE TABLE followers ( f1 int NOT NULL REFERENCES user_profiles (uid) );", true, "CREATE TABLE `followers` (`f1` INT NOT NULL REFERENCES `user_profiles`(`uid`))"},
+
+		// For table option `ENCRYPTION`
+		{"create table t (a int) encryption = 'n';", true, "CREATE TABLE `t` (`a` INT) ENCRYPTION = 'n'"},
+		{"create table t (a int) encryption 'n';", true, "CREATE TABLE `t` (`a` INT) ENCRYPTION = 'n'"},
+		{"alter table t encryption = 'y';", true, "ALTER TABLE `t` ENCRYPTION = 'y'"},
+		{"alter table t encryption 'y';", true, "ALTER TABLE `t` ENCRYPTION = 'y'"},
 
 		// for alter database/schema/table
 		{"ALTER DATABASE t CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
@@ -1949,11 +2159,28 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE employees ADD PARTITION ( PARTITION P1 VALUES LESS THAN (2010))", true, "ALTER TABLE `employees` ADD PARTITION (PARTITION `P1` VALUES LESS THAN (2010))"},
 		{"ALTER TABLE employees ADD PARTITION ( PARTITION P2 VALUES LESS THAN MAXVALUE)", true, "ALTER TABLE `employees` ADD PARTITION (PARTITION `P2` VALUES LESS THAN (MAXVALUE))"},
 		{"ALTER TABLE employees ADD PARTITION IF NOT EXISTS ( PARTITION P2 VALUES LESS THAN MAXVALUE)", true, "ALTER TABLE `employees` ADD PARTITION IF NOT EXISTS (PARTITION `P2` VALUES LESS THAN (MAXVALUE))"},
+		{"ALTER TABLE employees ADD PARTITION IF NOT EXISTS PARTITIONS 5", true, "ALTER TABLE `employees` ADD PARTITION IF NOT EXISTS PARTITIONS 5"},
 		{`ALTER TABLE employees ADD PARTITION (
 				PARTITION P1 VALUES LESS THAN (2010),
 				PARTITION P2 VALUES LESS THAN (2015),
 				PARTITION P3 VALUES LESS THAN MAXVALUE)`, true, "ALTER TABLE `employees` ADD PARTITION (PARTITION `P1` VALUES LESS THAN (2010), PARTITION `P2` VALUES LESS THAN (2015), PARTITION `P3` VALUES LESS THAN (MAXVALUE))"},
 		{"alter table t add partition (partition x values in ((3, 4), (5, 6)))", true, "ALTER TABLE `t` ADD PARTITION (PARTITION `x` VALUES IN ((3, 4), (5, 6)))"},
+		{"ALTER TABLE employees ADD PARTITION NO_WRITE_TO_BINLOG", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG"},
+		{"ALTER TABLE employees ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10"},
+		// LOCAL is alias to NO_WRITE_TO_BINLOG
+		{"ALTER TABLE employees ADD PARTITION LOCAL", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG"},
+		{"ALTER TABLE employees ADD PARTITION LOCAL PARTITIONS 10", true, "ALTER TABLE `employees` ADD PARTITION NO_WRITE_TO_BINLOG PARTITIONS 10"},
+
+		// For rebuild table partition statement.
+		{"ALTER TABLE t_n REBUILD PARTITION ALL", true, "ALTER TABLE `t_n` REBUILD PARTITION ALL"},
+		{"ALTER TABLE d_n.t_n REBUILD PARTITION LOCAL ALL", true, "ALTER TABLE `d_n`.`t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL ident", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `ident`"},
+		{"ALTER TABLE t_n REBUILD PARTITION NO_WRITE_TO_BINLOG ident , ident", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `ident`,`ident`"},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL local", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n REBUILD PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` REBUILD PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
 
 		// For drop table partition statement.
 		{"alter table t drop partition p1;", true, "ALTER TABLE `t` DROP PARTITION `p1`"},
@@ -1961,10 +2188,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t drop partition if exists p2;", true, "ALTER TABLE `t` DROP PARTITION IF EXISTS `p2`"},
 		{"alter table t drop partition p1, p2;", true, "ALTER TABLE `t` DROP PARTITION `p1`,`p2`"},
 		{"alter table t drop partition if exists p1, p2;", true, "ALTER TABLE `t` DROP PARTITION IF EXISTS `p1`,`p2`"},
+		// For check table partition statement
+		{"alter table t check partition all;", true, "ALTER TABLE `t` CHECK PARTITION ALL"},
+		{"alter table t check partition p;", true, "ALTER TABLE `t` CHECK PARTITION `p`"},
+		{"alter table t check partition p1, p2;", true, "ALTER TABLE `t` CHECK PARTITION `p1`,`p2`"},
 		{"alter table employees add partition partitions 1;", true, "ALTER TABLE `employees` ADD PARTITION PARTITIONS 1"},
 		{"alter table employees add partition partitions 2;", true, "ALTER TABLE `employees` ADD PARTITION PARTITIONS 2"},
 		{"alter table clients coalesce partition 3;", true, "ALTER TABLE `clients` COALESCE PARTITION 3"},
 		{"alter table clients coalesce partition 4;", true, "ALTER TABLE `clients` COALESCE PARTITION 4"},
+		{"alter table clients coalesce partition no_write_to_binlog 4;", true, "ALTER TABLE `clients` COALESCE PARTITION NO_WRITE_TO_BINLOG 4"},
+		{"alter table clients coalesce partition local 4;", true, "ALTER TABLE `clients` COALESCE PARTITION NO_WRITE_TO_BINLOG 4"},
 		{"ALTER TABLE t DISABLE KEYS", true, "ALTER TABLE `t` DISABLE KEYS"},
 		{"ALTER TABLE t ENABLE KEYS", true, "ALTER TABLE `t` ENABLE KEYS"},
 		{"ALTER TABLE t MODIFY COLUMN a varchar(255)", true, "ALTER TABLE `t` MODIFY COLUMN `a` VARCHAR(255)"},
@@ -1973,20 +2206,56 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t CHANGE COLUMN IF EXISTS a b varchar(255)", true, "ALTER TABLE `t` CHANGE COLUMN IF EXISTS `a` `b` VARCHAR(255)"},
 		{"ALTER TABLE t CHANGE COLUMN a b varchar(255) CHARACTER SET UTF8 BINARY", true, "ALTER TABLE `t` CHANGE COLUMN `a` `b` VARCHAR(255) BINARY CHARACTER SET UTF8"},
 		{"ALTER TABLE t CHANGE COLUMN a b varchar(255) FIRST", true, "ALTER TABLE `t` CHANGE COLUMN `a` `b` VARCHAR(255) FIRST"},
+
+		// For alter table rename statement.
 		{"ALTER TABLE db.t RENAME to db1.t1", true, "ALTER TABLE `db`.`t` RENAME AS `db1`.`t1`"},
 		{"ALTER TABLE db.t RENAME db1.t1", true, "ALTER TABLE `db`.`t` RENAME AS `db1`.`t1`"},
+		{"ALTER TABLE db.t RENAME = db1.t1", true, "ALTER TABLE `db`.`t` RENAME AS `db1`.`t1`"},
+		{"ALTER TABLE db.t RENAME as db1.t1", true, "ALTER TABLE `db`.`t` RENAME AS `db1`.`t1`"},
+		{"ALTER TABLE t RENAME to t1", true, "ALTER TABLE `t` RENAME AS `t1`"},
+		{"ALTER TABLE t RENAME t1", true, "ALTER TABLE `t` RENAME AS `t1`"},
+		{"ALTER TABLE t RENAME = t1", true, "ALTER TABLE `t` RENAME AS `t1`"},
 		{"ALTER TABLE t RENAME as t1", true, "ALTER TABLE `t` RENAME AS `t1`"},
+
+		// For #499, alter table order by
+		{"ALTER TABLE t_n ORDER BY ident", true, "ALTER TABLE `t_n` ORDER BY `ident`"},
+		{"ALTER TABLE t_n ORDER BY ident ASC", true, "ALTER TABLE `t_n` ORDER BY `ident`"},
+		{"ALTER TABLE t_n ORDER BY ident DESC", true, "ALTER TABLE `t_n` ORDER BY `ident` DESC"},
+		{"ALTER TABLE t_n ORDER BY ident1, ident2", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`"},
+		{"ALTER TABLE t_n ORDER BY ident1 ASC, ident2", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`"},
+		{"ALTER TABLE t_n ORDER BY ident1 ASC, ident2 ASC", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`"},
+		{"ALTER TABLE t_n ORDER BY ident1 ASC, ident2 DESC", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2` DESC"},
+		{"ALTER TABLE t_n ORDER BY ident1 DESC, ident2", true, "ALTER TABLE `t_n` ORDER BY `ident1` DESC,`ident2`"},
+		{"ALTER TABLE t_n ORDER BY ident1 DESC, ident2 ASC", true, "ALTER TABLE `t_n` ORDER BY `ident1` DESC,`ident2`"},
+		{"ALTER TABLE t_n ORDER BY ident1 DESC, ident2 DESC", true, "ALTER TABLE `t_n` ORDER BY `ident1` DESC,`ident2` DESC"},
+		{"ALTER TABLE t_n ORDER BY ident1, ident2, ident3", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`,`ident3`"},
+		{"ALTER TABLE t_n ORDER BY ident1, ident2, ident3 ASC", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`,`ident3`"},
+		{"ALTER TABLE t_n ORDER BY ident1, ident2, ident3 DESC", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`,`ident3` DESC"},
+		{"ALTER TABLE t_n ORDER BY ident1 ASC, ident2 ASC, ident3 ASC", true, "ALTER TABLE `t_n` ORDER BY `ident1`,`ident2`,`ident3`"},
+		{"ALTER TABLE t_n ORDER BY ident1 DESC, ident2 DESC, ident3 DESC", true, "ALTER TABLE `t_n` ORDER BY `ident1` DESC,`ident2` DESC,`ident3` DESC"},
+
+		// For alter table rename column statement.
+		{"ALTER TABLE t RENAME COLUMN a TO b", true, "ALTER TABLE `t` RENAME COLUMN `a` TO `b`"},
+
 		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT 1", true, "ALTER TABLE `t` ALTER COLUMN `a` SET DEFAULT 1"},
 		{"ALTER TABLE t ALTER a SET DEFAULT 1", true, "ALTER TABLE `t` ALTER COLUMN `a` SET DEFAULT 1"},
 		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT CURRENT_TIMESTAMP", false, ""},
 		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT NOW()", false, ""},
 		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT 1+1", false, ""},
+		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT (CURRENT_TIMESTAMP())", true, "ALTER TABLE `t` ALTER COLUMN `a` SET DEFAULT (CURRENT_TIMESTAMP())"},
+		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT (NOW())", true, "ALTER TABLE `t` ALTER COLUMN `a` SET DEFAULT (NOW())"},
+		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT (1+1)", true, "ALTER TABLE `t` ALTER COLUMN `a` SET DEFAULT (1+1)"},
+		{"ALTER TABLE t ALTER COLUMN a SET DEFAULT (1)", true, "ALTER TABLE `t` ALTER COLUMN `a` SET DEFAULT 1"},
 		{"ALTER TABLE t ALTER COLUMN a DROP DEFAULT", true, "ALTER TABLE `t` ALTER COLUMN `a` DROP DEFAULT"},
 		{"ALTER TABLE t ALTER a DROP DEFAULT", true, "ALTER TABLE `t` ALTER COLUMN `a` DROP DEFAULT"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock=none", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = NONE"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock=default", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = DEFAULT"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock=shared", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = SHARED"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock=exclusive", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = EXCLUSIVE"},
+		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock none", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = NONE"},
+		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock default", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = DEFAULT"},
+		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock shared", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = SHARED"},
+		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, lock exclusive", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = EXCLUSIVE"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, LOCK=NONE", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = NONE"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, LOCK=DEFAULT", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = DEFAULT"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, LOCK=SHARED", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, LOCK = SHARED"},
@@ -1996,19 +2265,28 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD FULLTEXT INDEX `FullText` (`name` ASC)", true, "ALTER TABLE `t` ADD FULLTEXT `FullText`(`name`)"},
 		{"ALTER TABLE t ADD INDEX (a) USING BTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING BTREE COMMENT 'a'"},
 		{"ALTER TABLE t ADD INDEX IF NOT EXISTS (a) USING BTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING BTREE COMMENT 'a'"},
+		{"ALTER TABLE t ADD INDEX (a) USING RTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING RTREE COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING HASH COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY IF NOT EXISTS (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING HASH COMMENT 'a'"},
+		{"ALTER TABLE t ADD PRIMARY KEY ident USING RTREE ( a DESC , b   )", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) USING RTREE"},
+		{"ALTER TABLE t ADD KEY USING RTREE   ( a ) ", true, "ALTER TABLE `t` ADD INDEX(`a`) USING RTREE"},
+		{"ALTER TABLE t ADD KEY USING RTREE ( ident ASC , ident ( 123 ) )", true, "ALTER TABLE `t` ADD INDEX(`ident`, `ident`(123)) USING RTREE"},
 		{"ALTER TABLE t ADD PRIMARY KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD UNIQUE INDEX (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD UNIQUE(`a`) COMMENT 'a'"},
 		{"ALTER TABLE t ADD CONSTRAINT fk_t2_id FOREIGN KEY (t2_id) REFERENCES t(id)", true, "ALTER TABLE `t` ADD CONSTRAINT `fk_t2_id` FOREIGN KEY (`t2_id`) REFERENCES `t`(`id`)"},
 		{"ALTER TABLE t ADD CONSTRAINT fk_t2_id FOREIGN KEY IF NOT EXISTS (t2_id) REFERENCES t(id)", true, "ALTER TABLE `t` ADD CONSTRAINT `fk_t2_id` FOREIGN KEY IF NOT EXISTS (`t2_id`) REFERENCES `t`(`id`)"},
+		{"ALTER TABLE t ADD CONSTRAINT c_1 CHECK (1+1) NOT ENFORCED, ADD UNIQUE (a)", true, "ALTER TABLE `t` ADD CONSTRAINT `c_1` CHECK(1+1) NOT ENFORCED, ADD UNIQUE(`a`)"},
+		{"ALTER TABLE t ADD CONSTRAINT c_1 CHECK (1+1) ENFORCED, ADD UNIQUE (a)", true, "ALTER TABLE `t` ADD CONSTRAINT `c_1` CHECK(1+1) ENFORCED, ADD UNIQUE(`a`)"},
+		{"ALTER TABLE t ADD CONSTRAINT c_1 CHECK (1+1), ADD UNIQUE (a)", true, "ALTER TABLE `t` ADD CONSTRAINT `c_1` CHECK(1+1) ENFORCED, ADD UNIQUE(`a`)"},
 		{"ALTER TABLE t ENGINE ''", true, "ALTER TABLE `t` ENGINE = ''"},
 		{"ALTER TABLE t ENGINE = ''", true, "ALTER TABLE `t` ENGINE = ''"},
 		{"ALTER TABLE t ENGINE = 'innodb'", true, "ALTER TABLE `t` ENGINE = innodb"},
 		{"ALTER TABLE t ENGINE = innodb", true, "ALTER TABLE `t` ENGINE = innodb"},
 		{"ALTER TABLE `db`.`t` ENGINE = ``", true, "ALTER TABLE `db`.`t` ENGINE = ''"},
+		{"ALTER TABLE t INSERT_METHOD = FIRST", true, "ALTER TABLE `t` INSERT_METHOD = 'FIRST'"},
+		{"ALTER TABLE t INSERT_METHOD LAST", true, "ALTER TABLE `t` INSERT_METHOD = 'LAST'"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT UNSIGNED, ADD COLUMN a SMALLINT", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT UNSIGNED, ADD COLUMN `a` SMALLINT"},
 		{"ALTER TABLE t ADD COLUMN a SMALLINT, ENGINE = '', default COLLATE = UTF8_GENERAL_CI", true, "ALTER TABLE `t` ADD COLUMN `a` SMALLINT, ENGINE = '', DEFAULT COLLATE = UTF8_GENERAL_CI"},
 		{"ALTER TABLE t ENGINE = '', COMMENT='', default COLLATE = UTF8_GENERAL_CI", true, "ALTER TABLE `t` ENGINE = '', COMMENT = '', DEFAULT COLLATE = UTF8_GENERAL_CI"},
@@ -2029,6 +2307,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t DROP INDEX;", false, "ALTER TABLE `t` DROP INDEX"},
 		{"ALTER TABLE t DROP INDEX a", true, "ALTER TABLE `t` DROP INDEX `a`"},
 		{"ALTER TABLE t DROP INDEX IF EXISTS a", true, "ALTER TABLE `t` DROP INDEX IF EXISTS `a`"},
+
+		// For alter table alter index statement
+		{"ALTER TABLE t ALTER INDEX a INVISIBLE", true, "ALTER TABLE `t` ALTER INDEX `a` INVISIBLE"},
+		{"ALTER TABLE t ALTER INDEX a VISIBLE", true, "ALTER TABLE `t` ALTER INDEX `a` VISIBLE"},
+
 		{"ALTER TABLE t DROP FOREIGN KEY a", true, "ALTER TABLE `t` DROP FOREIGN KEY `a`"},
 		{"ALTER TABLE t DROP FOREIGN KEY IF EXISTS a", true, "ALTER TABLE `t` DROP FOREIGN KEY IF EXISTS `a`"},
 		{"ALTER TABLE t DROP COLUMN a CASCADE", true, "ALTER TABLE `t` DROP COLUMN `a`"},
@@ -2042,6 +2325,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t RENAME KEY a TO b;", true, "ALTER TABLE `t` RENAME INDEX `a` TO `b`"},
 		{"ALTER TABLE t RENAME INDEX a TO b;", true, "ALTER TABLE `t` RENAME INDEX `a` TO `b`"},
 
+		// For #497, support `ALTER TABLE ALTER CHECK` and `ALTER TABLE DROP CHECK` syntax
+		{"ALTER TABLE d_n.t_n DROP CHECK ident;", true, "ALTER TABLE `d_n`.`t_n` DROP CHECK `ident`"},
+		{"ALTER TABLE t_n LOCK = DEFAULT , DROP CHECK ident;", true, "ALTER TABLE `t_n` LOCK = DEFAULT, DROP CHECK `ident`"},
+		{"ALTER TABLE t_n ALTER CHECK ident ENFORCED;", true, "ALTER TABLE `t_n` ALTER CHECK `ident` ENFORCED"},
+		{"ALTER TABLE t_n ALTER CHECK ident NOT ENFORCED;", true, "ALTER TABLE `t_n` ALTER CHECK `ident` NOT ENFORCED"},
+
 		{"alter table t analyze partition a", true, "ANALYZE TABLE `t` PARTITION `a`"},
 		{"alter table t analyze partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH 4 BUCKETS"},
 		{"alter table t analyze partition a index b", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b`"},
@@ -2054,17 +2343,78 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t enable keys, comment = 'cmt' partition by hash(a)", true, "ALTER TABLE `t` ENABLE KEYS, COMMENT = 'cmt' PARTITION BY HASH (`a`) PARTITIONS 1"},
 		{"alter table t enable keys, comment = 'cmt', partition by hash(a)", false, ""},
 
+		// Test keyword `FIELDS`
+		{"alter table t partition by range FIELDS(a) (partition x values less than maxvalue)", true, "ALTER TABLE `t` PARTITION BY RANGE COLUMNS (`a`) (PARTITION `x` VALUES LESS THAN (MAXVALUE))"},
+		{"alter table t partition by list FIELDS(a) (PARTITION p0 VALUES IN (5, 10, 15))", true, "ALTER TABLE `t` PARTITION BY LIST COLUMNS (`a`) (PARTITION `p0` VALUES IN (5, 10, 15))"},
+		{"alter table t partition by range FIELDS(a,b,c) (partition p1 values less than (1,1,1));", true, "ALTER TABLE `t` PARTITION BY RANGE COLUMNS (`a`,`b`,`c`) (PARTITION `p1` VALUES LESS THAN (1, 1, 1))"},
+		{"alter table t partition by list FIELDS(a,b,c) (PARTITION p0 VALUES IN ((5, 10, 15)))", true, "ALTER TABLE `t` PARTITION BY LIST COLUMNS (`a`,`b`,`c`) (PARTITION `p0` VALUES IN ((5, 10, 15)))"},
+
+		{"alter table t with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t without validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t without validation, with validation, add column b int as (a + 1)", true, "ALTER TABLE `t` WITHOUT VALIDATION, WITH VALIDATION, ADD COLUMN `b` INT GENERATED ALWAYS AS(`a`+1) VIRTUAL"},
+		{"alter table t with validation, modify column b int as (a + 2) ", true, "ALTER TABLE `t` WITH VALIDATION, MODIFY COLUMN `b` INT GENERATED ALWAYS AS(`a`+2) VIRTUAL"},
+		{"alter table t with validation, change column b c int as (a + 2)", true, "ALTER TABLE `t` WITH VALIDATION, CHANGE COLUMN `b` `c` INT GENERATED ALWAYS AS(`a`+2) VIRTUAL"},
+
+		{"ALTER TABLE d_n.t_n ADD PARTITION NO_WRITE_TO_BINLOG", true, "ALTER TABLE `d_n`.`t_n` ADD PARTITION NO_WRITE_TO_BINLOG"},
+		{"ALTER TABLE d_n.t_n ADD PARTITION LOCAL", true, "ALTER TABLE `d_n`.`t_n` ADD PARTITION NO_WRITE_TO_BINLOG"},
+
+		{"alter table t with validation, exchange partition p with table nt without validation;", true, "ALTER TABLE `t` WITH VALIDATION, EXCHANGE PARTITION `p` WITH TABLE `nt` WITHOUT VALIDATION"},
+		{"alter table t exchange partition p with table nt with validation;", true, "ALTER TABLE `t` EXCHANGE PARTITION `p` WITH TABLE `nt`"},
+
+		// For reorganize partition statement
+		{"alter table t reorganize partition;", true, "ALTER TABLE `t` REORGANIZE PARTITION"},
+		{"alter table t reorganize partition local;", true, "ALTER TABLE `t` REORGANIZE PARTITION NO_WRITE_TO_BINLOG"},
+		{"alter table t reorganize partition no_write_to_binlog;", true, "ALTER TABLE `t` REORGANIZE PARTITION NO_WRITE_TO_BINLOG"},
+		{"ALTER TABLE members REORGANIZE PARTITION n0 INTO (PARTITION s0 VALUES LESS THAN (1960), PARTITION s1 VALUES LESS THAN (1970));", true, "ALTER TABLE `members` REORGANIZE PARTITION `n0` INTO (PARTITION `s0` VALUES LESS THAN (1960), PARTITION `s1` VALUES LESS THAN (1970))"},
+		{"ALTER TABLE members REORGANIZE PARTITION LOCAL n0 INTO (PARTITION s0 VALUES LESS THAN (1960), PARTITION s1 VALUES LESS THAN (1970));", true, "ALTER TABLE `members` REORGANIZE PARTITION NO_WRITE_TO_BINLOG `n0` INTO (PARTITION `s0` VALUES LESS THAN (1960), PARTITION `s1` VALUES LESS THAN (1970))"},
+		{"ALTER TABLE members REORGANIZE PARTITION p1,p2,p3 INTO ( PARTITION s0 VALUES LESS THAN (1960), PARTITION s1 VALUES LESS THAN (1970));", true, "ALTER TABLE `members` REORGANIZE PARTITION `p1`,`p2`,`p3` INTO (PARTITION `s0` VALUES LESS THAN (1960), PARTITION `s1` VALUES LESS THAN (1970))"},
+		{"alter table t reorganize partition remove partition;", false, ""},
+		{"alter table t reorganize partition no_write_to_binlog remove into (partition p0 VALUES LESS THAN (1991));", true, "ALTER TABLE `t` REORGANIZE PARTITION NO_WRITE_TO_BINLOG `remove` INTO (PARTITION `p0` VALUES LESS THAN (1991))"},
+
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
 		{"CREATE UNIQUE INDEX idx ON t (a)", true, "CREATE UNIQUE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE UNIQUE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE UNIQUE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
+		{"CREATE UNIQUE INDEX ident ON d_n.t_n ( ident , ident ASC ) TYPE BTREE", true, "CREATE UNIQUE INDEX `ident` ON `d_n`.`t_n` (`ident`, `ident`) USING BTREE"},
+		{"CREATE UNIQUE INDEX ident ON d_n.t_n ( ident , ident ASC ) TYPE HASH", true, "CREATE UNIQUE INDEX `ident` ON `d_n`.`t_n` (`ident`, `ident`) USING HASH"},
+		{"CREATE UNIQUE INDEX ident ON d_n.t_n ( ident , ident ASC ) TYPE RTREE", true, "CREATE UNIQUE INDEX `ident` ON `d_n`.`t_n` (`ident`, `ident`) USING RTREE"},
+		{"CREATE UNIQUE INDEX ident TYPE BTREE ON d_n.t_n ( ident , ident ASC )", true, "CREATE UNIQUE INDEX `ident` ON `d_n`.`t_n` (`ident`, `ident`) USING BTREE"},
+		{"CREATE UNIQUE INDEX ident USING BTREE ON d_n.t_n ( ident , ident ASC )", true, "CREATE UNIQUE INDEX `ident` ON `d_n`.`t_n` (`ident`, `ident`) USING BTREE"},
+		{"CREATE SPATIAL INDEX idx ON t (a)", true, "CREATE SPATIAL INDEX `idx` ON `t` (`a`)"},
+		{"CREATE SPATIAL INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE SPATIAL INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
+		{"CREATE FULLTEXT INDEX idx ON t (a)", true, "CREATE FULLTEXT INDEX `idx` ON `t` (`a`)"},
+		{"CREATE FULLTEXT INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE FULLTEXT INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
+		{"CREATE FULLTEXT INDEX idx ON t (a) WITH PARSER ident", true, "CREATE FULLTEXT INDEX `idx` ON `t` (`a`) WITH PARSER `ident`"},
+		{"CREATE FULLTEXT INDEX idx ON t (a) WITH PARSER ident comment 'string'", true, "CREATE FULLTEXT INDEX `idx` ON `t` (`a`) WITH PARSER `ident` COMMENT 'string'"},
+		{"CREATE FULLTEXT INDEX idx ON t (a) comment 'string' with parser ident", true, "CREATE FULLTEXT INDEX `idx` ON `t` (`a`) WITH PARSER `ident` COMMENT 'string'"},
+		{"CREATE FULLTEXT INDEX idx ON t (a) WITH PARSER ident comment 'string' lock default", true, "CREATE FULLTEXT INDEX `idx` ON `t` (`a`) WITH PARSER `ident` COMMENT 'string'"},
 		{"CREATE INDEX idx ON t (a) USING HASH", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH"},
 		{"CREATE INDEX idx ON t (a) COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) COMMENT 'foo'"},
 		{"CREATE INDEX idx ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
-		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t (a) LOCK=NONE", true, "CREATE INDEX `idx` ON `t` (`a`) LOCK = NONE"},
 		{"CREATE INDEX idx USING BTREE ON t (a) USING HASH COMMENT 'foo'", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH COMMENT 'foo'"},
 		{"CREATE INDEX idx USING BTREE ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`) USING BTREE"},
+		{"CREATE INDEX idx ON t ( a ) VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) VISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) INVISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) INVISIBLE VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) VISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) VISIBLE INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) INVISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) USING HASH VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH VISIBLE"},
+		{"CREATE INDEX idx ON t ( a ) USING HASH INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH INVISIBLE"},
+
+		// For create index with algorithm
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = COPY", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = COPY"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM COPY", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = COPY"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT LOCK = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) LOCK = DEFAULT ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = INPLACE LOCK = EXCLUSIVE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"CREATE INDEX idx ON t ( a ) LOCK = EXCLUSIVE ALGORITHM = INPLACE", true, "CREATE INDEX `idx` ON `t` (`a`) ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM = ident", false, ""},
+		{"CREATE INDEX idx ON t ( a ) ALGORITHM ident", false, ""},
 
 		//For dorp index statement
 		{"drop index a on t", true, "DROP INDEX `a` ON `t`"},
@@ -2073,6 +2423,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop index if exists a on t", true, "DROP INDEX IF EXISTS `a` ON `t`"},
 		{"drop index if exists a on db.t", true, "DROP INDEX IF EXISTS `a` ON `db`.`t`"},
 		{"drop index if exists a on db.`tb-ttb`", true, "DROP INDEX IF EXISTS `a` ON `db`.`tb-ttb`"},
+		{"drop index idx on t algorithm = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t algorithm default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t algorithm = inplace", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE"},
+		{"drop index idx on t algorithm inplace", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE"},
+		{"drop index idx on t lock = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t lock default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t lock = shared", true, "DROP INDEX `idx` ON `t` LOCK = SHARED"},
+		{"drop index idx on t lock shared", true, "DROP INDEX `idx` ON `t` LOCK = SHARED"},
+		{"drop index idx on t algorithm = default lock = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t lock = default algorithm = default", true, "DROP INDEX `idx` ON `t`"},
+		{"drop index idx on t algorithm = inplace lock = exclusive", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"drop index idx on t lock = exclusive algorithm = inplace", true, "DROP INDEX `idx` ON `t` ALGORITHM = INPLACE LOCK = EXCLUSIVE"},
+		{"drop index idx on t algorithm = algorithm_type", false, ""},
+		{"drop index idx on t algorithm algorithm_type", false, ""},
+		{"drop index idx on t lock = lock_type", false, ""},
+		{"drop index idx on t lock lock_type", false, ""},
 
 		// for rename table statement
 		{"RENAME TABLE t TO t1", true, "RENAME TABLE `t` TO `t1`"},
@@ -2089,6 +2455,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD UNIQUE ()", false, ""},
 		{"ALTER TABLE t ADD UNIQUE INDEX ()", false, ""},
 		{"ALTER TABLE t ADD UNIQUE KEY ()", false, ""},
+
+		// for keyword `SECONDARY_LOAD`, `SECONDARY_UNLOAD`
+		{"ALTER TABLE d_n.t_n SECONDARY_LOAD", true, "ALTER TABLE `d_n`.`t_n` SECONDARY_LOAD"},
+		{"ALTER TABLE d_n.t_n SECONDARY_UNLOAD", true, "ALTER TABLE `d_n`.`t_n` SECONDARY_UNLOAD"},
+		{"ALTER TABLE t_n LOCK = DEFAULT , SECONDARY_LOAD", true, "ALTER TABLE `t_n` LOCK = DEFAULT, SECONDARY_LOAD"},
+		{"ALTER TABLE d_n.t_n ALGORITHM = DEFAULT , SECONDARY_LOAD", true, "ALTER TABLE `d_n`.`t_n` ALGORITHM = DEFAULT, SECONDARY_LOAD"},
+		{"ALTER TABLE d_n.t_n ALGORITHM = DEFAULT , SECONDARY_UNLOAD", true, "ALTER TABLE `d_n`.`t_n` ALGORITHM = DEFAULT, SECONDARY_UNLOAD"},
 
 		// for issue 4538
 		{"create table a (process double)", true, "CREATE TABLE `a` (`process` DOUBLE)"},
@@ -2118,6 +2491,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t add column (f timestamp as (a+1) default '2019-01-01 11:11:11');", false, ""},
 		{"alter table t modify column f int as (a+1) default 55;", false, ""},
 
+		// for column format
+		{"create table t (a int column_format fixed)", true, "CREATE TABLE `t` (`a` INT COLUMN_FORMAT FIXED)"},
+		{"create table t (a int column_format default)", true, "CREATE TABLE `t` (`a` INT COLUMN_FORMAT DEFAULT)"},
+		{"create table t (a int column_format dynamic)", true, "CREATE TABLE `t` (`a` INT COLUMN_FORMAT DYNAMIC)"},
+		{"alter table t modify column a bigint column_format default", true, "ALTER TABLE `t` MODIFY COLUMN `a` BIGINT COLUMN_FORMAT DEFAULT"},
+
 		// for recover table
 		{"recover table by job 11", true, "RECOVER TABLE BY JOB 11"},
 		{"recover table by job 11,12,13", false, ""},
@@ -2127,6 +2506,175 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table ", false, ""},
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
+
+		// for remove partitioning
+		{"alter table t remove partitioning", true, "ALTER TABLE `t` REMOVE PARTITIONING"},
+		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident` REMOVE PARTITIONING"},
+		{"alter table t lock = default remove partitioning", true, "ALTER TABLE `t` LOCK = DEFAULT REMOVE PARTITIONING"},
+
+		// for references without IndexColNameList
+		{"alter table t add column a double (4,2) zerofill references b match full on update set null first", true, "ALTER TABLE `t` ADD COLUMN `a` DOUBLE(4,2) UNSIGNED ZEROFILL REFERENCES `b` MATCH FULL ON UPDATE SET NULL FIRST"},
+		{"alter table d_n.t_n add constraint foreign key ident (ident(1)) references d_n.t_n match full on delete set null", true, "ALTER TABLE `d_n`.`t_n` ADD CONSTRAINT `ident` FOREIGN KEY (`ident`(1)) REFERENCES `d_n`.`t_n` MATCH FULL ON DELETE SET NULL"},
+		{"alter table t_n add constraint ident foreign key (ident,ident(1)) references t_n match full on update set null on delete restrict", true, "ALTER TABLE `t_n` ADD CONSTRAINT `ident` FOREIGN KEY (`ident`, `ident`(1)) REFERENCES `t_n` MATCH FULL ON DELETE RESTRICT ON UPDATE SET NULL"},
+		{"alter table d_n.t_n add foreign key ident (ident, ident(1) asc) references t_n match partial on delete cascade remove partitioning", true, "ALTER TABLE `d_n`.`t_n` ADD CONSTRAINT `ident` FOREIGN KEY (`ident`, `ident`(1)) REFERENCES `t_n` MATCH PARTIAL ON DELETE CASCADE REMOVE PARTITIONING"},
+		{"alter table d_n.t_n add constraint foreign key (ident asc) references d_n.t_n match simple on update cascade on delete cascade", true, "ALTER TABLE `d_n`.`t_n` ADD CONSTRAINT FOREIGN KEY (`ident`) REFERENCES `d_n`.`t_n` MATCH SIMPLE ON DELETE CASCADE ON UPDATE CASCADE"},
+
+		// for character vary syntax
+		{"create table t (a character varying(1));", true, "CREATE TABLE `t` (`a` VARCHAR(1))"},
+		{"create table t (a character varying(255));", true, "CREATE TABLE `t` (`a` VARCHAR(255))"},
+		{"create table t (a char varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a varcharacter(1));", true, "CREATE TABLE `t` (`a` VARCHAR(1))"},
+		{"create table t (a varcharacter(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a varcharacter(1), b varcharacter(255));", true, "CREATE TABLE `t` (`a` VARCHAR(1),`b` VARCHAR(255))"},
+		{"create table t (a char);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a character);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a character varying(50), b int);", true, "CREATE TABLE `t` (`a` VARCHAR(50),`b` INT)"},
+		{"create table t (a character, b int);", true, "CREATE TABLE `t` (`a` CHAR,`b` INT)"},
+		{"create table t (a national character varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national char varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national char);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a national character);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a nchar);", true, "CREATE TABLE `t` (`a` CHAR)"},
+		{"create table t (a nchar varchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a nchar varcharacter(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national varchar);", false, ""},
+		{"create table t (a national varchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a national varcharacter(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a nchar varying(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table t (a nvarchar(50));", true, "CREATE TABLE `t` (`a` VARCHAR(50))"},
+		{"create table nchar (a int);", true, "CREATE TABLE `nchar` (`a` INT)"},
+		{"create table nchar (a int, b nchar);", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR)"},
+		{"create table nchar (a int, b nchar(50));", true, "CREATE TABLE `nchar` (`a` INT,`b` CHAR(50))"},
+		{"alter table t_n storage disk , modify ident national varcharacter(12) column_format fixed first;", true, "ALTER TABLE `t_n` STORAGE DISK, MODIFY COLUMN `ident` VARCHAR(12) COLUMN_FORMAT FIXED FIRST"},
+
+		// Test keyword `SERIAL`
+		{"create table t (a serial);", true, "CREATE TABLE `t` (`a` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE KEY)"},
+		{"create table t (a serial null);", true, "CREATE TABLE `t` (`a` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE KEY NULL)"},
+		{"create table t (b int, a serial);", true, "CREATE TABLE `t` (`b` INT,`a` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE KEY)"},
+		{"create table t (a int serial default value);", true, "CREATE TABLE `t` (`a` INT NOT NULL AUTO_INCREMENT UNIQUE KEY)"},
+		{"create table t (a int serial default value null);", true, "CREATE TABLE `t` (`a` INT NOT NULL AUTO_INCREMENT UNIQUE KEY NULL)"},
+		{"create table t (a bigint serial default value);", true, "CREATE TABLE `t` (`a` BIGINT NOT NULL AUTO_INCREMENT UNIQUE KEY)"},
+		{"create table t (a smallint serial default value);", true, "CREATE TABLE `t` (`a` SMALLINT NOT NULL AUTO_INCREMENT UNIQUE KEY)"},
+
+		// for LONG syntax
+		{"create table t (a long);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a long varchar);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a long varcharacter);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a long char varying);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a long character varying);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT)"},
+		{"create table t (a mediumtext, b long varchar, c long, d long varcharacter, e long char varying, f long character varying, g long);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT,`b` MEDIUMTEXT,`c` MEDIUMTEXT,`d` MEDIUMTEXT,`e` MEDIUMTEXT,`f` MEDIUMTEXT,`g` MEDIUMTEXT)"},
+		{"create table t (a long varbinary);", true, "CREATE TABLE `t` (`a` MEDIUMBLOB)"},
+		{"create table t (a long char varying, b long varbinary);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT,`b` MEDIUMBLOB)"},
+		{"create table t (a long char set utf8);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8)"},
+		{"create table t (a long char varying char set utf8);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8)"},
+		{"create table t (a long character set utf8);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8)"},
+		{"create table t (a long character varying character set utf8);", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8)"},
+		{"alter table d_n.t_n modify column ident long after ident remove partitioning", true, "ALTER TABLE `d_n`.`t_n` MODIFY COLUMN `ident` MEDIUMTEXT AFTER `ident` REMOVE PARTITIONING"},
+		{"alter table d_n.t_n modify column ident long char varying after ident remove partitioning", true, "ALTER TABLE `d_n`.`t_n` MODIFY COLUMN `ident` MEDIUMTEXT AFTER `ident` REMOVE PARTITIONING"},
+		{"alter table d_n.t_n modify column ident long character varying after ident remove partitioning", true, "ALTER TABLE `d_n`.`t_n` MODIFY COLUMN `ident` MEDIUMTEXT AFTER `ident` REMOVE PARTITIONING"},
+		{"alter table d_n.t_n modify column ident long varchar after ident remove partitioning", true, "ALTER TABLE `d_n`.`t_n` MODIFY COLUMN `ident` MEDIUMTEXT AFTER `ident` REMOVE PARTITIONING"},
+		{"alter table d_n.t_n modify column ident long varcharacter after ident remove partitioning", true, "ALTER TABLE `d_n`.`t_n` MODIFY COLUMN `ident` MEDIUMTEXT AFTER `ident` REMOVE PARTITIONING"},
+		{"alter table t_n change column ident ident long char varying binary charset utf8 first , tablespace ident", true, "ALTER TABLE `t_n` CHANGE COLUMN `ident` `ident` MEDIUMTEXT BINARY CHARACTER SET UTF8 FIRST, TABLESPACE = `ident`"},
+		{"alter table t_n change column ident ident long character varying binary charset utf8 first , tablespace ident", true, "ALTER TABLE `t_n` CHANGE COLUMN `ident` `ident` MEDIUMTEXT BINARY CHARACTER SET UTF8 FIRST, TABLESPACE = `ident`"},
+
+		// for STATS_AUTO_RECALC syntax
+		{"create table t (a int) stats_auto_recalc 2;", false, ""},
+		{"create table t (a int) stats_auto_recalc = 10;", false, ""},
+		{"create table t (a int) stats_auto_recalc 0;", true, "CREATE TABLE `t` (`a` INT) STATS_AUTO_RECALC = 0"},
+		{"create table t (a int) stats_auto_recalc default;", true, "CREATE TABLE `t` (`a` INT) STATS_AUTO_RECALC = DEFAULT"},
+		{"create table t (a int) stats_auto_recalc = 0;", true, "CREATE TABLE `t` (`a` INT) STATS_AUTO_RECALC = 0"},
+		{"create table t (a int) stats_auto_recalc = 1;", true, "CREATE TABLE `t` (`a` INT) STATS_AUTO_RECALC = 1"},
+		{"create table t (a int) stats_auto_recalc=default;", true, "CREATE TABLE `t` (`a` INT) STATS_AUTO_RECALC = DEFAULT"},
+		{"create table t (a int) stats_persistent = 1, stats_auto_recalc = 1;", true, "CREATE TABLE `t` (`a` INT) STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */  STATS_AUTO_RECALC = 1"},
+		{"create table t (a int) stats_auto_recalc = 1, stats_sample_pages = 25;", true, "CREATE TABLE `t` (`a` INT) STATS_AUTO_RECALC = 1 STATS_SAMPLE_PAGES = 25"},
+		{"alter table t modify a bigint, ENGINE=InnoDB, stats_auto_recalc = 0", true, "ALTER TABLE `t` MODIFY COLUMN `a` BIGINT, ENGINE = InnoDB, STATS_AUTO_RECALC = 0"},
+		{"create table stats_auto_recalc (a int);", true, "CREATE TABLE `stats_auto_recalc` (`a` INT)"},
+		{"create table stats_auto_recalc (a int) stats_auto_recalc=1;", true, "CREATE TABLE `stats_auto_recalc` (`a` INT) STATS_AUTO_RECALC = 1"},
+
+		// for TYPE/USING syntax
+		{"create table t (a int, primary key type type btree (a));", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
+		{"create table t (a int, primary key type btree (a));", false, ""},
+		{"create table t (a int, primary key using btree (a));", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
+		{"create table t (a int, primary key (a) type btree);", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
+		{"create table t (a int, primary key (a) using btree);", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
+		{"create table t (a int, unique index type type btree (a));", true, "CREATE TABLE `t` (`a` INT,UNIQUE `type`(`a`) USING BTREE)"},
+		{"create table t (a int, unique index type using btree (a));", true, "CREATE TABLE `t` (`a` INT,UNIQUE `type`(`a`) USING BTREE)"},
+		{"create table t (a int, unique index type btree (a));", false, ""},
+		{"create table t (a int, unique index using btree (a));", true, "CREATE TABLE `t` (`a` INT,UNIQUE(`a`) USING BTREE)"},
+		{"create table t (a int, unique index (a) using btree);", true, "CREATE TABLE `t` (`a` INT,UNIQUE(`a`) USING BTREE)"},
+		{"create table t (a int, unique key (a) using btree);", true, "CREATE TABLE `t` (`a` INT,UNIQUE(`a`) USING BTREE)"},
+		{"create table t (a int, index type type btree (a));", true, "CREATE TABLE `t` (`a` INT,INDEX `type`(`a`) USING BTREE)"},
+		{"create table t (a int, index type btree (a));", false, ""},
+		{"create table t (a int, index type using btree (a));", true, "CREATE TABLE `t` (`a` INT,INDEX `type`(`a`) USING BTREE)"},
+		{"create table t (a int, index using btree (a));", true, "CREATE TABLE `t` (`a` INT,INDEX(`a`) USING BTREE)"},
+
+		// for issue 500
+		{`ALTER TABLE d_n.t_n WITHOUT VALIDATION , ADD PARTITION ( PARTITION ident VALUES LESS THAN ( MAXVALUE ) STORAGE ENGINE text_string MAX_ROWS 12 )`, true, "ALTER TABLE `d_n`.`t_n` WITHOUT VALIDATION, ADD PARTITION (PARTITION `ident` VALUES LESS THAN (MAXVALUE) ENGINE = text_string MAX_ROWS = 12)"},
+		{`ALTER TABLE d_n.t_n WITH VALIDATION , ADD PARTITION NO_WRITE_TO_BINLOG (PARTITION ident VALUES LESS THAN MAXVALUE STORAGE ENGINE = text_string, PARTITION ident VALUES LESS THAN ( MAXVALUE ) (SUBPARTITION text_string MIN_ROWS 11))`, true, "ALTER TABLE `d_n`.`t_n` WITH VALIDATION, ADD PARTITION NO_WRITE_TO_BINLOG (PARTITION `ident` VALUES LESS THAN (MAXVALUE) ENGINE = text_string, PARTITION `ident` VALUES LESS THAN (MAXVALUE) (SUBPARTITION `text_string` MIN_ROWS = 11))"},
+		// for test VALUE IN
+		{`ALTER TABLE d_n.t_n WITHOUT VALIDATION , ADD PARTITION ( PARTITION ident VALUES IN ( MAXVALUE ) STORAGE ENGINE text_string MAX_ROWS 12 )`, true, "ALTER TABLE `d_n`.`t_n` WITHOUT VALIDATION, ADD PARTITION (PARTITION `ident` VALUES IN (MAXVALUE) ENGINE = text_string MAX_ROWS = 12)"},
+		{`ALTER TABLE d_n.t_n WITH VALIDATION , ADD PARTITION NO_WRITE_TO_BINLOG ( PARTITION ident VALUES IN ( MAXVALUE ) STORAGE ENGINE text_string MAX_ROWS 12 )`, true, "ALTER TABLE `d_n`.`t_n` WITH VALIDATION, ADD PARTITION NO_WRITE_TO_BINLOG (PARTITION `ident` VALUES IN (MAXVALUE) ENGINE = text_string MAX_ROWS = 12)"},
+		{`ALTER TABLE d_n.t_n WITH VALIDATION , ADD PARTITION NO_WRITE_TO_BINLOG (PARTITION ident VALUES LESS THAN MAXVALUE STORAGE ENGINE = text_string, PARTITION ident VALUES IN ( MAXVALUE ) (SUBPARTITION text_string MIN_ROWS 11))`, true, "ALTER TABLE `d_n`.`t_n` WITH VALIDATION, ADD PARTITION NO_WRITE_TO_BINLOG (PARTITION `ident` VALUES LESS THAN (MAXVALUE) ENGINE = text_string, PARTITION `ident` VALUES IN (MAXVALUE) (SUBPARTITION `text_string` MIN_ROWS = 11))"},
+		// for issue 501
+		{"ALTER TABLE t IMPORT TABLESPACE;", true, "ALTER TABLE `t` IMPORT TABLESPACE"},
+		{"ALTER TABLE t DISCARD TABLESPACE;", true, "ALTER TABLE `t` DISCARD TABLESPACE"},
+		{"ALTER TABLE db.t IMPORT TABLESPACE;", true, "ALTER TABLE `db`.`t` IMPORT TABLESPACE"},
+		{"ALTER TABLE db.t DISCARD TABLESPACE;", true, "ALTER TABLE `db`.`t` DISCARD TABLESPACE"},
+
+		// for CONSTRAINT syntax, see issue 413
+		{"ALTER TABLE t ADD ( CHECK ( true ) )", true, "ALTER TABLE `t` ADD COLUMN (CHECK(TRUE) ENFORCED)"},
+		{"ALTER TABLE t ADD ( CONSTRAINT CHECK ( true ) )", true, "ALTER TABLE `t` ADD COLUMN (CHECK(TRUE) ENFORCED)"},
+		{"ALTER TABLE t ADD COLUMN ( CONSTRAINT ident CHECK ( 1>2 ) NOT ENFORCED )", true, "ALTER TABLE `t` ADD COLUMN (CONSTRAINT `ident` CHECK(1>2) NOT ENFORCED)"},
+		{"alter table t add column (b int, constraint c unique key (b))", true, "ALTER TABLE `t` ADD COLUMN (`b` INT, UNIQUE `c`(`b`))"},
+		{"ALTER TABLE t ADD COLUMN ( CONSTRAINT CHECK ( true ) )", true, "ALTER TABLE `t` ADD COLUMN (CHECK(TRUE) ENFORCED)"},
+		{"ALTER TABLE t ADD COLUMN ( CONSTRAINT CHECK ( true ) ENFORCED , CHECK ( true ) )", true, "ALTER TABLE `t` ADD COLUMN (CHECK(TRUE) ENFORCED, CHECK(TRUE) ENFORCED)"},
+		{"ALTER TABLE t ADD COLUMN (a1 int, CONSTRAINT b1 CHECK (a1>0))", true, "ALTER TABLE `t` ADD COLUMN (`a1` INT, CONSTRAINT `b1` CHECK(`a1`>0) ENFORCED)"},
+		{"ALTER TABLE t ADD COLUMN (a1 int, a2 int, CONSTRAINT b1 CHECK (a1>0), CONSTRAINT b2 CHECK (a2<10))", true, "ALTER TABLE `t` ADD COLUMN (`a1` INT, `a2` INT, CONSTRAINT `b1` CHECK(`a1`>0) ENFORCED, CONSTRAINT `b2` CHECK(`a2`<10) ENFORCED)"},
+		{"ALTER TABLE `t` ADD COLUMN (`a1` INT, PRIMARY KEY (`a1`))", true, "ALTER TABLE `t` ADD COLUMN (`a1` INT, PRIMARY KEY(`a1`))"},
+		{"ALTER TABLE t ADD (a1 int, CONSTRAINT PRIMARY KEY (a1))", true, "ALTER TABLE `t` ADD COLUMN (`a1` INT, PRIMARY KEY(`a1`))"},
+		{"ALTER TABLE t ADD (a1 int, a2 int, PRIMARY KEY (a1), UNIQUE (a2))", true, "ALTER TABLE `t` ADD COLUMN (`a1` INT, `a2` INT, PRIMARY KEY(`a1`), UNIQUE(`a2`))"},
+		{"ALTER TABLE t ADD (a1 int, a2 int, PRIMARY KEY (a1), CONSTRAINT b2 UNIQUE (a2))", true, "ALTER TABLE `t` ADD COLUMN (`a1` INT, `a2` INT, PRIMARY KEY(`a1`), UNIQUE `b2`(`a2`))"},
+		{"ALTER TABLE ident ADD ( CONSTRAINT FOREIGN KEY ident ( EXECUTE ( 123 ) ) REFERENCES t ( a ) MATCH SIMPLE ON DELETE CASCADE ON UPDATE SET NULL )", true, "ALTER TABLE `ident` ADD COLUMN (CONSTRAINT `ident` FOREIGN KEY (`EXECUTE`(123)) REFERENCES `t`(`a`) MATCH SIMPLE ON DELETE CASCADE ON UPDATE SET NULL)"},
+		// for CONSTRAINT cont'd, the following tests are for another aspect of the incompatibility
+		{"ALTER TABLE t ADD COLUMN a DATE CHECK ( a > 0 ) FIRST", true, "ALTER TABLE `t` ADD COLUMN `a` DATE CHECK(`a`>0) ENFORCED FIRST"},
+		{"ALTER TABLE t ADD a1 int CONSTRAINT ident CHECK ( a1 > 1 ) REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE;", true, "ALTER TABLE `t` ADD COLUMN `a1` INT CHECK(`a1`>1) ENFORCED REFERENCES `b` ON DELETE CASCADE ON UPDATE CASCADE"},
+		{"ALTER TABLE t ADD COLUMN a DATE CONSTRAINT CHECK ( a > 0 ) FIRST", true, "ALTER TABLE `t` ADD COLUMN `a` DATE CHECK(`a`>0) ENFORCED FIRST"},
+		{"ALTER TABLE t ADD a TINYBLOB CONSTRAINT ident CHECK ( 1>2 ) REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE", true, "ALTER TABLE `t` ADD COLUMN `a` TINYBLOB CHECK(1>2) ENFORCED REFERENCES `b` ON DELETE CASCADE ON UPDATE CASCADE"},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident CHECK (a2 > 1) ENFORCED", true, "ALTER TABLE `t` ADD COLUMN `a2` INT CHECK(`a2`>1) ENFORCED"},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident CHECK (a2 > 1) NOT ENFORCED", true, "ALTER TABLE `t` ADD COLUMN `a2` INT CHECK(`a2`>1) NOT ENFORCED"},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident primary key REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE;", false, ""},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident primary key (a2))", false, ""},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident unique key (a2))", false, ""},
+
+		// for issue 537
+		{"CREATE TABLE IF NOT EXISTS table_ident (a SQL_TSI_YEAR(4), b SQL_TSI_YEAR);", true, "CREATE TABLE IF NOT EXISTS `table_ident` (`a` YEAR(4),`b` YEAR)"},
+		{`CREATE TABLE IF NOT EXISTS table_ident (ident1 BOOL COMMENT "text_string" unique, ident2 SQL_TSI_YEAR(4) ZEROFILL);`, true, "CREATE TABLE IF NOT EXISTS `table_ident` (`ident1` TINYINT(1) COMMENT 'text_string' UNIQUE KEY,`ident2` YEAR(4))"},
+		{"create table t (y sql_tsi_year(4), y1 sql_tsi_year)", true, "CREATE TABLE `t` (`y` YEAR(4),`y1` YEAR)"},
+		{"create table t (y sql_tsi_year(4) unsigned zerofill zerofill, y1 sql_tsi_year signed unsigned zerofill)", true, "CREATE TABLE `t` (`y` YEAR(4),`y1` YEAR)"},
+
+		// for issue 549
+		{"insert into t set a = default", true, "INSERT INTO `t` SET `a`=DEFAULT"},
+		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},
+		{"update t set a = default", true, "UPDATE `t` SET `a`=DEFAULT"},
+		{"insert into t set a = default on duplicate key update a = default", true, "INSERT INTO `t` SET `a`=DEFAULT ON DUPLICATE KEY UPDATE `a`=DEFAULT"},
+
+		// for issue 529
+		{"create table t (a text byte ascii)", false, ""},
+		{"create table t (a text byte charset latin1)", false, ""},
+		{"create table t (a longtext ascii)", true, "CREATE TABLE `t` (`a` LONGTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a mediumtext ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a tinytext ascii)", true, "CREATE TABLE `t` (`a` TINYTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a text byte)", true, "CREATE TABLE `t` (`a` TEXT)"},
+		{"create table t (a long byte, b text ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT,`b` TEXT CHARACTER SET LATIN1)"},
+		{"create table t (a text ascii, b mediumtext ascii, c int)", true, "CREATE TABLE `t` (`a` TEXT CHARACTER SET LATIN1,`b` MEDIUMTEXT CHARACTER SET LATIN1,`c` INT)"},
+		{"create table t (a int, b text ascii, c mediumtext ascii)", true, "CREATE TABLE `t` (`a` INT,`b` TEXT CHARACTER SET LATIN1,`c` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a long ascii, b long ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET LATIN1,`b` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a long character set utf8mb4, b long charset utf8mb4, c long char set utf8mb4)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8MB4,`b` MEDIUMTEXT CHARACTER SET UTF8MB4,`c` MEDIUMTEXT CHARACTER SET UTF8MB4)"},
+
+		// for issue 555
+		{"create table t (a fixed(6, 3), b fixed key)", true, "CREATE TABLE `t` (`a` DECIMAL(6,3),`b` DECIMAL PRIMARY KEY)"},
+		{"create table t (a numeric, b fixed(6))", true, "CREATE TABLE `t` (`a` DECIMAL,`b` DECIMAL(6))"},
+		{"create table t (a fixed(65, 30) zerofill, b numeric, c fixed(65) unsigned zerofill)", true, "CREATE TABLE `t` (`a` DECIMAL(65,30) UNSIGNED ZEROFILL,`b` DECIMAL,`c` DECIMAL(65) UNSIGNED ZEROFILL)"},
 	}
 	s.RunTest(c, table)
 }
@@ -2206,64 +2754,353 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("ALTER SCHEMA `ANY_DB_NAME`", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\" ")
+
+	_, _, err = parser.Parse("alter table t partition by range FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For RANGE partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t partition by list FIELDS(a,b,c)", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
+
+	_, _, err = parser.Parse("alter table t lock = first", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'first'")
+
+	_, _, err = parser.Parse("alter table t lock = start", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'start'")
+
+	_, _, err = parser.Parse("alter table t lock = commit", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'commit'")
+
+	_, _, err = parser.Parse("alter table t lock = binlog", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'binlog'")
+
+	_, _, err = parser.Parse("alter table t lock = randomStr123", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'randomStr123'")
+
+	_, _, err = parser.Parse("create table t (a longtext unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a long byte, b text unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a long ascii, b long unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a text unicode, b mediumtext ascii, c int)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
 	parser := parser.New()
-	stmt, _, err := parser.Parse("select /*+ tidb_SMJ(T1,t2) tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test USE_INDEX
+	stmt, _, err := parser.Parse("select /*+ USE_INDEX(T1,T2), use_index(t3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt := stmt[0].(*ast.SelectStmt)
 
 	hints := selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_index")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "use_index")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "t4")
+
+	// Test IGNORE_INDEX
+	stmt, _, err = parser.Parse("select /*+ IGNORE_INDEX(T1,T2), ignore_index(t3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "ignore_index")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "ignore_index")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "t4")
+
+	// Test TIDB_SMJ
+	stmt, _, err = parser.Parse("select /*+ TIDB_SMJ(T1,t2), tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_smj")
-	c.Assert(len(hints[0].Tables), Equals, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_smj")
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	c.Assert(len(selectStmt.TableHints), Equals, 2)
-
-	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) tidb_inlj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test SM_JOIN
+	stmt, _, err = parser.Parse("select /*+ SM_JOIN(t1, T2), sm_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "sm_join")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "sm_join")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
+
+	// Test TIDB_INLJ
+	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2), tidb_inlj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_inlj")
-	c.Assert(len(hints[0].Tables), Equals, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_inlj")
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	stmt, _, err = parser.Parse("select /*+ TIDB_HJ(t1, T2) tidb_hj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test INL_JOIN
+	stmt, _, err = parser.Parse("select /*+ INL_JOIN(t1, T2), inl_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 2)
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "inl_join")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "inl_join")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
+
+	// Test TIDB_HJ
+	stmt, _, err = parser.Parse("select /*+ TIDB_HJ(t1, T2), tidb_hj(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_hj")
-	c.Assert(len(hints[0].Tables), Equals, 2)
-	c.Assert(hints[0].Tables[0].L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].L, Equals, "t2")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "tidb_hj")
-	c.Assert(hints[1].Tables[0].L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].L, Equals, "t4")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	stmt, _, err = parser.Parse("SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t1 INNER JOIN t2 where t1.c1 = t2.c1", "", "")
+	// Test HASH_JOIN
+	stmt, _, err = parser.Parse("select /*+ HASH_JOIN(t1, T2), hash_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
+
 	hints = selectStmt.TableHints
-	c.Assert(len(hints), Equals, 1)
-	c.Assert(hints[0].HintName.L, Equals, "max_execution_time")
-	c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "hash_join")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "hash_join")
+	c.Assert(hints[1].Tables, HasLen, 2)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
+
+	// Test MAX_EXECUTION_TIME
+	queries := []string{
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t1 INNER JOIN t2 where t1.c1 = t2.c1",
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ 1",
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ SLEEP(20)",
+		"SELECT /*+ MAX_EXECUTION_TIME(1000) */ 1 FROM DUAL",
+	}
+	for i, query := range queries {
+		stmt, _, err = parser.Parse(query, "", "")
+		c.Assert(err, IsNil)
+		selectStmt = stmt[0].(*ast.SelectStmt)
+		hints = selectStmt.TableHints
+		c.Assert(len(hints), Equals, 1)
+		c.Assert(hints[0].HintName.L, Equals, "max_execution_time", Commentf("case", i))
+		c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
+	}
+
+	// Test USE_INDEX_MERGE
+	stmt, _, err = parser.Parse("select /*+ USE_INDEX_MERGE(t1, c1), use_index_merge(t2, c1) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_index_merge")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "c1")
+
+	c.Assert(hints[1].HintName.L, Equals, "use_index_merge")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t2")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
+
+	// Test READ_FROM_STORAGE
+	stmt, _, err = parser.Parse("select /*+ READ_FROM_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "read_from_storage")
+	c.Assert(hints[0].StoreType.L, Equals, "tiflash")
+	c.Assert(hints[0].Tables, HasLen, 2)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
+	c.Assert(hints[1].HintName.L, Equals, "read_from_storage")
+	c.Assert(hints[1].StoreType.L, Equals, "tikv")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+
+	// Test USE_TOJA
+	stmt, _, err = parser.Parse("select /*+ USE_TOJA(true), use_toja(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_toja")
+	c.Assert(hints[0].HintFlag, IsTrue)
+
+	c.Assert(hints[1].HintName.L, Equals, "use_toja")
+	c.Assert(hints[1].HintFlag, IsFalse)
+
+	// Test ENABLE_PLAN_CACHE
+	stmt, _, err = parser.Parse("select /*+ ENABLE_PLAN_CACHE(true), enable_plan_cache(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "enable_plan_cache")
+	c.Assert(hints[0].HintFlag, IsTrue)
+
+	c.Assert(hints[1].HintName.L, Equals, "enable_plan_cache")
+	c.Assert(hints[1].HintFlag, IsFalse)
+
+	// Test USE_PLAN_CACHE
+	stmt, _, err = parser.Parse("select /*+ USE_PLAN_CACHE(), use_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_plan_cache")
+	c.Assert(hints[1].HintName.L, Equals, "use_plan_cache")
+
+	// Test QUERY_TYPE
+	stmt, _, err = parser.Parse("select /*+ QUERY_TYPE(OLAP), query_type(OLTP) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "query_type")
+	c.Assert(hints[0].QueryType.L, Equals, "olap")
+	c.Assert(hints[1].HintName.L, Equals, "query_type")
+	c.Assert(hints[1].QueryType.L, Equals, "oltp")
+
+	// Test MEMORY_QUOTA
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB), memory_quota(1 NO_SUCH_UNIT) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 3)
+	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
+	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
+	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
+	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
+	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
+	c.Assert(hints[2].MemoryQuota, Equals, int64(-1))
+
+	// Test HASH_AGG
+	stmt, _, err = parser.Parse("select /*+ HASH_AGG(), hash_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "hash_agg")
+	c.Assert(hints[1].HintName.L, Equals, "hash_agg")
+
+	// Test STREAM_AGG
+	stmt, _, err = parser.Parse("select /*+ STREAM_AGG(), stream_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "stream_agg")
+	c.Assert(hints[1].HintName.L, Equals, "stream_agg")
+
+	// Test AGG_TO_COP
+	stmt, _, err = parser.Parse("select /*+ AGG_TO_COP(), agg_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "agg_to_cop")
+	c.Assert(hints[1].HintName.L, Equals, "agg_to_cop")
+
+	// Test NO_INDEX_MERGE
+	stmt, _, err = parser.Parse("select /*+ NO_INDEX_MERGE(), no_index_merge() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "no_index_merge")
+	c.Assert(hints[1].HintName.L, Equals, "no_index_merge")
+
+	// Test READ_CONSISTENT_REPLICA
+	stmt, _, err = parser.Parse("select /*+ READ_CONSISTENT_REPLICA(), read_consistent_replica() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "read_consistent_replica")
+	c.Assert(hints[1].HintName.L, Equals, "read_consistent_replica")
 }
 
 func (s *testParserSuite) TestType(c *C) {
@@ -2334,6 +3171,10 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"CREATE USER 'uesr1'@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
 		{"CREATE USER 'uesr1'@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
 		{"CREATE USER `uesr1`@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"create user 'test@localhost' password expire;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE"},
+		{"create user 'test@localhost' password expire never;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE NEVER"},
+		{"create user 'test@localhost' password expire default;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE DEFAULT"},
+		{"create user 'test@localhost' password expire interval 3 day;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE INTERVAL 3 DAY"},
 		{"CREATE ROLE `test-role`, `role1`@'localhost'", true, "CREATE ROLE `test-role`@`%`, `role1`@`localhost`"},
 		{"CREATE ROLE `test-role`", true, "CREATE ROLE `test-role`@`%`"},
 		{"CREATE ROLE role1", true, "CREATE ROLE `role1`@`%`"},
@@ -2351,6 +3192,19 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
 		{`ALTER USER USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER USER() IDENTIFIED BY 'new-password'"},
 		{`ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'"},
+		{"alter user 'test@localhost' password expire;", true, "ALTER USER `test@localhost`@`%` PASSWORD EXPIRE"},
+		{"alter user 'test@localhost' password expire never;", true, "ALTER USER `test@localhost`@`%` PASSWORD EXPIRE NEVER"},
+		{"alter user 'test@localhost' password expire default;", true, "ALTER USER `test@localhost`@`%` PASSWORD EXPIRE DEFAULT"},
+		{"alter user 'test@localhost' password expire interval 3 day;", true, "ALTER USER `test@localhost`@`%` PASSWORD EXPIRE INTERVAL 3 DAY"},
+		{"ALTER USER 'ttt' REQUIRE X509;", true, "ALTER USER `ttt`@`%` REQUIRE X509"},
+		{"ALTER USER 'ttt' REQUIRE SSL;", true, "ALTER USER `ttt`@`%` REQUIRE SSL"},
+		{"ALTER USER 'ttt' REQUIRE NONE;", true, "ALTER USER `ttt`@`%` REQUIRE NONE"},
+		{"ALTER USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';", true, "ALTER USER `ttt`@`%` REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA'"},
+		{"ALTER USER 'ttt' WITH MAX_QUERIES_PER_HOUR 2;", true, "ALTER USER `ttt`@`%` WITH MAX_QUERIES_PER_HOUR 2"},
+		{"ALTER USER 'ttt' WITH MAX_UPDATES_PER_HOUR 2;", true, "ALTER USER `ttt`@`%` WITH MAX_UPDATES_PER_HOUR 2"},
+		{"ALTER USER 'ttt' WITH MAX_CONNECTIONS_PER_HOUR 2;", true, "ALTER USER `ttt`@`%` WITH MAX_CONNECTIONS_PER_HOUR 2"},
+		{"ALTER USER 'ttt' WITH MAX_USER_CONNECTIONS 2;", true, "ALTER USER `ttt`@`%` WITH MAX_USER_CONNECTIONS 2"},
+		{"ALTER USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;", true, "ALTER USER `ttt`@`localhost` REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
 		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, "DROP USER `root`@`localhost`, `root1`@`localhost`"},
 		{`DROP USER IF EXISTS 'root'@'localhost'`, true, "DROP USER IF EXISTS `root`@`localhost`"},
 		{`DROP ROLE 'role'@'localhost', 'role1'@'localhost'`, true, "DROP ROLE `role`@`localhost`, `role1`@`localhost`"},
@@ -2372,7 +3226,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"grant all privileges on zabbix.* to 'zabbix'@'localhost' identified by 'password';", true, "GRANT ALL ON `zabbix`.* TO `zabbix`@`localhost` IDENTIFIED BY 'password'"},
 		{"GRANT SELECT ON test.* to 'test'", true, "GRANT SELECT ON `test`.* TO `test`@`%`"}, // For issue 2654.
 		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, "GRANT PROCESS /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */ ON *.* TO `xxxxxxxxxx`@`%` IDENTIFIED BY PASSWORD 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'"}, // For issue 4865
-		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE USER /* UNSUPPORTED TYPE */, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
+		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES /* UNSUPPORTED TYPE */, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE /* UNSUPPORTED TYPE */ /* UNSUPPORTED TYPE */, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
 		{"GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';", true, "GRANT `role1`@`%`, `role2`@`%` TO `user1`@`localhost`, `user2`@`localhost`"},
 		{"GRANT 'u1' TO 'u1';", true, "GRANT `u1`@`%` TO `u1`@`%`"},
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
@@ -2576,6 +3430,11 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{`LOCK TABLE t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
 		{`LOCK TABLE t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
 		{`LOCK TABLE t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
+
+		// for cleanup table lock.
+		{"ADMIN CLEANUP TABLE LOCK", false, ""},
+		{"ADMIN CLEANUP TABLE LOCK t", true, "ADMIN CLEANUP TABLE LOCK `t`"},
+		{"ADMIN CLEANUP TABLE LOCK t1,t2", true, "ADMIN CLEANUP TABLE LOCK `t1`, `t2`"},
 	}
 	s.RunTest(c, table)
 }
@@ -2730,6 +3589,10 @@ func (s *testParserSuite) TestExecute(c *C) {
 
 func (s *testParserSuite) TestTrace(c *C) {
 	table := []testCase{
+		{"trace begin", true, "TRACE START TRANSACTION"},
+		{"trace commit", true, "TRACE COMMIT"},
+		{"trace rollback", true, "TRACE ROLLBACK"},
+		{"trace set a = 1", true, "TRACE SET @@SESSION.`a`=1"},
 		{"trace select c1 from t1", true, "TRACE SELECT `c1` FROM `t1`"},
 		{"trace delete t1, t2 from t1 inner join t2 inner join t3 where t1.id=t2.id and t2.id=t3.id;", true, "TRACE DELETE `t1`,`t2` FROM (`t1` JOIN `t2`) JOIN `t3` WHERE `t1`.`id`=`t2`.`id` AND `t2`.`id`=`t3`.`id`"},
 		{"trace insert into t values (1), (2), (3)", true, "TRACE INSERT INTO `t` VALUES (1),(2),(3)"},
@@ -2825,12 +3688,12 @@ func (s *testParserSuite) TestTimestampDiffUnit(c *C) {
 	expr := fields[0].Expr
 	f, ok := expr.(*ast.FuncCallExpr)
 	c.Assert(ok, IsTrue)
-	c.Assert(f.Args[0].(ast.ValueExpr).GetDatumString(), Equals, "MONTH")
+	c.Assert(f.Args[0].(*ast.TimeUnitExpr).Unit, Equals, ast.TimeUnitMonth)
 
 	expr = fields[1].Expr
 	f, ok = expr.(*ast.FuncCallExpr)
 	c.Assert(ok, IsTrue)
-	c.Assert(f.Args[0].(ast.ValueExpr).GetDatumString(), Equals, "MONTH")
+	c.Assert(f.Args[0].(*ast.TimeUnitExpr).Unit, Equals, ast.TimeUnitMonth)
 
 	// Test Illegal TimeUnit for TimestampDiff
 	table := []testCase{
@@ -2962,6 +3825,11 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t1 index a", true, "ANALYZE TABLE `t1` INDEX `a`"},
 		{"analyze table t1 index a,b", true, "ANALYZE TABLE `t1` INDEX `a`,`b`"},
 		{"analyze table t with 4 buckets", true, "ANALYZE TABLE `t` WITH 4 BUCKETS"},
+		{"analyze table t with 4 topn", true, "ANALYZE TABLE `t` WITH 4 TOPN"},
+		{"analyze table t with 4 cmsketch width", true, "ANALYZE TABLE `t` WITH 4 CMSKETCH WIDTH"},
+		{"analyze table t with 4 cmsketch depth", true, "ANALYZE TABLE `t` WITH 4 CMSKETCH DEPTH"},
+		{"analyze table t with 4 samples", true, "ANALYZE TABLE `t` WITH 4 SAMPLES"},
+		{"analyze table t with 4 buckets, 4 topn, 4 cmsketch width, 4 cmsketch depth, 4 samples", true, "ANALYZE TABLE `t` WITH 4 BUCKETS, 4 TOPN, 4 CMSKETCH WIDTH, 4 CMSKETCH DEPTH, 4 SAMPLES"},
 		{"analyze table t index a with 4 buckets", true, "ANALYZE TABLE `t` INDEX `a` WITH 4 BUCKETS"},
 		{"analyze table t partition a", true, "ANALYZE TABLE `t` PARTITION `a`"},
 		{"analyze table t partition a with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` WITH 4 BUCKETS"},
@@ -3050,6 +3918,58 @@ func (s *testParserSuite) TestTablePartition(c *C) {
 	table := []testCase{
 		{"ALTER TABLE t1 TRUNCATE PARTITION p0", true, "ALTER TABLE `t1` TRUNCATE PARTITION `p0`"},
 		{"ALTER TABLE t1 TRUNCATE PARTITION p0, p1", true, "ALTER TABLE `t1` TRUNCATE PARTITION `p0`,`p1`"},
+		{"ALTER TABLE t1 TRUNCATE PARTITION ALL", true, "ALTER TABLE `t1` TRUNCATE PARTITION ALL"},
+		{"ALTER TABLE t1 TRUNCATE PARTITION ALL, p0", false, ""},
+		{"ALTER TABLE t1 TRUNCATE PARTITION p0, ALL", false, ""},
+
+		{"ALTER TABLE t1 OPTIMIZE PARTITION p0", true, "ALTER TABLE `t1` OPTIMIZE PARTITION `p0`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION NO_WRITE_TO_BINLOG p0", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		// LOCAL is alias to NO_WRITE_TO_BINLOG
+		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL p0", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION p0, p1", true, "ALTER TABLE `t1` OPTIMIZE PARTITION `p0`,`p1`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION NO_WRITE_TO_BINLOG p0, p1", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL p0, p1", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION ALL"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION LOCAL ALL", true, "ALTER TABLE `t1` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION ALL, p0", false, ""},
+		{"ALTER TABLE t1 OPTIMIZE PARTITION p0, ALL", false, ""},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL local", true, "ALTER TABLE `t_n` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n OPTIMIZE PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` OPTIMIZE PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
+
+		{"ALTER TABLE t1 REPAIR PARTITION p0", true, "ALTER TABLE `t1` REPAIR PARTITION `p0`"},
+		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG p0", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		// LOCAL is alias to NO_WRITE_TO_BINLOG
+		{"ALTER TABLE t1 REPAIR PARTITION LOCAL p0", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`"},
+		{"ALTER TABLE t1 REPAIR PARTITION p0, p1", true, "ALTER TABLE `t1` REPAIR PARTITION `p0`,`p1`"},
+		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG p0, p1", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 REPAIR PARTITION LOCAL p0, p1", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG `p0`,`p1`"},
+		{"ALTER TABLE t1 REPAIR PARTITION ALL", true, "ALTER TABLE `t1` REPAIR PARTITION ALL"},
+		{"ALTER TABLE t1 REPAIR PARTITION NO_WRITE_TO_BINLOG ALL", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 REPAIR PARTITION LOCAL ALL", true, "ALTER TABLE `t1` REPAIR PARTITION NO_WRITE_TO_BINLOG ALL"},
+		{"ALTER TABLE t1 REPAIR PARTITION ALL, p0", false, ""},
+		{"ALTER TABLE t1 REPAIR PARTITION p0, ALL", false, ""},
+		// The first `LOCAL` should be recognized as unreserved keyword `LOCAL` (alias to `NO_WRITE_TO_BINLOG`),
+		// and the remains should re recognized as identifier, used as partition name here.
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL", false, ""},
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL local", true, "ALTER TABLE `t_n` REPAIR PARTITION NO_WRITE_TO_BINLOG `local`"},
+		{"ALTER TABLE t_n REPAIR PARTITION LOCAL local, local", true, "ALTER TABLE `t_n` REPAIR PARTITION NO_WRITE_TO_BINLOG `local`,`local`"},
+
+		{"ALTER TABLE t1 IMPORT PARTITION p0 TABLESPACE", true, "ALTER TABLE `t1` IMPORT PARTITION `p0` TABLESPACE"},
+		{"ALTER TABLE t1 IMPORT PARTITION p0, p1 TABLESPACE", true, "ALTER TABLE `t1` IMPORT PARTITION `p0`,`p1` TABLESPACE"},
+		{"ALTER TABLE t1 IMPORT PARTITION ALL TABLESPACE", true, "ALTER TABLE `t1` IMPORT PARTITION ALL TABLESPACE"},
+		{"ALTER TABLE t1 IMPORT PARTITION ALL, p0 TABLESPACE", false, ""},
+		{"ALTER TABLE t1 IMPORT PARTITION p0, ALL TABLESPACE", false, ""},
+
+		{"ALTER TABLE t1 DISCARD PARTITION p0 TABLESPACE", true, "ALTER TABLE `t1` DISCARD PARTITION `p0` TABLESPACE"},
+		{"ALTER TABLE t1 DISCARD PARTITION p0, p1 TABLESPACE", true, "ALTER TABLE `t1` DISCARD PARTITION `p0`,`p1` TABLESPACE"},
+		{"ALTER TABLE t1 DISCARD PARTITION ALL TABLESPACE", true, "ALTER TABLE `t1` DISCARD PARTITION ALL TABLESPACE"},
+		{"ALTER TABLE t1 DISCARD PARTITION ALL, p0 TABLESPACE", false, ""},
+		{"ALTER TABLE t1 DISCARD PARTITION p0, ALL TABLESPACE", false, ""},
+
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT 'APSTART \\' APEND')", true, "ALTER TABLE `t1` ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'APSTART '' APEND')"},
 		{"ALTER TABLE t1 ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')", true, "ALTER TABLE `t1` ADD PARTITION (PARTITION `p5` VALUES LESS THAN (2010) COMMENT = 'xxx')"},
 		{`CREATE TABLE t1 (a int not null,b int not null,c int not null,primary key(a,b))
@@ -3210,8 +4130,8 @@ func (s *testParserSuite) TestTablePartitionNameList(c *C) {
 		tableName, ok := source.Source.(*ast.TableName)
 		c.Assert(ok, IsTrue)
 		c.Assert(len(tableName.PartitionNames), Equals, 2)
-		c.Assert(tableName.PartitionNames[0], Equals, model.CIStr{"p0", "p0"})
-		c.Assert(tableName.PartitionNames[1], Equals, model.CIStr{"p1", "p1"})
+		c.Assert(tableName.PartitionNames[0], Equals, model.CIStr{O: "p0", L: "p0"})
+		c.Assert(tableName.PartitionNames[1], Equals, model.CIStr{O: "p1", L: "p1"})
 	}
 }
 
@@ -3317,17 +4237,17 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 }
 
 type windowFrameBoundChecker struct {
-	fb         *ast.FrameBound
-	exprRc     int
-	timeUnitRc int
-	c          *C
+	fb     *ast.FrameBound
+	exprRc int
+	unit   ast.TimeUnitType
+	c      *C
 }
 
 // Enter implements ast.Visitor interface.
 func (wfc *windowFrameBoundChecker) Enter(inNode ast.Node) (outNode ast.Node, skipChildren bool) {
 	if _, ok := inNode.(*ast.FrameBound); ok {
 		wfc.fb = inNode.(*ast.FrameBound)
-		if wfc.fb.Unit != nil {
+		if wfc.fb.Unit != ast.TimeUnitInvalid {
 			_, ok := wfc.fb.Expr.(ast.ValueExpr)
 			wfc.c.Assert(ok, IsFalse)
 		}
@@ -3342,10 +4262,9 @@ func (wfc *windowFrameBoundChecker) Leave(inNode ast.Node) (node ast.Node, ok bo
 	}
 	if wfc.fb != nil {
 		if inNode == wfc.fb.Expr {
-			wfc.exprRc += 1
-		} else if inNode == wfc.fb.Unit {
-			wfc.timeUnitRc += 1
+			wfc.exprRc++
 		}
+		wfc.unit = wfc.fb.Unit
 	}
 	return inNode, true
 }
@@ -3356,13 +4275,13 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 	parser := parser.New()
 	parser.EnableWindowFunc(true)
 	table := []struct {
-		s          string
-		exprRc     int
-		timeUnitRc int
+		s      string
+		exprRc int
+		unit   ast.TimeUnitType
 	}{
-		{`SELECT AVG(val) OVER (RANGE INTERVAL 1+3 MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
-		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, 0},
-		{`SELECT AVG(val) OVER () FROM t;`, 0, 0},
+		{`SELECT AVG(val) OVER (RANGE INTERVAL 1+3 MINUTE_SECOND PRECEDING) FROM t;`, 1, ast.TimeUnitMinuteSecond},
+		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, ast.TimeUnitInvalid},
+		{`SELECT AVG(val) OVER () FROM t;`, 0, ast.TimeUnitInvalid},
 	}
 	for _, t := range table {
 		stmt, err := parser.ParseOneStmt(t.s, "", "")
@@ -3370,7 +4289,7 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 		checker := windowFrameBoundChecker{c: c}
 		stmt.Accept(&checker)
 		c.Assert(checker.exprRc, Equals, t.exprRc)
-		c.Assert(checker.timeUnitRc, Equals, t.timeUnitRc)
+		c.Assert(checker.unit, Equals, t.unit)
 	}
 
 }
@@ -3486,6 +4405,20 @@ func (s *testParserSuite) TestQuotedVariableColumnName(c *C) {
 	for i, field := range ss.Fields.Fields {
 		c.Assert(field.Text(), Equals, expected[i])
 	}
+}
+
+func (s *testParserSuite) TestCharset(c *C) {
+	parser := parser.New()
+
+	st, err := parser.ParseOneStmt("ALTER SCHEMA GLOBAL DEFAULT CHAR SET utf8mb4", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.AlterDatabaseStmt), NotNil)
+	st, err = parser.ParseOneStmt("ALTER DATABASE CHAR SET = utf8mb4", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.AlterDatabaseStmt), NotNil)
+	st, err = parser.ParseOneStmt("ALTER DATABASE DEFAULT CHAR SET = utf8mb4", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.AlterDatabaseStmt), NotNil)
 }
 
 // CleanNodeText set the text of node and all child node empty.

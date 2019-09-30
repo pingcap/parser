@@ -34,6 +34,9 @@ const (
 	codeWrongArgument              = terror.ErrCode(mysql.ErrWrongArguments)
 	codeWrongFieldTerminators      = terror.ErrCode(mysql.ErrWrongFieldTerminators)
 	codeTooBigDisplayWidth         = terror.ErrCode(mysql.ErrTooBigDisplaywidth)
+	codeErrUnknownAlterLock        = terror.ErrCode(mysql.ErrUnknownAlterLock)
+	codeErrUnknownAlterAlgorithm   = terror.ErrCode(mysql.ErrUnknownAlterAlgorithm)
+	codeErrTooBigPrecision         = terror.ErrCode(mysql.ErrTooBigPrecision)
 )
 
 var (
@@ -51,7 +54,12 @@ var (
 	ErrWrongFieldTerminators = terror.ClassParser.New(codeWrongFieldTerminators, mysql.MySQLErrName[mysql.ErrWrongFieldTerminators])
 	// ErrTooBigDisplayWidth returns for data display width exceed limit .
 	ErrTooBigDisplayWidth = terror.ClassParser.New(codeTooBigDisplayWidth, mysql.MySQLErrName[mysql.ErrTooBigDisplaywidth])
-
+	// ErrTooBigPrecision returns for data precision exceed limit.
+	ErrTooBigPrecision = terror.ClassParser.New(codeErrTooBigPrecision, mysql.MySQLErrName[mysql.ErrTooBigPrecision])
+	// ErrUnknownAlterLock returns for no alter lock type found error.
+	ErrUnknownAlterLock = terror.ClassParser.New(codeErrUnknownAlterLock, mysql.MySQLErrName[mysql.ErrUnknownAlterLock])
+	// ErrUnknownAlterAlgorithm returns for no alter algorithm found error.
+	ErrUnknownAlterAlgorithm = terror.ClassParser.New(codeErrUnknownAlterAlgorithm, mysql.MySQLErrName[mysql.ErrUnknownAlterAlgorithm])
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
 	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
@@ -68,6 +76,9 @@ func init() {
 		codeWrongArgument:              mysql.ErrWrongArguments,
 		codeWrongFieldTerminators:      mysql.ErrWrongFieldTerminators,
 		codeTooBigDisplayWidth:         mysql.ErrTooBigDisplaywidth,
+		codeErrUnknownAlterLock:        mysql.ErrUnknownAlterLock,
+		codeErrUnknownAlterAlgorithm:   mysql.ErrUnknownAlterAlgorithm,
+		codeErrTooBigPrecision:         mysql.ErrTooBigPrecision,
 	}
 	terror.ErrClassToMySQLCodes[terror.ClassParser] = parserMySQLErrCodes
 }
@@ -89,7 +100,7 @@ type Parser struct {
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
 	yylval yySymType
-	yyVAL  yySymType
+	yyVAL  *yySymType
 }
 
 type stmtTexter interface {

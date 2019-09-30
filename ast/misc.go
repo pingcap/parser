@@ -150,7 +150,7 @@ func (n *TraceStmt) Accept(v Visitor) (Node, bool) {
 	if !ok {
 		return n, false
 	}
-	n.Stmt = node.(DMLNode)
+	n.Stmt = node.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -317,9 +317,11 @@ func (n *DeallocateStmt) Accept(v Visitor) (Node, bool) {
 // Prepared represents a prepared statement.
 type Prepared struct {
 	Stmt          StmtNode
+	StmtType      string
 	Params        []ParamMarkerExpr
 	SchemaVersion int64
 	UseCache      bool
+	CachedPlan    interface{}
 }
 
 // ExecuteStmt is a statement to execute PreparedStmt.
@@ -327,9 +329,10 @@ type Prepared struct {
 type ExecuteStmt struct {
 	stmtNode
 
-	Name      string
-	UsingVars []ExprNode
-	ExecID    uint32
+	Name       string
+	UsingVars  []ExprNode
+	BinaryArgs interface{}
+	ExecID     uint32
 }
 
 // Restore implements Node interface.
@@ -1054,7 +1057,7 @@ func (p *PasswordOrLockOption) Restore(ctx *RestoreCtx) error {
 	case PasswordExpireNever:
 		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
 	case PasswordExpireInterval:
-		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
+		ctx.WriteKeyWord("PASSWORD EXPIRE INTERVAL")
 		ctx.WritePlainf(" %d", p.Count)
 		ctx.WriteKeyWord(" DAY")
 	case Lock:
@@ -1161,9 +1164,12 @@ func (n *CreateUserStmt) SecureText() string {
 type AlterUserStmt struct {
 	stmtNode
 
-	IfExists    bool
-	CurrentAuth *AuthOption
-	Specs       []*UserSpec
+	IfExists              bool
+	CurrentAuth           *AuthOption
+	Specs                 []*UserSpec
+	TslOptions            []*TslOption
+	ResourceOptions       []*ResourceOption
+	PasswordOrLockOptions []*PasswordOrLockOption
 }
 
 // Restore implements Node interface.
@@ -1185,6 +1191,40 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.Specs[%d]", i)
+		}
+	}
+
+	tslOptionLen := len(n.TslOptions)
+
+	if tslOptionLen != 0 {
+		ctx.WriteKeyWord(" REQUIRE ")
+	}
+
+	// Restore `tslOptions` reversely to keep order the same with original sql
+	for i := tslOptionLen; i > 0; i-- {
+		if i != tslOptionLen {
+			ctx.WriteKeyWord(" AND ")
+		}
+		if err := n.TslOptions[i-1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.TslOptions[%d]", i)
+		}
+	}
+
+	if len(n.ResourceOptions) != 0 {
+		ctx.WriteKeyWord(" WITH")
+	}
+
+	for i, v := range n.ResourceOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.ResourceOptions[%d]", i)
+		}
+	}
+
+	for i, v := range n.PasswordOrLockOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.PasswordOrLockOptions[%d]", i)
 		}
 	}
 	return nil
@@ -1380,6 +1420,9 @@ const (
 	AdminShowSlow
 	AdminShowNextRowID
 	AdminReloadExprPushdownBlacklist
+	AdminReloadOptRuleBlacklist
+	AdminPluginDisable
+	AdminPluginEnable
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1455,6 +1498,7 @@ type AdminStmt struct {
 
 	HandleRanges []HandleRange
 	ShowSlow     *ShowSlow
+	Plugins      []string
 }
 
 // Restore implements Node interface.
@@ -1550,6 +1594,28 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		}
 	case AdminReloadExprPushdownBlacklist:
 		ctx.WriteKeyWord("RELOAD EXPR_PUSHDOWN_BLACKLIST")
+	case AdminReloadOptRuleBlacklist:
+		ctx.WriteKeyWord("RELOAD OPT_RULE_BLACKLIST")
+	case AdminPluginEnable:
+		ctx.WriteKeyWord("PLUGINS ENABLE")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
+	case AdminPluginDisable:
+		ctx.WriteKeyWord("PLUGINS DISABLE")
+		for i, v := range n.Plugins {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			ctx.WritePlain(v)
+		}
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -1585,51 +1651,17 @@ type PrivElem struct {
 
 // Restore implements Node interface.
 func (n *PrivElem) Restore(ctx *RestoreCtx) error {
-	switch n.Priv {
-	case 0:
+	if n.Priv == 0 {
 		ctx.WritePlain("/* UNSUPPORTED TYPE */")
-	case mysql.AllPriv:
+	} else if n.Priv == mysql.AllPriv {
 		ctx.WriteKeyWord("ALL")
-	case mysql.AlterPriv:
-		ctx.WriteKeyWord("ALTER")
-	case mysql.CreatePriv:
-		ctx.WriteKeyWord("CREATE")
-	case mysql.CreateUserPriv:
-		ctx.WriteKeyWord("CREATE USER")
-	case mysql.CreateRolePriv:
-		ctx.WriteKeyWord("CREATE ROLE")
-	case mysql.TriggerPriv:
-		ctx.WriteKeyWord("TRIGGER")
-	case mysql.DeletePriv:
-		ctx.WriteKeyWord("DELETE")
-	case mysql.DropPriv:
-		ctx.WriteKeyWord("DROP")
-	case mysql.ProcessPriv:
-		ctx.WriteKeyWord("PROCESS")
-	case mysql.ExecutePriv:
-		ctx.WriteKeyWord("EXECUTE")
-	case mysql.IndexPriv:
-		ctx.WriteKeyWord("INDEX")
-	case mysql.InsertPriv:
-		ctx.WriteKeyWord("INSERT")
-	case mysql.SelectPriv:
-		ctx.WriteKeyWord("SELECT")
-	case mysql.SuperPriv:
-		ctx.WriteKeyWord("SUPER")
-	case mysql.ShowDBPriv:
-		ctx.WriteKeyWord("SHOW DATABASES")
-	case mysql.UpdatePriv:
-		ctx.WriteKeyWord("UPDATE")
-	case mysql.GrantPriv:
-		ctx.WriteKeyWord("GRANT OPTION")
-	case mysql.ReferencesPriv:
-		ctx.WriteKeyWord("REFERENCES")
-	case mysql.CreateViewPriv:
-		ctx.WriteKeyWord("CREATE VIEW")
-	case mysql.ShowViewPriv:
-		ctx.WriteKeyWord("SHOW VIEW")
-	default:
-		return errors.New("Undefined privilege type")
+	} else {
+		str, ok := mysql.Priv2Str[n.Priv]
+		if ok {
+			ctx.WriteKeyWord(str)
+		} else {
+			return errors.New("Undefined privilege type")
+		}
 	}
 	if n.Cols != nil {
 		ctx.WritePlain(" (")
@@ -1995,24 +2027,94 @@ type TableOptimizerHint struct {
 	// Table hints has no schema info
 	// It allows only table name or alias (if table has an alias)
 	HintName model.CIStr
-	Tables   []model.CIStr
+	// QBName is the default effective query block of this hint.
+	QBName    model.CIStr
+	Tables    []HintTable
+	Indexes   []model.CIStr
+	StoreType model.CIStr
 	// Statement Execution Time Optimizer Hints
 	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
 	MaxExecutionTime uint64
+	MemoryQuota      int64
+	QueryType        model.CIStr
+	HintFlag         bool
+}
+
+// HintTable is table in the hint. It may have query block info.
+type HintTable struct {
+	TableName model.CIStr
+	QBName    model.CIStr
+}
+
+func (ht *HintTable) Restore(ctx *RestoreCtx) {
+	ctx.WriteName(ht.TableName.String())
+	if ht.QBName.L != "" {
+		ctx.WriteKeyWord("@")
+		ctx.WriteName(ht.QBName.String())
+	}
 }
 
 // Restore implements Node interface.
 func (n *TableOptimizerHint) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(n.HintName.String())
 	ctx.WritePlain("(")
-	if n.HintName.L == "max_execution_time" {
+	if n.QBName.L != "" {
+		if n.HintName.L != "qb_name" {
+			ctx.WriteKeyWord("@")
+		}
+		ctx.WriteName(n.QBName.String())
+	}
+	// Hints without args except query block.
+	switch n.HintName.L {
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name":
+		ctx.WritePlain(")")
+		return nil
+	}
+	if n.QBName.L != "" {
+		ctx.WritePlain(" ")
+	}
+	// Hints with args except query block.
+	switch n.HintName.L {
+	case "max_execution_time":
 		ctx.WritePlainf("%d", n.MaxExecutionTime)
-	} else {
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "sm_join", "inl_join":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
 			}
-			ctx.WriteName(table.String())
+			table.Restore(ctx)
+		}
+	case "use_index", "ignore_index", "use_index_merge":
+		n.Tables[0].Restore(ctx)
+		ctx.WritePlain(" ")
+		for i, index := range n.Indexes {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteName(index.String())
+		}
+	case "use_toja", "enable_plan_cache":
+		if n.HintFlag {
+			ctx.WritePlain("TRUE")
+		} else {
+			ctx.WritePlain("FALSE")
+		}
+	case "query_type":
+		ctx.WriteKeyWord(n.QueryType.String())
+	case "memory_quota":
+		ctx.WritePlainf("%d MB", n.MemoryQuota/1024/1024)
+	case "read_from_storage":
+		ctx.WriteKeyWord(n.StoreType.String())
+		for i, table := range n.Tables {
+			if i == 0 {
+				ctx.WritePlain("[")
+			}
+			table.Restore(ctx)
+			if i == len(n.Tables)-1 {
+				ctx.WritePlain("]")
+			} else {
+				ctx.WritePlain(", ")
+			}
 		}
 	}
 	ctx.WritePlain(")")
@@ -2027,6 +2129,10 @@ func (n *TableOptimizerHint) Accept(v Visitor) (Node, bool) {
 	}
 	n = newNode.(*TableOptimizerHint)
 	return v.Leave(n)
+}
+
+type BinaryLiteral interface {
+	ToString() string
 }
 
 // NewDecimal creates a types.Decimal value, it's provided by parser driver.
