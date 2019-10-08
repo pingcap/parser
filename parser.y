@@ -772,7 +772,6 @@ import (
 	AssignmentListOpt		"assignment list opt"
 	AuthOption			"User auth option"
 	AuthString			"Password string value"
-	AutoShardOpt			"optional auto shard clause"
 	OptionalBraces			"optional braces"
 	CastType			"Cast function target type"
 	CharsetName			"Character set name"
@@ -2357,12 +2356,12 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoIncrement}
 	}
-|	AutoShardOpt PrimaryOpt "KEY"
+|	PrimaryOpt "KEY"
 	{
 		// KEY is normally a synonym for INDEX. The key attribute PRIMARY KEY
 		// can also be specified as just KEY when given in a column definition.
 		// See http://dev.mysql.com/doc/refman/5.7/en/create-table.html
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionPrimaryKey, AutoShardBitLength: $1.(uint64)}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionPrimaryKey}
 	}
 |	"UNIQUE" %prec lowerThanKey
 	{
@@ -2447,18 +2446,13 @@ ColumnOption:
 		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
+|	"AUTO_SHARD" '(' "SHARD_BITS" eq LengthNum ')'
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoShard, AutoShardBitLength: $5.(uint64)}
+	}
 
 StorageMedia:
 	"DEFAULT" | "DISK" | "MEMORY"
-
-AutoShardOpt:
-	{
-		$$ = uint64(0)
-	}
-|	"AUTO_SHARD" '(' "SHARD_BITS" eq LengthNum ')'
-	{
-		$$ = $5
-	}
 
 ColumnFormat:
 	"DEFAULT"

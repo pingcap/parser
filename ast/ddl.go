@@ -430,6 +430,7 @@ const (
 	ColumnOptionCheck
 	ColumnOptionColumnFormat
 	ColumnOptionStorage
+	ColumnOptionAutoShard
 )
 
 var (
@@ -465,9 +466,6 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 	case ColumnOptionNoOption:
 		return nil
 	case ColumnOptionPrimaryKey:
-		if n.AutoShardBitLength != 0 {
-			ctx.WritePlainf("AUTO_SHARD(SHARD_BITS = %d) ", n.AutoShardBitLength)
-		}
 		ctx.WriteKeyWord("PRIMARY KEY")
 	case ColumnOptionNotNull:
 		ctx.WriteKeyWord("NOT NULL")
@@ -534,6 +532,8 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 	case ColumnOptionStorage:
 		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
+	case ColumnOptionAutoShard:
+		ctx.WritePlainf("AUTO_SHARD(SHARD_BITS = %d)", n.AutoShardBitLength)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
