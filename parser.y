@@ -1133,6 +1133,7 @@ import (
 	logOr			"logical or operator"
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
+	StorageMedia		"{DISK|MEMORY|DEFAULT}"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -2428,6 +2429,15 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
 	}
+|	"STORAGE" StorageMedia
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionStorage, StrValue: $2}
+		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+
+StorageMedia:
+	"DEFAULT" | "DISK" | "MEMORY"
 
 ColumnFormat:
 	"DEFAULT"
@@ -8855,6 +8865,10 @@ FixedPointType:
 		$$ = mysql.TypeNewDecimal
 	}
 |	"NUMERIC"
+	{
+		$$ = mysql.TypeNewDecimal
+	}
+|	"FIXED"
 	{
 		$$ = mysql.TypeNewDecimal
 	}
