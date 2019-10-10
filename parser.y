@@ -798,6 +798,7 @@ import (
 	ConstraintKeywordOpt		"Constraint Keyword or empty"
 	CreateTableOptionListOpt	"create table option list opt"
 	CreateTableSelectOpt	        "Select/Union statement in CREATE TABLE ... SELECT"
+	CreateViewSelectOpt     "Select/Union statement in CREATE VIEW ... AS SELECT"
 	DatabaseOption			"CREATE Database specification"
 	DatabaseOptionList		"CREATE Database specification list"
 	DatabaseOptionListOpt		"CREATE Database specification list opt"
@@ -3329,6 +3330,22 @@ CreateTableSelectOpt:
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
 
+CreateViewSelectOpt:
+	SelectStmt
+	{
+		$$ = $1.(*ast.SelectStmt)
+	}
+|
+	UnionStmt
+	{
+	    $$ = $1.(*ast.UnionStmt)
+	}
+|
+	'(' SelectStmt ')'
+	{
+		$$ = $2.(*ast.SelectStmt)
+	}
+
 LikeTableWithOrWithoutParen:
 	"LIKE" TableName
 	{
@@ -3349,10 +3366,15 @@ LikeTableWithOrWithoutParen:
  *          as select Col1,Col2 from table WITH LOCAL CHECK OPTION
  *******************************************************************/
 CreateViewStmt:
-    "CREATE" OrReplace ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" SelectStmt ViewCheckOption
+    "CREATE" OrReplace ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" CreateViewSelectOpt ViewCheckOption
     {
 		startOffset := parser.startOffset(&yyS[yypt-1])
-		selStmt := $10.(*ast.SelectStmt)
+		var selStmt ast.StmtNode
+		var ok bool
+		selStmt, ok = $10.(*ast.SelectStmt)
+		if !ok {
+			selStmt = $10.(*ast.UnionStmt)
+		}
 		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 		x := &ast.CreateViewStmt {
  			OrReplace:     $2.(bool),
