@@ -3345,6 +3345,11 @@ CreateViewSelectOpt:
 	{
 		$$ = $2.(*ast.SelectStmt)
 	}
+|
+	'(' UnionStmt ')'
+	{
+		$$ = $2.(*ast.UnionStmt)
+	}
 
 LikeTableWithOrWithoutParen:
 	"LIKE" TableName
