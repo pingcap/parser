@@ -1247,10 +1247,7 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 	if !ok {
 		return n, false
 	}
-	n.Select, ok = selnode.(*SelectStmt)
-	if !ok {
-		n.Select = selnode.(*UnionStmt)
-	}
+	n.Select = selnode.(StmtNode)
 	return v.Leave(n)
 }
 

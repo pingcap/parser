@@ -3374,8 +3374,7 @@ CreateViewStmt:
     "CREATE" OrReplace ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" CreateViewSelectOpt ViewCheckOption
     {
 		startOffset := parser.startOffset(&yyS[yypt-1])
-		var selStmt ast.StmtNode
-		selStmt = $10.(ast.StmtNode)
+		selStmt := $10.(ast.StmtNode)
 		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 		x := &ast.CreateViewStmt {
  			OrReplace:     $2.(bool),
