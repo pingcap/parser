@@ -10813,11 +10813,7 @@ yynewstate:
 		{
 			startOffset := parser.startOffset(&yyS[yypt-1])
 			var selStmt ast.StmtNode
-			var ok bool
-			selStmt, ok = yyS[yypt-1].item.(*ast.SelectStmt)
-			if !ok {
-				selStmt = yyS[yypt-1].item.(*ast.UnionStmt)
-			}
+			selStmt = yyS[yypt-1].item.(ast.StmtNode)
 			selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 			x := &ast.CreateViewStmt{
 				OrReplace: yyS[yypt-9].item.(bool),

@@ -3338,7 +3338,7 @@ CreateViewSelectOpt:
 |
 	UnionStmt
 	{
-	    $$ = $1.(*ast.UnionStmt)
+		$$ = $1.(*ast.UnionStmt)
 	}
 |
 	'(' SelectStmt ')'
@@ -3375,11 +3375,7 @@ CreateViewStmt:
     {
 		startOffset := parser.startOffset(&yyS[yypt-1])
 		var selStmt ast.StmtNode
-		var ok bool
-		selStmt, ok = $10.(*ast.SelectStmt)
-		if !ok {
-			selStmt = $10.(*ast.UnionStmt)
-		}
+		selStmt = $10.(ast.StmtNode)
 		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 		x := &ast.CreateViewStmt {
  			OrReplace:     $2.(bool),
