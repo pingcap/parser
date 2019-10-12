@@ -565,6 +565,7 @@ import (
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin		"ADMIN"
 	buckets		"BUCKETS"
+	builtins    "BUILTINS"
 	cancel		"CANCEL"
 	cmSketch	"CMSKETCH"
 	ddl		"DDL"
@@ -798,6 +799,7 @@ import (
 	ConstraintKeywordOpt		"Constraint Keyword or empty"
 	CreateTableOptionListOpt	"create table option list opt"
 	CreateTableSelectOpt	        "Select/Union statement in CREATE TABLE ... SELECT"
+	CreateViewSelectOpt     "Select/Union statement in CREATE VIEW ... AS SELECT"
 	DatabaseOption			"CREATE Database specification"
 	DatabaseOptionList		"CREATE Database specification list"
 	DatabaseOptionListOpt		"CREATE Database specification list opt"
@@ -1130,6 +1132,7 @@ import (
 	logOr			"logical or operator"
 	LinearOpt		"linear or empty"
 	FieldsOrColumns 	"Fields or columns"
+	StorageMedia		"{DISK|MEMORY|DEFAULT}"
 
 %type	<ident>
 	ODBCDateTimeType		"ODBC type keywords for date and time literals"
@@ -2433,6 +2436,15 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
 	}
+|	"STORAGE" StorageMedia
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionStorage, StrValue: $2}
+		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+
+StorageMedia:
+	"DEFAULT" | "DISK" | "MEMORY"
 
 ColumnFormat:
 	"DEFAULT"
@@ -3349,6 +3361,27 @@ CreateTableSelectOpt:
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
 
+CreateViewSelectOpt:
+	SelectStmt
+	{
+		$$ = $1.(*ast.SelectStmt)
+	}
+|
+	UnionStmt
+	{
+		$$ = $1.(*ast.UnionStmt)
+	}
+|
+	'(' SelectStmt ')'
+	{
+		$$ = $2.(*ast.SelectStmt)
+	}
+|
+	'(' UnionStmt ')'
+	{
+		$$ = $2.(*ast.UnionStmt)
+	}
+
 LikeTableWithOrWithoutParen:
 	"LIKE" TableName
 	{
@@ -3369,10 +3402,10 @@ LikeTableWithOrWithoutParen:
  *          as select Col1,Col2 from table WITH LOCAL CHECK OPTION
  *******************************************************************/
 CreateViewStmt:
-    "CREATE" OrReplace ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" SelectStmt ViewCheckOption
+    "CREATE" OrReplace ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" CreateViewSelectOpt ViewCheckOption
     {
 		startOffset := parser.startOffset(&yyS[yypt-1])
-		selStmt := $10.(*ast.SelectStmt)
+		selStmt := $10.(ast.StmtNode)
 		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 		x := &ast.CreateViewStmt {
  			OrReplace:     $2.(bool),
@@ -4386,7 +4419,7 @@ UnReservedKeyword:
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" | "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE"
 
 TiDBKeyword:
- "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
+ "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "BUILTINS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 | "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX" | "IGNORE_INDEX" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
 | "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TOPN" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "WIDTH" | "REGIONS" | "REGION"
 
@@ -7522,16 +7555,24 @@ AdminStmt:
 	{
 		$$ = &ast.AdminStmt{Tp: ast.AdminShowDDL}
 	}
-|	"ADMIN" "SHOW" "DDL" "JOBS"
+|	"ADMIN" "SHOW" "DDL" "JOBS" WhereClauseOptional
 	{
-		$$ = &ast.AdminStmt{Tp: ast.AdminShowDDLJobs}
+		stmt := &ast.AdminStmt{Tp: ast.AdminShowDDLJobs}
+		if $5 != nil {
+			stmt.Where = $5.(ast.ExprNode)
+		}
+		$$ = stmt
 	}
-|	"ADMIN" "SHOW" "DDL" "JOBS" NUM
+|	"ADMIN" "SHOW" "DDL" "JOBS" NUM WhereClauseOptional
 	{
-		$$ = &ast.AdminStmt{
+		stmt := &ast.AdminStmt{
 		    Tp: ast.AdminShowDDLJobs,
 		    JobNumber: $5.(int64),
 		}
+		if $6 != nil {
+			stmt.Where = $6.(ast.ExprNode)
+		}
+		$$ = stmt
 	}
 |	"ADMIN" "SHOW" TableName "NEXT_ROW_ID"
 	{
@@ -7902,6 +7943,12 @@ ShowStmt:
 			}
 		}
 		$$ = stmt
+	}
+|	"SHOW" "BUILTINS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp: ast.ShowBuiltins,
+		}
 	}
 
 ShowProfileTypesOpt:
@@ -8860,6 +8907,10 @@ FixedPointType:
 		$$ = mysql.TypeNewDecimal
 	}
 |	"NUMERIC"
+	{
+		$$ = mysql.TypeNewDecimal
+	}
+|	"FIXED"
 	{
 		$$ = mysql.TypeNewDecimal
 	}
