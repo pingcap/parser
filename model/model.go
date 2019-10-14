@@ -227,7 +227,7 @@ type TableInfo struct {
 	PreSplitRegions uint64 `json:"pre_split_regions"`
 	// PreSplitRegions specify the pre-split region count when create table.
 	// The pre-split-region num should be 2^N.
-	PreSplitRegionCount uint64 `json:"pre_split_regionCount"`
+	PreSplitRegionCount uint64 `json:"pre_split_region_count"`
 
 	Partition *PartitionInfo `json:"partition"`
 
