@@ -640,7 +640,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// for admin
 		{"admin show ddl;", true, "ADMIN SHOW DDL"},
 		{"admin show ddl jobs;", true, "ADMIN SHOW DDL JOBS"},
-		{"admin show ddl jobs 20;", true, "ADMIN SHOW DDL JOBS 20"},
+		{"admin show ddl jobs where id > 0;", true, "ADMIN SHOW DDL JOBS WHERE `id`>0"},
+		{"admin show ddl jobs 20 where id=0;", true, "ADMIN SHOW DDL JOBS 20 WHERE `id`=0"},
 		{"admin show ddl jobs -1;", false, ""},
 		{"admin show ddl job queries 1", true, "ADMIN SHOW DDL JOB QUERIES 1"},
 		{"admin show ddl job queries 1, 2, 3, 4", true, "ADMIN SHOW DDL JOB QUERIES 1, 2, 3, 4"},
@@ -746,6 +747,20 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 index idx1 between () and () regions 10", true, "SPLIT TABLE `t1` INDEX `idx1` BETWEEN () AND () REGIONS 10"},
 		{"split table t1 index by (1)", false, ""},
 
+		{"split region for table t1 index idx1 by ('a'),('b'),('c')", true, "SPLIT REGION FOR TABLE `t1` INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split partition table t1 index idx1 by ('a'),('b'),('c')", true, "SPLIT PARTITION TABLE `t1` INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split region for partition table t1 index idx1 by ('a'),('b'),('c')", true, "SPLIT REGION FOR PARTITION TABLE `t1` INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split region for table t1 index idx1 between ('a') and ('z') regions 10", true, "SPLIT REGION FOR TABLE `t1` INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+		{"split partition table t1 index idx1 between ('a') and ('z') regions 10", true, "SPLIT PARTITION TABLE `t1` INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+		{"split region for partition table t1 index idx1 between ('a') and ('z') regions 10", true, "SPLIT REGION FOR PARTITION TABLE `t1` INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+
+		{"split region for table t1 partition (p0,p1) index idx1 by ('a'),('b'),('c')", true, "SPLIT REGION FOR TABLE `t1` PARTITION(`p0`, `p1`) INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split partition table t1 partition (p0) index idx1 by ('a'),('b'),('c')", true, "SPLIT PARTITION TABLE `t1` PARTITION(`p0`) INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split region for partition table t1 partition (p0) index idx1 by ('a'),('b'),('c')", true, "SPLIT REGION FOR PARTITION TABLE `t1` PARTITION(`p0`) INDEX `idx1` BY ('a'),('b'),('c')"},
+		{"split region for table t1 partition (p0) index idx1 between ('a') and ('z') regions 10", true, "SPLIT REGION FOR TABLE `t1` PARTITION(`p0`) INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+		{"split partition table t1 partition (p0) index idx1 between ('a') and ('z') regions 10", true, "SPLIT PARTITION TABLE `t1` PARTITION(`p0`) INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+		{"split region for partition table t1 partition (p0) index idx1 between ('a') and ('z') regions 10", true, "SPLIT REGION FOR PARTITION TABLE `t1` PARTITION(`p0`) INDEX `idx1` BETWEEN ('a') AND ('z') REGIONS 10"},
+
 		// for split table region.
 		{"split table t1 by ('a'),('b'),('c')", true, "SPLIT TABLE `t1` BY ('a'),('b'),('c')"},
 		{"split table t1 by (1)", true, "SPLIT TABLE `t1` BY (1)"},
@@ -754,6 +769,13 @@ AAAAAAAAAAAA5gm5Mg==
 		{"split table t1 between ('a') and ('z') regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a') AND ('z') REGIONS 10"},
 		{"split table t1 between ('a',1) and ('z',2) regions 10", true, "SPLIT TABLE `t1` BETWEEN ('a',1) AND ('z',2) REGIONS 10"},
 		{"split table t1 between () and () regions 10", true, "SPLIT TABLE `t1` BETWEEN () AND () REGIONS 10"},
+
+		{"split region for table t1 by ('a'),('b'),('c')", true, "SPLIT REGION FOR TABLE `t1` BY ('a'),('b'),('c')"},
+		{"split partition table t1 by ('a'),('b'),('c')", true, "SPLIT PARTITION TABLE `t1` BY ('a'),('b'),('c')"},
+		{"split region for partition table t1 by ('a'),('b'),('c')", true, "SPLIT REGION FOR PARTITION TABLE `t1` BY ('a'),('b'),('c')"},
+		{"split region for table t1 between (1) and (1000) regions 10", true, "SPLIT REGION FOR TABLE `t1` BETWEEN (1) AND (1000) REGIONS 10"},
+		{"split partition table t1 between (1) and (1000) regions 10", true, "SPLIT PARTITION TABLE `t1` BETWEEN (1) AND (1000) REGIONS 10"},
+		{"split region for partition table t1 between (1) and (1000) regions 10", true, "SPLIT REGION FOR PARTITION TABLE `t1` BETWEEN (1) AND (1000) REGIONS 10"},
 
 		// for show table regions.
 		{"show table t1 regions", true, "SHOW TABLE `t1` REGIONS"},
@@ -855,6 +877,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"show analyze status", true, "SHOW ANALYZE STATUS"},
 		{"show analyze status where table_name = 't'", true, "SHOW ANALYZE STATUS WHERE `table_name`='t'"},
 		{"show analyze status where table_name like '%'", true, "SHOW ANALYZE STATUS WHERE `table_name` LIKE '%'"},
+		// for show builtins
+		{"show builtins", true, "SHOW BUILTINS"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
@@ -1174,6 +1198,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		{`SELECT tidb_version();`, true, "SELECT TIDB_VERSION()"},
 		{`SELECT tidb_is_ddl_owner();`, true, "SELECT TIDB_IS_DDL_OWNER()"},
+		{`SELECT tidb_decode_key('abc');`, true, "SELECT TIDB_DECODE_KEY('abc')"},
 
 		// for time fsp
 		{"CREATE TABLE t( c1 TIME(2), c2 DATETIME(2), c3 TIMESTAMP(2) );", true, "CREATE TABLE `t` (`c1` TIME(2),`c2` DATETIME(2),`c3` TIMESTAMP(2))"},
@@ -2657,6 +2682,28 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},
 		{"update t set a = default", true, "UPDATE `t` SET `a`=DEFAULT"},
 		{"insert into t set a = default on duplicate key update a = default", true, "INSERT INTO `t` SET `a`=DEFAULT ON DUPLICATE KEY UPDATE `a`=DEFAULT"},
+
+		// for issue 529
+		{"create table t (a text byte ascii)", false, ""},
+		{"create table t (a text byte charset latin1)", false, ""},
+		{"create table t (a longtext ascii)", true, "CREATE TABLE `t` (`a` LONGTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a mediumtext ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a tinytext ascii)", true, "CREATE TABLE `t` (`a` TINYTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a text byte)", true, "CREATE TABLE `t` (`a` TEXT)"},
+		{"create table t (a long byte, b text ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT,`b` TEXT CHARACTER SET LATIN1)"},
+		{"create table t (a text ascii, b mediumtext ascii, c int)", true, "CREATE TABLE `t` (`a` TEXT CHARACTER SET LATIN1,`b` MEDIUMTEXT CHARACTER SET LATIN1,`c` INT)"},
+		{"create table t (a int, b text ascii, c mediumtext ascii)", true, "CREATE TABLE `t` (`a` INT,`b` TEXT CHARACTER SET LATIN1,`c` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a long ascii, b long ascii)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET LATIN1,`b` MEDIUMTEXT CHARACTER SET LATIN1)"},
+		{"create table t (a long character set utf8mb4, b long charset utf8mb4, c long char set utf8mb4)", true, "CREATE TABLE `t` (`a` MEDIUMTEXT CHARACTER SET UTF8MB4,`b` MEDIUMTEXT CHARACTER SET UTF8MB4,`c` MEDIUMTEXT CHARACTER SET UTF8MB4)"},
+
+		{"create table t (a int STORAGE MEMORY, b varchar(255) STORAGE MEMORY)", true, "CREATE TABLE `t` (`a` INT STORAGE MEMORY,`b` VARCHAR(255) STORAGE MEMORY)"},
+		{"create table t (a int storage DISK, b varchar(255) STORAGE DEFAULT)", true, "CREATE TABLE `t` (`a` INT STORAGE DISK,`b` VARCHAR(255) STORAGE DEFAULT)"},
+		{"create table t (a int STORAGE DEFAULT, b varchar(255) STORAGE DISK)", true, "CREATE TABLE `t` (`a` INT STORAGE DEFAULT,`b` VARCHAR(255) STORAGE DISK)"},
+
+		// for issue 555
+		{"create table t (a fixed(6, 3), b fixed key)", true, "CREATE TABLE `t` (`a` DECIMAL(6,3),`b` DECIMAL PRIMARY KEY)"},
+		{"create table t (a numeric, b fixed(6))", true, "CREATE TABLE `t` (`a` DECIMAL,`b` DECIMAL(6))"},
+		{"create table t (a fixed(65, 30) zerofill, b numeric, c fixed(65) unsigned zerofill)", true, "CREATE TABLE `t` (`a` DECIMAL(65,30) UNSIGNED ZEROFILL,`b` DECIMAL,`c` DECIMAL(65) UNSIGNED ZEROFILL)"},
 	}
 	s.RunTest(c, table)
 }
@@ -2763,16 +2810,66 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("alter table t lock = randomStr123", "", "")
 	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'randomStr123'")
+
+	_, _, err = parser.Parse("create table t (a longtext unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a long byte, b text unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a long ascii, b long unicode)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("create table t (a text unicode, b mediumtext ascii, c int)", "", "")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
 	parser := parser.New()
-	// Test TIDB_SMJ
-	stmt, _, err := parser.Parse("select /*+ TIDB_SMJ(T1,t2), tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test USE_INDEX
+	stmt, _, err := parser.Parse("select /*+ USE_INDEX(T1,T2), use_index(t3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt := stmt[0].(*ast.SelectStmt)
 
 	hints := selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "use_index")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "use_index")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "t4")
+
+	// Test IGNORE_INDEX
+	stmt, _, err = parser.Parse("select /*+ IGNORE_INDEX(T1,T2), ignore_index(t3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "ignore_index")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "ignore_index")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "t4")
+
+	// Test TIDB_SMJ
+	stmt, _, err = parser.Parse("select /*+ TIDB_SMJ(T1,t2), tidb_smj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "tidb_smj")
 	c.Assert(hints[0].Tables, HasLen, 2)
@@ -3572,6 +3669,62 @@ func (s *testParserSuite) TestView(c *C) {
 		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
 		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
 		{"create or replace algorithm = merge definer = current_user view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+
+		// create view with `(` select statement `)`
+		{"create view v as (select * from t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = undefined view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = temptable view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = current_user view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+
+		// create view with union statement
+		{"create view v as select * from t union select * from t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = undefined view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = temptable view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t union select * from t with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t union select * from t with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = current_user view v as select * from t union select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
+
+		// create view with union all statement
+		{"create view v as select * from t union all select * from t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = undefined view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = temptable view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t union all select * from t with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as select * from t union all select * from t with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = current_user view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+
+		// create view with `(` union statement `)`
+		{"create view v as (select * from t union all select * from t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = undefined view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = temptable view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create or replace algorithm = merge definer = current_user view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
 	}
 	s.RunTest(c, table)
 
