@@ -222,9 +222,12 @@ type TableInfo struct {
 	// MaxShardRowIDBits uses to record the max ShardRowIDBits be used so far.
 	MaxShardRowIDBits uint64 `json:"max_shard_row_id_bits"`
 	// PreSplitRegions specify the pre-split region when create table.
-	// The pre-split region num is 2^(PreSplitRegions-1).
+	// The pre-split region num is 2^(PreSplitRegions).
 	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
 	PreSplitRegions uint64 `json:"pre_split_regions"`
+	// PreSplitRegions specify the pre-split region count when create table.
+	// The pre-split-region num should be 2^N.
+	PreSplitRegionCount uint64 `json:"pre_split_regionCount"`
 
 	Partition *PartitionInfo `json:"partition"`
 

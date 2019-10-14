@@ -1593,6 +1593,7 @@ const (
 	TableOptionTableCheckSum
 	TableOptionUnion
 	TableOptionEncryption
+	TableOptionPreSplitRegionCount
 )
 
 // RowFormat types
@@ -1750,6 +1751,9 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("= %d", n.UintValue)
 	case TableOptionPreSplitRegion:
 		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
+		ctx.WritePlainf("= %d", n.UintValue)
+	case TableOptionPreSplitRegionCount:
+		ctx.WriteKeyWord("PRE_SPLIT_REGION_COUNT ")
 		ctx.WritePlainf("= %d", n.UintValue)
 	case TableOptionPackKeys:
 		// TODO: not support
