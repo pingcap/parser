@@ -201,7 +201,7 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"STORAGE DEFAULT", "STORAGE DEFAULT"},
 		{"STORAGE DISK", "STORAGE DISK"},
 		{"STORAGE MEMORY", "STORAGE MEMORY"},
-		{"AUTO_SHARD(shard_bits = 3)", "AUTO_SHARD(SHARD_BITS = 3)"},
+		{"AUTO_SHARD_BITS (3)", "AUTO_SHARD_BITS(3)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0].Options[0]

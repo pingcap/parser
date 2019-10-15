@@ -533,7 +533,8 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
 	case ColumnOptionAutoShard:
-		ctx.WritePlainf("AUTO_SHARD(SHARD_BITS = %d)", n.AutoShardBitLength)
+		ctx.WriteKeyWord("AUTO_SHARD_BITS")
+		ctx.WritePlainf("(%d)", n.AutoShardBitLength)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
