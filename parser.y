@@ -275,6 +275,7 @@ import (
 	yearMonth		"YEAR_MONTH"
 	zerofill		"ZEROFILL"
 	natural			"NATURAL"
+	nowait                  "NOWAIT"
 
 	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
 	account		"ACCOUNT"
@@ -7021,6 +7022,10 @@ SelectLockOpt:
 |	"FOR" "UPDATE"
 	{
 		$$ = ast.SelectLockForUpdate
+	}
+|	"FOR" "UPDATE" "NOWAIT"
+	{
+		$$ = ast.SelectLockForUpdateNoWait
 	}
 |	"LOCK" "IN" "SHARE" "MODE"
 	{
