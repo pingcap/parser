@@ -10045,6 +10045,10 @@ PrivType:
 	{
 		$$ = mysql.EventPriv
 	}
+|	"SHUTDOWN"
+	{
+		$$ = mysql.ShutdownPriv
+	}
 
 ObjectType:
 	{
