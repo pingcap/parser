@@ -78,6 +78,10 @@ func (s *testLexerSuite) TestAtLeadingIdentifier(c *C) {
 		{"@@session.test", doubleAtIdentifier},
 		{"@@local.test", doubleAtIdentifier},
 		{"@@test", doubleAtIdentifier},
+		{"@@global.`test`", doubleAtIdentifier},
+		{"@@session.`test`", doubleAtIdentifier},
+		{"@@local.`test`", doubleAtIdentifier},
+		{"@@`test`", doubleAtIdentifier},
 	}
 	runTest(c, table)
 }
@@ -109,6 +113,7 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"132.313", decLit},
 		{"132.3e231", floatLit},
 		{"132.3e-231", floatLit},
+		{"001e-12", floatLit},
 		{"23416", intLit},
 		{"123test", identifier},
 		{"123" + string(unicode.ReplacementChar) + "xxx", identifier},
@@ -122,6 +127,7 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"\\N", null},
 		{".*", int('.')},       // `.`, `*`
 		{".1_t_1_x", int('.')}, // `.`, `1_t_1_x`
+		{"9e9e", floatLit},     // 9e9e = 9e9 + e
 		// Issue #3954
 		{".1e23", floatLit}, // `.1e23`
 		{".123", decLit},    // `.123`
@@ -228,6 +234,15 @@ func (s *testLexerSuite) TestIdentifier(c *C) {
 		{"1_x", "1_x"},
 		{"0_x", "0_x"},
 		{replacementString, replacementString},
+		{"9e", "9e"},
+		{"0b", "0b"},
+		{"0b123", "0b123"},
+		{"0b1ab", "0b1ab"},
+		{"0B01", "0B01"},
+		{"0x", "0x"},
+		{"0x7fz3", "0x7fz3"},
+		{"023a4", "023a4"},
+		{"9eTSs", "9eTSs"},
 		{fmt.Sprintf("t1%cxxx", 0), "t1"},
 	}
 	l := &Scanner{}
@@ -341,11 +356,18 @@ func (s *testLexerSuite) TestSQLModeANSIQuotes(c *C) {
 
 func (s *testLexerSuite) TestIllegal(c *C) {
 	table := []testCaseItem{
-		{"'", 0},
-		{"'fu", 0},
-		{"'\\n", 0},
-		{"'\\", 0},
+		{"'", invalid},
+		{"'fu", invalid},
+		{"'\\n", invalid},
+		{"'\\", invalid},
 		{fmt.Sprintf("%c", 0), invalid},
+		{"`", invalid},
+		{`"`, invalid},
+		{"@`", invalid},
+		{"@'", invalid},
+		{`@"`, invalid},
+		{"@@`", invalid},
+		{"@@global.`", invalid},
 	}
 	runTest(c, table)
 }

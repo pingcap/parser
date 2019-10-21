@@ -16,6 +16,7 @@ package ast_test
 import (
 	. "github.com/pingcap/check"
 	. "github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -192,11 +193,30 @@ func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
 		{"3+5", "3+5"},
 		{"3-5", "3-5"},
 		{"a<>5", "`a`!=5"},
+		{"a=1", "`a`=1"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestBinaryOperationExprWithFlags(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"'a'!=1", "'a' != 1"},
+		{"a!=1", "`a` != 1"},
+		{"3<5", "3 < 5"},
+		{"10>5", "10 > 5"},
+		{"3+5", "3 + 5"},
+		{"3-5", "3 - 5"},
+		{"a<>5", "`a` != 5"},
+		{"a=1", "`a` = 1"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	flags := format.DefaultRestoreFlags | format.RestoreSpacesAroundBinaryOperation
+	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags)
 }
 
 func (tc *testExpressionsSuite) TestParenthesesExpr(c *C) {
@@ -231,6 +251,20 @@ func (tc *testExpressionsSuite) TestDefaultExpr(c *C) {
 		return node.(*InsertStmt).Lists[0][0]
 	}
 	RunNodeRestoreTest(c, testCases, "insert into t values(%s)", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestPatternInExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"'a' in ('b')", "'a' IN ('b')"},
+		{"2 in (0,3,7)", "2 IN (0,3,7)"},
+		{"2 not in (0,3,7)", "2 NOT IN (0,3,7)"},
+		{"2 in (select 2)", "2 IN (SELECT 2)"},
+		{"2 not in (select 2)", "2 NOT IN (SELECT 2)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }
 
 func (tc *testExpressionsSuite) TestPatternLikeExprRestore(c *C) {
@@ -271,6 +305,74 @@ func (tc *testExpressionsSuite) TestPatternRegexpExprRestore(c *C) {
 		{"a not regexp '^[abc][0-9]{11}|ok$'", "`a` NOT REGEXP '^[abc][0-9]{11}|ok$'"},
 		{"a not rlike 't1'", "`a` NOT REGEXP 't1'"},
 		{"a not rlike '^[abc][0-9]{11}|ok$'", "`a` NOT REGEXP '^[abc][0-9]{11}|ok$'"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestRowExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"(1,2)", "ROW(1,2)"},
+		{"(col1,col2)", "ROW(`col1`,`col2`)"},
+		{"row(1,2)", "ROW(1,2)"},
+		{"row(col1,col2)", "ROW(`col1`,`col2`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Where.(*BinaryOperationExpr).L
+	}
+	RunNodeRestoreTest(c, testCases, "select 1 from t1 where %s = row(1,2)", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestMaxValueExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"maxvalue", "MAXVALUE"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*AlterTableStmt).Specs[0].PartDefinitions[0].Clause.(*PartitionDefinitionClauseLessThan).Exprs[0]
+	}
+	RunNodeRestoreTest(c, testCases, "alter table posts add partition ( partition p1 values less than %s)", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestPositionExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"1", "1"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).OrderBy.Items[0]
+	}
+	RunNodeRestoreTest(c, testCases, "select * from t order by %s", extractNodeFunc)
+
+}
+
+func (tc *testExpressionsSuite) TestExistsSubqueryExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"EXISTS (SELECT 2)", "EXISTS (SELECT 2)"},
+		{"NOT EXISTS (SELECT 2)", "NOT EXISTS (SELECT 2)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Where
+	}
+	RunNodeRestoreTest(c, testCases, "select 1 from t1 where %s", extractNodeFunc)
+}
+
+func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"@a>1", "@`a`>1"},
+		{"@`aB`+1", "@`aB`+1"},
+		{"@'a':=1", "@`a`:=1"},
+		{"@`a``b`=4", "@`a``b`=4"},
+		{`@"aBC">1`, "@`aBC`>1"},
+		{"@`a`+1", "@`a`+1"},
+		{"@``", "@``"},
+		{"@", "@``"},
+		{"@@``", "@@``"},
+		{"@@", "@@``"},
+		{"@@var", "@@`var`"},
+		{"@@global.b='foo'", "@@GLOBAL.`b`='foo'"},
+		{"@@session.'C'", "@@SESSION.`c`"},
+		{`@@local."aBc"`, "@@SESSION.`abc`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr

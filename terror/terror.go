@@ -82,6 +82,7 @@ const (
 	ClassJSON
 	ClassTiKV
 	ClassSession
+	ClassPlugin
 	// Add more as needed.
 )
 
@@ -109,6 +110,7 @@ var errClz2Str = map[ErrClass]string{
 	ClassJSON:       "json",
 	ClassTiKV:       "tikv",
 	ClassSession:    "session",
+	ClassPlugin:     "plugin",
 }
 
 // String implements fmt.Stringer interface.
@@ -144,6 +146,11 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 		code:    code,
 		message: message,
 	}
+}
+
+// NewStd calls New using the standard message for the error code
+func (ec ErrClass) NewStd(code ErrCode) *Error {
+	return ec.New(code, mysql.MySQLErrName[uint16(code)])
 }
 
 // Error implements error interface and adds integer Class and Code, so
@@ -237,7 +244,15 @@ func (e *Error) FastGen(format string, args ...interface{}) error {
 	err := *e
 	err.message = format
 	err.args = args
-	return &err
+	return errors.SuspendStack(&err)
+}
+
+// FastGen generates a new *Error with the same class and code, and a new arguments.
+// This will not call runtime.Caller to get file and line.
+func (e *Error) FastGenByArgs(args ...interface{}) error {
+	err := *e
+	err.args = args
+	return errors.SuspendStack(&err)
 }
 
 // Equal checks if err is equal to e.

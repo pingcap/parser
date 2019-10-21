@@ -15,6 +15,7 @@ package model
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +63,22 @@ func (s SchemaState) String() string {
 	}
 }
 
+const (
+	// ColumnInfoVersion0 means the column info version is 0.
+	ColumnInfoVersion0 = uint64(0)
+	// ColumnInfoVersion1 means the column info version is 1.
+	ColumnInfoVersion1 = uint64(1)
+	// ColumnInfoVersion2 means the column info version is 2.
+	// This is for v2.1.7 to Compatible with older versions charset problem.
+	// Old version such as v2.0.8 treat utf8 as utf8mb4, because there is no UTF8 check in v2.0.8.
+	// After version V2.1.2 (PR#8738) , TiDB add UTF8 check, then the user upgrade from v2.0.8 insert some UTF8MB4 characters will got error.
+	// This is not compatibility for user. Then we try to fix this in PR #9820, and increase the version number.
+	ColumnInfoVersion2 = uint64(2)
+
+	// CurrLatestColumnInfoVersion means the latest column info in the current TiDB.
+	CurrLatestColumnInfoVersion = ColumnInfoVersion2
+)
+
 // ColumnInfo provides meta data describing of a table column.
 type ColumnInfo struct {
 	ID                  int64               `json:"id"`
@@ -76,6 +93,12 @@ type ColumnInfo struct {
 	types.FieldType     `json:"type"`
 	State               SchemaState `json:"state"`
 	Comment             string      `json:"comment"`
+	// Version means the version of the column info.
+	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
+	//              That is a bug if multiple TiDB servers in different system time zone.
+	// Version = 1: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in UTC time zone.
+	//              This will fix bug in version 0. For compatibility with version 0, we add version field in column info struct.
+	Version uint64 `json:"version"`
 }
 
 // Clone clones ColumnInfo.
@@ -134,6 +157,36 @@ func FindColumnInfo(cols []*ColumnInfo, name string) *ColumnInfo {
 // for use of execution phase.
 const ExtraHandleID = -1
 
+const (
+	// TableInfoVersion0 means the table info version is 0.
+	// Upgrade from v2.1.1 or v2.1.2 to v2.1.3 and later, and then execute a "change/modify column" statement
+	// that does not specify a charset value for column. Then the following error may be reported:
+	// ERROR 1105 (HY000): unsupported modify charset from utf8mb4 to utf8.
+	// To eliminate this error, we will not modify the charset of this column
+	// when executing a change/modify column statement that does not specify a charset value for column.
+	// This behavior is not compatible with MySQL.
+	TableInfoVersion0 = uint16(0)
+	// TableInfoVersion1 means the table info version is 1.
+	// When we execute a change/modify column statement that does not specify a charset value for column,
+	// we set the charset of this column to the charset of table. This behavior is compatible with MySQL.
+	TableInfoVersion1 = uint16(1)
+	// TableInfoVersion2 means the table info version is 2.
+	// This is for v2.1.7 to Compatible with older versions charset problem.
+	// Old version such as v2.0.8 treat utf8 as utf8mb4, because there is no UTF8 check in v2.0.8.
+	// After version V2.1.2 (PR#8738) , TiDB add UTF8 check, then the user upgrade from v2.0.8 insert some UTF8MB4 characters will got error.
+	// This is not compatibility for user. Then we try to fix this in PR #9820, and increase the version number.
+	TableInfoVersion2 = uint16(2)
+	// TableInfoVersion3 means the table info version is 3.
+	// This version aims to deal with upper-cased charset name in TableInfo stored by versions prior to TiDB v2.1.9:
+	// TiDB always suppose all charsets / collations as lower-cased and try to convert them if they're not.
+	// However, the convert is missed in some scenarios before v2.1.9, so for all those tables prior to TableInfoVersion3, their
+	// charsets / collations will be converted to lower-case while loading from the storage.
+	TableInfoVersion3 = uint16(3)
+
+	// CurrLatestTableInfoVersion means the latest table info in the current TiDB.
+	CurrLatestTableInfoVersion = TableInfoVersion3
+)
+
 // ExtraHandleName is the name of ExtraHandle Column.
 var ExtraHandleName = NewCIStr("_tidb_rowid")
 
@@ -166,12 +219,118 @@ type TableInfo struct {
 
 	// ShardRowIDBits specify if the implicit row ID is sharded.
 	ShardRowIDBits uint64
+	// MaxShardRowIDBits uses to record the max ShardRowIDBits be used so far.
+	MaxShardRowIDBits uint64 `json:"max_shard_row_id_bits"`
+	// PreSplitRegions specify the pre-split region when create table.
+	// The pre-split region num is 2^(PreSplitRegions-1).
+	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
+	PreSplitRegions uint64 `json:"pre_split_regions"`
 
 	Partition *PartitionInfo `json:"partition"`
 
 	Compression string `json:"compression"`
 
 	View *ViewInfo `json:"view"`
+	// Lock represent the table lock info.
+	Lock *TableLockInfo `json:"Lock"`
+
+	// Version means the version of the table info.
+	Version uint16 `json:"version"`
+
+	// TiFlashReplica means the TiFlash replica info.
+	TiFlashReplica *TiFlashReplicaInfo `json:"tiflash_replica"`
+}
+
+// TableLockInfo provides meta data describing a table lock.
+type TableLockInfo struct {
+	Tp TableLockType
+	// Use array because there may be multiple sessions holding the same read lock.
+	Sessions []SessionInfo
+	State    TableLockState
+	// TS is used to record the timestamp this table lock been locked.
+	TS uint64
+}
+
+// SessionInfo contain the session ID and the server ID.
+type SessionInfo struct {
+	ServerID  string
+	SessionID uint64
+}
+
+func (s SessionInfo) String() string {
+	return "server: " + s.ServerID + "_session: " + strconv.FormatUint(s.SessionID, 10)
+}
+
+// TableLockTpInfo is composed by schema ID, table ID and table lock type.
+type TableLockTpInfo struct {
+	SchemaID int64
+	TableID  int64
+	Tp       TableLockType
+}
+
+// TableLockState is the state for table lock.
+type TableLockState byte
+
+const (
+	// TableLockStateNone means this table lock is absent.
+	TableLockStateNone TableLockState = iota
+	// TableLockStatePreLock means this table lock is pre-lock state. Other session doesn't hold this lock should't do corresponding operation according to the lock type.
+	TableLockStatePreLock
+	// TableLockStatePublic means this table lock is public state.
+	TableLockStatePublic
+)
+
+// String implements fmt.Stringer interface.
+func (t TableLockState) String() string {
+	switch t {
+	case TableLockStatePreLock:
+		return "pre-lock"
+	case TableLockStatePublic:
+		return "public"
+	default:
+		return "none"
+	}
+}
+
+// TableLockType is the type of the table lock.
+type TableLockType byte
+
+const (
+	TableLockNone TableLockType = iota
+	// TableLockRead means the session with this lock can read the table (but not write it).
+	// Multiple sessions can acquire a READ lock for the table at the same time.
+	// Other sessions can read the table without explicitly acquiring a READ lock.
+	TableLockRead
+	// TableLockReadLocal is not supported.
+	TableLockReadLocal
+	// TableLockWrite means only the session with this lock has write/read permission.
+	// Only the session that holds the lock can access the table. No other session can access it until the lock is released.
+	TableLockWrite
+	// TableLockWriteLocal means the session with this lock has write/read permission, and the other session still has read permission.
+	TableLockWriteLocal
+)
+
+func (t TableLockType) String() string {
+	switch t {
+	case TableLockNone:
+		return "NONE"
+	case TableLockRead:
+		return "READ"
+	case TableLockReadLocal:
+		return "READ LOCAL"
+	case TableLockWriteLocal:
+		return "WRITE LOCAL"
+	case TableLockWrite:
+		return "WRITE"
+	}
+	return ""
+}
+
+// TiFlashReplicaInfo means the flash replica info.
+type TiFlashReplicaInfo struct {
+	Count          uint64
+	LocationLabels []string
+	Available      bool
 }
 
 // GetPartitionInfo returns the partition information.
@@ -272,6 +431,21 @@ func (t *TableInfo) Cols() []*ColumnInfo {
 		}
 	}
 	return publicColumns[0 : maxOffset+1]
+}
+
+// FindIndexByName finds index by name.
+func (t *TableInfo) FindIndexByName(idxName string) *IndexInfo {
+	for _, idx := range t.Indices {
+		if idx.Name.L == idxName {
+			return idx
+		}
+	}
+	return nil
+}
+
+// IsLocked checks whether the table was locked.
+func (t *TableInfo) IsLocked() bool {
+	return t.Lock != nil && len(t.Lock.Sessions) > 0
 }
 
 // NewExtraHandleColInfo mocks a column info for extra handle column.
@@ -381,9 +555,11 @@ type PartitionType int
 
 // Partition types.
 const (
-	PartitionTypeRange PartitionType = 1
-	PartitionTypeHash  PartitionType = 2
-	PartitionTypeList  PartitionType = 3
+	PartitionTypeRange      PartitionType = 1
+	PartitionTypeHash                     = 2
+	PartitionTypeList                     = 3
+	PartitionTypeKey                      = 4
+	PartitionTypeSystemTime               = 5
 )
 
 func (p PartitionType) String() string {
@@ -394,6 +570,10 @@ func (p PartitionType) String() string {
 		return "HASH"
 	case PartitionTypeList:
 		return "LIST"
+	case PartitionTypeKey:
+		return "KEY"
+	case PartitionTypeSystemTime:
+		return "SYSTEM_TIME"
 	default:
 		return ""
 	}
@@ -459,6 +639,8 @@ func (t IndexType) String() string {
 		return "BTREE"
 	case IndexTypeHash:
 		return "HASH"
+	case IndexTypeRtree:
+		return "RTREE"
 	default:
 		return ""
 	}
@@ -469,6 +651,7 @@ const (
 	IndexTypeInvalid IndexType = iota
 	IndexTypeBtree
 	IndexTypeHash
+	IndexTypeRtree
 )
 
 // IndexInfo provides meta data describing a DB index.
@@ -483,7 +666,7 @@ type IndexInfo struct {
 	Primary bool           `json:"is_primary"` // Whether the index is primary key.
 	State   SchemaState    `json:"state"`
 	Comment string         `json:"comment"`    // Comment
-	Tp      IndexType      `json:"index_type"` // Index type: Btree or Hash
+	Tp      IndexType      `json:"index_type"` // Index type: Btree, Hash or Rtree
 }
 
 // Clone clones IndexInfo.
@@ -655,8 +838,8 @@ func ColumnToProto(c *ColumnInfo) *tipb.ColumnInfo {
 // TODO: update it when more collate is supported.
 func collationToProto(c string) int32 {
 	v := mysql.CollationNames[c]
-	if v == mysql.BinaryCollationID {
-		return int32(mysql.BinaryCollationID)
+	if v == mysql.BinaryDefaultCollationID {
+		return int32(mysql.BinaryDefaultCollationID)
 	}
 	// We only support binary and utf8_bin collation.
 	// Setting other collations to utf8_bin for old data compatibility.

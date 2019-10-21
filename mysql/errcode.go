@@ -882,21 +882,71 @@ const (
 	ErrMustChangePasswordLogin                                      = 1862
 	ErrRowInWrongPartition                                          = 1863
 	ErrErrorLast                                                    = 1863
+	ErrMaxExecTimeExceeded                                          = 1907
+	ErrInvalidFieldSize                                             = 3013
+	ErrInvalidJSONData                                              = 3069
+	ErrGeneratedColumnFunctionIsNotAllowed                          = 3102
+	ErrUnsupportedAlterInplaceOnVirtualColumn                       = 3103
+	ErrWrongFKOptionForGeneratedColumn                              = 3104
 	ErrBadGeneratedColumn                                           = 3105
 	ErrUnsupportedOnGeneratedColumn                                 = 3106
 	ErrGeneratedColumnNonPrior                                      = 3107
 	ErrDependentByGeneratedColumn                                   = 3108
+	ErrGeneratedColumnRefAutoInc                                    = 3109
 	ErrInvalidJSONText                                              = 3140
 	ErrInvalidJSONPath                                              = 3143
-	ErrInvalidJSONData                                              = 3146
+	ErrInvalidTypeForJSON                                           = 3146
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
+	ErrInvalidJSONPathArrayCell                                     = 3165
+	ErrBadUser                                                      = 3162
+	ErrInvalidEncryptionOption                                      = 3184
+	ErrRoleNotGranted                                               = 3530
+	ErrLockAcquireFailAndNoWaitSet                                  = 3572
+	ErrWindowNoSuchWindow                                           = 3579
+	ErrWindowCircularityInWindowGraph                               = 3580
+	ErrWindowNoChildPartitioning                                    = 3581
+	ErrWindowNoInherentFrame                                        = 3582
+	ErrWindowNoRedefineOrderBy                                      = 3583
+	ErrWindowFrameStartIllegal                                      = 3584
+	ErrWindowFrameEndIllegal                                        = 3585
+	ErrWindowFrameIllegal                                           = 3586
+	ErrWindowRangeFrameOrderType                                    = 3587
+	ErrWindowRangeFrameTemporalType                                 = 3588
+	ErrWindowRangeFrameNumericType                                  = 3589
+	ErrWindowRangeBoundNotConstant                                  = 3590
+	ErrWindowDuplicateName                                          = 3591
+	ErrWindowIllegalOrderBy                                         = 3592
+	ErrWindowInvalidWindowFuncUse                                   = 3593
+	ErrWindowInvalidWindowFuncAliasUse                              = 3594
+	ErrWindowNestedWindowFuncUseInWindowSpec                        = 3595
+	ErrWindowRowsIntervalUse                                        = 3596
+	ErrWindowNoGroupOrderUnused                                     = 3597
+	ErrWindowExplainJson                                            = 3598
+	ErrWindowFunctionIgnoresFrame                                   = 3599
+
+	// MariaDB errors.
+	ErrOnlyOneDefaultPartionAllowed         = 4030
+	ErrWrongPartitionTypeExpectedSystemTime = 4113
+	ErrSystemVersioningWrongPartitions      = 4128
 
 	// TiDB self-defined errors.
-	ErrMemExceedThreshold = 8001
-	ErrForUpdateCantRetry = 8002
-	ErrAdminCheckTable    = 8003
+	ErrMemExceedThreshold         = 8001
+	ErrForUpdateCantRetry         = 8002
+	ErrAdminCheckTable            = 8003
+	ErrTxnTooLarge                = 8004
+	ErrWriteConflictInTiDB        = 8005
+	ErrInvalidPluginID            = 8101
+	ErrInvalidPluginManifest      = 8102
+	ErrInvalidPluginName          = 8103
+	ErrInvalidPluginVersion       = 8104
+	ErrDuplicatePlugin            = 8105
+	ErrInvalidPluginSysVarName    = 8106
+	ErrRequireVersionCheckFail    = 8107
+	ErrUnsupportedReloadPlugin    = 8018
+	ErrUnsupportedReloadPluginVar = 8019
+	ErrTableLocked                = 8020
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
@@ -905,6 +955,5 @@ const (
 	ErrResolveLockTimeout = 9004
 	ErrRegionUnavailable  = 9005
 	ErrGCTooEarly         = 9006
-
-	ErrTxnTooLarge = 9500
+	ErrWriteConflict      = 9007
 )

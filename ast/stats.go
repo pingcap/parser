@@ -15,6 +15,7 @@ package ast
 
 import (
 	"github.com/pingcap/errors"
+	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 )
 
@@ -31,15 +32,86 @@ type AnalyzeTableStmt struct {
 	TableNames     []*TableName
 	PartitionNames []model.CIStr
 	IndexNames     []model.CIStr
-	MaxNumBuckets  uint64
+	AnalyzeOpts    []AnalyzeOpt
 
 	// IndexFlag is true when we only analyze indices for a table.
-	IndexFlag bool
+	IndexFlag   bool
+	Incremental bool
+}
+
+// AnalyzeOptType is the type for analyze options.
+type AnalyzeOptionType int
+
+// Analyze option types.
+const (
+	AnalyzeOptNumBuckets = iota
+	AnalyzeOptNumTopN
+	AnalyzeOptCMSketchDepth
+	AnalyzeOptCMSketchWidth
+	AnalyzeOptNumSamples
+)
+
+// AnalyzeOptionString stores the string form of analyze options.
+var AnalyzeOptionString = map[AnalyzeOptionType]string{
+	AnalyzeOptNumBuckets:    "BUCKETS",
+	AnalyzeOptNumTopN:       "TOPN",
+	AnalyzeOptCMSketchWidth: "CMSKETCH WIDTH",
+	AnalyzeOptCMSketchDepth: "CMSKETCH DEPTH",
+	AnalyzeOptNumSamples:    "SAMPLES",
+}
+
+// AnalyzeOpt stores the analyze option type and value.
+type AnalyzeOpt struct {
+	Type  AnalyzeOptionType
+	Value uint64
 }
 
 // Restore implements Node interface.
 func (n *AnalyzeTableStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.Incremental {
+		ctx.WriteKeyWord("ANALYZE INCREMENTAL TABLE ")
+	} else {
+		ctx.WriteKeyWord("ANALYZE TABLE ")
+	}
+	for i, table := range n.TableNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := table.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AnalyzeTableStmt.TableNames[%d]", i)
+		}
+	}
+	if len(n.PartitionNames) != 0 {
+		ctx.WriteKeyWord(" PARTITION ")
+	}
+	for i, partition := range n.PartitionNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		ctx.WriteName(partition.O)
+	}
+	if n.IndexFlag {
+		ctx.WriteKeyWord(" INDEX")
+	}
+	for i, index := range n.IndexNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		} else {
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteName(index.O)
+	}
+	if len(n.AnalyzeOpts) != 0 {
+		ctx.WriteKeyWord(" WITH")
+		for i, opt := range n.AnalyzeOpts {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			ctx.WritePlainf(" %d ", opt.Value)
+			ctx.WritePlain(AnalyzeOptionString[opt.Type])
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -100,7 +172,9 @@ type LoadStatsStmt struct {
 
 // Restore implements Node interface.
 func (n *LoadStatsStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("LOAD STATS ")
+	ctx.WriteString(n.Path)
+	return nil
 }
 
 // Accept implements Node Accept interface.

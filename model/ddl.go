@@ -29,59 +29,75 @@ type ActionType byte
 
 // List DDL actions.
 const (
-	ActionNone                         ActionType = 0
-	ActionCreateSchema                 ActionType = 1
-	ActionDropSchema                   ActionType = 2
-	ActionCreateTable                  ActionType = 3
-	ActionDropTable                    ActionType = 4
-	ActionAddColumn                    ActionType = 5
-	ActionDropColumn                   ActionType = 6
-	ActionAddIndex                     ActionType = 7
-	ActionDropIndex                    ActionType = 8
-	ActionAddForeignKey                ActionType = 9
-	ActionDropForeignKey               ActionType = 10
-	ActionTruncateTable                ActionType = 11
-	ActionModifyColumn                 ActionType = 12
-	ActionRebaseAutoID                 ActionType = 13
-	ActionRenameTable                  ActionType = 14
-	ActionSetDefaultValue              ActionType = 15
-	ActionShardRowID                   ActionType = 16
-	ActionModifyTableComment           ActionType = 17
-	ActionRenameIndex                  ActionType = 18
-	ActionAddTablePartition            ActionType = 19
-	ActionDropTablePartition           ActionType = 20
-	ActionCreateView                   ActionType = 21
-	ActionModifyTableCharsetAndCollate ActionType = 22
-	ActionTruncateTablePartition       ActionType = 23
+	ActionNone                          ActionType = 0
+	ActionCreateSchema                  ActionType = 1
+	ActionDropSchema                    ActionType = 2
+	ActionCreateTable                   ActionType = 3
+	ActionDropTable                     ActionType = 4
+	ActionAddColumn                     ActionType = 5
+	ActionDropColumn                    ActionType = 6
+	ActionAddIndex                      ActionType = 7
+	ActionDropIndex                     ActionType = 8
+	ActionAddForeignKey                 ActionType = 9
+	ActionDropForeignKey                ActionType = 10
+	ActionTruncateTable                 ActionType = 11
+	ActionModifyColumn                  ActionType = 12
+	ActionRebaseAutoID                  ActionType = 13
+	ActionRenameTable                   ActionType = 14
+	ActionSetDefaultValue               ActionType = 15
+	ActionShardRowID                    ActionType = 16
+	ActionModifyTableComment            ActionType = 17
+	ActionRenameIndex                   ActionType = 18
+	ActionAddTablePartition             ActionType = 19
+	ActionDropTablePartition            ActionType = 20
+	ActionCreateView                    ActionType = 21
+	ActionModifyTableCharsetAndCollate  ActionType = 22
+	ActionTruncateTablePartition        ActionType = 23
+	ActionDropView                      ActionType = 24
+	ActionRecoverTable                  ActionType = 25
+	ActionModifySchemaCharsetAndCollate ActionType = 26
+	ActionLockTable                     ActionType = 27
+	ActionUnlockTable                   ActionType = 28
+	ActionRepairTable                   ActionType = 29
+	ActionSetTiFlashReplica             ActionType = 30
+	ActionUpdateTiFlashReplicaStatus    ActionType = 31
 )
 
 // AddIndexStr is a string related to the operation of "add index".
 const AddIndexStr = "add index"
 
 var actionMap = map[ActionType]string{
-	ActionCreateSchema:                 "create schema",
-	ActionDropSchema:                   "drop schema",
-	ActionCreateTable:                  "create table",
-	ActionDropTable:                    "drop table",
-	ActionAddColumn:                    "add column",
-	ActionDropColumn:                   "drop column",
-	ActionAddIndex:                     AddIndexStr,
-	ActionDropIndex:                    "drop index",
-	ActionAddForeignKey:                "add foreign key",
-	ActionDropForeignKey:               "drop foreign key",
-	ActionTruncateTable:                "truncate table",
-	ActionModifyColumn:                 "modify column",
-	ActionRebaseAutoID:                 "rebase auto_increment ID",
-	ActionRenameTable:                  "rename table",
-	ActionSetDefaultValue:              "set default value",
-	ActionShardRowID:                   "shard row ID",
-	ActionModifyTableComment:           "modify table comment",
-	ActionRenameIndex:                  "rename index",
-	ActionAddTablePartition:            "add partition",
-	ActionDropTablePartition:           "drop partition",
-	ActionCreateView:                   "create view",
-	ActionModifyTableCharsetAndCollate: "modify table charset and collate",
-	ActionTruncateTablePartition:       "truncate partition",
+	ActionCreateSchema:                  "create schema",
+	ActionDropSchema:                    "drop schema",
+	ActionCreateTable:                   "create table",
+	ActionDropTable:                     "drop table",
+	ActionAddColumn:                     "add column",
+	ActionDropColumn:                    "drop column",
+	ActionAddIndex:                      AddIndexStr,
+	ActionDropIndex:                     "drop index",
+	ActionAddForeignKey:                 "add foreign key",
+	ActionDropForeignKey:                "drop foreign key",
+	ActionTruncateTable:                 "truncate table",
+	ActionModifyColumn:                  "modify column",
+	ActionRebaseAutoID:                  "rebase auto_increment ID",
+	ActionRenameTable:                   "rename table",
+	ActionSetDefaultValue:               "set default value",
+	ActionShardRowID:                    "shard row ID",
+	ActionModifyTableComment:            "modify table comment",
+	ActionRenameIndex:                   "rename index",
+	ActionAddTablePartition:             "add partition",
+	ActionDropTablePartition:            "drop partition",
+	ActionCreateView:                    "create view",
+	ActionModifyTableCharsetAndCollate:  "modify table charset and collate",
+	ActionTruncateTablePartition:        "truncate partition",
+	ActionDropView:                      "drop view",
+	ActionRecoverTable:                  "recover table",
+	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
+	ActionLockTable:                     "lock table",
+	ActionUnlockTable:                   "unlock table",
+	ActionRepairTable:                   "repair table",
+	ActionSetTiFlashReplica:             "set tiflash replica",
+	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
 }
 
 // String return current ddl action in string
@@ -137,12 +153,13 @@ func NewDDLReorgMeta() *DDLReorgMeta {
 
 // Job is for a DDL operation.
 type Job struct {
-	ID       int64         `json:"id"`
-	Type     ActionType    `json:"type"`
-	SchemaID int64         `json:"schema_id"`
-	TableID  int64         `json:"table_id"`
-	State    JobState      `json:"state"`
-	Error    *terror.Error `json:"err"`
+	ID         int64         `json:"id"`
+	Type       ActionType    `json:"type"`
+	SchemaID   int64         `json:"schema_id"`
+	TableID    int64         `json:"table_id"`
+	SchemaName string        `json:"schema_name"`
+	State      JobState      `json:"state"`
+	Error      *terror.Error `json:"err"`
 	// ErrorCount will be increased, every time we meet an error when running job.
 	ErrorCount int64 `json:"err_count"`
 	// RowCount means the number of rows that are processed.

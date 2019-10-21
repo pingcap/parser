@@ -142,7 +142,7 @@ import (
 	"strings"
 
 	"github.com/cznic/mathutil"
-	"github.com/cznic/parser/yacc"
+	parser "github.com/cznic/parser/yacc"
 	"github.com/cznic/sortutil"
 	"github.com/cznic/strutil"
 	"github.com/cznic/y"
@@ -516,8 +516,9 @@ var %[1]sDebug = 0
 
 type %[1]sLexer interface {
 	Lex(lval *%[1]sSymType) int
-	Errorf(format string, a ...interface{})
-	Errors() (warns []error, errs []error) 
+	Errorf(format string, a ...interface{}) error
+	AppendError(err error)
+	Errors() (warns []error, errs []error)
 }
 
 type %[1]sLexerEx interface {
@@ -551,7 +552,6 @@ func %[1]sParse(yylex %[1]sLexer, parser *Parser) int {
 	yyEx, _ := yylex.(%[1]sLexerEx)
 	var yyn int
 	parser.yylval = %[1]sSymType{}
-	parser.yyVAL = %[1]sSymType{}
 	yyS := parser.cache
 
 	Nerrs := 0   /* number of errors */
@@ -579,13 +579,13 @@ ret1:
 yystack:
 	/* put a state and value onto the stack */
 	yyp++
-	if yyp >= len(yyS) {
+	if yyp+1 >= len(yyS) {
 		nyys := make([]%[1]sSymType, len(yyS)*2)
 		copy(nyys, yyS)
 		yyS = nyys
 		parser.cache = yyS
 	}
-	yyS[yyp] = parser.yyVAL
+	parser.yyVAL = &yyS[yyp+1]
 	yyS[yyp].yys = yystate
 
 yynewstate:
@@ -613,7 +613,7 @@ yynewstate:
 	switch {
 	case yyn > 0: // shift
 		yychar = -1
-		parser.yyVAL = parser.yylval
+		*parser.yyVAL = parser.yylval
 		yystate = yyn
 		yyshift = yyn
 		if %[1]sDebug >= 2 {
@@ -652,7 +652,7 @@ yynewstate:
 				msg = "syntax error"
 			}
 			// ignore goyacc error message
-			yylex.Errorf("")
+			yylex.AppendError(yylex.Errorf(""))
 			Nerrs++
 			fallthrough
 
@@ -711,7 +711,7 @@ yynewstate:
 		yyS = nyys
 		parser.cache = yyS
 	}
-	parser.yyVAL = yyS[yyp+1]
+	parser.yyVAL = &yyS[yyp+1]
 
 	/* consult goto table to find next state */
 	exState := yystate
@@ -780,7 +780,7 @@ yynewstate:
 	mustFormat(f, `%u
 	}
 
-	if yyEx != nil && yyEx.Reduced(r, exState, &parser.yyVAL) {
+	if yyEx != nil && yyEx.Reduced(r, exState, parser.yyVAL) {
 		return -1
 	}
 	goto yystack /* stack new state and value */

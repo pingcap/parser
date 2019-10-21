@@ -16,6 +16,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -50,9 +51,14 @@ type Scanner struct {
 	// It may break the compatibility when support those keywords,
 	// because some application may already use them as identifiers.
 	supportWindowFunc bool
+
+	// lastScanOffset indicates last offset returned by scan().
+	// It's used to substring sql in syntax error message.
+	lastScanOffset int
 }
 
 type specialCommentScanner interface {
+	stmtTexter
 	scan() (tok int, pos Pos, lit string)
 }
 
@@ -80,11 +86,18 @@ func (s *optimizerHintScanner) scan() (tok int, pos Pos, lit string) {
 	pos.Line += s.Pos.Line
 	pos.Col += s.Pos.Col
 	pos.Offset += s.Pos.Offset
-	if tok == 0 {
+	switch tok {
+	case 0:
 		if !s.end {
 			tok = hintEnd
 			s.end = true
 		}
+	case invalid:
+		// an optimizer hint is allowed to contain invalid characters, the
+		// remaining hints are just ignored.
+		// force advance the lexer even when encountering an invalid character
+		// to prevent infinite parser loop. (see issue #336)
+		s.r.inc()
 	}
 	return
 }
@@ -105,6 +118,10 @@ func (s *Scanner) reset(sql string) {
 }
 
 func (s *Scanner) stmtText() string {
+	if s.specialComment != nil {
+		return s.specialComment.stmtText()
+	}
+
 	endPos := s.r.pos().Offset
 	if s.r.s[endPos-1] == '\n' {
 		endPos = endPos - 1 // trim new line
@@ -121,13 +138,25 @@ func (s *Scanner) stmtText() string {
 
 // Errorf tells scanner something is wrong.
 // Scanner satisfies yyLexer interface which need this function.
-func (s *Scanner) Errorf(format string, a ...interface{}) {
+func (s *Scanner) Errorf(format string, a ...interface{}) (err error) {
 	str := fmt.Sprintf(format, a...)
-	val := s.r.s[s.r.pos().Offset:]
+	val := s.r.s[s.lastScanOffset:]
+	var lenStr = ""
 	if len(val) > 2048 {
+		lenStr = "(total length " + strconv.Itoa(len(val)) + ")"
 		val = val[:2048]
 	}
-	err := fmt.Errorf("line %d column %d near \"%s\"%s (total length %d)", s.r.p.Line, s.r.p.Col, val, str, len(s.r.s))
+	err = fmt.Errorf("line %d column %d near \"%s\"%s %s",
+		s.r.p.Line, s.r.p.Col, val, str, lenStr)
+	return
+}
+
+// AppendError sets error into scanner.
+// Scanner satisfies yyLexer interface which need this function.
+func (s *Scanner) AppendError(err error) {
+	if err == nil {
+		return
+	}
 	s.errs = append(s.errs, err)
 }
 
@@ -138,6 +167,7 @@ func (s *Scanner) Errorf(format string, a ...interface{}) {
 // return invalid tells parser that scanner meets illegal character.
 func (s *Scanner) Lex(v *yySymType) int {
 	tok, pos, lit := s.scan()
+	s.lastScanOffset = pos.Offset
 	v.offset = pos.Offset
 	v.ident = lit
 	if tok == identifier {
@@ -181,9 +211,11 @@ func (s *Scanner) Lex(v *yySymType) int {
 	case quotedIdentifier:
 		tok = identifier
 	}
-	if tok == unicode.ReplacementChar && s.r.eof() {
-		return 0
+
+	if tok == unicode.ReplacementChar {
+		return invalid
 	}
+
 	return tok
 }
 
@@ -200,6 +232,15 @@ func (s *Scanner) GetSQLMode() mysql.SQLMode {
 // EnableWindowFunc controls whether the scanner recognize the keywords of window function.
 func (s *Scanner) EnableWindowFunc(val bool) {
 	s.supportWindowFunc = val
+}
+
+// InheritScanner returns a new scanner object which inherits configurations from the parent scanner.
+func (s *Scanner) InheritScanner(sql string) *Scanner {
+	return &Scanner{
+		r:                 reader{s: sql},
+		sqlMode:           s.sqlMode,
+		supportWindowFunc: s.supportWindowFunc,
+	}
 }
 
 // NewScanner returns a new scanner object.
@@ -339,6 +380,7 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 		return
 	}
 	tok = int('-')
+	lit = "-"
 	s.r.inc()
 	return
 }
@@ -377,7 +419,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			end := len(comment) - 2
 			sql := comment[begin:end]
 			s.specialComment = &optimizerHintScanner{
-				Scanner: NewScanner(sql),
+				Scanner: s.InheritScanner(sql),
 				Pos: Pos{
 					pos.Line,
 					pos.Col,
@@ -394,7 +436,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		if strings.HasPrefix(comment, "/*!") {
 			sql := specCodePattern.ReplaceAllStringFunc(comment, TrimComment)
 			s.specialComment = &mysqlSpecificCodeScanner{
-				Scanner: NewScanner(sql),
+				Scanner: s.InheritScanner(sql),
 				Pos: Pos{
 					pos.Line,
 					pos.Col,
@@ -430,45 +472,36 @@ func sqlOffsetInComment(comment string) int {
 func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
-	ch1 := s.r.peek()
-	if ch1 == '\'' || ch1 == '"' {
-		nTok, nPos, nLit := startString(s)
-		if nTok == stringLit {
-			tok = singleAtIdentifier
-			pos = nPos
-			lit = nLit
-		} else {
-			tok = int('@')
-		}
-	} else if ch1 == '`' {
-		nTok, nPos, nLit := scanQuotedIdent(s)
-		if nTok == quotedIdentifier {
-			tok = singleAtIdentifier
-			pos = nPos
-			lit = nLit
-		} else {
-			tok = int('@')
-		}
-	} else if isUserVarChar(ch1) {
-		s.r.incAsLongAs(isUserVarChar)
-		tok, lit = singleAtIdentifier, s.r.data(&pos)
-	} else if ch1 == '@' {
+
+	tok, lit = scanIdentifierOrString(s)
+	switch tok {
+	case '@':
 		s.r.inc()
 		stream := s.r.s[pos.Offset+2:]
+		var prefix string
 		for _, v := range []string{"global.", "session.", "local."} {
 			if len(v) > len(stream) {
 				continue
 			}
 			if strings.EqualFold(stream[:len(v)], v) {
+				prefix = v
 				s.r.incN(len(v))
 				break
 			}
 		}
-		s.r.incAsLongAs(isIdentChar)
-		tok, lit = doubleAtIdentifier, s.r.data(&pos)
-	} else {
-		tok, lit = singleAtIdentifier, s.r.data(&pos)
+		tok, lit = scanIdentifierOrString(s)
+		switch tok {
+		case stringLit, quotedIdentifier:
+			tok, lit = doubleAtIdentifier, "@@"+prefix+lit
+		case identifier:
+			tok, lit = doubleAtIdentifier, s.r.data(&pos)
+		}
+	case unicode.ReplacementChar:
+		break
+	default:
+		tok = singleAtIdentifier
 	}
+
 	return
 }
 
@@ -477,6 +510,25 @@ func scanIdentifier(s *Scanner) (int, Pos, string) {
 	s.r.inc()
 	s.r.incAsLongAs(isIdentChar)
 	return identifier, pos, s.r.data(&pos)
+}
+
+func scanIdentifierOrString(s *Scanner) (tok int, lit string) {
+	ch1 := s.r.peek()
+	switch ch1 {
+	case '\'', '"':
+		tok, _, lit = startString(s)
+	case '`':
+		tok, _, lit = scanQuotedIdent(s)
+	default:
+		if isUserVarChar(ch1) {
+			pos := s.r.pos()
+			s.r.incAsLongAs(isUserVarChar)
+			tok, lit = identifier, s.r.data(&pos)
+		} else {
+			tok = int(ch1)
+		}
+	}
+	return
 }
 
 var (
@@ -619,17 +671,31 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			s.scanOct()
 		case ch1 == 'x' || ch1 == 'X':
 			s.r.inc()
+			p1 := s.r.pos()
 			s.scanHex()
+			p2 := s.r.pos()
+			// 0x, 0x7fz3 are identifier
+			if p1 == p2 || isDigit(s.r.peek()) {
+				s.r.incAsLongAs(isIdentChar)
+				return identifier, pos, s.r.data(&pos)
+			}
 			tok = hexLit
 		case ch1 == 'b':
 			s.r.inc()
+			p1 := s.r.pos()
 			s.scanBit()
+			p2 := s.r.pos()
+			// 0b, 0b123, 0b1ab are identifier
+			if p1 == p2 || isDigit(s.r.peek()) {
+				s.r.incAsLongAs(isIdentChar)
+				return identifier, pos, s.r.data(&pos)
+			}
 			tok = bitLit
 		case ch1 == '.':
 			return s.scanFloat(&pos)
 		case ch1 == 'B':
-			tok = unicode.ReplacementChar
-			return
+			s.r.incAsLongAs(isIdentChar)
+			return identifier, pos, s.r.data(&pos)
 		}
 	}
 
@@ -697,11 +763,17 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 	if ch0 == 'e' || ch0 == 'E' {
 		s.r.inc()
 		ch0 = s.r.peek()
-		if ch0 == '-' || ch0 == '+' {
+		if ch0 == '-' || ch0 == '+' || isDigit(ch0) {
 			s.r.inc()
+			s.scanDigits()
+			tok = floatLit
+		} else {
+			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
+			// 9e9e = 9e9(float) + e(identifier)
+			// 9est = 9est(identifier)
+			s.r.incAsLongAs(isIdentChar)
+			tok = identifier
 		}
-		s.scanDigits()
-		tok = floatLit
 	} else {
 		tok = decLit
 	}
