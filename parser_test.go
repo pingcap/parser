@@ -2170,6 +2170,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
 
+		{"ALTER TABLE t SET TIFLASH REPLICA 2 LOCATION LABELS 'a','b'", true, "ALTER TABLE `t` SET TIFLASH REPLICA 2 LOCATION LABELS 'a', 'b'"},
+		{"ALTER TABLE t SET TIFLASH REPLICA 0", true, "ALTER TABLE `t` SET TIFLASH REPLICA 0"},
+
 		// for issue 549
 		{"insert into t set a = default", true, "INSERT INTO `t` SET `a`=DEFAULT"},
 		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},

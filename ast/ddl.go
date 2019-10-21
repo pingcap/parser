@@ -1680,7 +1680,8 @@ const (
 	AlterTablePartition
 	AlterTableEnableKeys
 	AlterTableDisableKeys
-
+	// AlterTableSetTiFlashReplica uses to set the table TiFlash replica.
+	AlterTableSetTiFlashReplica
 	// TODO: Add more actions
 )
 
@@ -1760,11 +1761,30 @@ type AlterTableSpec struct {
 	PartitionNames  []model.CIStr
 	PartDefinitions []*PartitionDefinition
 	Num             uint64
+	TiFlashReplica  *TiFlashReplicaSpec
+}
+
+type TiFlashReplicaSpec struct {
+	Count  uint64
+	Labels []string
 }
 
 // Restore implements Node interface.
 func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
+	case AlterTableSetTiFlashReplica:
+		ctx.WriteKeyWord("SET TIFLASH REPLICA ")
+		ctx.WritePlainf("%d", n.TiFlashReplica.Count)
+		if len(n.TiFlashReplica.Labels) == 0 {
+			break
+		}
+		ctx.WriteKeyWord(" LOCATION LABELS ")
+		for i, v := range n.TiFlashReplica.Labels {
+			if i > 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteString(v)
+		}
 	case AlterTableOption:
 		switch {
 		case len(n.Options) == 2 &&
