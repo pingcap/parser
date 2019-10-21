@@ -170,6 +170,7 @@ var tokenMap = map[string]int{
 	"BOTH":                     both,
 	"BTREE":                    btree,
 	"BUCKETS":                  buckets,
+	"BUILTINS":                 builtins,
 	"BY":                       by,
 	"BYTE":                     byteType,
 	"CANCEL":                   cancel,
@@ -471,6 +472,7 @@ var tokenMap = map[string]int{
 	"REFERENCES":               references,
 	"REGEXP":                   regexpKwd,
 	"REGIONS":                  regions,
+	"REGION":                   region,
 	"RELOAD":                   reload,
 	"REMOVE":                   remove,
 	"RENAME":                   rename,
@@ -668,6 +670,7 @@ var tokenMap = map[string]int{
 	"BINDINGS":                 bindings,
 	"EXPR_PUSHDOWN_BLACKLIST":  exprPushdownBlacklist,
 	"OPT_RULE_BLACKLIST":       optRuleBlacklist,
+	"NOWAIT":                   nowait,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details

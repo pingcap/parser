@@ -58,8 +58,9 @@ const (
 	ActionModifySchemaCharsetAndCollate ActionType = 26
 	ActionLockTable                     ActionType = 27
 	ActionUnlockTable                   ActionType = 28
-	ActionSetFlashReplica               ActionType = 29
-	ActionUpdateFlashReplicaStatus      ActionType = 30
+	ActionRepairTable                   ActionType = 29
+	ActionSetFlashReplica               ActionType = 30
+	ActionUpdateFlashReplicaStatus      ActionType = 31
 )
 
 // AddIndexStr is a string related to the operation of "add index".
@@ -94,6 +95,7 @@ var actionMap = map[ActionType]string{
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
 	ActionLockTable:                     "lock table",
 	ActionUnlockTable:                   "unlock table",
+	ActionRepairTable:                   "repair table",
 	ActionSetFlashReplica:               "set flash replica",
 	ActionUpdateFlashReplicaStatus:      "update flash replica status",
 }
