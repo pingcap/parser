@@ -409,11 +409,13 @@ func (t *TableInfo) IsAutoIncColUnsigned() bool {
 	return mysql.HasUnsignedFlag(col.Flag)
 }
 
-func (t *TableInfo) containsAutoShardBits() bool {
+// ContainsAutoShardBits indicates whether a table is auto_shard.
+func (t *TableInfo) ContainsAutoShardBits() bool {
 	return t.AutoShardBits != 0
 }
 
-func (t *TableInfo) isAutoShardBitColUnsigned() bool {
+// IsAutoShardBitColUnsigned indicates whether the auto_shard column is unsigned. Make sure the table contain auto_shard_bits before calling this method.
+func (t *TableInfo) IsAutoShardBitColUnsigned() bool {
 	if !t.PKIsHandle || t.AutoShardBits == 0 {
 		return false
 	}
