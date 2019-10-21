@@ -2120,6 +2120,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table ", false, ""},
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
+
+		// alter table for tiflash
+		{"ALTER TABLE t SET TIFLASH REPLICA 2 LOCATION LABELS 'a','b'", true, "ALTER TABLE `t` SET TIFLASH REPLICA 2 LOCATION LABELS 'a', 'b'"},
+		{"ALTER TABLE t SET TIFLASH REPLICA 0", true, "ALTER TABLE `t` SET TIFLASH REPLICA 0"},
 	}
 	s.RunTest(c, table)
 }
