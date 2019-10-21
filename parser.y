@@ -1292,13 +1292,13 @@ AlterTableSpec:
 	}
 |	"SET" "FLASH" "REPLICA" LengthNum LocationLabelList
 	{
-		flashReplicaSpec := &ast.FlashReplicaSpec{
+		tiflashReplicaSpec := &ast.TiFlashReplicaSpec{
 			Count: $4.(uint64),
 			Labels: $5.([]string),
 		}
 		$$ = &ast.AlterTableSpec{
-			Tp:	ast.AlterTableSetFlashReplica,
-			FlashReplica: flashReplicaSpec,
+			Tp:	ast.AlterTableSetTiFlashReplica,
+			TiFlashReplica: tiflashReplicaSpec,
 		}
 	}
 |	"CONVERT" "TO" CharsetKw CharsetName OptCollate
