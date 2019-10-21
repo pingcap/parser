@@ -409,6 +409,17 @@ func (t *TableInfo) IsAutoIncColUnsigned() bool {
 	return mysql.HasUnsignedFlag(col.Flag)
 }
 
+func (t *TableInfo) containsAutoShardBits() bool {
+	return t.AutoShardBits != 0
+}
+
+func (t *TableInfo) isAutoShardBitColUnsigned() bool {
+	if !t.PKIsHandle || t.AutoShardBits == 0 {
+		return false
+	}
+	return mysql.HasUnsignedFlag(t.GetPkColInfo().Flag)
+}
+
 // Cols returns the columns of the table in public state.
 func (t *TableInfo) Cols() []*ColumnInfo {
 	publicColumns := make([]*ColumnInfo, len(t.Columns))
