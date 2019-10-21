@@ -283,7 +283,6 @@ var tokenMap = map[string]int{
 	"FIRST":                    first,
 	"FIXED":                    fixed,
 	"FLOAT":                    floatType,
-	"FLASH":                    flash,
 	"FLUSH":                    flush,
 	"FOLLOWING":                following,
 	"FOR":                      forKwd,

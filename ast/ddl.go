@@ -2092,7 +2092,7 @@ func (n *AlterOrderItem) Restore(ctx *RestoreCtx) error {
 func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
 	case AlterTableSetTiFlashReplica:
-		ctx.WriteKeyWord("SET FLASH REPLICA ")
+		ctx.WriteKeyWord("SET TIFLASH REPLICA ")
 		ctx.WritePlainf("%d", n.TiFlashReplica.Count)
 		if len(n.TiFlashReplica.Labels) == 0 {
 			break

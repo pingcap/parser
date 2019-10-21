@@ -347,7 +347,6 @@ import (
 	fields		"FIELDS"
 	first		"FIRST"
 	fixed		"FIXED"
-	flash		"FLASH"
 	flush		"FLUSH"
 	following	"FOLLOWING"
 	format		"FORMAT"
@@ -1290,7 +1289,7 @@ AlterTableSpec:
 			Options:$1.([]*ast.TableOption),
 		}
 	}
-|	"SET" "FLASH" "REPLICA" LengthNum LocationLabelList
+|	"SET" "TIFLASH" "REPLICA" LengthNum LocationLabelList
 	{
 		tiflashReplicaSpec := &ast.TiFlashReplicaSpec{
 			Count: $4.(uint64),
@@ -4445,7 +4444,7 @@ UnReservedKeyword:
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" |
-"SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT" | "FLASH" | "REPLICA" | "LOCATION" | "LABELS"
+"SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT" | "REPLICA" | "LOCATION" | "LABELS"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "BUILTINS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
