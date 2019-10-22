@@ -931,7 +931,7 @@ var MySQLErrName = map[uint16]string{
 	ErrMemExceedThreshold:         "%s holds %dB memory, exceeds threshold %dB.%s",
 	ErrForUpdateCantRetry:         "[%d] can not retry select for update statement",
 	ErrAdminCheckTable:            "TiDB admin check table failed.",
-	ErrTxnTooLarge:                "Transaction is too large",
+	ErrTxnTooLarge:                "Transaction is too large, size: %d",
 	ErrWriteConflictInTiDB:        "Write conflict, txnStartTS %d is stale",
 	ErrInvalidPluginID:            "Wrong plugin id: %s, valid plugin id is [name]-[version], both name and version should not contain '-'",
 	ErrInvalidPluginManifest:      "Cannot read plugin %s's manifest",
@@ -943,6 +943,12 @@ var MySQLErrName = map[uint16]string{
 	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so cannot be reloaded",
 	ErrUnsupportedReloadPluginVar: "Reload plugin with different sysVar is unsupported %v",
 	ErrTableLocked:                "Table '%s' was locked in %s by %v",
+	ErrNotExist:                   "Error: key not exist",
+	ErrTxnRetryable:               "Error: KV error safe to retry %s ",
+	ErrCannotSetNilValue:          "can not set nil value",
+	ErrInvalidTxn:                 "invalid transaction",
+	ErrEntryTooLarge:              "entry too large, the max entry size is %d, the size of data is %d",
+	ErrNotImplemented:             "not implemented",
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
