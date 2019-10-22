@@ -370,11 +370,13 @@ import (
 	ipc		"IPC"
 	jsonType	"JSON"
 	keyBlockSize	"KEY_BLOCK_SIZE"
+	labels		"LABELS"
 	last		"LAST"
 	less		"LESS"
 	level		"LEVEL"
 	list		"LIST"
 	local		"LOCAL"
+	location	"LOCATION"
 	master		"MASTER"
 	microsecond	"MICROSECOND"
 	minute		"MINUTE"
@@ -426,6 +428,7 @@ import (
 	repair		"REPAIR"
 	repeatable	"REPEATABLE"
 	respect		"RESPECT"
+	replica		"REPLICA"
 	replication	"REPLICATION"
 	reverse		"REVERSE"
 	role		"ROLE"
@@ -445,6 +448,7 @@ import (
 	session		"SESSION"
 	share		"SHARE"
 	shared		"SHARED"
+	shutdown	"SHUTDOWN"
 	signed		"SIGNED"
 	simple		"SIMPLE"
 	slave		"SLAVE"
@@ -753,6 +757,7 @@ import (
 	UpdateStmt			"UPDATE statement"
 	UnionStmt			"Union select state ment"
 	UseStmt				"USE statement"
+	ShutdownStmt			"SHUTDOWN statement"
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
@@ -866,6 +871,7 @@ import (
 	JoinTable 			"join table"
 	JoinType			"join type"
 	KillOrKillTiDB			"Kill or Kill TiDB"
+	LocationLabelList		"location label name list"
 	LikeEscapeOpt 			"like escape option"
 	LikeTableWithOrWithoutParen	"LIKE table_name or ( LIKE table_name )"
 	LimitClause			"LIMIT clause"
@@ -1201,7 +1207,7 @@ import (
 %right	collate
 %right	encryption
 
-%left splitOptionPriv
+%left labels
 %precedence '('
 %precedence quick
 %precedence escape
@@ -1268,12 +1274,33 @@ AlterTablePartitionOpt:
 		parser.lastErrorAsWarn()
 	}
 
+LocationLabelList:
+	{
+		$$ = []string{}
+	}
+|	"LOCATION" "LABELS" StringList
+	{
+		$$ = $3
+	}
+
+
 AlterTableSpec:
 	TableOptionList %prec higherThanComma
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:	ast.AlterTableOption,
 			Options:$1.([]*ast.TableOption),
+		}
+	}
+|	"SET" "TIFLASH" "REPLICA" LengthNum LocationLabelList
+	{
+		tiflashReplicaSpec := &ast.TiFlashReplicaSpec{
+			Count: $4.(uint64),
+			Labels: $5.([]string),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:	ast.AlterTableSetTiFlashReplica,
+			TiFlashReplica: tiflashReplicaSpec,
 		}
 	}
 |	"CONVERT" "TO" CharsetKw CharsetName OptCollate
@@ -4411,7 +4438,7 @@ UnReservedKeyword:
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"
-| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
+| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SHUTDOWN" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "NCHAR" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
@@ -4424,7 +4451,7 @@ UnReservedKeyword:
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE" | "AUTO_SHARD_BITS"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" |
-"SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT"
+"SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT" | "REPLICA" | "LOCATION" | "LABELS"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "BUILTINS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -5963,6 +5990,12 @@ RollbackStmt:
 	"ROLLBACK"
 	{
 		$$ = &ast.RollbackStmt{}
+	}
+
+ShutdownStmt:
+	"SHUTDOWN"
+	{
+		$$ = &ast.ShutdownStmt{}
 	}
 
 SelectStmtBasic:
@@ -8418,6 +8451,7 @@ Statement:
 |	UseStmt
 |	UnlockTablesStmt
 |	LockTablesStmt
+|	ShutdownStmt
 
 TraceableStmt:
 	SelectStmt
@@ -10066,6 +10100,10 @@ PrivType:
 |	"EVENT"
 	{
 		$$ = mysql.EventPriv
+	}
+|	"SHUTDOWN"
+	{
+		$$ = mysql.ShutdownPriv
 	}
 
 ObjectType:
