@@ -77,7 +77,7 @@ var MySQLErrName = map[uint16]string{
 	ErrTooLongIdent:                             "Identifier name '%-.100s' is too long",
 	ErrDupFieldName:                             "Duplicate column name '%-.192s'",
 	ErrDupKeyName:                               "Duplicate key name '%-.192s'",
-	ErrDupEntry:                                 "Duplicate entry '%-.192s' for key %d",
+	ErrDupEntry:                                 "Duplicate entry '%s' for key '%s'",
 	ErrWrongFieldSpec:                           "Incorrect column specifier for column '%-.192s'",
 	ErrParse:                                    "%s %s",
 	ErrEmptyQuery:                               "Query was empty",
