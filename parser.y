@@ -6045,15 +6045,15 @@ SelectStmtFromTable:
 			var lastEnd int
 			lastEnd = lastField.Offset
 			if $2 != nil {
-				lastEnd = yyS[yypt-4].offset-1
+				lastEnd = parser.endOffset(&yyS[yypt-4])
 			} else if $3 != nil {
-				lastEnd = yyS[yypt-3].offset-1
+				lastEnd = parser.endOffset(&yyS[yypt-3])
 			} else if $4 != nil {
-				lastEnd = yyS[yypt-2].offset-1
+				lastEnd = parser.endOffset(&yyS[yypt-2])
 			} else if $5 != nil {
-				lastEnd = yyS[yypt-1].offset-1
+				lastEnd = parser.endOffset(&yyS[yypt-1])
 			} else if $6 != nil {
-				lastEnd = yyS[yypt].offset-1
+				lastEnd = parser.endOffset(&yyS[yypt])
 			} else {
 				lastEnd = len(src)
 				if src[lastEnd-1] == ';' {

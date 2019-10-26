@@ -13093,15 +13093,15 @@ yynewstate:
 				var lastEnd int
 				lastEnd = lastField.Offset
 				if yyS[yypt-4].item != nil {
-					lastEnd = yyS[yypt-4].offset - 1
+					lastEnd = parser.endOffset(&yyS[yypt-4])
 				} else if yyS[yypt-3].item != nil {
-					lastEnd = yyS[yypt-3].offset - 1
+					lastEnd = parser.endOffset(&yyS[yypt-3])
 				} else if yyS[yypt-2].item != nil {
-					lastEnd = yyS[yypt-2].offset - 1
+					lastEnd = parser.endOffset(&yyS[yypt-2])
 				} else if yyS[yypt-1].item != nil {
-					lastEnd = yyS[yypt-1].offset - 1
+					lastEnd = parser.endOffset(&yyS[yypt-1])
 				} else if yyS[yypt-0].item != nil {
-					lastEnd = yyS[yypt].offset - 1
+					lastEnd = parser.endOffset(&yyS[yypt])
 				} else {
 					lastEnd = len(src)
 					if src[lastEnd-1] == ';' {
