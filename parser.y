@@ -30,6 +30,7 @@ import (
 
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/ast"
+	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/parser/auth"
@@ -147,6 +148,8 @@ import (
 	integerType		"INTEGER"
 	interval		"INTERVAL"
 	into			"INTO"
+	outfile			"OUTFILE"
+	dumpfile		"DUMPFILE"
 	is			"IS"
 	insert			"INSERT"
 	intType			"INT"
@@ -948,8 +951,11 @@ import (
 	SelectStmtStraightJoin		"SELECT statement optional STRAIGHT_JOIN"
 	SelectStmtFieldList		"SELECT statement field list"
 	SelectStmtLimit			"SELECT statement optional LIMIT clause"
+	SelectStmtInto			"SELECT statement INTO clause"
+	SelectStmtIntoOpt		"SELECT statement optional INTO clause"
 	SelectStmtOpts			"Select statement options"
 	SelectStmtBasic			"SELECT statement from constant value"
+	SelectStmtBasicWithoutInto	"SELECT statement without into from constant value"
 	SelectStmtFromDualTable			"SELECT statement from dual table"
 	SelectStmtFromTable			"SELECT statement from table"
 	SelectStmtGroup			"SELECT statement optional GROUP BY clause"
@@ -1213,6 +1219,9 @@ import (
 %precedence lowerThanComma
 %precedence ','
 %precedence higherThanComma
+%precedence lowerThanInto
+%precedence withInto
+%right into
 
 %start	Start
 
@@ -5994,7 +6003,24 @@ ShutdownStmt:
 	}
 
 SelectStmtBasic:
-	"SELECT" SelectStmtOpts SelectStmtFieldList
+	"SELECT" SelectStmtOpts SelectStmtFieldList SelectStmtInto %prec withInto
+	{
+		st := &ast.SelectStmt {
+			SelectStmtOpts: $2.(*ast.SelectStmtOpts),
+			Distinct:      $2.(*ast.SelectStmtOpts).Distinct,
+			Fields:        $3.(*ast.FieldList),
+		}
+		if st.SelectStmtOpts.TableHints != nil {
+			st.TableHints = st.SelectStmtOpts.TableHints
+		}
+		if $4 != nil {
+		   	st.Into = $4.(*ast.SelectInto)
+		}
+		$$ = st
+	}
+
+SelectStmtBasicWithoutInto:
+	"SELECT" SelectStmtOpts SelectStmtFieldList %prec lowerThanInto
 	{
 		st := &ast.SelectStmt {
 			SelectStmtOpts: $2.(*ast.SelectStmtOpts),
@@ -6020,9 +6046,45 @@ SelectStmtFromDualTable:
 			st.Where = $3.(ast.ExprNode)
 		}
 	}
+|	SelectStmtBasicWithoutInto FromDual WhereClauseOptional
+	{
+		st := $1.(*ast.SelectStmt)
+		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+		if lastField.Expr != nil && lastField.AsName.O == "" {
+			lastEnd := yyS[yypt-1].offset-1
+			lastField.SetText(parser.src[lastField.Offset:lastEnd])
+		}
+		if $3 != nil {
+			st.Where = $3.(ast.ExprNode)
+		}
+	}
 
 SelectStmtFromTable:
 	SelectStmtBasic "FROM"
+	TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
+	{
+		st := $1.(*ast.SelectStmt)
+		st.From = $3.(*ast.TableRefsClause)
+		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+		if lastField.Expr != nil && lastField.AsName.O == "" {
+			lastEnd := parser.endOffset(&yyS[yypt-5])
+			lastField.SetText(parser.src[lastField.Offset:lastEnd])
+		}
+		if $4 != nil {
+			st.Where = $4.(ast.ExprNode)
+		}
+		if $5 != nil {
+			st.GroupBy = $5.(*ast.GroupByClause)
+		}
+		if $6 != nil {
+			st.Having = $6.(*ast.HavingClause)
+		}
+		if $7 != nil {
+		    st.WindowSpecs = ($7.([]ast.WindowSpec))
+		}
+		$$ = st
+	}
+|	SelectStmtBasicWithoutInto "FROM"
 	TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
 	{
 		st := $1.(*ast.SelectStmt)
@@ -6078,6 +6140,70 @@ SelectStmt:
 		}
 		$$ = st
 	}
+|	SelectStmtBasicWithoutInto OrderByOptional SelectStmtLimit SelectLockOpt
+	{
+		st := $1.(*ast.SelectStmt)
+		st.LockTp = $4.(ast.SelectLockType)
+		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+		if lastField.Expr != nil && lastField.AsName.O == "" {
+			src := parser.src
+			var lastEnd int
+			if $2 != nil {
+				lastEnd = yyS[yypt-2].offset-1
+			} else if $3 != nil {
+				lastEnd = yyS[yypt-1].offset-1
+			} else if $4 != ast.SelectLockNone {
+				lastEnd = yyS[yypt].offset-1
+			} else {
+				lastEnd = len(src)
+				if src[lastEnd-1] == ';' {
+					lastEnd--
+				}
+			}
+			lastField.SetText(src[lastField.Offset:lastEnd])
+		}
+		if $2 != nil {
+			st.OrderBy = $2.(*ast.OrderByClause)
+		}
+		if $3 != nil {
+			st.Limit = $3.(*ast.Limit)
+		}
+		$$ = st
+	}
+|	SelectStmtBasicWithoutInto OrderByOptional SelectStmtLimit SelectStmtInto SelectLockOpt
+	{
+		st := $1.(*ast.SelectStmt)
+		st.LockTp = $5.(ast.SelectLockType)
+		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+		if lastField.Expr != nil && lastField.AsName.O == "" {
+			src := parser.src
+			var lastEnd int
+			if $2 != nil {
+				lastEnd = yyS[yypt-2].offset-1
+			} else if $3 != nil {
+				lastEnd = yyS[yypt-1].offset-1
+			} else if $4 != nil {
+				lastEnd = yyS[yypt-1].offset-1
+			} else if $5 != ast.SelectLockNone {
+				lastEnd = yyS[yypt].offset-1
+			} else {
+				lastEnd = len(src)
+				if src[lastEnd-1] == ';' {
+					lastEnd--
+				}
+			}
+			lastField.SetText(src[lastField.Offset:lastEnd])
+		}
+		if $2 != nil {
+			st.OrderBy = $2.(*ast.OrderByClause)
+		}
+		if $3 != nil {
+			st.Limit = $3.(*ast.Limit)
+		}
+		st.Into = $4.(*ast.SelectInto)
+		st.Into.AfterFrom = true
+		$$ = st
+	}
 |	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt
 	{
 		st := $1.(*ast.SelectStmt)
@@ -6090,6 +6216,25 @@ SelectStmt:
 		st.LockTp = $4.(ast.SelectLockType)
 		$$ = st
 	}
+|	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectStmtInto SelectLockOpt
+	{
+		st := $1.(*ast.SelectStmt)
+		if $2 != nil {
+			st.OrderBy = $2.(*ast.OrderByClause)
+		}
+		if $3 != nil {
+			st.Limit = $3.(*ast.Limit)
+		}
+		if st.Into != nil {
+			yylex.AppendError(ErrSyntax.GenWithStackByArgs())
+			return 1
+		}
+		st.Into = $4.(*ast.SelectInto)
+		st.Into.AfterFrom = true
+
+		st.LockTp = $5.(ast.SelectLockType)
+		$$ = st
+	}
 |	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt
 	{
 		st := $1.(*ast.SelectStmt)
@@ -6100,6 +6245,24 @@ SelectStmt:
 		if $3 != nil {
 			st.Limit = $3.(*ast.Limit)
 		}
+		$$ = st
+	}
+|	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectStmtInto SelectLockOpt
+	{
+		st := $1.(*ast.SelectStmt)
+		st.LockTp = $5.(ast.SelectLockType)
+		if $2 != nil {
+			st.OrderBy = $2.(*ast.OrderByClause)
+		}
+		if $3 != nil {
+			st.Limit = $3.(*ast.Limit)
+		}
+		if st.Into != nil {
+			yylex.AppendError(ErrSyntax.GenWithStackByArgs())
+			return 1
+		}
+		st.Into = $4.(*ast.SelectInto)
+		st.Into.AfterFrom = true
 		$$ = st
 	}
 
@@ -6470,6 +6633,16 @@ TableFactor:
 |	'(' SelectStmt ')' TableAsName
 	{
 		st := $2.(*ast.SelectStmt)
+
+		if st.Into != nil {
+			var sb strings.Builder
+			st.Into.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+			restoreSQL := sb.String()
+
+		    yylex.AppendError(ErrSyntax.GenWithStackByArgs(restoreSQL))
+			return 1
+		}
+
 		endOffset := parser.endOffset(&yyS[yypt-1])
 		parser.setLastSelectFieldText(st, endOffset)
 		$$ = &ast.TableSource{Source: $2.(*ast.SelectStmt), AsName: $4.(model.CIStr)}
@@ -6689,7 +6862,46 @@ SelectStmtLimit:
 	{
 		$$ = &ast.Limit{Offset: $4.(ast.ExprNode), Count: $2.(ast.ExprNode)}
 	}
+	
+SelectStmtIntoOpt:
+	{
+		$$ = nil
+	}
+|	SelectStmtInto
+	{
+		$$ = $1
+	}
+	
+SelectStmtInto:
+	"INTO" "OUTFILE" stringLit Fields Lines
+	{
+		x := &ast.SelectInto{
+		   Tp: ast.SelectIntoOutfile,
+		   FileName: $3,
+		}
+		if $4 != nil {
+		   x.FieldsInfo = $4.(*ast.FieldsClause)
+		}
+		if $5 != nil {
+		   x.LinesInfo = $5.(*ast.LinesClause)
+		}
 
+		$$ = x
+	}
+|	"INTO" "DUMPFILE" stringLit
+	{
+		$$ = &ast.SelectInto{
+		   Tp: ast.SelectIntoDumpfile,
+		   FileName: $3,
+		}
+	}
+|	"INTO" UserVariableList
+	{
+		$$ = &ast.SelectInto{
+		   Tp: ast.SelectIntoVars,
+		   Vars: $2.([]ast.ExprNode),
+		}
+	}
 
 SelectStmtOpts:
 	TableOptimizerHints DefaultFalseDistinctOpt PriorityOpt SelectStmtSQLSmallResult SelectStmtSQLBigResult SelectStmtSQLBufferResult SelectStmtSQLCache SelectStmtCalcFoundRows SelectStmtStraightJoin
@@ -7032,6 +7244,10 @@ SubSelect:
 	'(' SelectStmt ')'
 	{
 		s := $2.(*ast.SelectStmt)
+		if s.Into != nil {
+		   	yylex.AppendError(yylex.Errorf("Select into can't be used in subquery"))
+			return 1
+		}
 		endOffset := parser.endOffset(&yyS[yypt])
 		parser.setLastSelectFieldText(s, endOffset)
 		src := parser.src
@@ -7089,11 +7305,37 @@ UnionStmt:
 		}
 		$$ = union
 	}
+|	UnionClauseList "UNION" UnionOpt SelectStmtBasicWithoutInto OrderByOptional SelectStmtLimit SelectLockOpt
+	{
+		st := $4.(*ast.SelectStmt)
+		union := $1.(*ast.UnionStmt)
+		st.IsAfterUnionDistinct = $3.(bool)
+		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
+		endOffset := parser.endOffset(&yyS[yypt-5])
+		parser.setLastSelectFieldText(lastSelect, endOffset)
+		union.SelectList.Selects = append(union.SelectList.Selects, st)
+		if $5 != nil {
+		    union.OrderBy = $5.(*ast.OrderByClause)
+		}
+		if $6 != nil {
+		    union.Limit = $6.(*ast.Limit)
+		}
+		if $5 == nil && $6 == nil {
+		    st.LockTp = $7.(ast.SelectLockType)
+		}
+		$$ = union
+	}
 |	UnionClauseList "UNION" UnionOpt SelectStmtFromDualTable OrderByOptional
     SelectStmtLimit SelectLockOpt
 	{
 		st := $4.(*ast.SelectStmt)
 		union := $1.(*ast.UnionStmt)
+
+		if union.HasSelectInto() {
+			yylex.AppendError(yylex.Errorf("Incorrect usage of UNION and INTO"))
+			return 1
+		}
+
 		st.IsAfterUnionDistinct = $3.(bool)
 		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-5])
@@ -7115,6 +7357,12 @@ UnionStmt:
 	{
 		st := $4.(*ast.SelectStmt)
 		union := $1.(*ast.UnionStmt)
+
+		if union.HasSelectInto() {
+			yylex.AppendError(yylex.Errorf("Incorrect usage of UNION and INTO"))
+			return 1
+		}
+
 		st.IsAfterUnionDistinct = $3.(bool)
 		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-5])
@@ -7134,6 +7382,12 @@ UnionStmt:
 |	UnionClauseList "UNION" UnionOpt '(' SelectStmt ')' OrderByOptional SelectStmtLimit
 	{
 		union := $1.(*ast.UnionStmt)
+
+		if union.HasSelectInto() {
+			yylex.AppendError(yylex.Errorf("Incorrect usage of UNION and INTO"))
+			return 1
+		}
+
 		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-6])
 		parser.setLastSelectFieldText(lastSelect, endOffset)
@@ -7143,6 +7397,7 @@ UnionStmt:
 		endOffset = parser.endOffset(&yyS[yypt-2])
 		parser.setLastSelectFieldText(st, endOffset)
 		union.SelectList.Selects = append(union.SelectList.Selects, st)
+
 		if $7 != nil {
 			union.OrderBy = $7.(*ast.OrderByClause)
 		}
@@ -10251,6 +10506,12 @@ Fields:
 			switch item.Type {
 			case ast.Terminated:
 				fieldsClause.Terminated = item.Value
+			case ast.OptEnclosed:
+				var enclosed byte
+				if len(item.Value) > 0 {
+					enclosed = item.Value[0]
+				}
+				fieldsClause.OptEnclosed = enclosed
 			case ast.Enclosed:
 				var enclosed byte
 				if len(item.Value) > 0 {
@@ -10300,7 +10561,7 @@ FieldItem:
 			return 1
 		}
 		$$ = &ast.FieldItem{
-			Type:    ast.Enclosed,
+			Type:    ast.OptEnclosed,
 			Value:   str,
 		}
 	}

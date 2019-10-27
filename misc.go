@@ -338,6 +338,8 @@ var tokenMap = map[string]int{
 	"INTERVAL":                 interval,
 	"INTERNAL":                 internal,
 	"INTO":                     into,
+	"OUTFILE":                  outfile,
+	"DUMPFILE":                 dumpfile,
 	"INVISIBLE":                invisible,
 	"INVOKER":                  invoker,
 	"IS":                       is,

@@ -496,7 +496,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DO 1 from t", false, ""},
 
 		// load data
-		{"load data local infile '/tmp/t.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES"},
 		{"load data infile '/tmp/t.csv' into table t", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
 		{"load data infile '/tmp/t.csv' into table t character set utf8", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
 		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
@@ -553,6 +553,37 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
 		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
 		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' REPLACE INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' REPLACE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
+
+		// select into outfile
+		{"select a, b into outfile '/tmp/result.txt' from t", true, "SELECT `a`,`b` INTO OUTFILE '/tmp/result.txt' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' enclosed BY '\"' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' optionally enclosed BY '\"' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' lines terminated BY '\n' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' optionally enclosed BY '\"' lines terminated BY '\r' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\r' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' enclosed BY '\"' lines terminated BY '\r' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' optionally enclosed BY '\"' lines starting by 'xy' terminated BY '\r' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES STARTING BY 'xy' TERMINATED BY '\r' FROM `t`"},
+		{"select a,b,a+b into outfile '/tmp/result.txt' fields terminated BY ',' enclosed BY '\"' lines starting by 'xy' terminated BY '\r' from t", true, "SELECT `a`,`b`,`a`+`b` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES STARTING BY 'xy' TERMINATED BY '\r' FROM `t`"},
+
+		// select ... into dumpfile ... from ...
+		{"select a, b into dumpfile '/tmp/result.txt' from t", true, "SELECT `a`,`b` INTO DUMPFILE '/tmp/result.txt' FROM `t`"},
+		// select ... from ... into dumpfile ...
+		{"select a, b from t into dumpfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO DUMPFILE '/tmp/result.txt'"},
+
+		// select into variables
+		{"select 1 into @a", true, "SELECT 1 INTO @`a`"},
+		{"select @b into @a", true, "SELECT @`b` INTO @`a`"},
+		{"select a into @a from t", true, "SELECT `a` INTO @`a` FROM `t`"},
+		{"select a, b into @a, @b from t", true, "SELECT `a`,`b` INTO @`a`,@`b` FROM `t`"},
+		{"select a, b into @a, @b from t;", true, "SELECT `a`,`b` INTO @`a`,@`b` FROM `t`"},
+
+		{"(select a from test order by a limit 1) union (select b from test limit 1) union select b into @c from test limit 1;", true, "(SELECT `a` FROM `test` ORDER BY `a` LIMIT 1) UNION (SELECT `b` FROM `test` LIMIT 1) UNION SELECT `b` INTO @`c` FROM `test` LIMIT 1"},
+		{"(select a from test order by a limit 1) union (select b from test limit 1) union select b from test into @c limit 1;", false, ""},
+		{"(select a from test order by a limit 1) union (select b from test limit 1) union select b into @c from test limit 1 into @b;", false, ""},
+		// {"(select a from test order by a limit 1) union (select b from test limit 1) union select b from test limit 1 into @b;", true, ""},
+
+		// select into subquery
+		{"select * from (select * into outfile '/tmp/txt' from test) as t", false, ""},
 
 		// select for update
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
