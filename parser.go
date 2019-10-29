@@ -12656,10 +12656,15 @@ yynewstate:
 		}
 	case 1055:
 		{
-			if yyS[yypt-3].ident == ast.TimestampLiteral {
+			switch yyS[yypt-3].ident {
+			case ast.TimestampLiteral:
 				// "select timestampliteral('2019-10-29 16:01:42')" should not work.
 				// However, 'timestampliteral' is a valid function name in TiDB, so it's replaced to a non-exist one.
 				yyS[yypt-3].ident = "db_9_85b2e2.timestampliteral"
+			case ast.DateLiteral:
+				yyS[yypt-3].ident = "db_9_85b2e2.dateliteral"
+			case ast.TimeLiteral:
+				yyS[yypt-3].ident = "db_9_85b2e2.timeliteral"
 			}
 			parser.yyVAL.expr = &ast.FuncCallExpr{FnName: model.NewCIStr(yyS[yypt-3].ident), Args: yyS[yypt-1].item.([]ast.ExprNode)}
 		}

@@ -5536,10 +5536,15 @@ OptGConcatSeparator:
 FunctionCallGeneric:
 	identifier '(' ExpressionListOpt ')'
 	{
-		if $1 == ast.TimestampLiteral {
+		switch $1 {
+		case ast.TimestampLiteral:
 			// "select timestampliteral('2019-10-29 16:01:42')" should not work.
 			// However, 'timestampliteral' is a valid function name in TiDB, so it's replaced to a non-exist one.
 			$1 = "db_9_85b2e2.timestampliteral"
+		case ast.DateLiteral:
+			$1 = "db_9_85b2e2.dateliteral"
+		case ast.TimeLiteral:
+			$1 = "db_9_85b2e2.timeliteral"
 		}
 		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr($1), Args: $3.([]ast.ExprNode)}
 	}
