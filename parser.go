@@ -12656,6 +12656,11 @@ yynewstate:
 		}
 	case 1055:
 		{
+			if yyS[yypt-3].ident.ident == ast.TimestampLiteral {
+				// "select timestampliteral('2019-10-29 16:01:42')" should not work.
+				// However, 'timestampliteral' is a valid function name in TiDB, so it's replaced to a non-exist one.
+				yyS[yypt-3].ident.ident = "db_9_85b2e2.timestampliteral"
+			}
 			parser.yyVAL.expr = &ast.FuncCallExpr{FnName: model.NewCIStr(yyS[yypt-3].ident), Args: yyS[yypt-1].item.([]ast.ExprNode)}
 		}
 	case 1056:
