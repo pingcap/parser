@@ -1273,3 +1273,56 @@ func (n *MaxValueExpr) Accept(v Visitor) (Node, bool) {
 	}
 	return v.Leave(n)
 }
+
+// MatchAgainst is the expression for matching against fulltext index.
+type MatchAgainst struct {
+	exprNode
+	// ColumnNames are the columns to match.
+	ColumnNames []*ColumnName
+	// Against
+	Against ValueExpr
+	// Modifier
+	Modifier FulltextSearchModifier
+}
+
+func (n *MatchAgainst) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("MATCH")
+	ctx.WritePlain(" (")
+	for i, v := range n.ColumnNames {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore MatchAgainst.ColumnNames[%d]", i)
+		}
+	}
+	ctx.WritePlain(") ")
+	ctx.WriteKeyWord("AGAINST")
+	ctx.WritePlain(" (")
+	if err := n.Against.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore MatchAgainst.Against")
+	}
+	if n.Modifier&FulltextSearchModifierNaturalLanguageMode == FulltextSearchModifierNaturalLanguageMode {
+		ctx.WritePlain(" IN NATURAL LANGUAGE MODE")
+	}
+	if n.Modifier&FulltextSearchModifierBooleanMode == FulltextSearchModifierBooleanMode {
+		ctx.WritePlain(" IN BOOLEAN MODE")
+	}
+	if n.Modifier&FulltextSearchModifierWithQueryExpansion == FulltextSearchModifierWithQueryExpansion {
+		ctx.WritePlain(" WITH QUERY EXPANSION")
+	}
+	ctx.WritePlain(")")
+	return nil
+}
+
+func (n *MatchAgainst) Format(w io.Writer) {
+	fmt.Fprintf(w, "MATCH(%s) AGAINST(%s %v)", n.ColumnNames, n.Against.GetString(), n.Modifier)
+}
+
+func (n *MatchAgainst) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	return v.Leave(n)
+}

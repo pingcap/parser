@@ -2605,3 +2605,11 @@ func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 	}
 	return nil
 }
+
+type FulltextSearchModifier int
+
+const (
+	FulltextSearchModifierNaturalLanguageMode = 1 << iota
+	FulltextSearchModifierBooleanMode
+	FulltextSearchModifierWithQueryExpansion
+)
