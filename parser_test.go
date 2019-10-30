@@ -4570,12 +4570,26 @@ func (s *testParserSuite) TestFulltextSearch(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(st, IsNil)
 
-	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search' IN NATURAL LANGUAGE MODE)", "", "")
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(title,content) AGAINST('search' IN NATURAL LANGUAGE MODE)", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(st.(*ast.SelectStmt), NotNil)
 	writer := bytes.NewBufferString("")
 	st.(*ast.SelectStmt).Where.Format(writer)
-	c.Assert(writer.String(), Equals, "MATCH(content) AGAINST(\"search\")")
+	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\")")
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(title,content) AGAINST('search' IN BOOLEAN MODE)", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.SelectStmt), NotNil)
+	writer.Reset()
+	st.(*ast.SelectStmt).Where.Format(writer)
+	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\" IN BOOLEAN MODE)")
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(title,content) AGAINST('search' WITH QUERY EXPANSION)", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.SelectStmt), NotNil)
+	writer.Reset()
+	st.(*ast.SelectStmt).Where.Format(writer)
+	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\" WITH QUERY EXPANSION)")
 }
 
 // CleanNodeText set the text of node and all child node empty.
