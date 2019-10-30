@@ -1319,9 +1319,9 @@ func (n *MatchAgainst) Format(w io.Writer) {
 	fmt.Fprint(w, "MATCH(")
 	for i, v := range n.ColumnNames {
 		if i != 0 {
-			fmt.Fprint(w, ",")
-		} else {
 			fmt.Fprintf(w, ",%s", v.String())
+		} else {
+			fmt.Fprint(w, v.String())
 		}
 	}
 	fmt.Fprint(w, ") AGAINST(")

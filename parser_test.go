@@ -14,6 +14,7 @@
 package parser_test
 
 import (
+	"bytes"
 	"fmt"
 	"runtime"
 	"strings"
@@ -4572,6 +4573,9 @@ func (s *testParserSuite) TestFulltextSearch(c *C) {
 	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search' IN NATURAL LANGUAGE MODE)", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(st.(*ast.SelectStmt), NotNil)
+	writer := bytes.NewBufferString("")
+	st.(*ast.SelectStmt).Where.Format(writer)
+	c.Assert(writer.String(), Equals, "MATCH(content) AGAINST(\"search\")")
 }
 
 // CleanNodeText set the text of node and all child node empty.
