@@ -4565,6 +4565,10 @@ func (s *testParserSuite) TestFulltextSearch(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(st, IsNil)
 
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search' IN BOOLEAN MODE WITH QUERY EXPANSION)", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(st, IsNil)
+
 	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search' IN NATURAL LANGUAGE MODE)", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(st.(*ast.SelectStmt), NotNil)

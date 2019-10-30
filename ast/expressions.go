@@ -1302,13 +1302,12 @@ func (n *MatchAgainst) Restore(ctx *RestoreCtx) error {
 	if err := n.Against.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore MatchAgainst.Against")
 	}
-	if n.Modifier&FulltextSearchModifierNaturalLanguageMode == FulltextSearchModifierNaturalLanguageMode {
-		ctx.WritePlain(" IN NATURAL LANGUAGE MODE")
-	}
-	if n.Modifier&FulltextSearchModifierBooleanMode == FulltextSearchModifierBooleanMode {
+	if n.Modifier.IsBooleanMode() {
 		ctx.WritePlain(" IN BOOLEAN MODE")
-	}
-	if n.Modifier&FulltextSearchModifierWithQueryExpansion == FulltextSearchModifierWithQueryExpansion {
+		if n.Modifier.WithQueryExpansion() {
+			return errors.New("BOOLEAN MODE doesn't support QUERY EXPANSION")
+		}
+	} else if n.Modifier.WithQueryExpansion() {
 		ctx.WritePlain(" WITH QUERY EXPANSION")
 	}
 	ctx.WritePlain(")")

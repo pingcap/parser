@@ -382,12 +382,12 @@ func (tc *testExpressionsSuite) TestVariableExpr(c *C) {
 
 func (tc *testExpressionsSuite) TestMatchAgainstExpr(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{`MATCH(content, title) AGAINST ('search for')`, "MATCH (`content`,`title`) AGAINST ('search for' IN NATURAL LANGUAGE MODE)"},
+		{`MATCH(content, title) AGAINST ('search for')`, "MATCH (`content`,`title`) AGAINST ('search for')"},
 		{`MATCH(content) AGAINST ('search for' IN BOOLEAN MODE)`, "MATCH (`content`) AGAINST ('search for' IN BOOLEAN MODE)"},
 		{`MATCH(content, title) AGAINST ('search for' WITH QUERY EXPANSION)`, "MATCH (`content`,`title`) AGAINST ('search for' WITH QUERY EXPANSION)"},
-		{`MATCH(content) AGAINST ('search for' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION)`, "MATCH (`content`) AGAINST ('search for' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION)"},
-		{`MATCH(content) AGAINST ('search') AND id = 1`, "MATCH (`content`) AGAINST ('search' IN NATURAL LANGUAGE MODE) AND `id`=1"},
-		{`MATCH(content) AGAINST ('search') OR id = 1`, "MATCH (`content`) AGAINST ('search' IN NATURAL LANGUAGE MODE) OR `id`=1"},
+		{`MATCH(content) AGAINST ('search for' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION)`, "MATCH (`content`) AGAINST ('search for' WITH QUERY EXPANSION)"},
+		{`MATCH(content) AGAINST ('search') AND id = 1`, "MATCH (`content`) AGAINST ('search') AND `id`=1"},
+		{`MATCH(content) AGAINST ('search') OR id = 1`, "MATCH (`content`) AGAINST ('search') OR `id`=1"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Where
