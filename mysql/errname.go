@@ -949,7 +949,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidTxn:                 "invalid transaction",
 	ErrEntryTooLarge:              "entry too large, the max entry size is %d, the size of data is %d",
 	ErrNotImplemented:             "not implemented",
-	ErrInfoSchemaOutOfDate:        "Information schema is out of date: schema failed to update in 1 lease",
+	ErrInfoSchemaExpired:          "Information schema is out of date: schema failed to update in 1 lease",
 	ErrInfoSchemaChanged:          "Information schema is changed during the execution of the statement(for example, table definition may be updated by other DDL ran in parallel). If you see this error often, try increasing `tidb_max_delta_schema_count`[retryable]",
 
 	// TiKV/PD errors.

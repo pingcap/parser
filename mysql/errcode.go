@@ -953,7 +953,7 @@ const (
 	ErrInvalidTxn                 = 8024
 	ErrEntryTooLarge              = 8025
 	ErrNotImplemented             = 8026
-	ErrInfoSchemaOutOfDate        = 8027
+	ErrInfoSchemaExpired          = 8027
 	ErrInfoSchemaChanged          = 8028
 
 	// TiKV/PD errors.
