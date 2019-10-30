@@ -388,6 +388,7 @@ func (tc *testExpressionsSuite) TestMatchAgainstExpr(c *C) {
 		{`MATCH(content) AGAINST ('search for' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION)`, "MATCH (`content`) AGAINST ('search for' WITH QUERY EXPANSION)"},
 		{`MATCH(content) AGAINST ('search') AND id = 1`, "MATCH (`content`) AGAINST ('search') AND `id`=1"},
 		{`MATCH(content) AGAINST ('search') OR id = 1`, "MATCH (`content`) AGAINST ('search') OR `id`=1"},
+		{`MATCH(content) AGAINST (X'40404040' | X'01020304') OR id = 1`, "MATCH (`content`) AGAINST (x'40404040'|x'01020304') OR `id`=1"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Where
