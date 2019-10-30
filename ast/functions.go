@@ -338,6 +338,23 @@ type FuncCallExpr struct {
 
 // Restore implements Node interface.
 func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
+	var specialLiteral string
+	switch n.FnName.L {
+	case DateLiteral:
+		specialLiteral = "DATE "
+	case TimeLiteral:
+		specialLiteral = "TIME "
+	case TimestampLiteral:
+		specialLiteral = "TIMESTAMP "
+	}
+	if specialLiteral != "" {
+		ctx.WritePlain(specialLiteral)
+		if err := n.Args[0].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+		return nil
+	}
+
 	ctx.WriteKeyWord(n.FnName.O)
 	ctx.WritePlain("(")
 	switch n.FnName.L {
