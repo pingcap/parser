@@ -697,10 +697,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// for dual
 		{"select 1 from dual", true, "SELECT 1"},
 		{"select 1 from dual limit 1", true, "SELECT 1 LIMIT 1"},
-		{"select 1 where exists (select 2)", false, ""},
-		{"select 1 from dual where not exists (select 2)", true, "SELECT 1 FROM DUAL WHERE NOT EXISTS (SELECT 2)"},
+		{"select 1 where exists (select 2)", true, "SELECT 1 WHERE EXISTS (SELECT 2)"},
+		{"select 1 from dual where not exists (select 2)", true, "SELECT 1 WHERE NOT EXISTS (SELECT 2)"},
 		{"select 1 as a from dual order by a", true, "SELECT 1 AS `a` ORDER BY `a`"},
-		{"select 1 as a from dual where 1 < any (select 2) order by a", true, "SELECT 1 AS `a` FROM DUAL WHERE 1<ANY (SELECT 2) ORDER BY `a`"},
+		{"select 1 as a from dual where 1 < any (select 2) order by a", true, "SELECT 1 AS `a` WHERE 1<ANY (SELECT 2) ORDER BY `a`"},
 		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
 
 		// for https://github.com/pingcap/tidb/issues/320
@@ -708,6 +708,13 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		// for https://github.com/pingcap/tidb/issues/1050
 		{`SELECT /*!40001 SQL_NO_CACHE */ * FROM test WHERE 1 limit 0, 2000;`, true, "SELECT SQL_NO_CACHE * FROM `test` WHERE 1 LIMIT 0,2000"},
+
+		// for https://github.com/pingcap/parser/issues/115
+		{"select 1 where true", true, "SELECT 1 WHERE TRUE"},
+		{"select 1 group by 1", true, "SELECT 1 GROUP BY 1"},
+		{"select 1 having true", true, "SELECT 1 HAVING TRUE"},
+		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
+		{"select 1 limit 1", true, "SELECT 1 LIMIT 1"},
 
 		{`ANALYZE TABLE t`, true, "ANALYZE TABLE `t`"},
 
@@ -980,6 +987,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush status", true, "FLUSH STATUS"},
 		{"flush tidb plugins plugin1", true, "FLUSH TIDB PLUGINS plugin1"},
 		{"flush tidb plugins plugin1, plugin2", true, "FLUSH TIDB PLUGINS plugin1, plugin2"},
+		{"flush hosts", true, "FLUSH HOSTS"},
+		{"flush logs", true, "FLUSH LOGS"},
 
 		// for change statement
 		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true, "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8250'"},
@@ -3003,12 +3012,12 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	}
 
 	// Test USE_INDEX_MERGE
-	stmt, _, err = parser.Parse("select /*+ USE_INDEX_MERGE(t1, c1), use_index_merge(t2, c1) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ USE_INDEX_MERGE(t1, c1), use_index_merge(t2, c1), use_index_merge(t3, c1, primary, c2) */ c1, c2 from t1, t2, t3 where t1.c1 = t2.c1 and t3.c2 = t1.c2", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(hints, HasLen, 2)
+	c.Assert(hints, HasLen, 3)
 	c.Assert(hints[0].HintName.L, Equals, "use_index_merge")
 	c.Assert(hints[0].Tables, HasLen, 1)
 	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
@@ -3020,6 +3029,14 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t2")
 	c.Assert(hints[1].Indexes, HasLen, 1)
 	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
+
+	c.Assert(hints[2].HintName.L, Equals, "use_index_merge")
+	c.Assert(hints[2].Tables, HasLen, 1)
+	c.Assert(hints[2].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[2].Indexes, HasLen, 3)
+	c.Assert(hints[2].Indexes[0].L, Equals, "c1")
+	c.Assert(hints[2].Indexes[1].L, Equals, "primary")
+	c.Assert(hints[2].Indexes[2].L, Equals, "c2")
 
 	// Test READ_FROM_STORAGE
 	stmt, _, err = parser.Parse("select /*+ READ_FROM_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")

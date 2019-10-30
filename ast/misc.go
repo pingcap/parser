@@ -323,6 +323,7 @@ type Prepared struct {
 	SchemaVersion int64
 	UseCache      bool
 	CachedPlan    interface{}
+	CachedNames   interface{}
 }
 
 // ExecuteStmt is a statement to execute PreparedStmt.
@@ -571,6 +572,8 @@ const (
 	FlushPrivileges
 	FlushStatus
 	FlushTiDBPlugin
+	FlushHosts
+	FlushLogs
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -620,8 +623,12 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WritePlain(v)
 		}
+	case FlushHosts:
+		ctx.WriteKeyWord("HOSTS")
+	case FlushLogs:
+		ctx.WriteKeyWord("LOGS")
 	default:
-		return errors.New("Unsupported type of FlushTables")
+		return errors.New("Unsupported type of FlushStmt")
 	}
 	return nil
 }
@@ -2073,11 +2080,16 @@ type TableOptimizerHint struct {
 
 // HintTable is table in the hint. It may have query block info.
 type HintTable struct {
+	DBName    model.CIStr
 	TableName model.CIStr
 	QBName    model.CIStr
 }
 
 func (ht *HintTable) Restore(ctx *RestoreCtx) {
+	if ht.DBName.L != "" {
+		ctx.WriteName(ht.DBName.String())
+		ctx.WriteKeyWord(".")
+	}
 	ctx.WriteName(ht.TableName.String())
 	if ht.QBName.L != "" {
 		ctx.WriteKeyWord("@")
