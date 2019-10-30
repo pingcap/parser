@@ -3902,11 +3902,11 @@ Expression:
 			$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
 		}
 	}
-|	"MATCH" '(' ColumnNameList ')' "AGAINST" '(' StringLiteral FulltextSearchModifierOpt ')'
+|	"MATCH" '(' ColumnNameList ')' "AGAINST" '(' BitExpr FulltextSearchModifierOpt ')'
 	{
 		$$ = &ast.MatchAgainst {
 			ColumnNames: $3.([]*ast.ColumnName),
-			Against: $7.(ast.ValueExpr),
+			Against: $7,
 			Modifier: ast.FulltextSearchModifier($8.(int)),
 		}
 	}

@@ -45,6 +45,7 @@ var (
 	_ ExprNode = &UnaryOperationExpr{}
 	_ ExprNode = &ValuesExpr{}
 	_ ExprNode = &VariableExpr{}
+	_ ExprNode = &MatchAgainst{}
 
 	_ Node = &ColumnName{}
 	_ Node = &WhenClause{}
@@ -1280,7 +1281,7 @@ type MatchAgainst struct {
 	// ColumnNames are the columns to match.
 	ColumnNames []*ColumnName
 	// Against
-	Against ValueExpr
+	Against ExprNode
 	// Modifier
 	Modifier FulltextSearchModifier
 }
@@ -1315,7 +1316,22 @@ func (n *MatchAgainst) Restore(ctx *RestoreCtx) error {
 }
 
 func (n *MatchAgainst) Format(w io.Writer) {
-	fmt.Fprintf(w, "MATCH(%s) AGAINST(%s %v)", n.ColumnNames, n.Against.GetString(), n.Modifier)
+	fmt.Fprint(w, "MATCH(")
+	for i, v := range n.ColumnNames {
+		if i != 0 {
+			fmt.Fprint(w, ",")
+		} else {
+			fmt.Fprintf(w, ",%s", v.String())
+		}
+	}
+	fmt.Fprint(w, ") AGAINST(")
+	n.Against.Format(w)
+	if n.Modifier.IsBooleanMode() {
+		fmt.Fprint(w, " IN BOOLEAN MODE")
+	} else if n.Modifier.WithQueryExpansion() {
+		fmt.Fprint(w, " WITH QUERY EXPANSION")
+	}
+	fmt.Fprint(w, ")")
 }
 
 func (n *MatchAgainst) Accept(v Visitor) (Node, bool) {
