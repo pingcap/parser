@@ -715,6 +715,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select 1 having true", true, "SELECT 1 HAVING TRUE"},
 		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
 		{"select 1 limit 1", true, "SELECT 1 LIMIT 1"},
+		{"select @@autocommit limit 1", true, "SELECT @@`autocommit` LIMIT 1"},
 
 		{`ANALYZE TABLE t`, true, "ANALYZE TABLE `t`"},
 
@@ -4436,6 +4437,36 @@ func (s *testParserSuite) TestFieldText(c *C) {
 		traceStmt := stmts[0].(*ast.TraceStmt)
 		c.Assert(traceStmt.Text(), Equals, sql)
 		c.Assert(traceStmt.Stmt.Text(), Equals, "select a from t")
+	}
+
+	tests := []struct {
+		input  string
+		fields []string
+	}{
+		{"select @@autocommit limit 1", []string{"@@autocommit"}},
+		{"select 1 order by a", []string{"1"}},
+		{"select @@autocommit order by a limit 1", []string{"@@autocommit"}},
+		// {"select a  ", []string{"a"}},
+		// {"select a  ;", []string{"a"}},
+		{"select 1    where true", []string{"1"}},
+		{"select a where 1=1 group by a", []string{"a"}},
+		{"select a where 1=1 group by a having a = 3", []string{"a"}},
+		{"select a from t where 1=1", []string{"a"}},
+		{"select a from t where 1=1 group by a", []string{"a"}},
+		{"select a from t where 1=1 group by a having a = 3", []string{"a"}},
+		{"select a,b,c,d from t where 1=1 group by a having a = 3", []string{"a", "b", "c", "d"}},
+		{"select a,b as d from t where 1=1 group by a", []string{"a", ""}},
+		{"select 2 from dual limit 3", []string{"2"}},
+		{"select 2 from dual", []string{"2"}},
+	}
+	for _, sql := range tests {
+		stmt, err := parser.ParseOneStmt(sql.input, "", "")
+		c.Assert(err, IsNil)
+
+		selectStmt := stmt.(*ast.SelectStmt)
+		for i, field := range selectStmt.Fields.Fields {
+			c.Assert(field.Text(), Equals, sql.fields[i])
+		}
 	}
 }
 

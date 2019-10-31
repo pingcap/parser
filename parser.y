@@ -6099,9 +6099,15 @@ SelectStmt:
 		st.LockTp = $4.(ast.SelectLockType)
 		if $2 != nil {
 			st.OrderBy = $2.(*ast.OrderByClause)
+
+			endOffset := parser.endOffset(&yyS[yypt-2])
+			parser.setLastSelectFieldText(st, endOffset)
 		}
 		if $3 != nil {
 			st.Limit = $3.(*ast.Limit)
+
+			endOffset := parser.endOffset(&yyS[yypt-1])
+			parser.setLastSelectFieldText(st, endOffset)
 		}
 		$$ = st
 	}

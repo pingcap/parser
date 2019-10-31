@@ -13159,9 +13159,15 @@ yynewstate:
 			st.LockTp = yyS[yypt-0].item.(ast.SelectLockType)
 			if yyS[yypt-2].item != nil {
 				st.OrderBy = yyS[yypt-2].item.(*ast.OrderByClause)
+
+				endOffset := parser.endOffset(&yyS[yypt-2])
+				parser.setLastSelectFieldText(st, endOffset)
 			}
 			if yyS[yypt-1].item != nil {
 				st.Limit = yyS[yypt-1].item.(*ast.Limit)
+
+				endOffset := parser.endOffset(&yyS[yypt-1])
+				parser.setLastSelectFieldText(st, endOffset)
 			}
 			parser.yyVAL.statement = st
 		}
