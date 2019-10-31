@@ -974,6 +974,20 @@ const (
 	ErrColumnStateCantNone        = 8046
 	ErrUnsupportedValueForVar     = 8047
 	ErrUnsupportedIsolationLevel  = 8048
+	ErrInvalidDDLWorker           = 8047
+	ErrNotOwner                   = 8048
+	ErrCantDecodeIndex            = 8049
+	ErrUnsupportedDDLOperation    = 8050
+	ErrInvalidDDLJob              = 8051
+	ErrInvalidJobFlag             = 8052
+	ErrWaitReorgTimeout           = 8053
+	ErrInvalidStoreVersion        = 8054
+	ErrUnknownTypeLength          = 8055
+	ErrUnknownFractionLength      = 8056
+	ErrInvalidJobVersion          = 8057
+	ErrReorgPanic                 = 8058
+	ErrInvalidSplitRegionRanges   = 8059
+	ErrInvalidDDLState            = 8060
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
