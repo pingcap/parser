@@ -295,6 +295,7 @@ import (
 	block		"BLOCK"
 	booleanType	"BOOLEAN"
 	boolType	"BOOL"
+	bound		"BOUND"
 	btree		"BTREE"
 	byteType	"BYTE"
 	cascaded	"CASCADED"
@@ -341,6 +342,7 @@ import (
 	event		"EVENT"
 	events		"EVENTS"
 	escape 		"ESCAPE"
+	exact 		"EXACT"
 	exchange	"EXCHANGE"
 	exclusive       "EXCLUSIVE"
 	execute		"EXECUTE"
@@ -469,12 +471,14 @@ import (
 	sqlTsiSecond	"SQL_TSI_SECOND"
 	sqlTsiWeek	"SQL_TSI_WEEK"
 	sqlTsiYear	"SQL_TSI_YEAR"
+	staleness	"STALENESS"
 	start		"START"
 	statsAutoRecalc	"STATS_AUTO_RECALC"
 	statsPersistent	"STATS_PERSISTENT"
 	statsSamplePages	"STATS_SAMPLE_PAGES"
 	status		"STATUS"
 	storage		"STORAGE"
+	strong		"STRONG"
 	swaps		"SWAPS"
 	switchesSym	"SWITCHES"
 	systemTime	"SYSTEM_TIME"
@@ -1002,6 +1006,7 @@ import (
 	TableToTableList 		"rename table to table by list"
 	TimeUnit		"Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
 	TimestampUnit		"Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
+	TimestampBound		"Timestamp bound for start transaction with timestamp mode"
 	LockType			"Table locks type"
 
 	TransactionChar		"Transaction characteristic"
@@ -2208,9 +2213,62 @@ BeginTransactionStmt:
 	{
 		$$ = &ast.BeginStmt{}
 	}
+|	"START" "TRANSACTION" "READ" "WRITE"
+	{
+		$$ = &ast.BeginStmt{}
+	}
 |	"START" "TRANSACTION" "WITH" "CONSISTENT" "SNAPSHOT"
 	{
 		$$ = &ast.BeginStmt{}
+	}
+|	"START" "TRANSACTION" "READ" "ONLY"
+	{
+		$$ = &ast.BeginStmt{
+			ReadOnly: true,
+		}
+	}
+| "START" "TRANSACTION" "READ" "ONLY" "WITH" "TIMESTAMP" "BOUND" TimestampBound
+	{
+		$$ = &ast.BeginStmt{
+			ReadOnly: true,
+			Bound: $8.(*ast.TimestampBound),
+		}
+	}
+
+TimestampBound:
+"STRONG"
+	{
+		$$ = &ast.TimestampBound{
+			Mode: ast.TimestampBoundStrong,
+		}
+	}
+| "READ" "TIMESTAMP" Expression
+	{
+		$$ = &ast.TimestampBound{
+			Mode: ast.TimestampBoundReadTimestamp,
+			Timestamp: $3.(ast.ExprNode),
+		}
+	}
+| "MIN" "READ" "TIMESTAMP" Expression
+	{
+		$$ = &ast.TimestampBound{
+			Mode: ast.TimestampBoundMinReadTimestamp,
+			Timestamp: $4.(ast.ExprNode),
+		}
+	}
+| "MAX" "STALENESS" Expression
+	{
+		$$ = &ast.TimestampBound{
+			Mode: ast.TimestampBoundMaxStaleness,
+			Timestamp: $3.(ast.ExprNode),
+		}
+	}
+| "EXACT" "STALENESS" Expression
+	{
+		$$ = &ast.TimestampBound{
+			Mode: ast.TimestampBoundExactStaleness,
+			Timestamp: $3.(ast.ExprNode),
+		}
 	}
 
 BinlogStmt:
@@ -4482,7 +4540,7 @@ UnReservedKeyword:
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" |
 "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT" | "REPLICA" | "LOCATION" | "LABELS"
-| "LOGS" | "HOSTS" | "AGAINST" | "EXPANSION"
+| "LOGS" | "HOSTS" | "AGAINST" | "EXPANSION" | "BOUND" | "EXACT" | "STALENESS" | "STRONG"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "BUILTINS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
