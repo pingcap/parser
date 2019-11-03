@@ -14,6 +14,7 @@
 package parser_test
 
 import (
+	"bytes"
 	"fmt"
 	"runtime"
 	"strings"
@@ -70,6 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
+		"match", "language",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -104,7 +106,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"ln", "log", "log2", "log10", "timestampdiff", "pi", "quote", "none", "super", "shared", "exclusive",
 		"always", "stats", "stats_meta", "stats_histogram", "stats_buckets", "stats_healthy", "tidb_version", "replication", "slave", "client",
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
-		"following", "preceding", "unbounded", "respect", "nulls", "current", "last",
+		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -697,10 +699,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// for dual
 		{"select 1 from dual", true, "SELECT 1"},
 		{"select 1 from dual limit 1", true, "SELECT 1 LIMIT 1"},
-		{"select 1 where exists (select 2)", true, "SELECT 1 WHERE EXISTS (SELECT 2)"},
-		{"select 1 from dual where not exists (select 2)", true, "SELECT 1 WHERE NOT EXISTS (SELECT 2)"},
+		{"select 1 where exists (select 2)", false, ""},
+		{"select 1 from dual where not exists (select 2)", true, "SELECT 1 FROM DUAL WHERE NOT EXISTS (SELECT 2)"},
 		{"select 1 as a from dual order by a", true, "SELECT 1 AS `a` ORDER BY `a`"},
-		{"select 1 as a from dual where 1 < any (select 2) order by a", true, "SELECT 1 AS `a` WHERE 1<ANY (SELECT 2) ORDER BY `a`"},
+		{"select 1 as a from dual where 1 < any (select 2) order by a", true, "SELECT 1 AS `a` FROM DUAL WHERE 1<ANY (SELECT 2) ORDER BY `a`"},
 		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
 
 		// for https://github.com/pingcap/tidb/issues/320
@@ -708,13 +710,6 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		// for https://github.com/pingcap/tidb/issues/1050
 		{`SELECT /*!40001 SQL_NO_CACHE */ * FROM test WHERE 1 limit 0, 2000;`, true, "SELECT SQL_NO_CACHE * FROM `test` WHERE 1 LIMIT 0,2000"},
-
-		// for https://github.com/pingcap/parser/issues/115
-		{"select 1 where true", true, "SELECT 1 WHERE TRUE"},
-		{"select 1 group by 1", true, "SELECT 1 GROUP BY 1"},
-		{"select 1 having true", true, "SELECT 1 HAVING TRUE"},
-		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
-		{"select 1 limit 1", true, "SELECT 1 LIMIT 1"},
 
 		{`ANALYZE TABLE t`, true, "ANALYZE TABLE `t`"},
 
@@ -987,6 +982,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"flush status", true, "FLUSH STATUS"},
 		{"flush tidb plugins plugin1", true, "FLUSH TIDB PLUGINS plugin1"},
 		{"flush tidb plugins plugin1, plugin2", true, "FLUSH TIDB PLUGINS plugin1, plugin2"},
+		{"flush hosts", true, "FLUSH HOSTS"},
+		{"flush logs", true, "FLUSH LOGS"},
 
 		// for change statement
 		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true, "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8250'"},
@@ -1080,13 +1077,13 @@ func (s *testParserSuite) TestExpression(c *C) {
 		// for comparison
 		{"select 1 <=> 0, 1 <=> null, 1 = null", true, "SELECT 1<=>0,1<=>NULL,1=NULL"},
 		// for date literal
-		{"select date'1989-09-10'", true, "SELECT DATELITERAL('1989-09-10')"},
+		{"select date'1989-09-10'", true, "SELECT DATE '1989-09-10'"},
 		{"select date 19890910", false, ""},
 		// for time literal
-		{"select time '00:00:00.111'", true, "SELECT TIMELITERAL('00:00:00.111')"},
+		{"select time '00:00:00.111'", true, "SELECT TIME '00:00:00.111'"},
 		{"select time 19890910", false, ""},
 		// for timestamp literal
-		{"select timestamp '1989-09-10 11:11:11'", true, "SELECT TIMESTAMPLITERAL('1989-09-10 11:11:11')"},
+		{"select timestamp '1989-09-10 11:11:11'", true, "SELECT TIMESTAMP '1989-09-10 11:11:11'"},
 		{"select timestamp 19890910", false, ""},
 
 		// The ODBC syntax for time/date/timestamp literal.
@@ -3014,12 +3011,12 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	}
 
 	// Test USE_INDEX_MERGE
-	stmt, _, err = parser.Parse("select /*+ USE_INDEX_MERGE(t1, c1), use_index_merge(t2, c1) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ USE_INDEX_MERGE(t1, c1), use_index_merge(t2, c1), use_index_merge(t3, c1, primary, c2) */ c1, c2 from t1, t2, t3 where t1.c1 = t2.c1 and t3.c2 = t1.c2", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(hints, HasLen, 2)
+	c.Assert(hints, HasLen, 3)
 	c.Assert(hints[0].HintName.L, Equals, "use_index_merge")
 	c.Assert(hints[0].Tables, HasLen, 1)
 	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
@@ -3031,6 +3028,14 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t2")
 	c.Assert(hints[1].Indexes, HasLen, 1)
 	c.Assert(hints[1].Indexes[0].L, Equals, "c1")
+
+	c.Assert(hints[2].HintName.L, Equals, "use_index_merge")
+	c.Assert(hints[2].Tables, HasLen, 1)
+	c.Assert(hints[2].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[2].Indexes, HasLen, 3)
+	c.Assert(hints[2].Indexes[0].L, Equals, "c1")
+	c.Assert(hints[2].Indexes[1].L, Equals, "primary")
+	c.Assert(hints[2].Indexes[2].L, Equals, "c2")
 
 	// Test READ_FROM_STORAGE
 	stmt, _, err = parser.Parse("select /*+ READ_FROM_STORAGE(tiflash[t1, t2], tikv[t3]) */ c1, c2 from t1, t2, t1 t3 where t1.c1 = t2.c1 and t2.c1 = t3.c1", "", "")
@@ -4537,6 +4542,51 @@ func (s *testParserSuite) TestCharset(c *C) {
 	st, err = parser.ParseOneStmt("ALTER DATABASE DEFAULT CHAR SET = utf8mb4", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(st.(*ast.AlterDatabaseStmt), NotNil)
+}
+
+func (s *testParserSuite) TestFulltextSearch(c *C) {
+	parser := parser.New()
+
+	st, err := parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search')", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.SelectStmt), NotNil)
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH() AGAINST('search')", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(st, IsNil)
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST()", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(st, IsNil)
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search' IN)", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(st, IsNil)
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(content) AGAINST('search' IN BOOLEAN MODE WITH QUERY EXPANSION)", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(st, IsNil)
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(title,content) AGAINST('search' IN NATURAL LANGUAGE MODE)", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.SelectStmt), NotNil)
+	writer := bytes.NewBufferString("")
+	st.(*ast.SelectStmt).Where.Format(writer)
+	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\")")
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(title,content) AGAINST('search' IN BOOLEAN MODE)", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.SelectStmt), NotNil)
+	writer.Reset()
+	st.(*ast.SelectStmt).Where.Format(writer)
+	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\" IN BOOLEAN MODE)")
+
+	st, err = parser.ParseOneStmt("SELECT * FROM fulltext_test WHERE MATCH(title,content) AGAINST('search' WITH QUERY EXPANSION)", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(st.(*ast.SelectStmt), NotNil)
+	writer.Reset()
+	st.(*ast.SelectStmt).Where.Format(writer)
+	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\" WITH QUERY EXPANSION)")
 }
 
 // CleanNodeText set the text of node and all child node empty.

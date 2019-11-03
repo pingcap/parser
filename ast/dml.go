@@ -864,6 +864,9 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
+	if n.From == nil && n.Where != nil {
+		ctx.WriteKeyWord(" FROM DUAL")
+	}
 	if n.Where != nil {
 		ctx.WriteKeyWord(" WHERE ")
 		if err := n.Where.Restore(ctx); err != nil {
@@ -2604,4 +2607,25 @@ func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlain(")")
 	}
 	return nil
+}
+
+type FulltextSearchModifier int
+
+const (
+	FulltextSearchModifierNaturalLanguageMode = 0
+	FulltextSearchModifierBooleanMode         = 1
+	FulltextSearchModifierModeMask            = 0xF
+	FulltextSearchModifierWithQueryExpansion  = 1 << 4
+)
+
+func (m FulltextSearchModifier) IsBooleanMode() bool {
+	return m&FulltextSearchModifierModeMask == FulltextSearchModifierBooleanMode
+}
+
+func (m FulltextSearchModifier) IsNaturalLanguageMode() bool {
+	return m&FulltextSearchModifierModeMask == FulltextSearchModifierNaturalLanguageMode
+}
+
+func (m FulltextSearchModifier) WithQueryExpansion() bool {
+	return m&FulltextSearchModifierWithQueryExpansion == FulltextSearchModifierWithQueryExpansion
 }

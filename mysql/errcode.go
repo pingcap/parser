@@ -947,6 +947,14 @@ const (
 	ErrUnsupportedReloadPlugin    = 8018
 	ErrUnsupportedReloadPluginVar = 8019
 	ErrTableLocked                = 8020
+	ErrNotExist                   = 8021
+	ErrTxnRetryable               = 8022
+	ErrCannotSetNilValue          = 8023
+	ErrInvalidTxn                 = 8024
+	ErrEntryTooLarge              = 8025
+	ErrNotImplemented             = 8026
+	ErrInfoSchemaExpired          = 8027
+	ErrInfoSchemaChanged          = 8028
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
