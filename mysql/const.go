@@ -488,6 +488,12 @@ var DefaultLengthOfMysqlTypes = map[byte]int{
 	TypeSet:    8,
 }
 
+// BitLengthPerByte is the bit number of a byte.
+const BitLengthPerByte = 8
+
+// RowIDBitLength is the bit number of a row id in TiDB.
+const RowIDBitLength = 64
+
 // DefaultLengthOfTimeFraction is the map for default physical length of time fractions.
 var DefaultLengthOfTimeFraction = map[int]int{
 	0: 0,
