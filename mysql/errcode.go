@@ -988,6 +988,7 @@ const (
 	ErrReorgPanic                 = 8058
 	ErrInvalidSplitRegionRanges   = 8059
 	ErrInvalidDDLState            = 8060
+	ErrCancelledDDLJob            = 8061
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
