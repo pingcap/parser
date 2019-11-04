@@ -2631,12 +2631,14 @@ func (m FulltextSearchModifier) WithQueryExpansion() bool {
 }
 
 type TimestampBound struct {
-	Mode      int
+	Mode      TimestampBoundMode
 	Timestamp ExprNode
 }
 
+type TimestampBoundMode int
+
 const (
-	TimestampBoundStrong = iota
+	TimestampBoundStrong TimestampBoundMode = iota
 	TimestampBoundMaxStaleness
 	TimestampBoundExactStaleness
 	TimestampBoundReadTimestamp
