@@ -964,7 +964,7 @@ var MySQLErrName = map[uint16]string{
 	ErrUnsupportedOp:              "operation not supported",
 	ErrRowNotFound:                "can not find the row: %s",
 	ErrTableStateCantNone:         "table %s can't be in none state",
-	ErrColumnStateCantNone:        "column %s can't be in non",
+	ErrColumnStateCantNone:        "column %s can't be in none state",
 	ErrColumnStateNonPublic:       "can not use non-public column",
 	ErrIndexStateCantNone:         "index %s can't be in none state",
 	ErrInvalidRecordKey:           "invalid record key",
