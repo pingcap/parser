@@ -899,6 +899,7 @@ const (
 	ErrInvalidJSONPathArrayCell                                     = 3165
 	ErrBadUser                                                      = 3162
 	ErrRoleNotGranted                                               = 3530
+	ErrLockAcquireFailAndNoWaitSet                                  = 3572
 	ErrWindowNoSuchWindow                                           = 3579
 	ErrWindowCircularityInWindowGraph                               = 3580
 	ErrWindowNoChildPartitioning                                    = 3581
