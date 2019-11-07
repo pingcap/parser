@@ -9954,9 +9954,9 @@ DropBindingStmt:
 |	"DROP" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
  	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
-        	endOffset := parser.startOffset(&yyS[yypt-1])
-        	selStmt := $5.(*ast.SelectStmt)
-        	selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		endOffset := parser.startOffset(&yyS[yypt-1])
+		selStmt := $5.(*ast.SelectStmt)
+		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
 		hintedSelStmt := $7.(*ast.SelectStmt)
