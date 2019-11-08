@@ -393,16 +393,16 @@ func (n *BeginStmt) Restore(ctx *RestoreCtx) error {
 					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND STRONG")
 				case TimestampBoundMaxStaleness:
 					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MAX STALENESS ")
-					n.Bound.Timestamp.Restore(ctx)
+					return n.Bound.Timestamp.Restore(ctx)
 				case TimestampBoundExactStaleness:
 					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND EXACT STALENESS ")
-					n.Bound.Timestamp.Restore(ctx)
+					return n.Bound.Timestamp.Restore(ctx)
 				case TimestampBoundReadTimestamp:
 					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND READ TIMESTAMP ")
-					n.Bound.Timestamp.Restore(ctx)
+					return n.Bound.Timestamp.Restore(ctx)
 				case TimestampBoundMinReadTimestamp:
 					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MIN READ TIMESTAMP ")
-					n.Bound.Timestamp.Restore(ctx)
+					return n.Bound.Timestamp.Restore(ctx)
 				}
 			}
 		} else {
