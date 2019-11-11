@@ -980,10 +980,10 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidStoreVersion:        "Invalid storage current version: %d",
 	ErrUnknownTypeLength:          "Unknown length for type %d",
 	ErrUnknownFractionLength:      "Unknown length for type %d and fraction %d",
-	ErrInvalidJobVersion:          "Version %d of DDL job is greater than current one: %d",
+	ErrInvalidDDLJobVersion:       "Version %d of DDL job is greater than current one: %d",
 	ErrInvalidSplitRegionRanges:   "Failed to split region ranges",
 	ErrReorgPanic:                 "Reorg worker panic",
-	ErrInvalidDDLState:            "Invalid %s state: %s",
+	ErrInvalidDDLState:            "Invalid %s state: %v",
 	ErrCancelledDDLJob:            "Cancelled DDL job",
 
 	// TiKV/PD errors.

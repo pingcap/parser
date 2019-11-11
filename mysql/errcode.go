@@ -974,21 +974,23 @@ const (
 	ErrColumnStateCantNone        = 8046
 	ErrUnsupportedValueForVar     = 8047
 	ErrUnsupportedIsolationLevel  = 8048
-	ErrUnsupportedDDLOperation    = 8100
-	ErrNotOwner                   = 8101
-	ErrCantDecodeIndex            = 8102
-	ErrInvalidDDLWorker           = 8103
-	ErrInvalidDDLJob              = 8104
-	ErrInvalidDDLJobFlag          = 8105
-	ErrWaitReorgTimeout           = 8106
-	ErrInvalidStoreVersion        = 8107
-	ErrUnknownTypeLength          = 8108
-	ErrUnknownFractionLength      = 8109
-	ErrInvalidDDLState            = 8110
-	ErrReorgPanic                 = 8111
-	ErrInvalidSplitRegionRanges   = 8112
-	ErrInvalidJobVersion          = 8113
-	ErrCancelledDDLJob            = 8114
+
+	// Error codes used by TiDB ddl package
+	ErrUnsupportedDDLOperation  = 8200
+	ErrNotOwner                 = 8201
+	ErrCantDecodeIndex          = 8202
+	ErrInvalidDDLWorker         = 8203
+	ErrInvalidDDLJob            = 8204
+	ErrInvalidDDLJobFlag        = 8205
+	ErrWaitReorgTimeout         = 8206
+	ErrInvalidStoreVersion      = 8207
+	ErrUnknownTypeLength        = 8208
+	ErrUnknownFractionLength    = 8209
+	ErrInvalidDDLState          = 8210
+	ErrReorgPanic               = 8211
+	ErrInvalidSplitRegionRanges = 8212
+	ErrInvalidDDLJobVersion     = 8213
+	ErrCancelledDDLJob          = 8214
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
