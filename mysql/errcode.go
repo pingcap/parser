@@ -974,21 +974,21 @@ const (
 	ErrColumnStateCantNone        = 8046
 	ErrUnsupportedValueForVar     = 8047
 	ErrUnsupportedIsolationLevel  = 8048
-	ErrInvalidDDLWorker           = 8047
-	ErrNotOwner                   = 8048
-	ErrCantDecodeIndex            = 8049
-	ErrUnsupportedDDLOperation    = 8050
-	ErrInvalidDDLJob              = 8051
-	ErrInvalidJobFlag             = 8052
-	ErrWaitReorgTimeout           = 8053
-	ErrInvalidStoreVersion        = 8054
-	ErrUnknownTypeLength          = 8055
-	ErrUnknownFractionLength      = 8056
-	ErrInvalidJobVersion          = 8057
-	ErrReorgPanic                 = 8058
-	ErrInvalidSplitRegionRanges   = 8059
-	ErrInvalidDDLState            = 8060
-	ErrCancelledDDLJob            = 8061
+	ErrUnsupportedDDLOperation    = 8100
+	ErrNotOwner                   = 8101
+	ErrCantDecodeIndex            = 8102
+	ErrInvalidDDLWorker           = 8103
+	ErrInvalidDDLJob              = 8104
+	ErrInvalidDDLJobFlag          = 8105
+	ErrWaitReorgTimeout           = 8106
+	ErrInvalidStoreVersion        = 8107
+	ErrUnknownTypeLength          = 8108
+	ErrUnknownFractionLength      = 8109
+	ErrInvalidDDLState            = 8110
+	ErrReorgPanic                 = 8111
+	ErrInvalidSplitRegionRanges   = 8112
+	ErrInvalidJobVersion          = 8113
+	ErrCancelledDDLJob            = 8114
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001

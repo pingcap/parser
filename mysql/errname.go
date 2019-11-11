@@ -971,11 +971,11 @@ var MySQLErrName = map[uint16]string{
 	ErrUnsupportedValueForVar:     "variable '%s' does not yet support value: %s",
 	ErrUnsupportedIsolationLevel:  "The isolation level '%s' is not supported. Set tidb_skip_isolation_level_check=1 to skip this error",
 	ErrInvalidDDLWorker:           "Invalid DDL worker",
-	ErrUnsupportedDDLOperation:    "Unsupported",
-	ErrNotOwner:                   "TiDB server is not owner",
+	ErrUnsupportedDDLOperation:    "Unsupported %s",
+	ErrNotOwner:                   "TiDB server is not a DDL owner",
 	ErrCantDecodeIndex:            "Cannot decode index value, because %s",
 	ErrInvalidDDLJob:              "Invalid DDL job",
-	ErrInvalidJobFlag:             "Invalid job flag",
+	ErrInvalidDDLJobFlag:          "Invalid job flag",
 	ErrWaitReorgTimeout:           "Timeout waiting for data reorganization",
 	ErrInvalidStoreVersion:        "Invalid storage current version: %d",
 	ErrUnknownTypeLength:          "Unknown length for type %d",
@@ -983,7 +983,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidJobVersion:          "Version %d of DDL job is greater than current one: %d",
 	ErrInvalidSplitRegionRanges:   "Failed to split region ranges",
 	ErrReorgPanic:                 "Reorg worker panic",
-	ErrInvalidDDLState:            "Invalid %s state",
+	ErrInvalidDDLState:            "Invalid %s state: %s",
 	ErrCancelledDDLJob:            "Cancelled DDL job",
 
 	// TiKV/PD errors.
