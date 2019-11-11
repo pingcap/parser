@@ -955,6 +955,25 @@ const (
 	ErrNotImplemented             = 8026
 	ErrInfoSchemaExpired          = 8027
 	ErrInfoSchemaChanged          = 8028
+	ErrBadNumber                  = 8029
+	ErrCastAsSignedOverflow       = 8030
+	ErrCastNegIntAsUnsigned       = 8031
+	ErrInvalidYearFormat          = 8032
+	ErrInvalidYear                = 8033
+	ErrIncorrectDatetimeValue     = 8034
+	ErrInvalidTimeFormat          = 8036
+	ErrInvalidWeekModeFormat      = 8037
+	ErrFieldGetDefaultFailed      = 8038
+	ErrIndexOutBound              = 8039
+	ErrUnsupportedOp              = 8040
+	ErrRowNotFound                = 8041
+	ErrTableStateCantNone         = 8042
+	ErrColumnStateNonPublic       = 8043
+	ErrIndexStateCantNone         = 8044
+	ErrInvalidRecordKey           = 8045
+	ErrColumnStateCantNone        = 8046
+	ErrUnsupportedValueForVar     = 8047
+	ErrUnsupportedIsolationLevel  = 8048
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
@@ -964,4 +983,5 @@ const (
 	ErrRegionUnavailable  = 9005
 	ErrGCTooEarly         = 9006
 	ErrWriteConflict      = 9007
+	ErrTiKVStoreLimit     = 9008
 )

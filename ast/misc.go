@@ -377,13 +377,37 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type BeginStmt struct {
 	stmtNode
-	Mode string
+	Mode     string
+	ReadOnly bool
+	Bound    *TimestampBound
 }
 
 // Restore implements Node interface.
 func (n *BeginStmt) Restore(ctx *RestoreCtx) error {
 	if n.Mode == "" {
-		ctx.WriteKeyWord("START TRANSACTION")
+		if n.ReadOnly {
+			ctx.WriteKeyWord("START TRANSACTION READ ONLY")
+			if n.Bound != nil {
+				switch n.Bound.Mode {
+				case TimestampBoundStrong:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND STRONG")
+				case TimestampBoundMaxStaleness:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MAX STALENESS ")
+					return n.Bound.Timestamp.Restore(ctx)
+				case TimestampBoundExactStaleness:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND EXACT STALENESS ")
+					return n.Bound.Timestamp.Restore(ctx)
+				case TimestampBoundReadTimestamp:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND READ TIMESTAMP ")
+					return n.Bound.Timestamp.Restore(ctx)
+				case TimestampBoundMinReadTimestamp:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MIN READ TIMESTAMP ")
+					return n.Bound.Timestamp.Restore(ctx)
+				}
+			}
+		} else {
+			ctx.WriteKeyWord("START TRANSACTION")
+		}
 	} else {
 		ctx.WriteKeyWord("BEGIN ")
 		ctx.WriteKeyWord(n.Mode)
@@ -398,6 +422,13 @@ func (n *BeginStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*BeginStmt)
+	if n.Bound != nil && n.Bound.Timestamp != nil {
+		newTimestamp, ok := n.Bound.Timestamp.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Bound.Timestamp = newTimestamp.(ExprNode)
+	}
 	return v.Leave(n)
 }
 
@@ -1353,10 +1384,27 @@ type DropBindingStmt struct {
 
 	GlobalScope bool
 	OriginSel   StmtNode
+	HintedSel   StmtNode
 }
 
 func (n *DropBindingStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DROP ")
+	if n.GlobalScope {
+		ctx.WriteKeyWord("GLOBAL ")
+	} else {
+		ctx.WriteKeyWord("SESSION ")
+	}
+	ctx.WriteKeyWord("BINDING FOR ")
+	if err := n.OriginSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.HintedSel != nil {
+		ctx.WriteKeyWord(" USING ")
+		if err := n.HintedSel.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	return nil
 }
 
 func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
@@ -1370,6 +1418,13 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.OriginSel = selnode.(*SelectStmt)
+	if n.HintedSel != nil {
+		selnode, ok = n.HintedSel.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.HintedSel = selnode.(*SelectStmt)
+	}
 	return v.Leave(n)
 }
 
