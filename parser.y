@@ -6803,7 +6803,7 @@ NumericType:
 		x := types.NewFieldType($1.(byte))
 		x.Flen = fopt.Flen
 		if x.Tp == mysql.TypeFloat {
-			if x.Flen > 24 {
+			if x.Flen > mysql.MaxFloatPrecisionLength {
 				x.Tp = mysql.TypeDouble
 			}
 		}
@@ -6824,7 +6824,7 @@ NumericType:
 		x.Flen = $2.(int)
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
-		} else if x.Flen > 64 {
+		} else if x.Flen > mysql.MaxBitDisplayWidth {
 			yylex.AppendError(yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen))
 		}
 		$$ = x
