@@ -951,4 +951,5 @@ const (
 	ErrRegionUnavailable  = 9005
 	ErrGCTooEarly         = 9006
 	ErrWriteConflict      = 9007
+	ErrTiKVStoreLimit     = 9008
 )
