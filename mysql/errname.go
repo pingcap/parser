@@ -985,6 +985,7 @@ var MySQLErrName = map[uint16]string{
 	ErrReorgPanic:                 "Reorg worker panic",
 	ErrInvalidDDLState:            "Invalid %s state: %v",
 	ErrCancelledDDLJob:            "Cancelled DDL job",
+	ErrRepairTable:                "Failed to repair table: %s",
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
