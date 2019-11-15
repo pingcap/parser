@@ -8639,7 +8639,7 @@ yynewstate:
 			c := &ast.Constraint{
 				Tp:   ast.ConstraintPrimaryKey,
 				Keys: yyS[yypt-2].item.([]*ast.IndexColName),
-				Name: yyS[yypt-5].item.([]interface{})[0].(string),
+				Name: yyS[yypt-5].item.(string),
 			}
 			if yyS[yypt-0].item != nil {
 				c.Option = yyS[yypt-0].item.(*ast.IndexOption)
