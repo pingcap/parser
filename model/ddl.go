@@ -56,10 +56,15 @@ const (
 	ActionDropView                      ActionType = 24
 	ActionRecoverTable                  ActionType = 25
 	ActionModifySchemaCharsetAndCollate ActionType = 26
+	ActionAddPrimaryKey                 ActionType = 32
+	ActionDropPrimaryKey                ActionType = 33
 )
 
-// AddIndexStr is a string related to the operation of "add index".
-const AddIndexStr = "add index"
+const (
+	// AddIndexStr is a string related to the operation of "add index".
+	AddIndexStr      = "add index"
+	AddPrimaryKeyStr = "add primary key"
+)
 
 var actionMap = map[ActionType]string{
 	ActionCreateSchema:                  "create schema",
@@ -88,6 +93,8 @@ var actionMap = map[ActionType]string{
 	ActionDropView:                      "drop view",
 	ActionRecoverTable:                  "recover table",
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
+	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
+	ActionDropPrimaryKey:                "drop primary key",
 }
 
 // String return current ddl action in string
