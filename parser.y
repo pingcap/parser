@@ -1882,6 +1882,7 @@ ConstraintElem:
 		c := &ast.Constraint{
 			Tp: ast.ConstraintPrimaryKey,
 			Keys: $6.([]*ast.IndexColName),
+			Name: $3.(string),
 		}
 		if $8 != nil {
 			c.Option = $8.(*ast.IndexOption)
