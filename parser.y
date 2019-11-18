@@ -6803,7 +6803,7 @@ NumericType:
 		x := types.NewFieldType($1.(byte))
 		x.Flen = fopt.Flen
 		if x.Tp == mysql.TypeFloat {
-			if x.Flen > 24 {
+			if x.Flen > mysql.MaxFloatPrecisionLength {
 				x.Tp = mysql.TypeDouble
 			}
 		}

@@ -882,6 +882,7 @@ const (
 	ErrMustChangePasswordLogin                                      = 1862
 	ErrRowInWrongPartition                                          = 1863
 	ErrErrorLast                                                    = 1863
+	ErrInvalidFieldSize                                             = 3013
 	ErrBadGeneratedColumn                                           = 3105
 	ErrUnsupportedOnGeneratedColumn                                 = 3106
 	ErrGeneratedColumnNonPrior                                      = 3107
@@ -917,4 +918,5 @@ const (
 	ErrRegionUnavailable  = 9005
 	ErrGCTooEarly         = 9006
 	ErrWriteConflict      = 9007
+	ErrTiKVStoreLimit     = 9008
 )

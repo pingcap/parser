@@ -883,6 +883,7 @@ var MySQLErrName = map[uint16]string{
 	ErrUnsupportedOnGeneratedColumn:                          "'%s' is not supported for generated columns.",
 	ErrGeneratedColumnNonPrior:                               "Generated column can refer only to generated columns defined prior to it.",
 	ErrDependentByGeneratedColumn:                            "Column '%s' has a generated column dependency.",
+	ErrInvalidFieldSize:                                      "Invalid size for column '%s'.",
 	ErrInvalidJSONText:                                       "Invalid JSON text: %-.192s",
 	ErrInvalidJSONPath:                                       "Invalid JSON path expression %s.",
 	ErrInvalidJSONData:                                       "Invalid data type for JSON data",
@@ -914,4 +915,5 @@ var MySQLErrName = map[uint16]string{
 	ErrRegionUnavailable:  "Region is unavailable",
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
 	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictTS=%d, key=%s",
+	ErrTiKVStoreLimit:     "Store token is up to the limit, store id = %d",
 }
