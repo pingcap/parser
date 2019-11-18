@@ -885,6 +885,7 @@ var MySQLErrName = map[uint16]string{
 	ErrDependentByGeneratedColumn:                            "Column '%s' has a generated column dependency.",
 	ErrGeneratedColumnFunctionIsNotAllowed:                   "Expression of generated column '%s' contains a disallowed function.",
 	ErrGeneratedColumnRefAutoInc:                             "Generated column '%s' cannot refer to auto-increment column.",
+	ErrInvalidFieldSize:                                      "Invalid size for column '%s'.",
 	ErrInvalidJSONData:                                       "Invalid JSON data provided to function %s: %s",
 	ErrInvalidJSONText:                                       "Invalid JSON text: %-.192s",
 	ErrInvalidJSONPath:                                       "Invalid JSON path expression %s.",
@@ -947,4 +948,5 @@ var MySQLErrName = map[uint16]string{
 	ErrRegionUnavailable:  "Region is unavailable",
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
 	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictStartTS=%d, conflictCommitTS=%d, key=%s",
+	ErrTiKVStoreLimit:     "Store token is up to the limit, store id = %d",
 }

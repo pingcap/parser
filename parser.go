@@ -8639,6 +8639,7 @@ yynewstate:
 			c := &ast.Constraint{
 				Tp:   ast.ConstraintPrimaryKey,
 				Keys: yyS[yypt-2].item.([]*ast.IndexColName),
+				Name: yyS[yypt-5].item.(string),
 			}
 			if yyS[yypt-0].item != nil {
 				c.Option = yyS[yypt-0].item.(*ast.IndexOption)
@@ -13426,8 +13427,8 @@ yynewstate:
 			fopt := yyS[yypt-1].item.(*ast.FloatOpt)
 			x := types.NewFieldType(yyS[yypt-2].item.(byte))
 			x.Flen = fopt.Flen
-			if x.Tp == mysql.TypeFloat && fopt.Decimal == types.UnspecifiedLength && x.Flen <= 53 {
-				if x.Flen > 24 {
+			if x.Tp == mysql.TypeFloat && fopt.Decimal == types.UnspecifiedLength && x.Flen <= mysql.MaxDoublePrecisionLength {
+				if x.Flen > mysql.MaxFloatPrecisionLength {
 					x.Tp = mysql.TypeDouble
 				}
 				x.Flen = types.UnspecifiedLength
