@@ -454,7 +454,7 @@ import (
 	now			"NOW"
 	position		"POSITION"
 	recent			"RECENT"
-	std	            "STD"
+	std			"STD"
 	stddev			"STDDEV"
 	stddevPop		"STDDEV_POP"
 	stddevSamp		"STDDEV_SAMP"
@@ -608,7 +608,7 @@ import (
 	RollbackStmt			"ROLLBACK statement"
 	SplitRegionStmt			"Split region statement"
 	SetStmt				"Set variable statement"
-	ChangeStmt				"Change statement"
+	ChangeStmt			"Change statement"
 	ShowStmt			"Show engines/databases/tables/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
@@ -6822,10 +6822,8 @@ NumericType:
 	{
 		x := types.NewFieldType($1.(byte))
 		x.Flen = $2.(int)
-		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
+		if x.Flen == types.UnspecifiedLength {
 			x.Flen = 1
-		} else if x.Flen > mysql.MaxBitDisplayWidth {
-			yylex.AppendError(yylex.Errorf("invalid field length %d for bit type, must in [1, 64]", x.Flen))
 		}
 		$$ = x
 	}
