@@ -2698,3 +2698,39 @@ func (n *SplitOption) Restore(ctx *RestoreCtx) error {
 	}
 	return nil
 }
+
+type FulltextSearchModifier int
+
+const (
+	FulltextSearchModifierNaturalLanguageMode = 0
+	FulltextSearchModifierBooleanMode         = 1
+	FulltextSearchModifierModeMask            = 0xF
+	FulltextSearchModifierWithQueryExpansion  = 1 << 4
+)
+
+func (m FulltextSearchModifier) IsBooleanMode() bool {
+	return m&FulltextSearchModifierModeMask == FulltextSearchModifierBooleanMode
+}
+
+func (m FulltextSearchModifier) IsNaturalLanguageMode() bool {
+	return m&FulltextSearchModifierModeMask == FulltextSearchModifierNaturalLanguageMode
+}
+
+func (m FulltextSearchModifier) WithQueryExpansion() bool {
+	return m&FulltextSearchModifierWithQueryExpansion == FulltextSearchModifierWithQueryExpansion
+}
+
+type TimestampBound struct {
+	Mode      TimestampBoundMode
+	Timestamp ExprNode
+}
+
+type TimestampBoundMode int
+
+const (
+	TimestampBoundStrong TimestampBoundMode = iota
+	TimestampBoundMaxStaleness
+	TimestampBoundExactStaleness
+	TimestampBoundReadTimestamp
+	TimestampBoundMinReadTimestamp
+)
