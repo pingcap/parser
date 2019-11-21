@@ -222,6 +222,17 @@ func (n *IndexColName) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// MatchType is the type for reference match type.
+type MatchType int
+
+// match type
+const (
+	MatchNone MatchType = iota
+	MatchFull
+	MatchPartial
+	MatchSimple
+)
+
 // ReferenceDef is used for parsing foreign key reference option from SQL.
 // See http://dev.mysql.com/doc/refman/5.7/en/create-table-foreign-keys.html
 type ReferenceDef struct {
@@ -231,6 +242,7 @@ type ReferenceDef struct {
 	IndexColNames []*IndexColName
 	OnDelete      *OnDeleteOpt
 	OnUpdate      *OnUpdateOpt
+	Match         MatchType
 }
 
 // Restore implements Node interface.
@@ -251,6 +263,17 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	ctx.WritePlain(")")
+	if n.Match != MatchNone {
+		ctx.WriteKeyWord(" MATCH ")
+		switch n.Match {
+		case MatchFull:
+			ctx.WriteKeyWord("FULL")
+		case MatchPartial:
+			ctx.WriteKeyWord("PARTIAL")
+		case MatchSimple:
+			ctx.WriteKeyWord("SIMPLE")
+		}
+	}
 	if n.OnDelete.ReferOpt != ReferOptionNoOption {
 		ctx.WritePlain(" ")
 		if err := n.OnDelete.Restore(ctx); err != nil {
@@ -308,6 +331,7 @@ const (
 	ReferOptionCascade
 	ReferOptionSetNull
 	ReferOptionNoAction
+	ReferOptionSetDefault
 )
 
 // String implements fmt.Stringer interface.
@@ -321,6 +345,8 @@ func (r ReferOptionType) String() string {
 		return "SET NULL"
 	case ReferOptionNoAction:
 		return "NO ACTION"
+	case ReferOptionSetDefault:
+		return "SET DEFAULT"
 	}
 	return ""
 }
@@ -393,6 +419,7 @@ const (
 	ColumnOptionGenerated
 	ColumnOptionReference
 	ColumnOptionCollate
+	ColumnOptionCheck
 )
 
 var (
@@ -417,6 +444,8 @@ type ColumnOption struct {
 	// Refer is used for foreign key.
 	Refer    *ReferenceDef
 	StrValue string
+	// Enforced is only for Check, default is true.
+	Enforced bool
 }
 
 // Restore implements Node interface.
@@ -473,6 +502,18 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		}
 		ctx.WriteKeyWord("COLLATE ")
 		ctx.WritePlain(n.StrValue)
+	case ColumnOptionCheck:
+		ctx.WriteKeyWord("CHECK")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+		ctx.WritePlain(")")
+		if n.Enforced {
+			ctx.WriteKeyWord(" ENFORCED")
+		} else {
+			ctx.WriteKeyWord(" NOT ENFORCED")
+		}
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
@@ -562,6 +603,7 @@ const (
 	ConstraintUniqIndex
 	ConstraintForeignKey
 	ConstraintFulltext
+	ConstraintCheck
 )
 
 // Constraint is constraint for table definition.
@@ -576,6 +618,10 @@ type Constraint struct {
 	Refer *ReferenceDef // Used for foreign key.
 
 	Option *IndexOption // Index Options
+
+	Expr ExprNode // Used for Check
+
+	Enforced bool // Used for Check
 }
 
 // Restore implements Node interface.
@@ -597,6 +643,24 @@ func (n *Constraint) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("UNIQUE INDEX")
 	case ConstraintFulltext:
 		ctx.WriteKeyWord("FULLTEXT")
+	case ConstraintCheck:
+		if n.Name != "" {
+			ctx.WriteKeyWord("CONSTRAINT ")
+			ctx.WriteName(n.Name)
+			ctx.WritePlain(" ")
+		}
+		ctx.WriteKeyWord("CHECK")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+		ctx.WritePlain(") ")
+		if n.Enforced {
+			ctx.WriteKeyWord("ENFORCED")
+		} else {
+			ctx.WriteKeyWord("NOT ENFORCED")
+		}
+		return nil
 	}
 
 	if n.Tp == ConstraintForeignKey {
@@ -1701,8 +1765,17 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 		}
 		if len(n.NewColumns[0].Options) == 1 {
 			ctx.WriteKeyWord("SET DEFAULT ")
-			if err := n.NewColumns[0].Options[0].Expr.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+			expr := n.NewColumns[0].Options[0].Expr
+			if valueExpr, ok := expr.(ValueExpr); ok {
+				if err := valueExpr.Restore(ctx); err != nil {
+					return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+				}
+			} else {
+				ctx.WritePlain("(")
+				if err := expr.Restore(ctx); err != nil {
+					return errors.Annotate(err, "An error occurred while restore AlterTableSpec.NewColumns[0].Options[0].Expr")
+				}
+				ctx.WritePlain(")")
 			}
 		} else {
 			ctx.WriteKeyWord(" DROP DEFAULT")
