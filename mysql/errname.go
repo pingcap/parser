@@ -888,6 +888,7 @@ var MySQLErrName = map[uint16]string{
 	ErrDependentByGeneratedColumn:                            "Column '%s' has a generated column dependency.",
 	ErrGeneratedColumnRefAutoInc:                             "Generated column '%s' cannot refer to auto-increment column.",
 	ErrInvalidFieldSize:                                      "Invalid size for column '%s'.",
+	ErrIncorrectType:                                         "Incorrect type for argument %s in function %s.",
 	ErrInvalidJSONData:                                       "Invalid JSON data provided to function %s: %s",
 	ErrInvalidJSONText:                                       "Invalid JSON text: %-.192s",
 	ErrInvalidJSONPath:                                       "Invalid JSON path expression %s.",
@@ -895,6 +896,8 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidJSONPathWildcard:                               "In this situation, path expressions may not contain the * and ** tokens.",
 	ErrInvalidJSONContainsPathType:                           "The second argument can only be either 'one' or 'all'.",
 	ErrJSONUsedAsKey:                                         "JSON column '%-.192s' cannot be used in key specification.",
+	ErrBadUser:                                               "User %s does not exist.",
+	ErrUserAlreadyExists:                                     "User %s already exists.",
 	ErrInvalidJSONPathArrayCell:                              "A path expression is not a path to a cell in an array.",
 	ErrInvalidEncryptionOption:                               "Invalid encryption option.",
 	ErrWindowNoSuchWindow:                                    "Window name '%s' is not defined.",
@@ -985,6 +988,7 @@ var MySQLErrName = map[uint16]string{
 	ErrReorgPanic:                 "Reorg worker panic",
 	ErrInvalidDDLState:            "Invalid %s state: %v",
 	ErrCancelledDDLJob:            "Cancelled DDL job",
+	ErrRepairTable:                "Failed to repair table: %s",
 	ErrInvalidAutoShard:           "Invalid auto shard: %s",
 
 	// TiKV/PD errors.

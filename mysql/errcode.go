@@ -884,6 +884,7 @@ const (
 	ErrErrorLast                                                    = 1863
 	ErrMaxExecTimeExceeded                                          = 1907
 	ErrInvalidFieldSize                                             = 3013
+	ErrIncorrectType                                                = 3064
 	ErrInvalidJSONData                                              = 3069
 	ErrGeneratedColumnFunctionIsNotAllowed                          = 3102
 	ErrUnsupportedAlterInplaceOnVirtualColumn                       = 3103
@@ -899,8 +900,9 @@ const (
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
-	ErrInvalidJSONPathArrayCell                                     = 3165
 	ErrBadUser                                                      = 3162
+	ErrUserAlreadyExists                                            = 3163
+	ErrInvalidJSONPathArrayCell                                     = 3165
 	ErrInvalidEncryptionOption                                      = 3184
 	ErrRoleNotGranted                                               = 3530
 	ErrLockAcquireFailAndNoWaitSet                                  = 3572
@@ -991,7 +993,8 @@ const (
 	ErrInvalidSplitRegionRanges = 8212
 	ErrInvalidDDLJobVersion     = 8213
 	ErrCancelledDDLJob          = 8214
-	ErrInvalidAutoShard         = 8215
+	ErrRepairTable              = 8215
+	ErrInvalidAutoShard         = 8216
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
