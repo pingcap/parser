@@ -381,11 +381,9 @@ func (t *TableInfo) Clone() *TableInfo {
 
 // GetPkName will return the pk name if pk exists.
 func (t *TableInfo) GetPkName() CIStr {
-	if t.PKIsHandle {
-		for _, colInfo := range t.Columns {
-			if mysql.HasPriKeyFlag(colInfo.Flag) {
-				return colInfo.Name
-			}
+	for _, colInfo := range t.Columns {
+		if mysql.HasPriKeyFlag(colInfo.Flag) {
+			return colInfo.Name
 		}
 	}
 	return CIStr{}
