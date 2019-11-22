@@ -2148,6 +2148,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table ", false, ""},
 		{"recover table t1 100", true, "RECOVER TABLE `t1` 100"},
 		{"recover table t1 abc", false, ""},
+
+		// for issue 549
+		{"insert into t set a = default", true, "INSERT INTO `t` SET `a`=DEFAULT"},
+		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},
+		{"update t set a = default", true, "UPDATE `t` SET `a`=DEFAULT"},
+		{"insert into t set a = default on duplicate key update a = default", true, "INSERT INTO `t` SET `a`=DEFAULT ON DUPLICATE KEY UPDATE `a`=DEFAULT"},
 	}
 	s.RunTest(c, table)
 }
