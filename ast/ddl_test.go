@@ -198,6 +198,9 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"generated always as(id + 1) stored", "GENERATED ALWAYS AS(`id`+1) STORED"},
 		{"REFERENCES parent(id)", "REFERENCES `parent`(`id`)"},
 		{"COLLATE utf8_bin", "COLLATE utf8_bin"},
+		{"STORAGE DEFAULT", "STORAGE DEFAULT"},
+		{"STORAGE DISK", "STORAGE DISK"},
+		{"STORAGE MEMORY", "STORAGE MEMORY"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*CreateTableStmt).Cols[0].Options[0]
@@ -482,4 +485,16 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		return node.(*AlterTableStmt).Specs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "ALTER TABLE t %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestAdminRepairTableRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ADMIN REPAIR TABLE t CREATE TABLE t (a int)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` INT)"},
+		{"ADMIN REPAIR TABLE t CREATE TABLE t (a char(1), b int)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` CHAR(1),`b` INT)"},
+		{"ADMIN REPAIR TABLE t CREATE TABLE t (a TINYINT UNSIGNED)", "ADMIN REPAIR TABLE `t` CREATE TABLE `t` (`a` TINYINT UNSIGNED)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
