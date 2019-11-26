@@ -999,7 +999,7 @@ var MySQLErrName = map[uint16]string{
 	ErrUnknownPlan:                 "Unknown plan",
 	ErrPrepareMulti:                "Can not prepare multiple statements",
 	ErrPrepareDDL:                  "Can not prepare DDL statements with parameters",
-	ErrResultIsEmpty:               "result is empty",
+	ErrResultIsEmpty:               "Result is empty",
 	ErrBuildExecutor:               "Failed to build executor",
 	ErrBatchInsertFail:             "Batch insert failed, please clean the table and try again.",
 	ErrGetStartTS:                  "Can not get start ts",
