@@ -946,6 +946,19 @@ const (
 	ErrDuplicatePlugin             = 8105
 	ErrInvalidPluginSysVarName     = 8106
 	ErrRequireVersionCheckFail     = 8107
+	ErrUnsupportedType             = 8108
+	ErrAnalyzeMissIndex            = 8109
+	ErrCartesianProductUnsupported = 8110
+	ErrPreparedStmtNotFound        = 8111
+	ErrWrongParamCount             = 8112
+	ErrSchemaChanged               = 8113
+	ErrUnknownPlan                 = 8114
+	ErrPrepareMulti                = 8115
+	ErrPrepareDDL                  = 8116
+	ErrResultIsEmpty               = 8117
+	ErrBuildExecutor               = 8118
+	ErrBatchInsertFail             = 8119
+	ErrGetStartTS                  = 8120
 	ErrUnsupportedReloadPlugin     = 8018
 	ErrUnsupportedReloadPluginVar  = 8019
 	ErrTableLocked                 = 8020
@@ -976,19 +989,7 @@ const (
 	ErrColumnStateCantNone         = 8046
 	ErrUnsupportedValueForVar      = 8047
 	ErrUnsupportedIsolationLevel   = 8048
-	ErrUnsupportedType             = 8049
-	ErrAnalyzeMissIndex            = 8050
-	ErrCartesianProductUnsupported = 8051
-	ErrPreparedStmtNotFound        = 8052
-	ErrWrongParamCount             = 8053
-	ErrSchemaChanged               = 8054
-	ErrUnknownPlan                 = 8055
-	ErrPrepareMulti                = 8056
-	ErrPrepareDDL                  = 8057
-	ErrResultIsEmpty               = 8058
-	ErrBuildExecutor               = 8059
-	ErrBatchInsertFail             = 8060
-	ErrGetStartTS                  = 8061
+
 
 	// Error codes used by TiDB ddl package
 	ErrUnsupportedDDLOperation  = 8200
