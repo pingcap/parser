@@ -990,6 +990,20 @@ var MySQLErrName = map[uint16]string{
 	ErrCancelledDDLJob:            "Cancelled DDL job",
 	ErrRepairTable:                "Failed to repair table: %s",
 
+	ErrUnsupportedType:             "Unsupported type %T",
+	ErrAnalyzeMissIndex:            "Index '%s' in field list does not exist in table '%s'",
+	ErrCartesianProductUnsupported: "Cartesian product is unsupported",
+	ErrPreparedStmtNotFound:        "Prepared statement not found",
+	ErrWrongParamCount:             "Wrong parameter count",
+	ErrSchemaChanged:               "Schema has changed",
+	ErrUnknownPlan:                 "Unknown plan",
+	ErrPrepareMulti:                "Can not prepare multiple statements",
+	ErrPrepareDDL:                  "Can not prepare DDL statements with parameters",
+	ErrResultIsEmpty:               "result is empty",
+	ErrBuildExecutor:               "Failed to build executor",
+	ErrBatchInsertFail:             "Batch insert failed, please clean the table and try again.",
+	ErrGetStartTS:                  "Can not get start ts",
+
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
 	ErrTiKVServerTimeout:  "TiKV server timeout",
