@@ -34,6 +34,7 @@ var (
 	_ DDLNode = &DropTableStmt{}
 	_ DDLNode = &RenameTableStmt{}
 	_ DDLNode = &TruncateTableStmt{}
+	_ DDLNode = &RepairTableStmt{}
 
 	_ Node = &AlterTableSpec{}
 	_ Node = &ColumnDef{}
@@ -428,6 +429,7 @@ const (
 	ColumnOptionCollate
 	ColumnOptionCheck
 	ColumnOptionColumnFormat
+	ColumnOptionStorage
 )
 
 var (
@@ -524,6 +526,9 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		}
 	case ColumnOptionColumnFormat:
 		ctx.WriteKeyWord("COLUMN_FORMAT ")
+		ctx.WriteKeyWord(n.StrValue)
+	case ColumnOptionStorage:
+		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
@@ -1243,7 +1248,7 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 	if !ok {
 		return n, false
 	}
-	n.Select = selnode.(*SelectStmt)
+	n.Select = selnode.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -1555,6 +1560,46 @@ func (n *CleanupTableLockStmt) Restore(ctx *RestoreCtx) error {
 	return nil
 }
 
+// RepairTableStmt is a statement to repair tableInfo.
+type RepairTableStmt struct {
+	ddlNode
+	Table      *TableName
+	CreateStmt *CreateTableStmt
+}
+
+// Accept implements Node Accept interface.
+func (n *RepairTableStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*RepairTableStmt)
+	node, ok := n.Table.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Table = node.(*TableName)
+	node, ok = n.CreateStmt.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.CreateStmt = node.(*CreateTableStmt)
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *RepairTableStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("ADMIN REPAIR TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotatef(err, "An error occurred while restore RepairTableStmt.table : [%v]", n.Table)
+	}
+	ctx.WritePlain(" ")
+	if err := n.CreateStmt.Restore(ctx); err != nil {
+		return errors.Annotatef(err, "An error occurred while restore RepairTableStmt.createStmt : [%v]", n.CreateStmt)
+	}
+	return nil
+}
+
 // TableOptionType is the type for TableOption
 type TableOptionType int
 
@@ -1647,7 +1692,11 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionCharset:
 		ctx.WriteKeyWord("DEFAULT CHARACTER SET ")
 		ctx.WritePlain("= ")
-		ctx.WriteKeyWord(n.StrValue)
+		if n.Default {
+			ctx.WriteKeyWord("DEFAULT")
+		} else {
+			ctx.WriteKeyWord(n.StrValue)
+		}
 	case TableOptionCollate:
 		ctx.WriteKeyWord("DEFAULT COLLATE ")
 		ctx.WritePlain("= ")
@@ -1921,6 +1970,8 @@ const (
 	AlterTableIndexInvisible
 	// TODO: Add more actions
 	AlterTableOrderByColumns
+	// AlterTableSetTiFlashReplica uses to set the table TiFlash replica.
+	AlterTableSetTiFlashReplica
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2015,6 +2066,12 @@ type AlterTableSpec struct {
 	WithValidation  bool
 	Num             uint64
 	Visibility      IndexVisibility
+	TiFlashReplica  *TiFlashReplicaSpec
+}
+
+type TiFlashReplicaSpec struct {
+	Count  uint64
+	Labels []string
 }
 
 // AlterOrderItem represents an item in order by at alter table stmt.
@@ -2038,15 +2095,35 @@ func (n *AlterOrderItem) Restore(ctx *RestoreCtx) error {
 // Restore implements Node interface.
 func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	switch n.Tp {
+	case AlterTableSetTiFlashReplica:
+		ctx.WriteKeyWord("SET TIFLASH REPLICA ")
+		ctx.WritePlainf("%d", n.TiFlashReplica.Count)
+		if len(n.TiFlashReplica.Labels) == 0 {
+			break
+		}
+		ctx.WriteKeyWord(" LOCATION LABELS ")
+		for i, v := range n.TiFlashReplica.Labels {
+			if i > 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteString(v)
+		}
 	case AlterTableOption:
 		switch {
 		case len(n.Options) == 2 &&
 			n.Options[0].Tp == TableOptionCharset &&
 			n.Options[1].Tp == TableOptionCollate:
 			ctx.WriteKeyWord("CONVERT TO CHARACTER SET ")
-			ctx.WriteKeyWord(n.Options[0].StrValue)
+			if n.Options[0].Default {
+				ctx.WriteKeyWord("DEFAULT")
+			} else {
+				ctx.WriteKeyWord(n.Options[0].StrValue)
+			}
 			ctx.WriteKeyWord(" COLLATE ")
 			ctx.WriteKeyWord(n.Options[1].StrValue)
+		case n.Options[0].Tp == TableOptionCharset &&
+			n.Options[0].Default:
+			ctx.WriteKeyWord("CONVERT TO CHARACTER SET DEFAULT")
 		default:
 			for i, opt := range n.Options {
 				if i != 0 {

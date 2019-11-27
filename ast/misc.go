@@ -49,6 +49,7 @@ var (
 	_ StmtNode = &KillStmt{}
 	_ StmtNode = &CreateBindingStmt{}
 	_ StmtNode = &DropBindingStmt{}
+	_ StmtNode = &ShutdownStmt{}
 
 	_ Node = &PrivElem{}
 	_ Node = &VariableAssignment{}
@@ -322,6 +323,7 @@ type Prepared struct {
 	SchemaVersion int64
 	UseCache      bool
 	CachedPlan    interface{}
+	CachedNames   interface{}
 }
 
 // ExecuteStmt is a statement to execute PreparedStmt.
@@ -333,6 +335,7 @@ type ExecuteStmt struct {
 	UsingVars  []ExprNode
 	BinaryArgs interface{}
 	ExecID     uint32
+	IdxInMulti int
 }
 
 // Restore implements Node interface.
@@ -374,13 +377,37 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type BeginStmt struct {
 	stmtNode
-	Mode string
+	Mode     string
+	ReadOnly bool
+	Bound    *TimestampBound
 }
 
 // Restore implements Node interface.
 func (n *BeginStmt) Restore(ctx *RestoreCtx) error {
 	if n.Mode == "" {
-		ctx.WriteKeyWord("START TRANSACTION")
+		if n.ReadOnly {
+			ctx.WriteKeyWord("START TRANSACTION READ ONLY")
+			if n.Bound != nil {
+				switch n.Bound.Mode {
+				case TimestampBoundStrong:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND STRONG")
+				case TimestampBoundMaxStaleness:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MAX STALENESS ")
+					return n.Bound.Timestamp.Restore(ctx)
+				case TimestampBoundExactStaleness:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND EXACT STALENESS ")
+					return n.Bound.Timestamp.Restore(ctx)
+				case TimestampBoundReadTimestamp:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND READ TIMESTAMP ")
+					return n.Bound.Timestamp.Restore(ctx)
+				case TimestampBoundMinReadTimestamp:
+					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MIN READ TIMESTAMP ")
+					return n.Bound.Timestamp.Restore(ctx)
+				}
+			}
+		} else {
+			ctx.WriteKeyWord("START TRANSACTION")
+		}
 	} else {
 		ctx.WriteKeyWord("BEGIN ")
 		ctx.WriteKeyWord(n.Mode)
@@ -395,6 +422,13 @@ func (n *BeginStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*BeginStmt)
+	if n.Bound != nil && n.Bound.Timestamp != nil {
+		newTimestamp, ok := n.Bound.Timestamp.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Bound.Timestamp = newTimestamp.(ExprNode)
+	}
 	return v.Leave(n)
 }
 
@@ -569,6 +603,8 @@ const (
 	FlushPrivileges
 	FlushStatus
 	FlushTiDBPlugin
+	FlushHosts
+	FlushLogs
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -618,8 +654,12 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WritePlain(v)
 		}
+	case FlushHosts:
+		ctx.WriteKeyWord("HOSTS")
+	case FlushLogs:
+		ctx.WriteKeyWord("LOGS")
 	default:
-		return errors.New("Unsupported type of FlushTables")
+		return errors.New("Unsupported type of FlushStmt")
 	}
 	return nil
 }
@@ -1344,10 +1384,27 @@ type DropBindingStmt struct {
 
 	GlobalScope bool
 	OriginSel   StmtNode
+	HintedSel   StmtNode
 }
 
 func (n *DropBindingStmt) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("DROP ")
+	if n.GlobalScope {
+		ctx.WriteKeyWord("GLOBAL ")
+	} else {
+		ctx.WriteKeyWord("SESSION ")
+	}
+	ctx.WriteKeyWord("BINDING FOR ")
+	if err := n.OriginSel.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	if n.HintedSel != nil {
+		ctx.WriteKeyWord(" USING ")
+		if err := n.HintedSel.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	return nil
 }
 
 func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
@@ -1361,6 +1418,13 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.OriginSel = selnode.(*SelectStmt)
+	if n.HintedSel != nil {
+		selnode, ok = n.HintedSel.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.HintedSel = selnode.(*SelectStmt)
+	}
 	return v.Leave(n)
 }
 
@@ -1423,6 +1487,9 @@ const (
 	AdminReloadOptRuleBlacklist
 	AdminPluginDisable
 	AdminPluginEnable
+	AdminFlushBindings
+	AdminCaptureBindings
+	AdminEvolveBindings
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1499,6 +1566,7 @@ type AdminStmt struct {
 	HandleRanges []HandleRange
 	ShowSlow     *ShowSlow
 	Plugins      []string
+	Where        ExprNode
 }
 
 // Restore implements Node interface.
@@ -1531,6 +1599,12 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("SHOW DDL JOBS")
 		if n.JobNumber != 0 {
 			ctx.WritePlainf(" %d", n.JobNumber)
+		}
+		if n.Where != nil {
+			ctx.WriteKeyWord(" WHERE ")
+			if err := n.Where.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore ShowStmt.Where")
+			}
 		}
 	case AdminShowNextRowID:
 		ctx.WriteKeyWord("SHOW ")
@@ -1616,6 +1690,12 @@ func (n *AdminStmt) Restore(ctx *RestoreCtx) error {
 			}
 			ctx.WritePlain(v)
 		}
+	case AdminFlushBindings:
+		ctx.WriteKeyWord("FLUSH BINDINGS")
+	case AdminCaptureBindings:
+		ctx.WriteKeyWord("CAPTURE BINDINGS")
+	case AdminEvolveBindings:
+		ctx.WriteKeyWord("EVOLVE BINDINGS")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -1993,6 +2073,28 @@ func (n *GrantRoleStmt) SecureText() string {
 	return text
 }
 
+// ShutdownStmt is a statement to stop the TiDB server.
+// See https://dev.mysql.com/doc/refman/5.7/en/shutdown.html
+type ShutdownStmt struct {
+	stmtNode
+}
+
+// Restore implements Node interface.
+func (n *ShutdownStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("SHUTDOWN")
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *ShutdownStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ShutdownStmt)
+	return v.Leave(n)
+}
+
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
@@ -2042,11 +2144,16 @@ type TableOptimizerHint struct {
 
 // HintTable is table in the hint. It may have query block info.
 type HintTable struct {
+	DBName    model.CIStr
 	TableName model.CIStr
 	QBName    model.CIStr
 }
 
 func (ht *HintTable) Restore(ctx *RestoreCtx) {
+	if ht.DBName.L != "" {
+		ctx.WriteName(ht.DBName.String())
+		ctx.WriteKeyWord(".")
+	}
 	ctx.WriteName(ht.TableName.String())
 	if ht.QBName.L != "" {
 		ctx.WriteKeyWord("@")
