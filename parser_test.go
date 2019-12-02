@@ -585,6 +585,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// delete statement
 		// single table syntax
 		{"DELETE from t1", true, "DELETE FROM `t1`"},
+		{"DELETE from t1.*", false, ""},
 		{"DELETE LOW_priORITY from t1", true, "DELETE LOW_PRIORITY FROM `t1`"},
 		{"DELETE quick from t1", true, "DELETE QUICK FROM `t1`"},
 		{"DELETE ignore from t1", true, "DELETE IGNORE FROM `t1`"},
@@ -610,6 +611,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"delete t1,t2,t3 from t1, t2, t3 where t3.c < 5 and t1.a = 3", true, "DELETE `t1`,`t2`,`t3` FROM ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t3`.`c`<5 AND `t1`.`a`=3"},
 		{"delete t1 from t1, t1 as t2 where t1.b = t2.b and t1.a > t2.a", true, "DELETE `t1` FROM (`t1`) JOIN `t1` AS `t2` WHERE `t1`.`b`=`t2`.`b` AND `t1`.`a`>`t2`.`a`"},
 		{"delete t1.*,t2 from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete t.t1.*,t2 from t1, t2", true, "DELETE `t`.`t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete t1.*, t2.* from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete t11.*, t12.* from t11, t12 where t11.a = t12.a and t11.b <> 1", true, "DELETE `t11`,`t12` FROM (`t11`) JOIN `t12` WHERE `t11`.`a`=`t12`.`a` AND `t11`.`b`!=1"},
 
@@ -1859,6 +1861,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (", false, ""},
 		{"CREATE TABLE foo ()", false, ""},
 		{"CREATE TABLE foo ();", false, ""},
+		{"CREATE TABLE foo.* (a varchar(50), b int);", false, ""},
 		{"CREATE TABLE foo (a varchar(50), b int);", true, "CREATE TABLE `foo` (`a` VARCHAR(50),`b` INT)"},
 		{"CREATE TABLE foo (a TINYINT UNSIGNED);", true, "CREATE TABLE `foo` (`a` TINYINT UNSIGNED)"},
 		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED)"},
@@ -2194,6 +2197,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		},
 
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED)"},
+		{"ALTER TABLE t.* ADD COLUMN (a SMALLINT UNSIGNED)", false, ""},
 		{"ALTER TABLE t ADD COLUMN IF NOT EXISTS (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN IF NOT EXISTS (`a` SMALLINT UNSIGNED)"},
 		{"ALTER TABLE ADD COLUMN (a SMALLINT UNSIGNED)", false, ""},
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED, b varchar(255))", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED, `b` VARCHAR(255))"},
@@ -2351,6 +2355,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t CONVERT TO CHARSET UTF8;", true, "ALTER TABLE `t` DEFAULT CHARACTER SET = UTF8"},
 		{"ALTER TABLE t CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN;", true, "ALTER TABLE `t` CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
 		{"ALTER TABLE t CONVERT TO CHARSET UTF8 COLLATE UTF8_BIN;", true, "ALTER TABLE `t` CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
+
+		// alter table convert to character set default, issue #498
+		{"alter table d_n.t_n convert to character set default", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT"},
+		{"alter table d_n.t_n convert to charset default", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT"},
+		{"alter table d_n.t_n convert to char set default", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT"},
+		{"alter table d_n.t_n convert to character set default collate utf8mb4_0900_ai_ci", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT COLLATE UTF8MB4_0900_AI_CI"},
+
 		{"ALTER TABLE t FORCE", true, "ALTER TABLE `t` FORCE /* AlterTableForce is not supported */ "},
 		{"ALTER TABLE t DROP INDEX;", false, "ALTER TABLE `t` DROP INDEX"},
 		{"ALTER TABLE t DROP INDEX a", true, "ALTER TABLE `t` DROP INDEX `a`"},
@@ -3983,6 +3994,7 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 func (s *testParserSuite) TestAnalyze(c *C) {
 	table := []testCase{
 		{"analyze table t1", true, "ANALYZE TABLE `t1`"},
+		{"analyze table t1.*", false, ""},
 		{"analyze table t,t1", true, "ANALYZE TABLE `t`,`t1`"},
 		{"analyze table t1 index", true, "ANALYZE TABLE `t1` INDEX"},
 		{"analyze table t1 index a", true, "ANALYZE TABLE `t1` INDEX `a`"},
