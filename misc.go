@@ -31,7 +31,7 @@ const (
 )
 
 func extractVersionCodeInComment(comment string) CommentCodeVersion {
-	if specVersionCodePattern.MatchString(comment) {
+	if SpecVersionCodePattern.MatchString(comment) {
 		code, err := strconv.Atoi(comment[3 : 3+5])
 		if err != nil {
 			return CommentCodeNoVersion

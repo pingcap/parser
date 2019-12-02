@@ -451,7 +451,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		if strings.HasPrefix(comment, "/*v") {
 			commentVersion := extractVersionCodeInComment(comment)
 			if commentVersion != CommentCodeNoVersion && commentVersion < CommentCodeCurrentUnsupportedVersion {
-				sql := specVersionCodePattern.ReplaceAllStringFunc(comment, TrimCodeVersionComment)
+				sql := SpecVersionCodePattern.ReplaceAllStringFunc(comment, TrimCodeVersionComment)
 				s.specialComment = &mysqlSpecificCodeScanner{
 					Scanner: s.InheritScanner(sql),
 					Pos: Pos{

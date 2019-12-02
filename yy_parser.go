@@ -48,11 +48,12 @@ var (
 	// ErrUnknownAlterAlgorithm returns for no alter algorithm found error.
 	ErrUnknownAlterAlgorithm = terror.ClassParser.New(mysql.ErrUnknownAlterAlgorithm, mysql.MySQLErrName[mysql.ErrUnknownAlterAlgorithm])
 	// SpecFieldPattern special result field pattern
-	SpecFieldPattern       = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
-	specCodePattern        = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
-	specCodeStart          = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
-	specCodeEnd            = regexp.MustCompile(`[ \t]*\*\/$`)
-	specVersionCodePattern = regexp.MustCompile(`\/\*v[0-9]{5}([^*]|\*+[^*/])*\*+\/`)
+	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
+	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
+	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
+	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
+	// SpecVersionCodePattern is a pattern for special comments with version.
+	SpecVersionCodePattern = regexp.MustCompile(`\/\*v[0-9]{5}([^*]|\*+[^*/])*\*+\/`)
 	specVersionCodeStart   = regexp.MustCompile(`^\/\*v[0-9]{5}[ \t]*`)
 )
 
