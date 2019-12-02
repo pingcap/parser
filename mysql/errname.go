@@ -989,7 +989,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidDDLState:            "Invalid %s state: %v",
 	ErrCancelledDDLJob:            "Cancelled DDL job",
 	ErrRepairTable:                "Failed to repair table: %s",
-	ErrInvalidAutoShard:           "Invalid auto shard: %s",
+	ErrInvalidAutoRandom:          "Invalid auto shard: %s",
 
 	ErrUnsupportedType:                     "Unsupported type %T",
 	ErrAnalyzeMissIndex:                    "Index '%s' in field list does not exist in table '%s'",

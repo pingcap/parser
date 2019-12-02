@@ -221,8 +221,8 @@ type TableInfo struct {
 	ShardRowIDBits uint64
 	// MaxShardRowIDBits uses to record the max ShardRowIDBits be used so far.
 	MaxShardRowIDBits uint64 `json:"max_shard_row_id_bits"`
-	// AutoShardBits is used to set the bit number to shard automatically when PKIsHandle == true.
-	AutoShardBits uint64 `json:"auto_shard_bits"`
+	// AutoRandomBits is used to set the bit number to shard automatically when PKIsHandle == true.
+	AutoRandomBits uint64 `json:"auto_shard_bits"`
 	// PreSplitRegions specify the pre-split region when create table.
 	// The pre-split region num is 2^(PreSplitRegions-1).
 	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
@@ -417,14 +417,14 @@ func (t *TableInfo) IsAutoIncColUnsigned() bool {
 	return mysql.HasUnsignedFlag(col.Flag)
 }
 
-// ContainsAutoShardBits indicates whether a table is auto_shard.
-func (t *TableInfo) ContainsAutoShardBits() bool {
-	return t.AutoShardBits != 0
+// ContainsAutoRandomBits indicates whether a table is auto_shard.
+func (t *TableInfo) ContainsAutoRandomBits() bool {
+	return t.AutoRandomBits != 0
 }
 
-// IsAutoShardBitColUnsigned indicates whether the auto_shard column is unsigned. Make sure the table contain auto_shard_bits before calling this method.
-func (t *TableInfo) IsAutoShardBitColUnsigned() bool {
-	if !t.PKIsHandle || t.AutoShardBits == 0 {
+// IsAutoRandomBitColUnsigned indicates whether the auto_shard column is unsigned. Make sure the table contain auto_shard_bits before calling this method.
+func (t *TableInfo) IsAutoRandomBitColUnsigned() bool {
+	if !t.PKIsHandle || t.AutoRandomBits == 0 {
 		return false
 	}
 	return mysql.HasUnsignedFlag(t.GetPkColInfo().Flag)

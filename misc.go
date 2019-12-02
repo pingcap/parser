@@ -25,7 +25,7 @@ type CommentCodeVersion = int
 
 const (
 	CommentCodeNoVersion = iota
-	CommentCodeAutoShard
+	CommentCodeAutoRandom
 
 	CommentCodeCurrentUnsupportedVersion
 )

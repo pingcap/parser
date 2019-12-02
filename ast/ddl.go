@@ -453,9 +453,9 @@ type ColumnOption struct {
 	// Stored is only for ColumnOptionGenerated, default is false.
 	Stored bool
 	// Refer is used for foreign key.
-	Refer              *ReferenceDef
-	StrValue           string
-	AutoShardBitLength int
+	Refer               *ReferenceDef
+	StrValue            string
+	AutoRandomBitLength int
 	// Enforced is only for Check, default is true.
 	Enforced bool
 }
@@ -534,8 +534,8 @@ func (n *ColumnOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord(n.StrValue)
 	case ColumnOptionAutoRandom:
 		ctx.WriteKeyWord("AUTO_RANDOM")
-		if n.AutoShardBitLength != types.UnspecifiedLength {
-			ctx.WritePlainf("(%d)", n.AutoShardBitLength)
+		if n.AutoRandomBitLength != types.UnspecifiedLength {
+			ctx.WritePlainf("(%d)", n.AutoRandomBitLength)
 		}
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")

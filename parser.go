@@ -10470,7 +10470,7 @@ yynewstate:
 		}
 	case 185:
 		{
-			parser.yyVAL.item = &ast.ColumnOption{Tp: ast.ColumnOptionAutoRandom, AutoShardBitLength: yyS[yypt-0].item.(int)}
+			parser.yyVAL.item = &ast.ColumnOption{Tp: ast.ColumnOptionAutoRandom, AutoRandomBitLength: yyS[yypt-0].item.(int)}
 		}
 	case 189:
 		{

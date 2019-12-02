@@ -2556,7 +2556,7 @@ ColumnOption:
 	}
 |	"AUTO_RANDOM" OptFieldLen
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoRandom, AutoShardBitLength: $2.(int)}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoRandom, AutoRandomBitLength: $2.(int)}
 	}
 
 StorageMedia:
