@@ -348,6 +348,7 @@ import (
 	execute		"EXECUTE"
 	expansion	"EXPANSION"
 	expire		"EXPIRE"
+	extended	"EXTENDED"
 	faultsSym	"FAULTS"
 	fields		"FIELDS"
 	first		"FIRST"
@@ -1199,6 +1200,8 @@ import (
 %precedence remove
 %precedence lowerThenOrder
 %precedence order
+%precedence extended
+%precedence lowerThanExtended
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
@@ -4543,7 +4546,7 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET"
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EVOLVE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "EXTENDED" | "ERRORS" | "ESCAPE" | "EVOLVE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"
 | "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SHUTDOWN" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
@@ -8319,7 +8322,7 @@ ShowTargetFilterable:
 		}
         $$ = show
 	}
-|	OptFull "COLUMNS" ShowTableAliasOpt ShowDatabaseNameOpt
+|	OptFull FieldsOrColumns ShowTableAliasOpt ShowDatabaseNameOpt
 	{
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowColumns,
@@ -8328,14 +8331,14 @@ ShowTargetFilterable:
 			Full:	$1.(bool),
 		}
 	}
-|	OptFull "FIELDS" ShowTableAliasOpt ShowDatabaseNameOpt
+|	"EXTENDED" OptFull FieldsOrColumns ShowTableAliasOpt ShowDatabaseNameOpt
 	{
-		// SHOW FIELDS is a synonym for SHOW COLUMNS.
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowColumns,
-			Table:	$3.(*ast.TableName),
-			DBName:	$4.(string),
-			Full:	$1.(bool),
+			Table:	$4.(*ast.TableName),
+			DBName:	$5.(string),
+			Full:	$2.(bool),
+			Extended: true,
 		}
 	}
 |	"WARNINGS"
@@ -8451,6 +8454,7 @@ GlobalScope:
 	}
 
 OptFull:
+	%prec lowerThanExtended
 	{
 		$$ = false
 	}
