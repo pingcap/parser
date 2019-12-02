@@ -269,16 +269,16 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 }
 
 func (s *testLexerSuite) TestSpecialCodeComment(c *C) {
-	l := NewScanner("/*v00001 auto_random(5) */")
+	l := NewScanner("/*T!00001 auto_random(5) */")
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "auto_random")
-	c.Assert(pos, Equals, Pos{0, 0, 9})
+	c.Assert(pos, Equals, Pos{0, 0, 10})
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int('('))
 	tok, pos, lit = l.scan()
 	c.Assert(lit, Equals, "5")
-	c.Assert(pos, Equals, Pos{0, 12, 21})
+	c.Assert(pos, Equals, Pos{0, 12, 22})
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int(')'))
 

@@ -55,9 +55,6 @@ type Scanner struct {
 	// lastScanOffset indicates last offset returned by scan().
 	// It's used to substring sql in syntax error message.
 	lastScanOffset int
-
-	// commentCodeVersion means the biggest number can be parsed in the comment with pattern /*!v00001 xxx */
-	commentCodeVersion CommentCodeVersion
 }
 
 type specialCommentScanner interface {
@@ -448,7 +445,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			}
 		}
 
-		if strings.HasPrefix(comment, "/*v") {
+		if strings.HasPrefix(comment, "/*T!") {
 			commentVersion := extractVersionCodeInComment(comment)
 			if commentVersion != CommentCodeNoVersion && commentVersion < CommentCodeCurrentUnsupportedVersion {
 				sql := SpecVersionCodePattern.ReplaceAllStringFunc(comment, TrimCodeVersionComment)
