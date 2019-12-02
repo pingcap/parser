@@ -1200,8 +1200,6 @@ import (
 %precedence remove
 %precedence lowerThenOrder
 %precedence order
-%precedence extended
-%precedence lowerThanExtended
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
@@ -8454,7 +8452,6 @@ GlobalScope:
 	}
 
 OptFull:
-	%prec lowerThanExtended
 	{
 		$$ = false
 	}
