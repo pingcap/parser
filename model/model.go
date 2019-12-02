@@ -417,12 +417,12 @@ func (t *TableInfo) IsAutoIncColUnsigned() bool {
 	return mysql.HasUnsignedFlag(col.Flag)
 }
 
-// ContainsAutoRandomBits indicates whether a table is auto_shard.
+// ContainsAutoRandomBits indicates whether a table contains auto_random column.
 func (t *TableInfo) ContainsAutoRandomBits() bool {
 	return t.AutoRandomBits != 0
 }
 
-// IsAutoRandomBitColUnsigned indicates whether the auto_shard column is unsigned. Make sure the table contain auto_shard_bits before calling this method.
+// IsAutoRandomBitColUnsigned indicates whether the auto_random column is unsigned. Make sure the table contains auto_random before calling this method.
 func (t *TableInfo) IsAutoRandomBitColUnsigned() bool {
 	if !t.PKIsHandle || t.AutoRandomBits == 0 {
 		return false
