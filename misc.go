@@ -14,10 +14,37 @@
 package parser
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
+
+type CommentCodeVersion = int
+
+const (
+	CommentCodeNoVersion = iota
+	CommentCodeAutoShard
+
+	CommentCodeCurrentUnsupportedVersion
+)
+
+func extractVersionCodeInComment(comment string) CommentCodeVersion {
+	if specVersionCodePattern.MatchString(comment) {
+		code, err := strconv.Atoi(comment[3 : 3+5])
+		if err != nil {
+			return CommentCodeNoVersion
+		}
+		return code
+	}
+	return CommentCodeNoVersion
+}
+
+// WrapStringWithCodeVersion convert a string `str` to `/*vxxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
+func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
+	return fmt.Sprintf("/*v%05d %s */", ccv, str)
+}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -153,7 +180,7 @@ var tokenMap = map[string]int{
 	"ASC":                      asc,
 	"ASCII":                    ascii,
 	"AUTO_INCREMENT":           autoIncrement,
-	"AUTO_SHARD_BITS":          autoShardBits,
+	"AUTO_RANDOM":              autoRandom,
 	"AVG":                      avg,
 	"AVG_ROW_LENGTH":           avgRowLength,
 	"BEGIN":                    begin,
