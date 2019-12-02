@@ -870,6 +870,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{`SHOW COLUMNS FROM City;`, true, "SHOW COLUMNS IN `City`"},
 		{`SHOW EXTENDED COLUMNS FROM City;`, true, "SHOW EXTENDED COLUMNS IN `City`"},
 		{`SHOW EXTENDED FIELDS FROM City;`, true, "SHOW EXTENDED COLUMNS IN `City`"},
+		// for show extended full columns
+		{`SHOW EXTENDED FULL COLUMNS FROM City;`, true, "SHOW EXTENDED FULL COLUMNS IN `City`"},
+		{`SHOW EXTENDED FULL FIELDS FROM City;`, true, "SHOW EXTENDED FULL COLUMNS IN `City`"},
 		// for show create table
 		{"show create table test.t", true, "SHOW CREATE TABLE `test`.`t`"},
 		{"show create table t", true, "SHOW CREATE TABLE `t`"},
