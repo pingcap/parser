@@ -585,6 +585,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// delete statement
 		// single table syntax
 		{"DELETE from t1", true, "DELETE FROM `t1`"},
+		{"DELETE from t1.*", false, ""},
 		{"DELETE LOW_priORITY from t1", true, "DELETE LOW_PRIORITY FROM `t1`"},
 		{"DELETE quick from t1", true, "DELETE QUICK FROM `t1`"},
 		{"DELETE ignore from t1", true, "DELETE IGNORE FROM `t1`"},
@@ -610,6 +611,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"delete t1,t2,t3 from t1, t2, t3 where t3.c < 5 and t1.a = 3", true, "DELETE `t1`,`t2`,`t3` FROM ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t3`.`c`<5 AND `t1`.`a`=3"},
 		{"delete t1 from t1, t1 as t2 where t1.b = t2.b and t1.a > t2.a", true, "DELETE `t1` FROM (`t1`) JOIN `t1` AS `t2` WHERE `t1`.`b`=`t2`.`b` AND `t1`.`a`>`t2`.`a`"},
 		{"delete t1.*,t2 from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete t.t1.*,t2 from t1, t2", true, "DELETE `t`.`t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete t1.*, t2.* from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete t11.*, t12.* from t11, t12 where t11.a = t12.a and t11.b <> 1", true, "DELETE `t11`,`t12` FROM (`t11`) JOIN `t12` WHERE `t11`.`a`=`t12`.`a` AND `t11`.`b`!=1"},
 
@@ -664,6 +666,9 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin reload expr_pushdown_blacklist", true, "ADMIN RELOAD EXPR_PUSHDOWN_BLACKLIST"},
 		{"admin plugins disable audit, whitelist", true, "ADMIN PLUGINS DISABLE audit, whitelist"},
 		{"admin plugins enable audit, whitelist", true, "ADMIN PLUGINS ENABLE audit, whitelist"},
+		{"admin flush bindings", true, "ADMIN FLUSH BINDINGS"},
+		{"admin capture bindings", true, "ADMIN CAPTURE BINDINGS"},
+		{"admin evolve bindings", true, "ADMIN EVOLVE BINDINGS"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -1856,6 +1861,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE TABLE foo (", false, ""},
 		{"CREATE TABLE foo ()", false, ""},
 		{"CREATE TABLE foo ();", false, ""},
+		{"CREATE TABLE foo.* (a varchar(50), b int);", false, ""},
 		{"CREATE TABLE foo (a varchar(50), b int);", true, "CREATE TABLE `foo` (`a` VARCHAR(50),`b` INT)"},
 		{"CREATE TABLE foo (a TINYINT UNSIGNED);", true, "CREATE TABLE `foo` (`a` TINYINT UNSIGNED)"},
 		{"CREATE TABLE foo (a SMALLINT UNSIGNED, b INT UNSIGNED)", true, "CREATE TABLE `foo` (`a` SMALLINT UNSIGNED,`b` INT UNSIGNED)"},
@@ -2113,7 +2119,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table test (create_date TIMESTAMP NOT NULL COMMENT '创建日期 create date' DEFAULT now());", true, "CREATE TABLE `test` (`create_date` TIMESTAMP NOT NULL COMMENT '创建日期 create date' DEFAULT CURRENT_TIMESTAMP())"},
 		{"create table ts (t int, v timestamp(3) default CURRENT_TIMESTAMP(3));", true, "CREATE TABLE `ts` (`t` INT,`v` TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3))"}, //TODO: The number yacc in parentheses has not been implemented yet.
 		// Create table with primary key name.
-		{"create table if not exists `t` (`id` int not null auto_increment comment '消息ID', primary key `pk_id` (`id`) );", true, "CREATE TABLE IF NOT EXISTS `t` (`id` INT NOT NULL AUTO_INCREMENT COMMENT '消息ID',PRIMARY KEY(`id`))"},
+		{"create table if not exists `t` (`id` int not null auto_increment comment '消息ID', primary key `pk_id` (`id`) );", true, "CREATE TABLE IF NOT EXISTS `t` (`id` INT NOT NULL AUTO_INCREMENT COMMENT '消息ID',PRIMARY KEY `pk_id`(`id`))"},
 		// Create table with like.
 		{"create table a like b", true, "CREATE TABLE `a` LIKE `b`"},
 		{"create table a (id int REFERENCES a (id) ON delete NO ACTION )", true, "CREATE TABLE `a` (`id` INT REFERENCES `a`(`id`) ON DELETE NO ACTION)"},
@@ -2191,6 +2197,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		},
 
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED)"},
+		{"ALTER TABLE t.* ADD COLUMN (a SMALLINT UNSIGNED)", false, ""},
 		{"ALTER TABLE t ADD COLUMN IF NOT EXISTS (a SMALLINT UNSIGNED)", true, "ALTER TABLE `t` ADD COLUMN IF NOT EXISTS (`a` SMALLINT UNSIGNED)"},
 		{"ALTER TABLE ADD COLUMN (a SMALLINT UNSIGNED)", false, ""},
 		{"ALTER TABLE t ADD COLUMN (a SMALLINT UNSIGNED, b varchar(255))", true, "ALTER TABLE `t` ADD COLUMN (`a` SMALLINT UNSIGNED, `b` VARCHAR(255))"},
@@ -2313,7 +2320,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD INDEX (a) USING RTREE COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING RTREE COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX(`a`) USING HASH COMMENT 'a'"},
 		{"ALTER TABLE t ADD KEY IF NOT EXISTS (a) USING HASH COMMENT 'a'", true, "ALTER TABLE `t` ADD INDEX IF NOT EXISTS(`a`) USING HASH COMMENT 'a'"},
-		{"ALTER TABLE t ADD PRIMARY KEY ident USING RTREE ( a DESC , b   )", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) USING RTREE"},
+		{"ALTER TABLE t ADD PRIMARY KEY ident USING RTREE ( a DESC , b   )", true, "ALTER TABLE `t` ADD PRIMARY KEY `ident`(`a`, `b`) USING RTREE"},
 		{"ALTER TABLE t ADD KEY USING RTREE   ( a ) ", true, "ALTER TABLE `t` ADD INDEX(`a`) USING RTREE"},
 		{"ALTER TABLE t ADD KEY USING RTREE ( ident ASC , ident ( 123 ) )", true, "ALTER TABLE `t` ADD INDEX(`ident`, `ident`(123)) USING RTREE"},
 		{"ALTER TABLE t ADD PRIMARY KEY (a) COMMENT 'a'", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`) COMMENT 'a'"},
@@ -2348,6 +2355,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t CONVERT TO CHARSET UTF8;", true, "ALTER TABLE `t` DEFAULT CHARACTER SET = UTF8"},
 		{"ALTER TABLE t CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN;", true, "ALTER TABLE `t` CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
 		{"ALTER TABLE t CONVERT TO CHARSET UTF8 COLLATE UTF8_BIN;", true, "ALTER TABLE `t` CONVERT TO CHARACTER SET UTF8 COLLATE UTF8_BIN"},
+
+		// alter table convert to character set default, issue #498
+		{"alter table d_n.t_n convert to character set default", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT"},
+		{"alter table d_n.t_n convert to charset default", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT"},
+		{"alter table d_n.t_n convert to char set default", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT"},
+		{"alter table d_n.t_n convert to character set default collate utf8mb4_0900_ai_ci", true, "ALTER TABLE `d_n`.`t_n` CONVERT TO CHARACTER SET DEFAULT COLLATE UTF8MB4_0900_AI_CI"},
+
 		{"ALTER TABLE t FORCE", true, "ALTER TABLE `t` FORCE /* AlterTableForce is not supported */ "},
 		{"ALTER TABLE t DROP INDEX;", false, "ALTER TABLE `t` DROP INDEX"},
 		{"ALTER TABLE t DROP INDEX a", true, "ALTER TABLE `t` DROP INDEX `a`"},
@@ -2637,7 +2651,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table stats_auto_recalc (a int) stats_auto_recalc=1;", true, "CREATE TABLE `stats_auto_recalc` (`a` INT) STATS_AUTO_RECALC = 1"},
 
 		// for TYPE/USING syntax
-		{"create table t (a int, primary key type type btree (a));", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
+		{"create table t (a int, primary key type type btree (a));", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY `type`(`a`) USING BTREE)"},
 		{"create table t (a int, primary key type btree (a));", false, ""},
 		{"create table t (a int, primary key using btree (a));", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
 		{"create table t (a int, primary key (a) type btree);", true, "CREATE TABLE `t` (`a` INT,PRIMARY KEY(`a`) USING BTREE)"},
@@ -3705,8 +3719,10 @@ func (s *testParserSuite) TestBinding(c *C) {
 	table := []testCase{
 		{"create global binding for select * from t using select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"create session binding for select * from t using select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
-		{"create global binding for select * from t using select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
-		{"create session binding for select * from t using select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop global binding for select * from t", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t`"},
+		{"drop session binding for select * from t", true, "DROP SESSION BINDING FOR SELECT * FROM `t`"},
+		{"drop global binding for select * from t using select * from t use index(a)", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop session binding for select * from t using select * from t use index(a)", true, "DROP SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"show global bindings", true, "SHOW GLOBAL BINDINGS"},
 		{"show session bindings", true, "SHOW SESSION BINDINGS"},
 	}
@@ -3973,6 +3989,7 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 func (s *testParserSuite) TestAnalyze(c *C) {
 	table := []testCase{
 		{"analyze table t1", true, "ANALYZE TABLE `t1`"},
+		{"analyze table t1.*", false, ""},
 		{"analyze table t,t1", true, "ANALYZE TABLE `t`,`t1`"},
 		{"analyze table t1 index", true, "ANALYZE TABLE `t1` INDEX"},
 		{"analyze table t1 index a", true, "ANALYZE TABLE `t1` INDEX `a`"},
@@ -4617,6 +4634,22 @@ func (s *testParserSuite) TestFulltextSearch(c *C) {
 	writer.Reset()
 	st.(*ast.SelectStmt).Where.Format(writer)
 	c.Assert(writer.String(), Equals, "MATCH(title,content) AGAINST(\"search\" WITH QUERY EXPANSION)")
+}
+
+func (s *testParserSuite) TestStartTransaction(c *C) {
+	cases := []testCase{
+		{"START TRANSACTION READ WRITE", true, "START TRANSACTION"},
+		{"START TRANSACTION READ ONLY", true, "START TRANSACTION READ ONLY"},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND", false, ""},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND STRONG", true, "START TRANSACTION READ ONLY WITH TIMESTAMP BOUND STRONG"},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND MAX STALENESS '00:00:10'", true, "START TRANSACTION READ ONLY WITH TIMESTAMP BOUND MAX STALENESS '00:00:10'"},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND EXACT STALENESS '00:00:05'", true, "START TRANSACTION READ ONLY WITH TIMESTAMP BOUND EXACT STALENESS '00:00:05'"},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND READ TIMESTAMP '2019-11-04 00:00:00'", true, "START TRANSACTION READ ONLY WITH TIMESTAMP BOUND READ TIMESTAMP '2019-11-04 00:00:00'"},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND MIN READ TIMESTAMP '2019-11-04 00:00:00'", true, "START TRANSACTION READ ONLY WITH TIMESTAMP BOUND MIN READ TIMESTAMP '2019-11-04 00:00:00'"},
+		{"START TRANSACTION READ ONLY WITH TIMESTAMP BOUND MIN TIMESTAMP '2019-11-04 00:00:00'", false, ""},
+	}
+
+	s.RunTest(c, cases)
 }
 
 // CleanNodeText set the text of node and all child node empty.
