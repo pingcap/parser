@@ -25,10 +25,10 @@ import (
 type CommentCodeVersion int
 
 const (
-	CommentCodeNoVersion CommentCodeVersion = iota
-	CommentCodeAutoRandom
+	CommentCodeNoVersion  CommentCodeVersion = iota
+	CommentCodeAutoRandom CommentCodeVersion = 40000
 
-	CommentCodeCurrentUnsupportedVersion
+	CommentCodeCurrentVersion
 )
 
 func (ccv CommentCodeVersion) String() string {
@@ -37,7 +37,11 @@ func (ccv CommentCodeVersion) String() string {
 
 func extractVersionCodeInComment(comment string) CommentCodeVersion {
 	if SpecVersionCodePattern.MatchString(comment) {
-		code, err := strconv.Atoi(comment[4 : 4+5])
+		verDigitNum := 5
+		if isDigit(rune(comment[len("/*T!xxxxx")])) {
+			verDigitNum += 1
+		}
+		code, err := strconv.Atoi(comment[4 : 4+verDigitNum])
 		if err != nil {
 			return CommentCodeNoVersion
 		}

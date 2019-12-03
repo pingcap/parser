@@ -53,8 +53,8 @@ var (
 	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
 	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
 	// SpecVersionCodePattern is a pattern for special comments with version.
-	SpecVersionCodePattern = regexp.MustCompile(`\/\*T![0-9]{5}([^*]|\*+[^*/])*\*+\/`)
-	specVersionCodeStart   = regexp.MustCompile(`^\/\*T![0-9]{5}[ \t]*`)
+	SpecVersionCodePattern = regexp.MustCompile(`\/\*T![0-9]{5,6}([^*]|\*+[^*/])*\*+\/`)
+	specVersionCodeStart   = regexp.MustCompile(`^\/\*T![0-9]{5,6}[ \t]*`)
 )
 
 func init() {

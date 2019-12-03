@@ -269,7 +269,12 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 }
 
 func (s *testLexerSuite) TestSpecialCodeComment(c *C) {
-	l := NewScanner("/*T!00001 auto_random(5) */")
+	specCmt := "/*T!123456 auto_random(5) */"
+	c.Assert(extractVersionCodeInComment(specCmt), Equals, CommentCodeVersion(123456))
+
+	specCmt = "/*T!40000 auto_random(5) */"
+	c.Assert(extractVersionCodeInComment(specCmt), Equals, CommentCodeAutoRandom)
+	l := NewScanner(specCmt)
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "auto_random")
@@ -282,7 +287,7 @@ func (s *testLexerSuite) TestSpecialCodeComment(c *C) {
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int(')'))
 
-	l = NewScanner(WrapStringWithCodeVersion("auto_random(5)", CommentCodeCurrentUnsupportedVersion))
+	l = NewScanner(WrapStringWithCodeVersion("auto_random(5)", CommentCodeCurrentVersion+1))
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, 0)
 }
