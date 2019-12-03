@@ -282,6 +282,7 @@ var tokenMap = map[string]int{
 	"EXPANSION":                expansion,
 	"EXPIRE":                   expire,
 	"EXPLAIN":                  explain,
+	"EXTENDED":                 extended,
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
 	"FAULTS":                   faultsSym,
@@ -417,6 +418,7 @@ var tokenMap = map[string]int{
 	"NEXT_ROW_ID":              next_row_id,
 	"NO":                       no,
 	"NO_INDEX_MERGE":           hintNoIndexMerge,
+	"NO_SWAP_JOIN_INPUTS":      hintNSJI,
 	"NO_WRITE_TO_BINLOG":       noWriteToBinLog,
 	"NODE_ID":                  nodeID,
 	"NODE_STATE":               nodeState,
@@ -509,6 +511,7 @@ var tokenMap = map[string]int{
 	"ROW_FORMAT":               rowFormat,
 	"RTREE":                    rtree,
 	"SAMPLES":                  samples,
+	"SWAP_JOIN_INPUTS":         hintSJI,
 	"SCHEMA":                   database,
 	"SCHEMAS":                  databases,
 	"SECOND":                   second,
@@ -774,7 +777,7 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		}
 	}
 
-	checkBtFuncToken, tokenStr := false, string(data)
+	checkBtFuncToken := false
 	if s.r.peek() == '(' {
 		checkBtFuncToken = true
 	} else if s.sqlMode.HasIgnoreSpaceMode() {
@@ -784,7 +787,7 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		}
 	}
 	if checkBtFuncToken {
-		if tok := btFuncTokenMap[tokenStr]; tok != 0 {
+		if tok := btFuncTokenMap[string(data)]; tok != 0 {
 			return tok
 		}
 	}
