@@ -319,6 +319,7 @@ var tokenMap = map[string]int{
 	"EXPANSION":                expansion,
 	"EXPIRE":                   expire,
 	"EXPLAIN":                  explain,
+	"EXTENDED":                 extended,
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
 	"FAULTS":                   faultsSym,
