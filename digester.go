@@ -31,7 +31,7 @@ import (
 //
 // for example: both DigestHash('select 1') and DigestHash('select 2') => e1c71d1661ae46e09b7aaec1c390957f0d6260410df4e4bc71b9c8d681021471
 //
-// Deprecate: It is logically consistent with NormalizeDigest.
+// Deprecated: It is logically consistent with NormalizeDigest.
 func DigestHash(sql string) (result string) {
 	d := digesterPool.Get().(*sqlDigester)
 	result = d.doDigest(sql)
