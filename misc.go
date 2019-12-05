@@ -437,6 +437,7 @@ var tokenMap = map[string]int{
 	"REFERENCES":               references,
 	"REGEXP":                   regexpKwd,
 	"REGIONS":                  regions,
+	"REGION":                   region,
 	"RELOAD":                   reload,
 	"RENAME":                   rename,
 	"REPEAT":                   repeat,

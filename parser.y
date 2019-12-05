@@ -546,6 +546,7 @@ import (
 	tidbINLJ	"TIDB_INLJ"
 	split		"SPLIT"
 	regions         "REGIONS"
+	region          "REGION"
 
 	builtinAddDate
 	builtinBitAnd
@@ -872,6 +873,7 @@ import (
 	ShowProfileType			"Show profile type"
 	ShowProfileTypes		"Show profile types"
 	SplitOption			"Split Option"
+	SplitSyntaxOption		"Split syntax Option"
 	Starting			"Starting by"
 	StatementList			"statement list"
 	StatsPersistentVal		"stats_persistent value"
@@ -1560,19 +1562,23 @@ RecoverTableStmt:
  *
  *******************************************************************/
 SplitRegionStmt:
-	"SPLIT" "TABLE" TableName SplitOption
+	"SPLIT" SplitSyntaxOption "TABLE" TableName PartitionNameListOpt SplitOption
 	{
 		$$ = &ast.SplitRegionStmt{
-			Table: $3.(*ast.TableName),
-			SplitOpt: $4.(*ast.SplitOption),
+			SplitSyntaxOpt: $2.(*ast.SplitSyntaxOption),
+			Table: $4.(*ast.TableName),
+			PartitionNames: $5.([]model.CIStr),
+			SplitOpt: $6.(*ast.SplitOption),
 		}
 	}
-|	"SPLIT" "TABLE" TableName "INDEX" Identifier SplitOption
+|	"SPLIT" SplitSyntaxOption "TABLE" TableName PartitionNameListOpt "INDEX" Identifier SplitOption
 	{
 		$$ = &ast.SplitRegionStmt{
-			Table: $3.(*ast.TableName),
-			IndexName: model.NewCIStr($5),
-			SplitOpt: $6.(*ast.SplitOption),
+			SplitSyntaxOpt: $2.(*ast.SplitSyntaxOption),
+			Table: $4.(*ast.TableName),
+			PartitionNames: $5.([]model.CIStr),
+			IndexName: model.NewCIStr($7),
+			SplitOpt: $8.(*ast.SplitOption),
 		}
 	}
 
@@ -1589,6 +1595,31 @@ SplitOption:
 	{
 		$$ = &ast.SplitOption{
 			ValueLists: $2.([][]ast.ExprNode),
+		}
+	}
+
+SplitSyntaxOption:
+	/* empty */
+	{
+		$$ = &ast.SplitSyntaxOption{}
+	}
+|	"REGION" "FOR"
+	{
+		$$ = &ast.SplitSyntaxOption{
+			HasRegionFor: true,
+		}
+	}
+|	"PARTITION"
+	{
+		$$ = &ast.SplitSyntaxOption{
+			HasPartition: true,
+		}
+	}
+|	"REGION" "FOR" "PARTITION"
+	{
+		$$ = &ast.SplitSyntaxOption{
+			HasRegionFor: true,
+			HasPartition: true,
 		}
 	}
 
@@ -3685,7 +3716,7 @@ UnReservedKeyword:
 
 TiDBKeyword:
  "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
+| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS" | "REGION"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
