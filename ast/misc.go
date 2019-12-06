@@ -1952,6 +1952,7 @@ type GrantStmt struct {
 	ObjectType ObjectTypeType
 	Level      *GrantLevel
 	Users      []*UserSpec
+	TslOptions []*TslOption
 	WithGrant  bool
 }
 
@@ -1985,6 +1986,21 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore GrantStmt.Users[%d]", i)
+		}
+	}
+	if n.TslOptions != nil {
+		tslOptionLen := len(n.TslOptions)
+		if tslOptionLen != 0 {
+			ctx.WriteKeyWord(" REQUIRE ")
+		}
+		// Restore `tslOptions` reversely to keep order the same with original sql
+		for i := tslOptionLen; i > 0; i-- {
+			if i != tslOptionLen {
+				ctx.WriteKeyWord(" AND ")
+			}
+			if err := n.TslOptions[i-1].Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TslOptions[%d]", i)
+			}
 		}
 	}
 	if n.WithGrant {
