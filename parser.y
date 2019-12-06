@@ -867,9 +867,6 @@ import (
 	IfExists			"If Exists"
 	IfNotExists			"If Not Exists"
 	IgnoreOptional			"IGNORE or empty"
-	IndexColName			"Index column name"
-	IndexColNameList		"List of index column name"
-	IndexColNameListOpt		"List of index column name opt"
 	IndexHint			"index hint"
 	IndexHintList			"index hint list"
 	IndexHintListOpt		"index hint list opt"
@@ -891,6 +888,7 @@ import (
 	JoinType			"join type"
 	KeyPartSpecification		"Index column name or expression"
   	KeyPartSpecificationList	"List of index column name or expression"
+  	KeyPartSpecificationListOpt     "Optional list of index column name or expression"
 	KillOrKillTiDB			"Kill or Kill TiDB"
 	LocationLabelList		"location label name list"
 	LikeEscapeOpt 			"like escape option"
@@ -2659,7 +2657,7 @@ ColumnOptionListOpt:
 	}
 
 ConstraintElem:
-	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
+	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' KeyPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp: ast.ConstraintPrimaryKey,
@@ -2677,7 +2675,7 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexColNameList ')' IndexOptionList
+|	"FULLTEXT" KeyOrIndexOpt IndexName '(' KeyPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintFulltext,
@@ -2726,7 +2724,7 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FOREIGN" "KEY" IfNotExists IndexName '(' IndexColNameList ')' ReferDef
+|	"FOREIGN" "KEY" IfNotExists IndexName '(' KeyPartSpecificationList ')' ReferDef
 	{
 		$$ = &ast.Constraint{
 			IfNotExists:	$3.(bool),
@@ -2773,7 +2771,7 @@ MatchOpt:
 	}
 
 ReferDef:
-	"REFERENCES" TableName IndexColNameListOpt MatchOpt OnDeleteUpdateOpt
+	"REFERENCES" TableName KeyPartSpecificationListOpt MatchOpt OnDeleteUpdateOpt
 	{
 		onDeleteUpdate := $5.([2]interface{})
 		$$ = &ast.ReferenceDef{
@@ -2785,15 +2783,6 @@ ReferDef:
 		}
 	}
 
-IndexColNameListOpt:
-{
-	$$ = ([]*ast.KeyPartSpecification)(nil)
-}
-|
-'(' IndexColNameList ')'
-{
-	$$ = $2
-}
 
 OnDelete:
 	"ON" "DELETE" ReferOpt
@@ -2973,22 +2962,15 @@ CreateIndexStmt:
 		}
 	}
 
-IndexColName:
-	ColumnName OptFieldLen Order
+KeyPartSpecificationListOpt:
 	{
-		//Order is parsed but just ignored as MySQL did
-		$$ = &ast.KeyPartSpecification{Column: $1.(*ast.ColumnName), Length: $2.(int)}
-	}
-
-IndexColNameList:
-	IndexColName
-	{
-		$$ = []*ast.KeyPartSpecification{$1.(*ast.KeyPartSpecification)}
-	}
-|	IndexColNameList ',' IndexColName
-	{
-		$$ = append($1.([]*ast.KeyPartSpecification), $3.(*ast.KeyPartSpecification))
-	}
+        	$$ = ([]*ast.KeyPartSpecification)(nil)
+        }
+        |
+        '(' KeyPartSpecificationList ')'
+        {
+        	$$ = $2
+        }
 
 KeyPartSpecificationList:
 	KeyPartSpecification
@@ -3001,7 +2983,11 @@ KeyPartSpecificationList:
 	}
 
 KeyPartSpecification:
-	IndexColName
+	ColumnName OptFieldLen Order
+	{
+		//Order is parsed but just ignored as MySQL did
+		$$ = &ast.KeyPartSpecification{Column: $1.(*ast.ColumnName), Length: $2.(int)}
+	}
 |	'(' Expression ')' Order
 	{
 		$$ = &ast.KeyPartSpecification{Expr: $2}
