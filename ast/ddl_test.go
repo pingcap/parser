@@ -25,7 +25,7 @@ type testDDLSuite struct {
 
 func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	ce := &checkExpr{}
-	constraint := &Constraint{Keys: []*IndexColNameWithExpr{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}
+	constraint := &Constraint{Keys: []*KeyPartSpecification{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}
 
 	alterTableSpec := &AlterTableSpec{Constraint: constraint, Options: []*TableOption{{}}, NewTable: &TableName{}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}, OldColumnName: &ColumnName{}, Position: &ColumnPosition{RelativeColumn: &ColumnName{}}}
 
@@ -51,9 +51,9 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&ColumnDef{Name: &ColumnName{}, Options: []*ColumnOption{{Expr: ce}}}, 1, 1},
 		{&ColumnOption{Expr: ce}, 1, 1},
 		{&ColumnPosition{RelativeColumn: &ColumnName{}}, 0, 0},
-		{&Constraint{Keys: []*IndexColNameWithExpr{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}, 0, 0},
-		{&IndexColNameWithExpr{Column: &ColumnName{}}, 0, 0},
-		{&ReferenceDef{Table: &TableName{}, IndexColNameWithExprs: []*IndexColNameWithExpr{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, OnDelete: &OnDeleteOpt{}, OnUpdate: &OnUpdateOpt{}}, 0, 0},
+		{&Constraint{Keys: []*KeyPartSpecification{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}, 0, 0},
+		{&KeyPartSpecification{Column: &ColumnName{}}, 0, 0},
+		{&ReferenceDef{Table: &TableName{}, KeyPartSpecification: []*KeyPartSpecification{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, OnDelete: &OnDeleteOpt{}, OnUpdate: &OnUpdateOpt{}}, 0, 0},
 		{&AlterTableSpec{NewConstraints: []*Constraint{constraint, constraint}}, 0, 0},
 		{&AlterTableSpec{NewConstraints: []*Constraint{constraint}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}}, 0, 0},
 	}
@@ -71,9 +71,10 @@ func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"(a + 1)", "(`a`+1)"},
 		{"(1 * 1 + (1 + 1))", "(1*1+(1+1))"},
+		{"((1 * 1 + (1 + 1)))", "((1*1+(1+1)))"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*CreateIndexStmt).IndexColNameWithExprs[0]
+		return node.(*CreateIndexStmt).KeyPartSpecification[0]
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
 }
@@ -84,7 +85,7 @@ func (ts *testDDLSuite) TestDDLIndexExprRestore(c *C) {
 		{"world(2)", "`world`(2)"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*CreateIndexStmt).IndexColNameWithExprs[0]
+		return node.(*CreateIndexStmt).KeyPartSpecification[0]
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
 }
