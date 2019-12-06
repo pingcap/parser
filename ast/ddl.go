@@ -192,7 +192,7 @@ func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// KeyPartSpecification is used for parsing index column name or index expression from SQL.
+// KeyPartSpecifications is used for parsing index column name or index expression from SQL.
 type KeyPartSpecification struct {
 	node
 
@@ -206,13 +206,13 @@ func (n *KeyPartSpecification) Restore(ctx *RestoreCtx) error {
 	if n.Expr != nil {
 		ctx.WritePlainf("(")
 		if err := n.Expr.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while splicing KeyPartSpecification")
+			return errors.Annotate(err, "An error occurred while splicing KeyPartSpecifications")
 		}
 		ctx.WritePlainf(")")
 		return nil
 	}
 	if err := n.Column.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing KeyPartSpecification")
+		return errors.Annotate(err, "An error occurred while splicing KeyPartSpecifications")
 	}
 	if n.Length > 0 {
 		ctx.WritePlainf("(%d)", n.Length)
@@ -259,11 +259,11 @@ const (
 type ReferenceDef struct {
 	node
 
-	Table                *TableName
-	KeyPartSpecification []*KeyPartSpecification
-	OnDelete             *OnDeleteOpt
-	OnUpdate             *OnUpdateOpt
-	Match                MatchType
+	Table                 *TableName
+	KeyPartSpecifications []*KeyPartSpecification
+	OnDelete              *OnDeleteOpt
+	OnUpdate              *OnUpdateOpt
+	Match                 MatchType
 }
 
 // Restore implements Node interface.
@@ -275,14 +275,14 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if n.KeyPartSpecification != nil {
+	if n.KeyPartSpecifications != nil {
 		ctx.WritePlain("(")
-		for i, indexColNames := range n.KeyPartSpecification {
+		for i, indexColNames := range n.KeyPartSpecifications {
 			if i > 0 {
 				ctx.WritePlain(", ")
 			}
 			if err := indexColNames.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while splicing KeyPartSpecification: [%v]", i)
+				return errors.Annotatef(err, "An error occurred while splicing KeyPartSpecifications: [%v]", i)
 			}
 		}
 		ctx.WritePlain(")")
@@ -326,12 +326,12 @@ func (n *ReferenceDef) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.KeyPartSpecification {
+	for i, val := range n.KeyPartSpecifications {
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.KeyPartSpecification[i] = node.(*KeyPartSpecification)
+		n.KeyPartSpecifications[i] = node.(*KeyPartSpecification)
 	}
 	onDelete, ok := n.OnDelete.Accept(v)
 	if !ok {
@@ -1328,12 +1328,12 @@ type CreateIndexStmt struct {
 	// see https://mariadb.com/kb/en/library/create-index/
 	IfNotExists bool
 
-	IndexName            string
-	Table                *TableName
-	KeyPartSpecification []*KeyPartSpecification
-	IndexOption          *IndexOption
-	KeyType              IndexKeyType
-	LockAlg              *IndexLockAndAlgorithm
+	IndexName             string
+	Table                 *TableName
+	KeyPartSpecifications []*KeyPartSpecification
+	IndexOption           *IndexOption
+	KeyType               IndexKeyType
+	LockAlg               *IndexLockAndAlgorithm
 }
 
 // Restore implements Node interface.
@@ -1358,12 +1358,12 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	ctx.WritePlain(" (")
-	for i, indexColName := range n.KeyPartSpecification {
+	for i, indexColName := range n.KeyPartSpecifications {
 		if i != 0 {
 			ctx.WritePlain(", ")
 		}
 		if err := indexColName.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.KeyPartSpecification: [%v]", i)
+			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.KeyPartSpecifications: [%v]", i)
 		}
 	}
 	ctx.WritePlain(")")
@@ -1397,12 +1397,12 @@ func (n *CreateIndexStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.KeyPartSpecification {
+	for i, val := range n.KeyPartSpecifications {
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.KeyPartSpecification[i] = node.(*KeyPartSpecification)
+		n.KeyPartSpecifications[i] = node.(*KeyPartSpecification)
 	}
 	if n.IndexOption != nil {
 		node, ok := n.IndexOption.Accept(v)

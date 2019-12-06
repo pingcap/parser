@@ -2776,7 +2776,7 @@ ReferDef:
 		onDeleteUpdate := $5.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
-			KeyPartSpecification: $3.([]*ast.KeyPartSpecification),
+			KeyPartSpecifications: $3.([]*ast.KeyPartSpecification),
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
 			Match: $4.(ast.MatchType),
@@ -2955,7 +2955,7 @@ CreateIndexStmt:
 			IfNotExists:   $4.(bool),
 			IndexName:     $5,
 			Table:         $8.(*ast.TableName),
-			KeyPartSpecification: $10.([]*ast.KeyPartSpecification),
+			KeyPartSpecifications: $10.([]*ast.KeyPartSpecification),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
 			LockAlg:       indexLockAndAlgorithm,

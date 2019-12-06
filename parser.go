@@ -10710,11 +10710,11 @@ yynewstate:
 		{
 			onDeleteUpdate := yyS[yypt-0].item.([2]interface{})
 			parser.yyVAL.item = &ast.ReferenceDef{
-				Table:                yyS[yypt-3].item.(*ast.TableName),
-				KeyPartSpecification: yyS[yypt-2].item.([]*ast.KeyPartSpecification),
-				OnDelete:             onDeleteUpdate[0].(*ast.OnDeleteOpt),
-				OnUpdate:             onDeleteUpdate[1].(*ast.OnUpdateOpt),
-				Match:                yyS[yypt-1].item.(ast.MatchType),
+				Table:                 yyS[yypt-3].item.(*ast.TableName),
+				KeyPartSpecifications: yyS[yypt-2].item.([]*ast.KeyPartSpecification),
+				OnDelete:              onDeleteUpdate[0].(*ast.OnDeleteOpt),
+				OnUpdate:              onDeleteUpdate[1].(*ast.OnUpdateOpt),
+				Match:                 yyS[yypt-1].item.(ast.MatchType),
 			}
 		}
 	case 216:
@@ -10815,13 +10815,13 @@ yynewstate:
 				}
 			}
 			parser.yyVAL.statement = &ast.CreateIndexStmt{
-				IfNotExists:          yyS[yypt-9].item.(bool),
-				IndexName:            yyS[yypt-8].ident,
-				Table:                yyS[yypt-5].item.(*ast.TableName),
-				KeyPartSpecification: yyS[yypt-3].item.([]*ast.KeyPartSpecification),
-				IndexOption:          indexOption,
-				KeyType:              yyS[yypt-11].item.(ast.IndexKeyType),
-				LockAlg:              indexLockAndAlgorithm,
+				IfNotExists:           yyS[yypt-9].item.(bool),
+				IndexName:             yyS[yypt-8].ident,
+				Table:                 yyS[yypt-5].item.(*ast.TableName),
+				KeyPartSpecifications: yyS[yypt-3].item.([]*ast.KeyPartSpecification),
+				IndexOption:           indexOption,
+				KeyType:               yyS[yypt-11].item.(ast.IndexKeyType),
+				LockAlg:               indexLockAndAlgorithm,
 			}
 		}
 	case 247:
