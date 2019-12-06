@@ -41,7 +41,7 @@ var (
 	_ Node = &ColumnOption{}
 	_ Node = &ColumnPosition{}
 	_ Node = &Constraint{}
-	_ Node = &IndexColName{}
+	_ Node = &IndexColNameWithExpr{}
 	_ Node = &ReferenceDef{}
 )
 
@@ -192,18 +192,27 @@ func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// IndexColName is used for parsing index column name from SQL.
-type IndexColName struct {
+// IndexColNameWithExpr is used for parsing index column name from SQL.
+type IndexColNameWithExpr struct {
 	node
 
 	Column *ColumnName
 	Length int
+	Expr   ExprNode
 }
 
 // Restore implements Node interface.
-func (n *IndexColName) Restore(ctx *RestoreCtx) error {
+func (n *IndexColNameWithExpr) Restore(ctx *RestoreCtx) error {
+	if n.Expr != nil {
+		ctx.WritePlainf("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing IndexColNameWithExpr")
+		}
+		ctx.WritePlainf(")")
+		return nil
+	}
 	if err := n.Column.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing IndexColName")
+		return errors.Annotate(err, "An error occurred while splicing IndexColNameWithExpr")
 	}
 	if n.Length > 0 {
 		ctx.WritePlainf("(%d)", n.Length)
@@ -212,12 +221,20 @@ func (n *IndexColName) Restore(ctx *RestoreCtx) error {
 }
 
 // Accept implements Node Accept interface.
-func (n *IndexColName) Accept(v Visitor) (Node, bool) {
+func (n *IndexColNameWithExpr) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
-	n = newNode.(*IndexColName)
+	n = newNode.(*IndexColNameWithExpr)
+	if n.Expr != nil {
+		node, ok := n.Expr.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Expr = node.(ExprNode)
+		return v.Leave(n)
+	}
 	node, ok := n.Column.Accept(v)
 	if !ok {
 		return n, false
@@ -242,11 +259,11 @@ const (
 type ReferenceDef struct {
 	node
 
-	Table         *TableName
-	IndexColNames []*IndexColName
-	OnDelete      *OnDeleteOpt
-	OnUpdate      *OnUpdateOpt
-	Match         MatchType
+	Table                 *TableName
+	IndexColNameWithExprs []*IndexColNameWithExpr
+	OnDelete              *OnDeleteOpt
+	OnUpdate              *OnUpdateOpt
+	Match                 MatchType
 }
 
 // Restore implements Node interface.
@@ -258,14 +275,14 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if n.IndexColNames != nil {
+	if n.IndexColNameWithExprs != nil {
 		ctx.WritePlain("(")
-		for i, indexColNames := range n.IndexColNames {
+		for i, indexColNames := range n.IndexColNameWithExprs {
 			if i > 0 {
 				ctx.WritePlain(", ")
 			}
 			if err := indexColNames.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
+				return errors.Annotatef(err, "An error occurred while splicing IndexColNameWithExprs: [%v]", i)
 			}
 		}
 		ctx.WritePlain(")")
@@ -309,12 +326,12 @@ func (n *ReferenceDef) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.IndexColNames {
+	for i, val := range n.IndexColNameWithExprs {
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.IndexColNames[i] = node.(*IndexColName)
+		n.IndexColNameWithExprs[i] = node.(*IndexColNameWithExpr)
 	}
 	onDelete, ok := n.OnDelete.Accept(v)
 	if !ok {
@@ -667,7 +684,7 @@ type Constraint struct {
 	Tp   ConstraintType
 	Name string
 
-	Keys []*IndexColName // Used for PRIMARY KEY, UNIQUE, ......
+	Keys []*IndexColNameWithExpr // Used for PRIMARY KEY, UNIQUE, ......
 
 	Refer *ReferenceDef // Used for foreign key.
 
@@ -778,7 +795,7 @@ func (n *Constraint) Accept(v Visitor) (Node, bool) {
 		if !ok {
 			return n, false
 		}
-		n.Keys[i] = node.(*IndexColName)
+		n.Keys[i] = node.(*IndexColNameWithExpr)
 	}
 	if n.Refer != nil {
 		node, ok := n.Refer.Accept(v)
@@ -1311,12 +1328,12 @@ type CreateIndexStmt struct {
 	// see https://mariadb.com/kb/en/library/create-index/
 	IfNotExists bool
 
-	IndexName     string
-	Table         *TableName
-	IndexColNames []*IndexColName
-	IndexOption   *IndexOption
-	KeyType       IndexKeyType
-	LockAlg       *IndexLockAndAlgorithm
+	IndexName             string
+	Table                 *TableName
+	IndexColNameWithExprs []*IndexColNameWithExpr
+	IndexOption           *IndexOption
+	KeyType               IndexKeyType
+	LockAlg               *IndexLockAndAlgorithm
 }
 
 // Restore implements Node interface.
@@ -1341,12 +1358,12 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	ctx.WritePlain(" (")
-	for i, indexColName := range n.IndexColNames {
+	for i, indexColName := range n.IndexColNameWithExprs {
 		if i != 0 {
 			ctx.WritePlain(", ")
 		}
 		if err := indexColName.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.IndexColNames: [%v]", i)
+			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.IndexColNameWithExprs: [%v]", i)
 		}
 	}
 	ctx.WritePlain(")")
@@ -1380,12 +1397,12 @@ func (n *CreateIndexStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.IndexColNames {
+	for i, val := range n.IndexColNameWithExprs {
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.IndexColNames[i] = node.(*IndexColName)
+		n.IndexColNameWithExprs[i] = node.(*IndexColNameWithExpr)
 	}
 	if n.IndexOption != nil {
 		node, ok := n.IndexOption.Accept(v)

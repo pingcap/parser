@@ -25,7 +25,7 @@ type testDDLSuite struct {
 
 func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	ce := &checkExpr{}
-	constraint := &Constraint{Keys: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}
+	constraint := &Constraint{Keys: []*IndexColNameWithExpr{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}
 
 	alterTableSpec := &AlterTableSpec{Constraint: constraint, Options: []*TableOption{{}}, NewTable: &TableName{}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}, OldColumnName: &ColumnName{}, Position: &ColumnPosition{RelativeColumn: &ColumnName{}}}
 
@@ -51,9 +51,9 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&ColumnDef{Name: &ColumnName{}, Options: []*ColumnOption{{Expr: ce}}}, 1, 1},
 		{&ColumnOption{Expr: ce}, 1, 1},
 		{&ColumnPosition{RelativeColumn: &ColumnName{}}, 0, 0},
-		{&Constraint{Keys: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}, 0, 0},
-		{&IndexColName{Column: &ColumnName{}}, 0, 0},
-		{&ReferenceDef{Table: &TableName{}, IndexColNames: []*IndexColName{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, OnDelete: &OnDeleteOpt{}, OnUpdate: &OnUpdateOpt{}}, 0, 0},
+		{&Constraint{Keys: []*IndexColNameWithExpr{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}, 0, 0},
+		{&IndexColNameWithExpr{Column: &ColumnName{}}, 0, 0},
+		{&ReferenceDef{Table: &TableName{}, IndexColNameWithExprs: []*IndexColNameWithExpr{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, OnDelete: &OnDeleteOpt{}, OnUpdate: &OnUpdateOpt{}}, 0, 0},
 		{&AlterTableSpec{NewConstraints: []*Constraint{constraint, constraint}}, 0, 0},
 		{&AlterTableSpec{NewConstraints: []*Constraint{constraint}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}}, 0, 0},
 	}
@@ -69,11 +69,22 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 
 func (ts *testDDLSuite) TestDDLIndexColNameRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
+		{"(a + 1)", "(`a`+1)"},
+		{"(1 * 1 + (1 + 1))", "(1*1+(1+1))"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*CreateIndexStmt).IndexColNameWithExprs[0]
+	}
+	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestDDLIndexExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
 		{"world", "`world`"},
 		{"world(2)", "`world`(2)"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*CreateIndexStmt).IndexColNames[0]
+		return node.(*CreateIndexStmt).IndexColNameWithExprs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "CREATE INDEX idx ON t (%s) USING HASH", extractNodeFunc)
 }
@@ -155,10 +166,19 @@ func (ts *testDDLSuite) TestDDLConstraintRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"INDEX par_ind (parent_id)", "INDEX `par_ind`(`parent_id`)"},
 		{"INDEX par_ind (parent_id(6))", "INDEX `par_ind`(`parent_id`(6))"},
+		{"INDEX expr_ind ((id + parent_id))", "INDEX `expr_ind`((`id`+`parent_id`))"},
+		{"INDEX expr_ind ((lower(id)))", "INDEX `expr_ind`((LOWER(`id`)))"},
 		{"key par_ind (parent_id)", "INDEX `par_ind`(`parent_id`)"},
+		{"key expr_ind ((lower(id)))", "INDEX `expr_ind`((LOWER(`id`)))"},
 		{"unique par_ind (parent_id)", "UNIQUE `par_ind`(`parent_id`)"},
 		{"unique key par_ind (parent_id)", "UNIQUE `par_ind`(`parent_id`)"},
 		{"unique index par_ind (parent_id)", "UNIQUE `par_ind`(`parent_id`)"},
+		{"unique expr_ind ((id + parent_id))", "UNIQUE `expr_ind`((`id`+`parent_id`))"},
+		{"unique expr_ind ((lower(id)))", "UNIQUE `expr_ind`((LOWER(`id`)))"},
+		{"unique key expr_ind ((id + parent_id))", "UNIQUE `expr_ind`((`id`+`parent_id`))"},
+		{"unique key expr_ind ((lower(id)))", "UNIQUE `expr_ind`((LOWER(`id`)))"},
+		{"unique index expr_ind ((id + parent_id))", "UNIQUE `expr_ind`((`id`+`parent_id`))"},
+		{"unique index expr_ind ((lower(id)))", "UNIQUE `expr_ind`((LOWER(`id`)))"},
 		{"fulltext key full_id (parent_id)", "FULLTEXT `full_id`(`parent_id`)"},
 		{"fulltext INDEX full_id (parent_id)", "FULLTEXT `full_id`(`parent_id`)"},
 		{"PRIMARY KEY (id)", "PRIMARY KEY(`id`)"},

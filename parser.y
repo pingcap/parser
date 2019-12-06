@@ -870,6 +870,8 @@ import (
 	IndexColName			"Index column name"
 	IndexColNameList		"List of index column name"
 	IndexColNameListOpt		"List of index column name opt"
+	IndexColNameWithExpression	"Index column name or expression"
+	IndexColNameWithExpressionList	"List of index column name or expression"
 	IndexHint			"index hint"
 	IndexHintList			"index hint list"
 	IndexHintListOpt		"index hint list opt"
@@ -2661,7 +2663,7 @@ ConstraintElem:
 	{
 		c := &ast.Constraint{
 			Tp: ast.ConstraintPrimaryKey,
-			Keys: $5.([]*ast.IndexColName),
+			Keys: $5.([]*ast.IndexColNameWithExpr),
 			Name: $3.([]interface{})[0].(string),
 		}
 		if $7 != nil {
@@ -2679,7 +2681,7 @@ ConstraintElem:
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintFulltext,
-			Keys:	$5.([]*ast.IndexColName),
+			Keys:	$5.([]*ast.IndexColNameWithExpr),
 			Name:	$3.(string),
 		}
 		if $7 != nil {
@@ -2687,12 +2689,12 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
+|	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexColNameWithExpressionList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			IfNotExists:	$2.(bool),
 			Tp:		ast.ConstraintIndex,
-			Keys:		$5.([]*ast.IndexColName),
+			Keys:		$5.([]*ast.IndexColNameWithExpr),
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2706,11 +2708,11 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"UNIQUE" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
+|	"UNIQUE" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexColNameWithExpressionList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintUniq,
-			Keys:	$5.([]*ast.IndexColName),
+			Keys:	$5.([]*ast.IndexColNameWithExpr),
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2729,7 +2731,7 @@ ConstraintElem:
 		$$ = &ast.Constraint{
 			IfNotExists:	$3.(bool),
 			Tp:		ast.ConstraintForeignKey,
-			Keys:		$6.([]*ast.IndexColName),
+			Keys:		$6.([]*ast.IndexColNameWithExpr),
 			Name:		$4.(string),
 			Refer:		$8.(*ast.ReferenceDef),
 		}
@@ -2776,7 +2778,7 @@ ReferDef:
 		onDeleteUpdate := $5.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
-			IndexColNames: $3.([]*ast.IndexColName),
+			IndexColNameWithExprs: $3.([]*ast.IndexColNameWithExpr),
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
 			Match: $4.(ast.MatchType),
@@ -2785,7 +2787,7 @@ ReferDef:
 
 IndexColNameListOpt:
 {
-	$$ = ([]*ast.IndexColName)(nil)
+	$$ = ([]*ast.IndexColNameWithExpr)(nil)
 }
 |
 '(' IndexColNameList ')'
@@ -2937,7 +2939,7 @@ NumLiteral:
  *     LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
  *******************************************************************************************/
 CreateIndexStmt:
-	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList IndexLockAndAlgorithmOpt
+	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameWithExpressionList ')' IndexOptionList IndexLockAndAlgorithmOpt
 	{
 		var indexOption *ast.IndexOption
 		if $12 != nil {
@@ -2964,7 +2966,7 @@ CreateIndexStmt:
 			IfNotExists:   $4.(bool),
 			IndexName:     $5,
 			Table:         $8.(*ast.TableName),
-			IndexColNames: $10.([]*ast.IndexColName),
+			IndexColNameWithExprs: $10.([]*ast.IndexColNameWithExpr),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
 			LockAlg:       indexLockAndAlgorithm,
@@ -2975,18 +2977,36 @@ IndexColName:
 	ColumnName OptFieldLen Order
 	{
 		//Order is parsed but just ignored as MySQL did
-		$$ = &ast.IndexColName{Column: $1.(*ast.ColumnName), Length: $2.(int)}
+		$$ = &ast.IndexColNameWithExpr{Column: $1.(*ast.ColumnName), Length: $2.(int)}
 	}
 
 IndexColNameList:
 	IndexColName
 	{
-		$$ = []*ast.IndexColName{$1.(*ast.IndexColName)}
+		$$ = []*ast.IndexColNameWithExpr{$1.(*ast.IndexColNameWithExpr)}
 	}
 |	IndexColNameList ',' IndexColName
 	{
-		$$ = append($1.([]*ast.IndexColName), $3.(*ast.IndexColName))
+		$$ = append($1.([]*ast.IndexColNameWithExpr), $3.(*ast.IndexColNameWithExpr))
 	}
+
+IndexColNameWithExpressionList:
+	IndexColNameWithExpression
+	{
+		$$ = []*ast.IndexColNameWithExpr{$1.(*ast.IndexColNameWithExpr)}
+	}
+|	IndexColNameWithExpressionList ',' IndexColNameWithExpression
+	{
+		$$ = append($1.([]*ast.IndexColNameWithExpr), $3.(*ast.IndexColNameWithExpr))
+	}
+
+IndexColNameWithExpression:
+	IndexColName
+|	'(' Expression ')' Order
+	{
+		$$ = &ast.IndexColNameWithExpr{Expr: $2}
+	}
+
 
 IndexLockAndAlgorithmOpt:
 	{
