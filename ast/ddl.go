@@ -1257,24 +1257,40 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 type CreateSequenceStmt struct {
 	ddlNode
 
+	OrReplace   bool
+	IsTemporary bool
 	IfNotExists bool
 	Name        *TableName
-	Options     []*SequenceOption
+	SeqOptions  []*SequenceOption
+	TblOptions  []*TableOption
 }
 
 // Restore implements Node interface.
 func (n *CreateSequenceStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("CREATE SEQUENCE ")
+	ctx.WriteKeyWord("CREATE ")
+	if n.OrReplace {
+		ctx.WriteKeyWord("OR REPLACE ")
+	}
+	if n.IsTemporary {
+		ctx.WriteKeyWord("TEMPORARY ")
+	}
+	ctx.WriteKeyWord("SEQUENCE ")
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXIST ")
 	}
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while create CreateSequenceStmt.Name")
 	}
-	for i, option := range n.Options {
+	for i, option := range n.SeqOptions {
 		ctx.WritePlain(" ")
 		if err := option.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while splicing CreateSequenceStmt SequenceOption: [%v]", i)
+		}
+	}
+	for i, option := range n.TblOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreateSequenceStmt TableOption: [%v]", i)
 		}
 	}
 	return nil

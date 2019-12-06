@@ -227,6 +227,7 @@ import (
 	rowNumber		"ROW_NUMBER"
 	secondMicrosecond	"SECOND_MICROSECOND"
 	selectKwd		"SELECT"
+	sequence                "SEQUENCE"
 	set			"SET"
 	show			"SHOW"
 	smallIntType		"SMALLINT"
@@ -460,7 +461,6 @@ import (
 	secondaryUnload	"SECONDARY_UNLOAD"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
-	sequence        "SEQUENCE"
 	serial		"SERIAL"
 	serializable	"SERIALIZABLE"
 	session		"SESSION"
@@ -1221,6 +1221,8 @@ import (
 %precedence remove
 %precedence lowerThenOrder
 %precedence order
+%precedence lowerThanTemporary
+%precedence temporary
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
@@ -3598,6 +3600,7 @@ CreateViewStmt:
 	}
 
 OrReplace:
+	/* EMPTY */ %prec lowerThanTemporary
 	{
 		$$ = false
 	}
@@ -3820,7 +3823,6 @@ OptTemporary:
 		yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
 		parser.lastErrorAsWarn()
 	}
-	;
 
 DropViewStmt:
 	"DROP" "VIEW" TableNameList RestrictOrCascadeOpt
@@ -10802,12 +10804,15 @@ LoadStatsStmt:
  ********************************************************************************************/
 
 CreateSequenceStmt:
-	"CREATE" "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt
+	"CREATE" OrReplace OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
 	{
 		$$ = &ast.CreateSequenceStmt{
-			IfNotExists: $3.(bool),
-			Name: $4.(*ast.TableName),
-			Options: $5.([]*ast.SequenceOption),
+			OrReplace: $2.(bool),
+			IsTemporary: $3.(bool),
+			IfNotExists: $5.(bool),
+			Name: $6.(*ast.TableName),
+			SeqOptions: $7.([]*ast.SequenceOption),
+			TblOptions: $8.([]*ast.TableOption),
 		}
 	}
 
@@ -10828,53 +10833,89 @@ SequenceOptionList:
 	}
 
 SequenceOption:
-	"INCREMENT" "BY" NUM
+	"INCREMENT" NUM
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $2.(int64),}
+	}
+|	"INCREMENT" "=" NUM
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $3.(int64),}
 	}
-|	"START" "WITH" NUM
+|	"INCREMENT" "BY" NUM
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $3.(int64),}
+	}
+|	"INCREMENT" "BY" "=" NUM
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $4.(int64),}
+	}
+|	"START" NUM
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $2.(int64),}
+	}
+|	"START" "=" NUM
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $3.(int64),}
 	}
-|	"NOMINVALUE"
+|	"START" "WITH" "=" NUM
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMinValue,}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $4.(int64),}
 	}
 |	"MINVALUE" NUM
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceMinValue, IntValue: $2.(int64),}
 	}
-|	"NOMAXVALUE"
+|	"MINVALUE" "=" NUM
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMaxValue,}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceMinValue, IntValue: $3.(int64),}
+	}
+|	"NOMINVALUE"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMinValue,}
+	}
+|	"NO" "MINVALUE"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMinValue,}
 	}
 | 	"MAXVALUE" NUM
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceMaxValue, IntValue: $2.(int64),}
 	}
-|	"NOCACHE"
+|	"NOMAXVALUE"
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCache,}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMaxValue,}
+	}
+|	"NO" "MAXVALUE"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMaxValue,}
 	}
 |	"CACHE" NUM
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceCache, IntValue: $2.(int64),}
 	}
-|	"NOCYCLE"
+|	"CACHE" "=" NUM
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCycle,}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceCache, IntValue: $3.(int64),}
+	}
+|	"NOCACHE"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCache,}
 	}
 | 	"CYCLE"
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceCycle,}
 	}
-|	"NOORDER"
+|	"NOCYCLE"
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoOrder,}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCycle,}
 	}
 |	"ORDER"
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOrder,}
+	}
+|	"NOORDER"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoOrder,}
 	}
 
 %%
