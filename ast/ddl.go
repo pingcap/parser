@@ -192,7 +192,7 @@ func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// IndexColNameWithExpr is used for parsing index column name from SQL.
+// IndexColNameWithExpr is used for parsing index column name or index expression from SQL.
 type IndexColNameWithExpr struct {
 	node
 
