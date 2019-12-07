@@ -3601,7 +3601,7 @@ CreateViewStmt:
 	}
 
 OrReplace:
-	/* EMPTY */ %prec lowerThanTemporary
+	/* EMPTY */
 	{
 		$$ = false
 	}

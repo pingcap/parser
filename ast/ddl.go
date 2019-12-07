@@ -1276,7 +1276,7 @@ func (n *CreateSequenceStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WriteKeyWord("SEQUENCE ")
 	if n.IfNotExists {
-		ctx.WriteKeyWord("IF NOT EXIST ")
+		ctx.WriteKeyWord("IF NOT EXISTS ")
 	}
 	if err := n.Name.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while create CreateSequenceStmt.Name")
@@ -1962,12 +1962,12 @@ func (n *SequenceOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("START WITH ")
 		ctx.WritePlainf("%d", n.IntValue)
 	case SequenceNoMinValue:
-		ctx.WriteKeyWord("NOMINVALUE")
+		ctx.WriteKeyWord("NO MINVALUE")
 	case SequenceMinValue:
 		ctx.WriteKeyWord("MINVALUE ")
 		ctx.WritePlainf("%d", n.IntValue)
 	case SequenceNoMaxValue:
-		ctx.WriteKeyWord("NOMAXVALUE")
+		ctx.WriteKeyWord("NO MAXVALUE")
 	case SequenceMaxValue:
 		ctx.WriteKeyWord("MAXVALUE ")
 		ctx.WritePlainf("%d", n.IntValue)
