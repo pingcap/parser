@@ -2754,7 +2754,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a fixed(65, 30) zerofill, b numeric, c fixed(65) unsigned zerofill)", true, "CREATE TABLE `t` (`a` DECIMAL(65,30) UNSIGNED ZEROFILL,`b` DECIMAL,`c` DECIMAL(65) UNSIGNED ZEROFILL)"},
 
 		// for create sequence
-
+		{"create sequence seq", true, "CREATE SEQUENCE `seq`"},
+		{"create sequence seq increment 1 start with 0 minvalue 0 maxvalue 1000", true, "CREATE SEQUENCE `seq` INCREMENT BY 1 START WITH 0 MINVALUE 0 MAXVALUE 1000"},
+		{"create sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle noorder", true, "CREATE SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE NOORDER"},
 	}
 	s.RunTest(c, table)
 }

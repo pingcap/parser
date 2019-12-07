@@ -1128,6 +1128,7 @@ import (
 	NUM			"A number"
 	NumList			"Some numbers"
 	LengthNum		"Field length num(uint64)"
+	SignedNum               "Signed num(int64)"
 	StorageOptimizerHintOpt "Storage level optimizer hint"
 	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
@@ -8655,7 +8656,7 @@ Statement:
 |	CreateUserStmt
 |	CreateRoleStmt
 |	CreateBindingStmt
-|       CreateSequenceStmt
+|	CreateSequenceStmt
 |	DoStmt
 |	DropDatabaseStmt
 |	DropIndexStmt
@@ -10793,14 +10794,13 @@ LoadStatsStmt:
  *  Create Sequence Statement
  *
  *  Example:
- *      CREATE SEQUENCE IF NOT EXIST my_sequence
- *          [INCREMENT BY <increment>]
- *          [START WITH <start>]
- *	    [MINVALUE <minvalue> | NOMINVALUE]
- *          [MAXVALUE <maxvalue> | NOMAXVALUE]
- *          [CACHE <cache>]
- *          [CYCLE | NO CYCLE]
- *          [ORDER | NO ORDER]
+ *      CREATE [OR REPLACE] [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
+ *      [ INCREMENT [ BY | = ] increment ]
+ *      [ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
+ *      [ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
+ *      [ START [ WITH | = ] start ]
+ *      [ CACHE [=] cache | NOCACHE ] [ CYCLE | NOCYCLE]
+ *      [table_options]
  ********************************************************************************************/
 
 CreateSequenceStmt:
@@ -10820,7 +10820,7 @@ CreateSequenceOptionListOpt:
 	{
 		$$ = []*ast.SequenceOption{}
 	}
-|       SequenceOptionList
+|	SequenceOptionList
 
 SequenceOptionList:
 	SequenceOption
@@ -10833,39 +10833,23 @@ SequenceOptionList:
 	}
 
 SequenceOption:
-	"INCREMENT" NUM
-	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $2.(int64),}
-	}
-|	"INCREMENT" "=" NUM
+	"INCREMENT" EqOpt SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $3.(int64),}
 	}
-|	"INCREMENT" "BY" NUM
-	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $3.(int64),}
-	}
-|	"INCREMENT" "BY" "=" NUM
+|	"INCREMENT" "BY" EqOpt SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $4.(int64),}
 	}
-|	"START" NUM
-	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $2.(int64),}
-	}
-|	"START" "=" NUM
+|	"START" EqOpt SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $3.(int64),}
 	}
-|	"START" "WITH" "=" NUM
+|	"START" "WITH" EqOpt SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $4.(int64),}
 	}
-|	"MINVALUE" NUM
-	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceMinValue, IntValue: $2.(int64),}
-	}
-|	"MINVALUE" "=" NUM
+|	"MINVALUE" EqOpt SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceMinValue, IntValue: $3.(int64),}
 	}
@@ -10877,9 +10861,9 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMinValue,}
 	}
-| 	"MAXVALUE" NUM
+| 	"MAXVALUE" EqOpt SignedNum
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceMaxValue, IntValue: $2.(int64),}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceMaxValue, IntValue: $3.(int64),}
 	}
 |	"NOMAXVALUE"
 	{
@@ -10889,11 +10873,7 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoMaxValue,}
 	}
-|	"CACHE" NUM
-	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceCache, IntValue: $2.(int64),}
-	}
-|	"CACHE" "=" NUM
+|	"CACHE" EqOpt SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceCache, IntValue: $3.(int64),}
 	}
@@ -10916,6 +10896,20 @@ SequenceOption:
 |	"NOORDER"
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoOrder,}
+	}
+
+SignedNum:
+	NUM
+	{
+		$$ = $1.(int64)
+	}
+|	'+' NUM
+	{
+		$$ = $2.(int64)
+	}
+|	'-' NUM
+	{
+		$$ = $2.(int64) * -1
 	}
 
 %%
