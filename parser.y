@@ -1222,8 +1222,6 @@ import (
 %precedence remove
 %precedence lowerThenOrder
 %precedence order
-%precedence lowerThanTemporary
-%precedence temporary
 
 %left   join straightJoin inner cross left right full natural
 /* A dummy token to force the priority of TableRef production in a join. */
