@@ -10835,7 +10835,7 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $3.(int64),}
 	}
-|	"INCREMENT" "BY" EqOpt SignedNum
+|	"INCREMENT" "BY" SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $4.(int64),}
 	}
@@ -10843,7 +10843,7 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $3.(int64),}
 	}
-|	"START" "WITH" EqOpt SignedNum
+|	"START" "WITH" SignedNum
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $4.(int64),}
 	}
@@ -10907,7 +10907,7 @@ SignedNum:
 	}
 |	'-' NUM
 	{
-		$$ = $2.(int64) * -1
+		$$ = -$2.(int64)
 	}
 
 %%
