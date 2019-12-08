@@ -10792,7 +10792,7 @@ LoadStatsStmt:
  *  Create Sequence Statement
  *
  *  Example:
- *      CREATE [OR REPLACE] [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
+ *      CREATE [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
  *      [ INCREMENT [ BY | = ] increment ]
  *      [ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
  *      [ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
@@ -10802,15 +10802,14 @@ LoadStatsStmt:
  ********************************************************************************************/
 
 CreateSequenceStmt:
-	"CREATE" OrReplace OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
+	"CREATE" OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
 	{
 		$$ = &ast.CreateSequenceStmt{
-			OrReplace: $2.(bool),
-			IsTemporary: $3.(bool),
-			IfNotExists: $5.(bool),
-			Name: $6.(*ast.TableName),
-			SeqOptions: $7.([]*ast.SequenceOption),
-			TblOptions: $8.([]*ast.TableOption),
+			IsTemporary: $2.(bool),
+			IfNotExists: $4.(bool),
+			Name: $5.(*ast.TableName),
+			SeqOptions: $6.([]*ast.SequenceOption),
+			TblOptions: $7.([]*ast.TableOption),
 		}
 	}
 
@@ -10837,7 +10836,7 @@ SequenceOption:
 	}
 |	"INCREMENT" "BY" SignedNum
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $4.(int64),}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceOptionIncrementBy, IntValue: $3.(int64),}
 	}
 |	"START" EqOpt SignedNum
 	{
@@ -10845,7 +10844,7 @@ SequenceOption:
 	}
 |	"START" "WITH" SignedNum
 	{
-		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $4.(int64),}
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceStartWith, IntValue: $3.(int64),}
 	}
 |	"MINVALUE" EqOpt SignedNum
 	{

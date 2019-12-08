@@ -1257,6 +1257,7 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 type CreateSequenceStmt struct {
 	ddlNode
 
+	// TODO : support or replace if need : care for it will conflict on temporaryOpt.
 	OrReplace   bool
 	IsTemporary bool
 	IfNotExists bool
