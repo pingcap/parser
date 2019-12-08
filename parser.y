@@ -10797,7 +10797,9 @@ LoadStatsStmt:
  *      [ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
  *      [ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
  *      [ START [ WITH | = ] start ]
- *      [ CACHE [=] cache | NOCACHE ] [ CYCLE | NOCYCLE]
+ *      [ CACHE [=] cache | NOCACHE | NO CACHE]
+ *	[ CYCLE | NOCYCLE | NO CYCLE]
+ *	[ ORDER | NOORDER | NO ORDER]
  *      [table_options]
  ********************************************************************************************/
 
@@ -10878,6 +10880,10 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCache,}
 	}
+|	"NO" "CACHE"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCache,}
+	}
 | 	"CYCLE"
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceCycle,}
@@ -10886,11 +10892,19 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCycle,}
 	}
+|	"NO" "CYCLE"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoCycle,}
+	}
 |	"ORDER"
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceOrder,}
 	}
 |	"NOORDER"
+	{
+		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoOrder,}
+	}
+|	"NO" "ORDER"
 	{
 		$$ = &ast.SequenceOption{ Tp:ast.SequenceNoOrder,}
 	}
