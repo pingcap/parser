@@ -10789,18 +10789,18 @@ LoadStatsStmt:
 
 /********************************************************************************************
  *
- *  Create Sequence Statement.
+ *  Create Sequence Statement
  *
  *  Example:
- *      CREATE [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
- *      [ INCREMENT [ BY | = ] increment ]
- *      [ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
- *      [ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
- *      [ START [ WITH | = ] start ]
- *      [ CACHE [=] cache | NOCACHE | NO CACHE]
+ *	CREATE [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
+ *	[ INCREMENT [ BY | = ] increment ]
+ *	[ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
+ *	[ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
+ *	[ START [ WITH | = ] start ]
+ *	[ CACHE [=] cache | NOCACHE | NO CACHE]
  *	[ CYCLE | NOCYCLE | NO CYCLE]
  *	[ ORDER | NOORDER | NO ORDER]
- *      [table_options]
+ *	[table_options]
  ********************************************************************************************/
 
 CreateSequenceStmt:
