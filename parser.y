@@ -10789,7 +10789,7 @@ LoadStatsStmt:
 
 /********************************************************************************************
  *
- *  Create Sequence Statement
+ *  Create Sequence Statement.
  *
  *  Example:
  *      CREATE [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
