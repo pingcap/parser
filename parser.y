@@ -2980,11 +2980,10 @@ CreateIndexStmt:
 IndexPartSpecificationListOpt:
 	{
 		$$ = ([]*ast.IndexPartSpecification)(nil)
-        }
-        |
-        '(' IndexPartSpecificationList ')'
+	}
+|	'(' IndexPartSpecificationList ')'
 	{
-        	$$ = $2
+		$$ = $2
 	}
 
 IndexPartSpecificationList:
@@ -3007,7 +3006,6 @@ IndexPartSpecification:
 	{
 		$$ = &ast.IndexPartSpecification{Expr: $2}
 	}
-
 
 IndexLockAndAlgorithmOpt:
 	{
