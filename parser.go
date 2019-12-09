@@ -17499,7 +17499,7 @@ yynewstate:
 		}
 	case 1983:
 		{
-			parser.yyVAL.item = uint64(types.UnspecifiedSize)
+			parser.yyVAL.item = uint64(ast.UnspecifiedSize)
 		}
 	case 1984:
 		{
@@ -17518,7 +17518,7 @@ yynewstate:
 		}
 	case 1987:
 		{
-			parser.yyVAL.item = uint64(types.UnspecifiedSize)
+			parser.yyVAL.item = uint64(ast.UnspecifiedSize)
 		}
 	case 1988:
 		{
@@ -17526,7 +17526,7 @@ yynewstate:
 		}
 	case 1989:
 		{
-			parser.yyVAL.item = uint64(types.UnspecifiedSize)
+			parser.yyVAL.item = uint64(ast.UnspecifiedSize)
 		}
 	case 1990:
 		{

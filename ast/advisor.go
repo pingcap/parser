@@ -15,7 +15,6 @@ package ast
 
 import (
 	. "github.com/pingcap/parser/format"
-	"math"
 )
 
 var _ StmtNode = &IndexAdviseStmt{}
@@ -39,7 +38,7 @@ func (n *IndexAdviseStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WriteKeyWord("INFILE ")
 	ctx.WriteString(n.Path)
-	if n.MaxMinutes != math.MaxUint64 {
+	if n.MaxMinutes != UnspecifiedSize {
 		ctx.WriteKeyWord(" MAX_MINUTES ")
 		ctx.WritePlainf("%d", n.MaxMinutes)
 	}
@@ -69,11 +68,11 @@ type MaxIndexNumClause struct {
 // Restore for max index num clause
 func (n *MaxIndexNumClause) Restore(ctx *RestoreCtx) error {
 	ctx.WriteKeyWord(" MAX_IDXNUM")
-	if n.PerTable != math.MaxUint64 {
+	if n.PerTable != UnspecifiedSize {
 		ctx.WriteKeyWord(" PER_TABLE ")
 		ctx.WritePlainf("%d", n.PerTable)
 	}
-	if n.PerDB != math.MaxUint64 {
+	if n.PerDB != UnspecifiedSize {
 		ctx.WriteKeyWord(" PER_DB ")
 		ctx.WritePlainf("%d", n.PerDB)
 	}

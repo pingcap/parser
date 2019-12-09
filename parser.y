@@ -10978,7 +10978,7 @@ IndexAdviseStmt:
 
 MaxMinutesOpt:
 	{
-		$$ = uint64(types.UnspecifiedSize)
+		$$ = uint64(ast.UnspecifiedSize)
 	}
 |	"MAX_MINUTES" NUM
 	{
@@ -10999,7 +10999,7 @@ MaxIndexNumOpt:
 
 PerTable:
 	{
-		$$ = uint64(types.UnspecifiedSize)
+		$$ = uint64(ast.UnspecifiedSize)
 	}
 |	"PER_TABLE" NUM
 	{
@@ -11008,7 +11008,7 @@ PerTable:
 
 PerDB:
 	{
-		$$ = uint64(types.UnspecifiedSize)
+		$$ = uint64(ast.UnspecifiedSize)
 	}
 |	"PER_DB" NUM
 	{
