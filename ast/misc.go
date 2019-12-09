@@ -1019,12 +1019,12 @@ const (
 	Subject
 )
 
-type TslOption struct {
+type TLSOption struct {
 	Type  int
 	Value string
 }
 
-func (t *TslOption) Restore(ctx *RestoreCtx) error {
+func (t *TLSOption) Restore(ctx *RestoreCtx) error {
 	switch t.Type {
 	case TslNone:
 		ctx.WriteKeyWord("NONE")
@@ -1042,7 +1042,7 @@ func (t *TslOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("CIPHER")
 		ctx.WriteString(t.Value)
 	default:
-		return errors.Errorf("Unsupported TslOption.Type %d", t.Type)
+		return errors.Errorf("Unsupported TLSOption.Type %d", t.Type)
 	}
 	return nil
 }
@@ -1120,7 +1120,7 @@ type CreateUserStmt struct {
 	IsCreateRole          bool
 	IfNotExists           bool
 	Specs                 []*UserSpec
-	TslOptions            []*TslOption
+	TLSOptions            []*TLSOption
 	ResourceOptions       []*ResourceOption
 	PasswordOrLockOptions []*PasswordOrLockOption
 }
@@ -1144,19 +1144,19 @@ func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	tslOptionLen := len(n.TslOptions)
+	tlsOptionLen := len(n.TLSOptions)
 
-	if tslOptionLen != 0 {
+	if tlsOptionLen != 0 {
 		ctx.WriteKeyWord(" REQUIRE ")
 	}
 
-	// Restore `tslOptions` reversely to keep order the same with original sql
-	for i := tslOptionLen; i > 0; i-- {
-		if i != tslOptionLen {
+	// Restore `TLSOptions` reversely to keep order the same with original sql
+	for i := tlsOptionLen; i > 0; i-- {
+		if i != tlsOptionLen {
 			ctx.WriteKeyWord(" AND ")
 		}
-		if err := n.TslOptions[i-1].Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TslOptions[%d]", i)
+		if err := n.TLSOptions[i-1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TLSOptions[%d]", i)
 		}
 	}
 
@@ -1209,7 +1209,7 @@ type AlterUserStmt struct {
 	IfExists              bool
 	CurrentAuth           *AuthOption
 	Specs                 []*UserSpec
-	TslOptions            []*TslOption
+	TLSOptions            []*TLSOption
 	ResourceOptions       []*ResourceOption
 	PasswordOrLockOptions []*PasswordOrLockOption
 }
@@ -1236,19 +1236,19 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	tslOptionLen := len(n.TslOptions)
+	tlsOptionLen := len(n.TLSOptions)
 
-	if tslOptionLen != 0 {
+	if tlsOptionLen != 0 {
 		ctx.WriteKeyWord(" REQUIRE ")
 	}
 
-	// Restore `tslOptions` reversely to keep order the same with original sql
-	for i := tslOptionLen; i > 0; i-- {
-		if i != tslOptionLen {
+	// Restore `TLSOptions` reversely to keep order the same with original sql
+	for i := tlsOptionLen; i > 0; i-- {
+		if i != tlsOptionLen {
 			ctx.WriteKeyWord(" AND ")
 		}
-		if err := n.TslOptions[i-1].Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.TslOptions[%d]", i)
+		if err := n.TLSOptions[i-1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.TLSOptions[%d]", i)
 		}
 	}
 
@@ -1952,7 +1952,7 @@ type GrantStmt struct {
 	ObjectType ObjectTypeType
 	Level      *GrantLevel
 	Users      []*UserSpec
-	TslOptions []*TslOption
+	TLSOptions []*TLSOption
 	WithGrant  bool
 }
 
@@ -1988,18 +1988,18 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore GrantStmt.Users[%d]", i)
 		}
 	}
-	if n.TslOptions != nil {
-		tslOptionLen := len(n.TslOptions)
-		if tslOptionLen != 0 {
+	if n.TLSOptions != nil {
+		tlsOptionLen := len(n.TLSOptions)
+		if tlsOptionLen != 0 {
 			ctx.WriteKeyWord(" REQUIRE ")
 		}
-		// Restore `tslOptions` reversely to keep order the same with original sql
-		for i := tslOptionLen; i > 0; i-- {
-			if i != tslOptionLen {
+		// Restore `TLSOptions` reversely to keep order the same with original sql
+		for i := tlsOptionLen; i > 0; i-- {
+			if i != tlsOptionLen {
 				ctx.WriteKeyWord(" AND ")
 			}
-			if err := n.TslOptions[i-1].Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TslOptions[%d]", i)
+			if err := n.TLSOptions[i-1].Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TLSOptions[%d]", i)
 			}
 		}
 	}

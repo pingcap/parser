@@ -9790,7 +9790,7 @@ CreateUserStmt:
 			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
-			TslOptions: $5.([]*ast.TslOption),
+			TLSOptions: $5.([]*ast.TLSOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
@@ -9814,7 +9814,7 @@ AlterUserStmt:
 		$$ = &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
-			TslOptions: $5.([]*ast.TslOption),
+			TLSOptions: $5.([]*ast.TLSOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
@@ -9909,7 +9909,7 @@ ConnectionOption:
 
 RequireClauseOpt:
 	{
-		$$ = []*ast.TslOption{}
+		$$ = []*ast.TLSOption{}
 	}
 | RequireClause
 	{
@@ -9919,24 +9919,24 @@ RequireClauseOpt:
 RequireClause:
 	"REQUIRE" "NONE"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.TslNone,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" "SSL"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.Ssl,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" "X509"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.X509,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" RequireList
 	{
@@ -9946,33 +9946,33 @@ RequireClause:
 RequireList:
 	RequireListElement
 	{
-		$$ = []*ast.TslOption{$1.(*ast.TslOption)}
+		$$ = []*ast.TLSOption{$1.(*ast.TLSOption)}
 	}
 |	RequireListElement "AND" RequireList
 	{
-		l := $3.([]*ast.TslOption)
-		l = append(l, $1.(*ast.TslOption))
+		l := $3.([]*ast.TLSOption)
+		l = append(l, $1.(*ast.TLSOption))
 		$$ = l
 	}
 
 RequireListElement:
 	"ISSUER" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Issuer,
 			Value: $2,
 		}
 	}
 |	"SUBJECT" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Subject,
 			Value: $2,
 		}
 	}
 |	"CIPHER" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Cipher,
 			Value: $2,
 		}
@@ -10197,7 +10197,7 @@ GrantStmt:
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level: $5.(*ast.GrantLevel),
 			Users: $7.([]*ast.UserSpec),
-			TslOptions: $8.([]*ast.TslOption),
+			TLSOptions: $8.([]*ast.TLSOption),
 			WithGrant: $9.(bool),
 		}
 	 }

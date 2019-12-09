@@ -16780,7 +16780,7 @@ yynewstate:
 				IsCreateRole:          false,
 				IfNotExists:           yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
-				TslOptions:            yyS[yypt-2].item.([]*ast.TslOption),
+				TLSOptions:            yyS[yypt-2].item.([]*ast.TLSOption),
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
@@ -16799,7 +16799,7 @@ yynewstate:
 			parser.yyVAL.statement = &ast.AlterUserStmt{
 				IfExists:              yyS[yypt-4].item.(bool),
 				Specs:                 yyS[yypt-3].item.([]*ast.UserSpec),
-				TslOptions:            yyS[yypt-2].item.([]*ast.TslOption),
+				TLSOptions:            yyS[yypt-2].item.([]*ast.TLSOption),
 				ResourceOptions:       yyS[yypt-1].item.([]*ast.ResourceOption),
 				PasswordOrLockOptions: yyS[yypt-0].item.([]*ast.PasswordOrLockOption),
 			}
@@ -16884,7 +16884,7 @@ yynewstate:
 		}
 	case 1859:
 		{
-			parser.yyVAL.item = []*ast.TslOption{}
+			parser.yyVAL.item = []*ast.TLSOption{}
 		}
 	case 1860:
 		{
@@ -16892,24 +16892,24 @@ yynewstate:
 		}
 	case 1861:
 		{
-			t := &ast.TslOption{
+			t := &ast.TLSOption{
 				Type: ast.TslNone,
 			}
-			parser.yyVAL.item = []*ast.TslOption{t}
+			parser.yyVAL.item = []*ast.TLSOption{t}
 		}
 	case 1862:
 		{
-			t := &ast.TslOption{
+			t := &ast.TLSOption{
 				Type: ast.Ssl,
 			}
-			parser.yyVAL.item = []*ast.TslOption{t}
+			parser.yyVAL.item = []*ast.TLSOption{t}
 		}
 	case 1863:
 		{
-			t := &ast.TslOption{
+			t := &ast.TLSOption{
 				Type: ast.X509,
 			}
-			parser.yyVAL.item = []*ast.TslOption{t}
+			parser.yyVAL.item = []*ast.TLSOption{t}
 		}
 	case 1864:
 		{
@@ -16917,31 +16917,31 @@ yynewstate:
 		}
 	case 1865:
 		{
-			parser.yyVAL.item = []*ast.TslOption{yyS[yypt-0].item.(*ast.TslOption)}
+			parser.yyVAL.item = []*ast.TLSOption{yyS[yypt-0].item.(*ast.TLSOption)}
 		}
 	case 1866:
 		{
-			l := yyS[yypt-0].item.([]*ast.TslOption)
-			l = append(l, yyS[yypt-2].item.(*ast.TslOption))
+			l := yyS[yypt-0].item.([]*ast.TLSOption)
+			l = append(l, yyS[yypt-2].item.(*ast.TLSOption))
 			parser.yyVAL.item = l
 		}
 	case 1867:
 		{
-			parser.yyVAL.item = &ast.TslOption{
+			parser.yyVAL.item = &ast.TLSOption{
 				Type:  ast.Issuer,
 				Value: yyS[yypt-0].ident,
 			}
 		}
 	case 1868:
 		{
-			parser.yyVAL.item = &ast.TslOption{
+			parser.yyVAL.item = &ast.TLSOption{
 				Type:  ast.Subject,
 				Value: yyS[yypt-0].ident,
 			}
 		}
 	case 1869:
 		{
-			parser.yyVAL.item = &ast.TslOption{
+			parser.yyVAL.item = &ast.TLSOption{
 				Type:  ast.Cipher,
 				Value: yyS[yypt-0].ident,
 			}
@@ -17128,7 +17128,7 @@ yynewstate:
 				ObjectType: yyS[yypt-5].item.(ast.ObjectTypeType),
 				Level:      yyS[yypt-4].item.(*ast.GrantLevel),
 				Users:      yyS[yypt-2].item.([]*ast.UserSpec),
-				TslOptions: yyS[yypt-1].item.([]*ast.TslOption),
+				TLSOptions: yyS[yypt-1].item.([]*ast.TLSOption),
 				WithGrant:  yyS[yypt-0].item.(bool),
 			}
 		}
