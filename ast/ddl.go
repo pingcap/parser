@@ -205,11 +205,11 @@ type IndexPartSpecification struct {
 // Restore implements Node interface.
 func (n *IndexPartSpecification) Restore(ctx *RestoreCtx) error {
 	if n.Expr != nil {
-		ctx.WritePlainf("(")
+		ctx.WritePlain("(")
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while splicing IndexPartSpecifications")
 		}
-		ctx.WritePlainf(")")
+		ctx.WritePlain(")")
 		return nil
 	}
 	if err := n.Column.Restore(ctx); err != nil {
