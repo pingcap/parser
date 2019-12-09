@@ -1756,8 +1756,8 @@ var (
 		58228: 1041, // LockType (1x)
 		58229: 1042, // Match (1x)
 		58230: 1043, // MatchOpt (1x)
-		58231: 1044, // MaxIndexNum (1x)
-		58232: 1045, // MaxMinutes (1x)
+		58231: 1044, // MaxIndexNumOpt (1x)
+		58232: 1045, // MaxMinutesOpt (1x)
 		58235: 1046, // NChar (1x)
 		58245: 1047, // NumericType (1x)
 		58237: 1048, // NVarchar (1x)
@@ -2924,8 +2924,8 @@ var (
 		"LockType",
 		"Match",
 		"MatchOpt",
-		"MaxIndexNum",
-		"MaxMinutes",
+		"MaxIndexNumOpt",
+		"MaxMinutesOpt",
 		"NChar",
 		"NumericType",
 		"NVarchar",
@@ -17483,13 +17483,11 @@ yynewstate:
 	case 1982:
 		{
 			x := &ast.IndexAdviseStmt{
-				Path: yyS[yypt-3].ident,
+				Path:       yyS[yypt-3].ident,
+				MaxMinutes: yyS[yypt-2].item.(uint64),
 			}
 			if yyS[yypt-5].item != nil {
 				x.IsLocal = true
-			}
-			if yyS[yypt-2].item != nil {
-				x.MaxMinutes = yyS[yypt-2].item.(uint64)
 			}
 			if yyS[yypt-1].item != nil {
 				x.MaxIndexNum = yyS[yypt-1].item.(*ast.MaxIndexNumClause)
@@ -17501,7 +17499,7 @@ yynewstate:
 		}
 	case 1983:
 		{
-			parser.yyVAL.item = uint64(0)
+			parser.yyVAL.item = uint64(types.UnspecifiedSize)
 		}
 	case 1984:
 		{
@@ -17513,18 +17511,14 @@ yynewstate:
 		}
 	case 1986:
 		{
-			x := &ast.MaxIndexNumClause{}
-			if yyS[yypt-1].item != nil {
-				x.PerTable = yyS[yypt-1].item.(uint64)
+			parser.yyVAL.item = &ast.MaxIndexNumClause{
+				PerTable: yyS[yypt-1].item.(uint64),
+				PerDB:    yyS[yypt-0].item.(uint64),
 			}
-			if yyS[yypt-0].item != nil {
-				x.PerDB = yyS[yypt-0].item.(uint64)
-			}
-			parser.yyVAL.item = x
 		}
 	case 1987:
 		{
-			parser.yyVAL.item = uint64(0)
+			parser.yyVAL.item = uint64(types.UnspecifiedSize)
 		}
 	case 1988:
 		{
@@ -17532,7 +17526,7 @@ yynewstate:
 		}
 	case 1989:
 		{
-			parser.yyVAL.item = uint64(0)
+			parser.yyVAL.item = uint64(types.UnspecifiedSize)
 		}
 	case 1990:
 		{

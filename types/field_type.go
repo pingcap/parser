@@ -16,6 +16,7 @@ package types
 import (
 	"fmt"
 	"io"
+	"math"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
@@ -23,9 +24,11 @@ import (
 	"github.com/pingcap/parser/mysql"
 )
 
-// UnspecifiedLength is unspecified length.
 const (
+	// UnspecifiedLength is unspecified length.
 	UnspecifiedLength = -1
+	// UnspecifiedSize is unspecified size.
+	UnspecifiedSize = math.MaxUint64
 )
 
 // FieldType records field type information.

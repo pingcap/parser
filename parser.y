@@ -405,8 +405,8 @@ import (
 	merge		"MERGE"
 	minRows		"MIN_ROWS"
 	minValue        "MINVALUE"
-	max_minutes		"MAX_MINUTES"
-	max_idxnum		"MAX_IDXNUM"
+	max_minutes	"MAX_MINUTES"
+	max_idxnum	"MAX_IDXNUM"
 	names		"NAMES"
 	national	"NATIONAL"
 	ncharType	"NCHAR"
@@ -765,7 +765,7 @@ import (
 	GrantStmt			"Grant statement"
 	GrantRoleStmt			"Grant role statement"
 	InsertIntoStmt			"INSERT INTO statement"
-	IndexAdviseStmt		"INDEX ADVISE stetement"
+	IndexAdviseStmt			"INDEX ADVISE stetement"
 	KillStmt			"Kill statement"
 	LoadDataStmt			"Load data statement"
 	LoadStatsStmt			"Load statistic statement"
@@ -1152,8 +1152,8 @@ import (
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
 	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
 	MatchOpt		"optional MATCH clause"
-	MaxMinutes		"MAX_MINUTES num(int)"
-	MaxIndexNum		"MAX_IDXNUM clause"
+	MaxMinutesOpt	"MAX_MINUTES num(int)"
+	MaxIndexNumOpt	"MAX_IDXNUM clause"
 	PerTable 		"Max index number PER_TABLE"
 	PerDB			"Max index number PER_DB"
 
@@ -10940,17 +10940,32 @@ SignedNum:
 
 /*******************************************************************************************/
 
+/********************************************************************
+ * Index Advisor
+ *
+ * INDEX ADVISE
+ * 	[LOCAL]
+ *	INFILE 'file_name'
+ *	[MAX_MINUTES number]
+ *	[MAX_IDXNUM
+ *  	[PER_TABLE number]
+ *  	[PER_DB number]
+ *	]
+ *	[LINES
+ *  	[STARTING BY 'string']
+ *  	[TERMINATED BY 'string']
+ *	]
+ *******************************************************************/
+
 IndexAdviseStmt:
-	"INDEX" "ADVISE" LocalOpt "INFILE" stringLit MaxMinutes MaxIndexNum Lines
+	"INDEX" "ADVISE" LocalOpt "INFILE" stringLit MaxMinutesOpt MaxIndexNumOpt Lines
 	{
 		x := &ast.IndexAdviseStmt{
-			Path:	$5,
+			Path:			$5,
+			MaxMinutes:		$6.(uint64),
 		}
 		if $3 != nil {
 			x.IsLocal = true
-		}
-		if $6 != nil {
-			x.MaxMinutes = $6.(uint64)
 		}
 		if $7 != nil {
 			x.MaxIndexNum = $7.(*ast.MaxIndexNumClause)
@@ -10961,34 +10976,30 @@ IndexAdviseStmt:
 		$$ = x
 	}
 
-MaxMinutes:
+MaxMinutesOpt:
 	{
-		$$ = uint64(0)
+		$$ = uint64(types.UnspecifiedSize)
 	}
 |	"MAX_MINUTES" NUM
 	{
 		$$ = getUint64FromNUM($2)
 	}
 
-MaxIndexNum:
+MaxIndexNumOpt:
 	{
 		$$ = nil
 	}
 |	"MAX_IDXNUM" PerTable PerDB
 	{
-		x := &ast.MaxIndexNumClause{}
-		if $2 != nil {
-			x.PerTable = $2.(uint64)
+		$$ = &ast.MaxIndexNumClause{
+			PerTable:	$2.(uint64),
+			PerDB: 		$3.(uint64),
 		}
-		if $3 != nil {
-			x.PerDB = $3.(uint64)
-		}
-		$$ = x
 	}
 
 PerTable:
 	{
-		$$ = uint64(0)
+		$$ = uint64(types.UnspecifiedSize)
 	}
 |	"PER_TABLE" NUM
 	{
@@ -10997,7 +11008,7 @@ PerTable:
 
 PerDB:
 	{
-		$$ = uint64(0)
+		$$ = uint64(types.UnspecifiedSize)
 	}
 |	"PER_DB" NUM
 	{
