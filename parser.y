@@ -9954,6 +9954,12 @@ RequireList:
 		l = append(l, $1.(*ast.TLSOption))
 		$$ = l
 	}
+|	RequireListElement RequireList
+	{
+		l := $2.([]*ast.TLSOption)
+		l = append(l, $1.(*ast.TLSOption))
+		$$ = l
+	}
 
 RequireListElement:
 	"ISSUER" stringLit
