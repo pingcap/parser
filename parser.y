@@ -897,7 +897,7 @@ import (
 	IndexTypeOpt			"optional index type"
 	IndexPartSpecification		"Index column name or expression"
 	IndexPartSpecificationList	"List of index column name or expression"
-	IndexPartSpecificationListOpt     "Optional list of index column name or expression"
+	IndexPartSpecificationListOpt   "Optional list of index column name or expression"
 	InsertValues			"Rest part of INSERT/REPLACE INTO statement"
 	JoinTable 			"join table"
 	JoinType			"join type"
