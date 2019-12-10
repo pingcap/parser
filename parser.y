@@ -9948,16 +9948,16 @@ RequireList:
 	{
 		$$ = []*ast.TLSOption{$1.(*ast.TLSOption)}
 	}
-|	RequireListElement "AND" RequireList
+|	RequireList "AND" RequireListElement
 	{
-		l := $3.([]*ast.TLSOption)
-		l = append(l, $1.(*ast.TLSOption))
+		l := $1.([]*ast.TLSOption)
+		l = append(l, $3.(*ast.TLSOption))
 		$$ = l
 	}
-|	RequireListElement RequireList
+|	RequireList RequireListElement
 	{
-		l := $2.([]*ast.TLSOption)
-		l = append(l, $1.(*ast.TLSOption))
+		l := $1.([]*ast.TLSOption)
+		l = append(l, $2.(*ast.TLSOption))
 		$$ = l
 	}
 
