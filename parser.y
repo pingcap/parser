@@ -227,7 +227,6 @@ import (
 	rowNumber		"ROW_NUMBER"
 	secondMicrosecond	"SECOND_MICROSECOND"
 	selectKwd		"SELECT"
-	sequence                "SEQUENCE"
 	set			"SET"
 	show			"SHOW"
 	smallIntType		"SMALLINT"
@@ -282,6 +281,7 @@ import (
 	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
 	account		"ACCOUNT"
 	action		"ACTION"
+	advise		"ADVISE"
 	after		"AFTER"
 	against		"AGAINST"
 	always		"ALWAYS"
@@ -404,6 +404,8 @@ import (
 	merge		"MERGE"
 	minRows		"MIN_ROWS"
 	minValue        "MINVALUE"
+	max_minutes	"MAX_MINUTES"
+	max_idxnum	"MAX_IDXNUM"
 	names		"NAMES"
 	national	"NATIONAL"
 	ncharType	"NCHAR"
@@ -433,6 +435,8 @@ import (
 	processlist	"PROCESSLIST"
 	profile		"PROFILE"
 	profiles	"PROFILES"
+	per_table	"PER_TABLE"
+	per_db		"PER_DB"
 	quarter		"QUARTER"
 	query		"QUERY"
 	queries		"QUERIES"
@@ -461,6 +465,7 @@ import (
 	secondaryUnload	"SECONDARY_UNLOAD"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
+	sequence        "SEQUENCE"
 	serial		"SERIAL"
 	serializable	"SERIALIZABLE"
 	session		"SESSION"
@@ -760,6 +765,7 @@ import (
 	GrantStmt			"Grant statement"
 	GrantRoleStmt			"Grant role statement"
 	InsertIntoStmt			"INSERT INTO statement"
+	IndexAdviseStmt			"INDEX ADVISE stetement"
 	KillStmt			"Kill statement"
 	LoadDataStmt			"Load data statement"
 	LoadStatsStmt			"Load statistic statement"
@@ -879,9 +885,6 @@ import (
 	IfExists			"If Exists"
 	IfNotExists			"If Not Exists"
 	IgnoreOptional			"IGNORE or empty"
-	IndexColName			"Index column name"
-	IndexColNameList		"List of index column name"
-	IndexColNameListOpt		"List of index column name opt"
 	IndexHint			"index hint"
 	IndexHintList			"index hint list"
 	IndexHintListOpt		"index hint list opt"
@@ -898,6 +901,9 @@ import (
 	IndexType			"index type"
 	IndexTypeName			"index type name"
 	IndexTypeOpt			"optional index type"
+	IndexPartSpecification		"Index column name or expression"
+	IndexPartSpecificationList	"List of index column name or expression"
+	IndexPartSpecificationListOpt   "Optional list of index column name or expression"
 	InsertValues			"Rest part of INSERT/REPLACE INTO statement"
 	JoinTable 			"join table"
 	JoinType			"join type"
@@ -1146,6 +1152,10 @@ import (
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
 	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
 	MatchOpt		"optional MATCH clause"
+	MaxMinutesOpt		"MAX_MINUTES num(int)"
+	MaxIndexNumOpt		"MAX_IDXNUM clause"
+	PerTable 		"Max index number PER_TABLE"
+	PerDB			"Max index number PER_DB"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -2672,11 +2682,11 @@ ColumnOptionListOpt:
 	}
 
 ConstraintElem:
-	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
+	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp: ast.ConstraintPrimaryKey,
-			Keys: $5.([]*ast.IndexColName),
+			Keys: $5.([]*ast.IndexPartSpecification),
 			Name: $3.([]interface{})[0].(string),
 		}
 		if $7 != nil {
@@ -2690,11 +2700,11 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexColNameList ')' IndexOptionList
+|	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintFulltext,
-			Keys:	$5.([]*ast.IndexColName),
+			Keys:	$5.([]*ast.IndexPartSpecification),
 			Name:	$3.(string),
 		}
 		if $7 != nil {
@@ -2702,12 +2712,12 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
+|	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			IfNotExists:	$2.(bool),
 			Tp:		ast.ConstraintIndex,
-			Keys:		$5.([]*ast.IndexColName),
+			Keys:		$5.([]*ast.IndexPartSpecification),
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2721,11 +2731,11 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"UNIQUE" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexColNameList ')' IndexOptionList
+|	"UNIQUE" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
 			Tp:	ast.ConstraintUniq,
-			Keys:	$5.([]*ast.IndexColName),
+			Keys:	$5.([]*ast.IndexPartSpecification),
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2739,12 +2749,12 @@ ConstraintElem:
 		}
 		$$ = c
 	}
-|	"FOREIGN" "KEY" IfNotExists IndexName '(' IndexColNameList ')' ReferDef
+|	"FOREIGN" "KEY" IfNotExists IndexName '(' IndexPartSpecificationList ')' ReferDef
 	{
 		$$ = &ast.Constraint{
 			IfNotExists:	$3.(bool),
 			Tp:		ast.ConstraintForeignKey,
-			Keys:		$6.([]*ast.IndexColName),
+			Keys:		$6.([]*ast.IndexPartSpecification),
 			Name:		$4.(string),
 			Refer:		$8.(*ast.ReferenceDef),
 		}
@@ -2786,27 +2796,18 @@ MatchOpt:
 	}
 
 ReferDef:
-	"REFERENCES" TableName IndexColNameListOpt MatchOpt OnDeleteUpdateOpt
+	"REFERENCES" TableName IndexPartSpecificationListOpt MatchOpt OnDeleteUpdateOpt
 	{
 		onDeleteUpdate := $5.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
-			IndexColNames: $3.([]*ast.IndexColName),
+			IndexPartSpecifications: $3.([]*ast.IndexPartSpecification),
 			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
 			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
 			Match: $4.(ast.MatchType),
 		}
 	}
 
-IndexColNameListOpt:
-{
-	$$ = ([]*ast.IndexColName)(nil)
-}
-|
-'(' IndexColNameList ')'
-{
-	$$ = $2
-}
 
 OnDelete:
 	"ON" "DELETE" ReferOpt
@@ -2952,7 +2953,7 @@ NumLiteral:
  *     LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
  *******************************************************************************************/
 CreateIndexStmt:
-	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexColNameList ')' IndexOptionList IndexLockAndAlgorithmOpt
+	"CREATE" IndexKeyTypeOpt "INDEX" IfNotExists Identifier IndexTypeOpt "ON" TableName '(' IndexPartSpecificationList ')' IndexOptionList IndexLockAndAlgorithmOpt
 	{
 		var indexOption *ast.IndexOption
 		if $12 != nil {
@@ -2979,28 +2980,41 @@ CreateIndexStmt:
 			IfNotExists:   $4.(bool),
 			IndexName:     $5,
 			Table:         $8.(*ast.TableName),
-			IndexColNames: $10.([]*ast.IndexColName),
+			IndexPartSpecifications: $10.([]*ast.IndexPartSpecification),
 			IndexOption:   indexOption,
 			KeyType:       $2.(ast.IndexKeyType),
 			LockAlg:       indexLockAndAlgorithm,
 		}
 	}
 
-IndexColName:
-	ColumnName OptFieldLen Order
+IndexPartSpecificationListOpt:
 	{
-		//Order is parsed but just ignored as MySQL did
-		$$ = &ast.IndexColName{Column: $1.(*ast.ColumnName), Length: $2.(int)}
+		$$ = ([]*ast.IndexPartSpecification)(nil)
+	}
+|	'(' IndexPartSpecificationList ')'
+	{
+		$$ = $2
 	}
 
-IndexColNameList:
-	IndexColName
+IndexPartSpecificationList:
+	IndexPartSpecification
 	{
-		$$ = []*ast.IndexColName{$1.(*ast.IndexColName)}
+		$$ = []*ast.IndexPartSpecification{$1.(*ast.IndexPartSpecification)}
 	}
-|	IndexColNameList ',' IndexColName
+|	IndexPartSpecificationList ',' IndexPartSpecification
 	{
-		$$ = append($1.([]*ast.IndexColName), $3.(*ast.IndexColName))
+		$$ = append($1.([]*ast.IndexPartSpecification), $3.(*ast.IndexPartSpecification))
+	}
+
+IndexPartSpecification:
+	ColumnName OptFieldLen Order
+	{
+		// Order is parsed but just ignored as MySQL did.
+		$$ = &ast.IndexPartSpecification{Column: $1.(*ast.ColumnName), Length: $2.(int)}
+	}
+|	'(' Expression ')' Order
+	{
+		$$ = &ast.IndexPartSpecification{Expr: $2}
 	}
 
 IndexLockAndAlgorithmOpt:
@@ -4599,7 +4613,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET"
+ "ACTION" | "ADVISE" |"ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET"
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EVOLVE" | "EXECUTE" | "EXTENDED" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"
@@ -4617,7 +4631,7 @@ UnReservedKeyword:
 | "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" |
 "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT" | "REPLICA" | "LOCATION" | "LABELS"
-| "LOGS" | "HOSTS" | "AGAINST" | "EXPANSION" | "INCREMENT" | "MINVALUE" | "NOMAXVALUE" | "NOMINVALUE" | "NOCACHE" | "CACHE" | "CYCLE" | "NOCYCLE" | "NOORDER"
+| "LOGS" | "HOSTS" | "AGAINST" | "EXPANSION" | "INCREMENT" | "MINVALUE" | "NOMAXVALUE" | "NOMINVALUE" | "NOCACHE" | "CACHE" | "CYCLE" | "NOCYCLE" | "NOORDER" | "SEQUENCE" | "MAX_MINUTES" | "MAX_IDXNUM" | "PER_TABLE" | "PER_DB"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "BUILTINS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -8669,6 +8683,7 @@ Statement:
 |	GrantStmt
 |	GrantRoleStmt
 |	InsertIntoStmt
+|	IndexAdviseStmt
 |	KillStmt
 |	LoadDataStmt
 |	LoadStatsStmt
@@ -10921,6 +10936,81 @@ SignedNum:
 |	'-' NUM
 	{
 		$$ = -$2.(int64)
+	}
+
+/********************************************************************
+ * Index Advisor Statement
+ *
+ * INDEX ADVISE
+ * 	[LOCAL]
+ *	INFILE 'file_name'
+ *	[MAX_MINUTES number]
+ *	[MAX_IDXNUM
+ *  	[PER_TABLE number]
+ *  	[PER_DB number]
+ *	]
+ *	[LINES
+ *  	[STARTING BY 'string']
+ *  	[TERMINATED BY 'string']
+ *	]
+ *******************************************************************/
+
+IndexAdviseStmt:
+	"INDEX" "ADVISE" LocalOpt "INFILE" stringLit MaxMinutesOpt MaxIndexNumOpt Lines
+	{
+		x := &ast.IndexAdviseStmt{
+			Path:			$5,
+			MaxMinutes:		$6.(uint64),
+		}
+		if $3 != nil {
+			x.IsLocal = true
+		}
+		if $7 != nil {
+			x.MaxIndexNum = $7.(*ast.MaxIndexNumClause)
+		}
+		if $8 != nil {
+			x.LinesInfo = $8.(*ast.LinesClause)
+		}
+		$$ = x
+	}
+
+MaxMinutesOpt:
+	{
+		$$ = uint64(ast.UnspecifiedSize)
+	}
+|	"MAX_MINUTES" NUM
+	{
+		$$ = getUint64FromNUM($2)
+	}
+
+MaxIndexNumOpt:
+	{
+		$$ = nil
+	}
+|	"MAX_IDXNUM" PerTable PerDB
+	{
+		$$ = &ast.MaxIndexNumClause{
+			PerTable:	$2.(uint64),
+			PerDB: 		$3.(uint64),
+		}
+	}
+
+PerTable:
+	{
+		$$ = uint64(ast.UnspecifiedSize)
+	}
+|	"PER_TABLE" NUM
+	{
+		$$ = getUint64FromNUM($2)
+	}
+
+PerDB:
+	{
+		$$ = uint64(ast.UnspecifiedSize)
+	}
+|	"PER_DB" NUM
+	{
+		$$ = getUint64FromNUM($2)
 	}
 
 %%
