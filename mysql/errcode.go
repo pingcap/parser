@@ -1000,6 +1000,7 @@ const (
 	ErrCantSetToNull                       = 8054
 	ErrSnapshotTooOld                      = 8055
 	ErrInvalidTableID                      = 8056
+	ErrInvalidType                         = 8057
 
 	// Error codes used by TiDB ddl package
 	ErrUnsupportedDDLOperation  = 8200
