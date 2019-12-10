@@ -36,18 +36,11 @@ func (ccv CommentCodeVersion) String() string {
 }
 
 func extractVersionCodeInComment(comment string) CommentCodeVersion {
-	if SpecVersionCodePattern.MatchString(comment) {
-		verDigitNum := 5
-		if isDigit(rune(comment[len("/*T!xxxxx")])) {
-			verDigitNum += 1
-		}
-		code, err := strconv.Atoi(comment[4 : 4+verDigitNum])
-		if err != nil {
-			return CommentCodeNoVersion
-		}
-		return CommentCodeVersion(code)
+	code, err := strconv.Atoi(specVersionCodeValue.FindString(comment))
+	if err != nil {
+		return CommentCodeNoVersion
 	}
-	return CommentCodeNoVersion
+	return CommentCodeVersion(code)
 }
 
 // WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.

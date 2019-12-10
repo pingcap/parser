@@ -55,6 +55,7 @@ var (
 	// SpecVersionCodePattern is a pattern for special comments with version.
 	SpecVersionCodePattern = regexp.MustCompile(`\/\*T![0-9]{5,6}([^*]|\*+[^*/])*\*+\/`)
 	specVersionCodeStart   = regexp.MustCompile(`^\/\*T![0-9]{5,6}[ \t]*`)
+	specVersionCodeValue = regexp.MustCompile(`[0-9]{5,6}`)
 )
 
 func init() {
