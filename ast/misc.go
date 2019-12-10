@@ -1039,7 +1039,7 @@ func (t *TLSOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ISSUER ")
 		ctx.WriteString(t.Value)
 	case Subject:
-		ctx.WriteKeyWord("CIPHER")
+		ctx.WriteKeyWord("SUBJECT ")
 		ctx.WriteString(t.Value)
 	default:
 		return errors.Errorf("Unsupported TLSOption.Type %d", t.Type)
