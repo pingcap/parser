@@ -29,6 +29,7 @@ var (
 	_ DDLNode = &CreateIndexStmt{}
 	_ DDLNode = &CreateTableStmt{}
 	_ DDLNode = &CreateViewStmt{}
+	_ DDLNode = &CreateSequenceStmt{}
 	_ DDLNode = &DropDatabaseStmt{}
 	_ DDLNode = &DropIndexStmt{}
 	_ DDLNode = &DropTableStmt{}
@@ -41,7 +42,7 @@ var (
 	_ Node = &ColumnOption{}
 	_ Node = &ColumnPosition{}
 	_ Node = &Constraint{}
-	_ Node = &IndexColName{}
+	_ Node = &IndexPartSpecification{}
 	_ Node = &ReferenceDef{}
 )
 
@@ -192,18 +193,27 @@ func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// IndexColName is used for parsing index column name from SQL.
-type IndexColName struct {
+// IndexPartSpecifications is used for parsing index column name or index expression from SQL.
+type IndexPartSpecification struct {
 	node
 
 	Column *ColumnName
 	Length int
+	Expr   ExprNode
 }
 
 // Restore implements Node interface.
-func (n *IndexColName) Restore(ctx *RestoreCtx) error {
+func (n *IndexPartSpecification) Restore(ctx *RestoreCtx) error {
+	if n.Expr != nil {
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing IndexPartSpecifications")
+		}
+		ctx.WritePlain(")")
+		return nil
+	}
 	if err := n.Column.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while splicing IndexColName")
+		return errors.Annotate(err, "An error occurred while splicing IndexPartSpecifications")
 	}
 	if n.Length > 0 {
 		ctx.WritePlainf("(%d)", n.Length)
@@ -212,12 +222,20 @@ func (n *IndexColName) Restore(ctx *RestoreCtx) error {
 }
 
 // Accept implements Node Accept interface.
-func (n *IndexColName) Accept(v Visitor) (Node, bool) {
+func (n *IndexPartSpecification) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
-	n = newNode.(*IndexColName)
+	n = newNode.(*IndexPartSpecification)
+	if n.Expr != nil {
+		node, ok := n.Expr.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Expr = node.(ExprNode)
+		return v.Leave(n)
+	}
 	node, ok := n.Column.Accept(v)
 	if !ok {
 		return n, false
@@ -242,11 +260,11 @@ const (
 type ReferenceDef struct {
 	node
 
-	Table         *TableName
-	IndexColNames []*IndexColName
-	OnDelete      *OnDeleteOpt
-	OnUpdate      *OnUpdateOpt
-	Match         MatchType
+	Table                   *TableName
+	IndexPartSpecifications []*IndexPartSpecification
+	OnDelete                *OnDeleteOpt
+	OnUpdate                *OnUpdateOpt
+	Match                   MatchType
 }
 
 // Restore implements Node interface.
@@ -258,14 +276,14 @@ func (n *ReferenceDef) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	if n.IndexColNames != nil {
+	if n.IndexPartSpecifications != nil {
 		ctx.WritePlain("(")
-		for i, indexColNames := range n.IndexColNames {
+		for i, indexColNames := range n.IndexPartSpecifications {
 			if i > 0 {
 				ctx.WritePlain(", ")
 			}
 			if err := indexColNames.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while splicing IndexColNames: [%v]", i)
+				return errors.Annotatef(err, "An error occurred while splicing IndexPartSpecifications: [%v]", i)
 			}
 		}
 		ctx.WritePlain(")")
@@ -309,12 +327,12 @@ func (n *ReferenceDef) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.IndexColNames {
+	for i, val := range n.IndexPartSpecifications {
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.IndexColNames[i] = node.(*IndexColName)
+		n.IndexPartSpecifications[i] = node.(*IndexPartSpecification)
 	}
 	onDelete, ok := n.OnDelete.Accept(v)
 	if !ok {
@@ -674,7 +692,7 @@ type Constraint struct {
 	Tp   ConstraintType
 	Name string
 
-	Keys []*IndexColName // Used for PRIMARY KEY, UNIQUE, ......
+	Keys []*IndexPartSpecification // Used for PRIMARY KEY, UNIQUE, ......
 
 	Refer *ReferenceDef // Used for foreign key.
 
@@ -785,7 +803,7 @@ func (n *Constraint) Accept(v Visitor) (Node, bool) {
 		if !ok {
 			return n, false
 		}
-		n.Keys[i] = node.(*IndexColName)
+		n.Keys[i] = node.(*IndexPartSpecification)
 	}
 	if n.Refer != nil {
 		node, ok := n.Refer.Accept(v)
@@ -1259,6 +1277,65 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// CreateSequenceStmt is a statement to create a Sequence.
+type CreateSequenceStmt struct {
+	ddlNode
+
+	// TODO : support or replace if need : care for it will conflict on temporaryOpt.
+	OrReplace   bool
+	IsTemporary bool
+	IfNotExists bool
+	Name        *TableName
+	SeqOptions  []*SequenceOption
+	TblOptions  []*TableOption
+}
+
+// Restore implements Node interface.
+func (n *CreateSequenceStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("CREATE ")
+	if n.OrReplace {
+		ctx.WriteKeyWord("OR REPLACE ")
+	}
+	if n.IsTemporary {
+		ctx.WriteKeyWord("TEMPORARY ")
+	}
+	ctx.WriteKeyWord("SEQUENCE ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
+	if err := n.Name.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while create CreateSequenceStmt.Name")
+	}
+	for i, option := range n.SeqOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreateSequenceStmt SequenceOption: [%v]", i)
+		}
+	}
+	for i, option := range n.TblOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreateSequenceStmt TableOption: [%v]", i)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *CreateSequenceStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*CreateSequenceStmt)
+	node, ok := n.Name.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Name = node.(*TableName)
+	return v.Leave(n)
+}
+
 // IndexLockAndAlgorithm stores the algorithm option and the lock option.
 type IndexLockAndAlgorithm struct {
 	node
@@ -1318,12 +1395,12 @@ type CreateIndexStmt struct {
 	// see https://mariadb.com/kb/en/library/create-index/
 	IfNotExists bool
 
-	IndexName     string
-	Table         *TableName
-	IndexColNames []*IndexColName
-	IndexOption   *IndexOption
-	KeyType       IndexKeyType
-	LockAlg       *IndexLockAndAlgorithm
+	IndexName               string
+	Table                   *TableName
+	IndexPartSpecifications []*IndexPartSpecification
+	IndexOption             *IndexOption
+	KeyType                 IndexKeyType
+	LockAlg                 *IndexLockAndAlgorithm
 }
 
 // Restore implements Node interface.
@@ -1348,12 +1425,12 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 
 	ctx.WritePlain(" (")
-	for i, indexColName := range n.IndexColNames {
+	for i, indexColName := range n.IndexPartSpecifications {
 		if i != 0 {
 			ctx.WritePlain(", ")
 		}
 		if err := indexColName.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.IndexColNames: [%v]", i)
+			return errors.Annotatef(err, "An error occurred while restore CreateIndexStmt.IndexPartSpecifications: [%v]", i)
 		}
 	}
 	ctx.WritePlain(")")
@@ -1387,12 +1464,12 @@ func (n *CreateIndexStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	for i, val := range n.IndexColNames {
+	for i, val := range n.IndexPartSpecifications {
 		node, ok = val.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.IndexColNames[i] = node.(*IndexColName)
+		n.IndexPartSpecifications[i] = node.(*IndexPartSpecification)
 	}
 	if n.IndexOption != nil {
 		node, ok := n.IndexOption.Accept(v)
@@ -1871,6 +1948,69 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteString(n.StrValue)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
+	}
+	return nil
+}
+
+// SequenceOptionType is the type for SequenceOption
+type SequenceOptionType int
+
+// SequenceOption types.
+const (
+	SequenceOptionNone SequenceOptionType = iota
+	SequenceOptionIncrementBy
+	SequenceStartWith
+	SequenceNoMinValue
+	SequenceMinValue
+	SequenceNoMaxValue
+	SequenceMaxValue
+	SequenceNoCache
+	SequenceCache
+	SequenceNoCycle
+	SequenceCycle
+	SequenceNoOrder
+	SequenceOrder
+)
+
+// SequenceOption is used for parsing sequence option from SQL.
+type SequenceOption struct {
+	Tp       SequenceOptionType
+	IntValue int64
+}
+
+func (n *SequenceOption) Restore(ctx *RestoreCtx) error {
+	switch n.Tp {
+	case SequenceOptionIncrementBy:
+		ctx.WriteKeyWord("INCREMENT BY ")
+		ctx.WritePlainf("%d", n.IntValue)
+	case SequenceStartWith:
+		ctx.WriteKeyWord("START WITH ")
+		ctx.WritePlainf("%d", n.IntValue)
+	case SequenceNoMinValue:
+		ctx.WriteKeyWord("NO MINVALUE")
+	case SequenceMinValue:
+		ctx.WriteKeyWord("MINVALUE ")
+		ctx.WritePlainf("%d", n.IntValue)
+	case SequenceNoMaxValue:
+		ctx.WriteKeyWord("NO MAXVALUE")
+	case SequenceMaxValue:
+		ctx.WriteKeyWord("MAXVALUE ")
+		ctx.WritePlainf("%d", n.IntValue)
+	case SequenceNoCache:
+		ctx.WriteKeyWord("NOCACHE")
+	case SequenceCache:
+		ctx.WriteKeyWord("CACHE ")
+		ctx.WritePlainf("%d", n.IntValue)
+	case SequenceNoCycle:
+		ctx.WriteKeyWord("NOCYCLE")
+	case SequenceCycle:
+		ctx.WriteKeyWord("CYCLE")
+	case SequenceNoOrder:
+		ctx.WriteKeyWord("NOORDER")
+	case SequenceOrder:
+		ctx.WriteKeyWord("ORDER")
+	default:
+		return errors.Errorf("invalid SequenceOption: %d", n.Tp)
 	}
 	return nil
 }
