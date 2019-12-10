@@ -1152,8 +1152,8 @@ import (
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
 	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
 	MatchOpt		"optional MATCH clause"
-	MaxMinutesOpt	"MAX_MINUTES num(int)"
-	MaxIndexNumOpt	"MAX_IDXNUM clause"
+	MaxMinutesOpt		"MAX_MINUTES num(int)"
+	MaxIndexNumOpt		"MAX_IDXNUM clause"
 	PerTable 		"Max index number PER_TABLE"
 	PerDB			"Max index number PER_DB"
 
