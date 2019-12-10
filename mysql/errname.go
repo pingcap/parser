@@ -943,6 +943,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInfoSchemaExpired:          "Information schema is out of date: schema failed to update in 1 lease, please make sure TiDB can connect to TiKV",
 	ErrInfoSchemaChanged:          "Information schema is changed during the execution of the statement(for example, table definition may be updated by other DDL ran in parallel). If you see this error often, try increasing `tidb_max_delta_schema_count`",
 	ErrInvalidIncrementAndOffset:  "Invalid auto_increment settings: auto_increment_increment: %d, auto_increment_offset: %d, both of them must be in range [1..65535]",
+	ErrInvalidAutoRandom:          "Invalid auto random: %s",
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
