@@ -7,7 +7,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/charset"
@@ -166,110 +165,49 @@ func (d *Datum) SetMysqlDecimal(b *MyDecimal) {
 	d.x = b
 }
 
-// GetMysqlDuration gets Duration value
-func (d *Datum) GetMysqlDuration() Duration {
-	return Duration{Duration: time.Duration(d.i), Fsp: int8(d.decimal)}
-}
-
-// SetMysqlDuration sets Duration value
-func (d *Datum) SetMysqlDuration(b Duration) {
-	d.k = KindMysqlDuration
-	d.i = int64(b.Duration)
-	d.decimal = uint16(b.Fsp)
-}
-
-// GetMysqlEnum gets Enum value
-func (d *Datum) GetMysqlEnum() Enum {
-	str := string(d.b)
-	return Enum{Value: uint64(d.i), Name: str}
-}
-
-// SetMysqlEnum sets Enum value
-func (d *Datum) SetMysqlEnum(b Enum) {
-	d.k = KindMysqlEnum
-	d.i = int64(b.Value)
-	d.b = []byte(b.Name)
-}
-
-// GetMysqlSet gets Set value
-func (d *Datum) GetMysqlSet() Set {
-	str := string(d.b)
-	return Set{Value: uint64(d.i), Name: str}
-}
-
-// SetMysqlSet sets Set value
-func (d *Datum) SetMysqlSet(b Set) {
-	d.k = KindMysqlSet
-	d.i = int64(b.Value)
-	d.b = []byte(b.Name)
-}
-
-// GetMysqlJSON gets BinaryJSON value
-func (d *Datum) GetMysqlJSON() BinaryJSON {
-	return BinaryJSON{TypeCode: byte(d.i), Value: d.b}
-}
-
-// SetMysqlJSON sets BinaryJSON value
-func (d *Datum) SetMysqlJSON(b BinaryJSON) {
-	d.k = KindMysqlJSON
-	d.i = int64(b.TypeCode)
-	d.b = b.Value
-}
-
-// GetMysqlTime gets types.Time value
-func (d *Datum) GetMysqlTime() Time {
-	return d.x.(Time)
-}
-
-// SetMysqlTime sets types.Time value
-func (d *Datum) SetMysqlTime(b Time) {
-	d.k = KindMysqlTime
-	d.x = b
-}
-
-// String returns a human-readable description of Datum. It is intended only for debugging.
-func (d Datum) String() string {
-	var t string
-	switch d.k {
-	case KindNull:
-		t = "KindNull"
-	case KindInt64:
-		t = "KindInt64"
-	case KindUint64:
-		t = "KindUint64"
-	case KindFloat32:
-		t = "KindFloat32"
-	case KindFloat64:
-		t = "KindFloat64"
-	case KindString:
-		t = "KindString"
-	case KindBytes:
-		t = "KindBytes"
-	case KindMysqlDecimal:
-		t = "KindMysqlDecimal"
-	case KindMysqlDuration:
-		t = "KindMysqlDuration"
-	case KindMysqlEnum:
-		t = "KindMysqlEnum"
-	case KindBinaryLiteral:
-		t = "KindBinaryLiteral"
-	case KindMysqlBit:
-		t = "KindMysqlBit"
-	case KindMysqlSet:
-		t = "KindMysqlSet"
-	case KindMysqlJSON:
-		t = "KindMysqlJSON"
-	case KindMysqlTime:
-		t = "KindMysqlTime"
-	default:
-		t = "Unknown"
-	}
-	v := d.GetValue()
-	if b, ok := v.([]byte); ok && d.k == KindBytes {
-		v = string(b)
-	}
-	return fmt.Sprintf("%v %v", t, v)
-}
+//// String returns a human-readable description of Datum. It is intended only for debugging.
+//func (d Datum) String() string {
+//	var t string
+//	switch d.k {
+//	case KindNull:
+//		t = "KindNull"
+//	case KindInt64:
+//		t = "KindInt64"
+//	case KindUint64:
+//		t = "KindUint64"
+//	case KindFloat32:
+//		t = "KindFloat32"
+//	case KindFloat64:
+//		t = "KindFloat64"
+//	case KindString:
+//		t = "KindString"
+//	case KindBytes:
+//		t = "KindBytes"
+//	case KindMysqlDecimal:
+//		t = "KindMysqlDecimal"
+//	case KindMysqlDuration:
+//		t = "KindMysqlDuration"
+//	case KindMysqlEnum:
+//		t = "KindMysqlEnum"
+//	case KindBinaryLiteral:
+//		t = "KindBinaryLiteral"
+//	case KindMysqlBit:
+//		t = "KindMysqlBit"
+//	case KindMysqlSet:
+//		t = "KindMysqlSet"
+//	case KindMysqlJSON:
+//		t = "KindMysqlJSON"
+//	case KindMysqlTime:
+//		t = "KindMysqlTime"
+//	default:
+//		t = "Unknown"
+//	}
+//	v := d.GetValue()
+//	if b, ok := v.([]byte); ok && d.k == KindBytes {
+//		v = string(b)
+//	}
+//	return fmt.Sprintf("%v %v", t, v)
+//}
 
 // GetValue gets the value of the datum of any kind.
 func (d *Datum) GetValue() interface{} {
@@ -288,18 +226,8 @@ func (d *Datum) GetValue() interface{} {
 		return d.GetBytes()
 	case KindMysqlDecimal:
 		return d.GetMysqlDecimal()
-	case KindMysqlDuration:
-		return d.GetMysqlDuration()
-	case KindMysqlEnum:
-		return d.GetMysqlEnum()
 	case KindBinaryLiteral, KindMysqlBit:
 		return d.GetBinaryLiteral()
-	case KindMysqlSet:
-		return d.GetMysqlSet()
-	case KindMysqlJSON:
-		return d.GetMysqlJSON()
-	case KindMysqlTime:
-		return d.GetMysqlTime()
 	default:
 		return d.GetInterface()
 	}
@@ -332,22 +260,12 @@ func (d *Datum) SetValue(val interface{}) {
 		d.SetBytes(x)
 	case *MyDecimal:
 		d.SetMysqlDecimal(x)
-	case Duration:
-		d.SetMysqlDuration(x)
-	case Enum:
-		d.SetMysqlEnum(x)
 	case BinaryLiteral:
 		d.SetBinaryLiteral(x)
 	case BitLiteral: // Store as BinaryLiteral for Bit and Hex literals
 		d.SetBinaryLiteral(BinaryLiteral(x))
 	case HexLiteral:
 		d.SetBinaryLiteral(BinaryLiteral(x))
-	case Set:
-		d.SetMysqlSet(x)
-	case BinaryJSON:
-		d.SetMysqlJSON(x)
-	case Time:
-		d.SetMysqlTime(x)
 	default:
 		d.SetInterface(x)
 	}
@@ -368,18 +286,8 @@ func (d *Datum) ToString() (string, error) {
 		return d.GetString(), nil
 	case KindBytes:
 		return d.GetString(), nil
-	case KindMysqlTime:
-		return d.GetMysqlTime().String(), nil
-	case KindMysqlDuration:
-		return d.GetMysqlDuration().String(), nil
 	case KindMysqlDecimal:
 		return d.GetMysqlDecimal().String(), nil
-	case KindMysqlEnum:
-		return d.GetMysqlEnum().String(), nil
-	case KindMysqlSet:
-		return d.GetMysqlSet().String(), nil
-	case KindMysqlJSON:
-		return d.GetMysqlJSON().String(), nil
 	case KindBinaryLiteral, KindMysqlBit:
 		return d.GetBinaryLiteral().ToString(), nil
 	default:
@@ -646,49 +554,11 @@ func DefaultTypeForValue(value interface{}, tp *types.FieldType) {
 		SetBinChsClnFlag(tp)
 		tp.Flag &= ^mysql.BinaryFlag
 		tp.Flag |= mysql.UnsignedFlag
-	case Time:
-		tp.Tp = x.Type
-		switch x.Type {
-		case mysql.TypeDate:
-			tp.Flen = mysql.MaxDateWidth
-			tp.Decimal = types.UnspecifiedLength
-		case mysql.TypeDatetime, mysql.TypeTimestamp:
-			tp.Flen = mysql.MaxDatetimeWidthNoFsp
-			if x.Fsp > DefaultFsp { // consider point('.') and the fractional part.
-				tp.Flen += int(x.Fsp) + 1
-			}
-			tp.Decimal = int(x.Fsp)
-		}
-		SetBinChsClnFlag(tp)
-	case Duration:
-		tp.Tp = mysql.TypeDuration
-		tp.Flen = len(x.String())
-		if x.Fsp > DefaultFsp { // consider point('.') and the fractional part.
-			tp.Flen = int(x.Fsp) + 1
-		}
-		tp.Decimal = int(x.Fsp)
-		SetBinChsClnFlag(tp)
 	case *MyDecimal:
 		tp.Tp = mysql.TypeNewDecimal
 		tp.Flen = len(x.ToString())
 		tp.Decimal = int(x.digitsFrac)
 		SetBinChsClnFlag(tp)
-	case Enum:
-		tp.Tp = mysql.TypeEnum
-		tp.Flen = len(x.Name)
-		tp.Decimal = types.UnspecifiedLength
-		SetBinChsClnFlag(tp)
-	case Set:
-		tp.Tp = mysql.TypeSet
-		tp.Flen = len(x.Name)
-		tp.Decimal = types.UnspecifiedLength
-		SetBinChsClnFlag(tp)
-	case BinaryJSON:
-		tp.Tp = mysql.TypeJSON
-		tp.Flen = types.UnspecifiedLength
-		tp.Decimal = 0
-		tp.Charset = charset.CharsetBin
-		tp.Collate = charset.CollationBin
 	default:
 		tp.Tp = mysql.TypeUnspecified
 		tp.Flen = types.UnspecifiedLength

@@ -129,7 +129,7 @@ func (n *ValueExpr) Format(w io.Writer) {
 	default:
 		panic("Can't format to string")
 	}
-	fmt.Fprint(w, s)
+	_, _ = fmt.Fprint(w, s)
 }
 
 // newValueExpr creates a ValueExpr with value, and sets default field type.
