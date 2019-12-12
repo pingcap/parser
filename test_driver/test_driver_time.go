@@ -3,123 +3,19 @@ package test_driver
 import (
 	"bytes"
 	"fmt"
-	"github.com/pingcap/errors"
-	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/terror"
 	"math"
 	"regexp"
 	"strconv"
 	gotime "time"
+
+	"github.com/pingcap/errors"
+	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/terror"
 )
 
-// Time format without fractional seconds precision.
-const (
-	DateFormat = "2006-01-02"
-	TimeFormat = "2006-01-02 15:04:05"
-	// TimeFSPFormat is time format with fractional seconds precision.
-	TimeFSPFormat = "2006-01-02 15:04:05.000000"
-)
-
-const (
-	// MinYear is the minimum for mysql year type.
-	MinYear int16 = 1901
-	// MaxYear is the maximum for mysql year type.
-	MaxYear int16 = 2155
-	// MaxDuration is the maximum for duration.
-	MaxDuration int64 = 838*10000 + 59*100 + 59
-	// MinTime is the minimum for mysql time type.
-	MinTime = -gotime.Duration(838*3600+59*60+59) * gotime.Second
-	// MaxTime is the maximum for mysql time type.
-	MaxTime = gotime.Duration(838*3600+59*60+59) * gotime.Second
-	// ZeroDatetimeStr is the string representation of a zero datetime.
-	ZeroDatetimeStr = "0000-00-00 00:00:00"
-	// ZeroDateStr is the string representation of a zero date.
-	ZeroDateStr = "0000-00-00"
-
-	// TimeMaxHour is the max hour for mysql time type.
-	TimeMaxHour = 838
-	// TimeMaxMinute is the max minute for mysql time type.
-	TimeMaxMinute = 59
-	// TimeMaxSecond is the max second for mysql time type.
-	TimeMaxSecond = 59
-	// TimeMaxValue is the maximum value for mysql time type.
-	TimeMaxValue = TimeMaxHour*10000 + TimeMaxMinute*100 + TimeMaxSecond
-	// TimeMaxValueSeconds is the maximum second value for mysql time type.
-	TimeMaxValueSeconds = TimeMaxHour*3600 + TimeMaxMinute*60 + TimeMaxSecond
-)
-
-const (
-	// YearIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	YearIndex = 0 + iota
-	// MonthIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	MonthIndex
-	// DayIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	DayIndex
-	// HourIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	HourIndex
-	// MinuteIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	MinuteIndex
-	// SecondIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	SecondIndex
-	// MicrosecondIndex is index of 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	MicrosecondIndex
-)
-
-const (
-	// YearMonthMaxCnt is max parameters count 'YEARS-MONTHS' expr Format allowed
-	YearMonthMaxCnt = 2
-	// DayHourMaxCnt is max parameters count 'DAYS HOURS' expr Format allowed
-	DayHourMaxCnt = 2
-	// DayMinuteMaxCnt is max parameters count 'DAYS HOURS:MINUTES' expr Format allowed
-	DayMinuteMaxCnt = 3
-	// DaySecondMaxCnt is max parameters count 'DAYS HOURS:MINUTES:SECONDS' expr Format allowed
-	DaySecondMaxCnt = 4
-	// DayMicrosecondMaxCnt is max parameters count 'DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format allowed
-	DayMicrosecondMaxCnt = 5
-	// HourMinuteMaxCnt is max parameters count 'HOURS:MINUTES' expr Format allowed
-	HourMinuteMaxCnt = 2
-	// HourSecondMaxCnt is max parameters count 'HOURS:MINUTES:SECONDS' expr Format allowed
-	HourSecondMaxCnt = 3
-	// HourMicrosecondMaxCnt is max parameters count 'HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format allowed
-	HourMicrosecondMaxCnt = 4
-	// MinuteSecondMaxCnt is max parameters count 'MINUTES:SECONDS' expr Format allowed
-	MinuteSecondMaxCnt = 2
-	// MinuteMicrosecondMaxCnt is max parameters count 'MINUTES:SECONDS.MICROSECONDS' expr Format allowed
-	MinuteMicrosecondMaxCnt = 3
-	// SecondMicrosecondMaxCnt is max parameters count 'SECONDS.MICROSECONDS' expr Format allowed
-	SecondMicrosecondMaxCnt = 2
-	// TimeValueCnt is parameters count 'YEARS-MONTHS DAYS HOURS:MINUTES:SECONDS.MICROSECONDS' expr Format
-	TimeValueCnt = 7
-)
-
-// Zero values for different types.
 var (
-	// ZeroDuration is the zero value for Duration type.
-	ZeroDuration = Duration{Duration: gotime.Duration(0), Fsp: DefaultFsp}
-
 	// ZeroTime is the zero value for TimeInternal type.
 	ZeroTime = MysqlTime{}
-
-	// ZeroDatetime is the zero value for datetime Time.
-	ZeroDatetime = Time{
-		Time: ZeroTime,
-		Type: mysql.TypeDatetime,
-		Fsp:  DefaultFsp,
-	}
-
-	// ZeroTimestamp is the zero value for timestamp Time.
-	ZeroTimestamp = Time{
-		Time: ZeroTime,
-		Type: mysql.TypeTimestamp,
-		Fsp:  DefaultFsp,
-	}
-
-	// ZeroDate is the zero value for date Time.
-	ZeroDate = Time{
-		Time: ZeroTime,
-		Type: mysql.TypeDate,
-		Fsp:  DefaultFsp,
-	}
 )
 
 var (
@@ -134,13 +30,6 @@ var (
 	}
 )
 
-const (
-	// GoDurationDay is the gotime.Duration which equals to a Day.
-	GoDurationDay = gotime.Hour * 24
-	// GoDurationWeek is the gotime.Duration which equals to a Week.
-	GoDurationWeek = GoDurationDay * 7
-)
-
 // FromDate makes a internal time representation from the given date.
 func FromDate(year int, month int, day int, hour int, minute int, second int, microsecond int) MysqlTime {
 	return MysqlTime{
@@ -152,11 +41,6 @@ func FromDate(year int, month int, day int, hour int, minute int, second int, mi
 		second:      uint8(second),
 		microsecond: uint32(microsecond),
 	}
-}
-
-// Clock returns the hour, minute, and second within the day specified by t.
-func (t Time) Clock() (hour int, minute int, second int) {
-	return t.Time.Hour(), t.Time.Minute(), t.Time.Second()
 }
 
 // Time is the struct for handling datetime, timestamp and date.

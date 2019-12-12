@@ -144,31 +144,14 @@ func (d *Datum) SetNull() {
 	d.x = nil
 }
 
-// SetMinNotNull sets datum to minNotNull value.
-func (d *Datum) SetMinNotNull() {
-	d.k = KindMinNotNull
-	d.x = nil
-}
-
 // GetBinaryLiteral gets Bit value
 func (d *Datum) GetBinaryLiteral() BinaryLiteral {
 	return d.b
 }
 
-// GetMysqlBit gets MysqlBit value
-func (d *Datum) GetMysqlBit() BinaryLiteral {
-	return d.GetBinaryLiteral()
-}
-
 // SetBinaryLiteral sets Bit value
 func (d *Datum) SetBinaryLiteral(b BinaryLiteral) {
 	d.k = KindBinaryLiteral
-	d.b = b
-}
-
-// SetMysqlBit sets MysqlBit value
-func (d *Datum) SetMysqlBit(b BinaryLiteral) {
-	d.k = KindMysqlBit
 	d.b = b
 }
 
@@ -242,15 +225,6 @@ func (d *Datum) GetMysqlTime() Time {
 func (d *Datum) SetMysqlTime(b Time) {
 	d.k = KindMysqlTime
 	d.x = b
-}
-
-// SetAutoID set the auto increment ID according to its int flag.
-func (d *Datum) SetAutoID(id int64, flag uint) {
-	if mysql.HasUnsignedFlag(flag) {
-		d.SetUint64(uint64(id))
-	} else {
-		d.SetInt64(id)
-	}
 }
 
 // String returns a human-readable description of Datum. It is intended only for debugging.
@@ -433,18 +407,6 @@ func NewBytesDatum(b []byte) (d Datum) {
 // NewStringDatum creates a new Datum from a string.
 func NewStringDatum(s string) (d Datum) {
 	d.SetString(s)
-	return d
-}
-
-// NewFloat64Datum creates a new Datum from a float64 value.
-func NewFloat64Datum(f float64) (d Datum) {
-	d.SetFloat64(f)
-	return d
-}
-
-// NewDecimalDatum creates a new Datum form a MyDecimal value.
-func NewDecimalDatum(dec *MyDecimal) (d Datum) {
-	d.SetMysqlDecimal(dec)
 	return d
 }
 

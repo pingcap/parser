@@ -1,7 +1,6 @@
 package test_driver
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"unicode"
@@ -34,53 +33,6 @@ func Round(f float64, dec int) float64 {
 	return RoundFloat(tmp) / shift
 }
 
-// Truncate truncates the argument f to dec decimal places.
-// dec defaults to 0 if not specified. dec can be negative
-// to cause dec digits left of the decimal point of the
-// value f to become zero.
-func Truncate(f float64, dec int) float64 {
-	shift := math.Pow10(dec)
-	tmp := f * shift
-	if math.IsInf(tmp, 0) {
-		return f
-	}
-	return math.Trunc(tmp) / shift
-}
-
-// GetMaxFloat gets the max float for given flen and decimal.
-func GetMaxFloat(flen int, decimal int) float64 {
-	intPartLen := flen - decimal
-	f := math.Pow10(intPartLen)
-	f -= math.Pow10(-decimal)
-	return f
-}
-
-// TruncateFloat tries to truncate f.
-// If the result exceeds the max/min float that flen/decimal allowed, returns the max/min float allowed.
-func TruncateFloat(f float64, flen int, decimal int) (float64, error) {
-	if math.IsNaN(f) {
-		// nan returns 0
-		return 0, ErrOverflow.GenWithStackByArgs("DOUBLE", "")
-	}
-
-	maxF := GetMaxFloat(flen, decimal)
-
-	if !math.IsInf(f, 0) {
-		f = Round(f, decimal)
-	}
-
-	var err error
-	if f > maxF {
-		f = maxF
-		err = ErrOverflow.GenWithStackByArgs("DOUBLE", "")
-	} else if f < -maxF {
-		f = -maxF
-		err = ErrOverflow.GenWithStackByArgs("DOUBLE", "")
-	}
-
-	return f, errors.Trace(err)
-}
-
 func isSpace(c byte) bool {
 	return c == ' ' || c == '\t'
 }
@@ -96,21 +48,7 @@ func myMax(a, b int) int {
 	return b
 }
 
-func myMaxInt8(a, b int8) int8 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func myMin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func myMinInt8(a, b int8) int8 {
 	if a < b {
 		return a
 	}
@@ -182,26 +120,6 @@ func strToInt(str string) (int64, error) {
 	return int64(r), err
 }
 
-// AddInt64 adds int64 a and b if no overflow, otherwise returns error.
-func AddInt64(a int64, b int64) (int64, error) {
-	if (a > 0 && b > 0 && math.MaxInt64-a < b) ||
-		(a < 0 && b < 0 && math.MinInt64-a > b) {
-		return 0, ErrOverflow.GenWithStackByArgs("BIGINT", fmt.Sprintf("(%d, %d)", a, b))
-	}
-
-	return a + b, nil
-}
-
-// SubInt64 subtracts int64 a with b and returns int64 if no overflow error.
-func SubInt64(a int64, b int64) (int64, error) {
-	if (a > 0 && b < 0 && math.MaxInt64-a < -b) ||
-		(a < 0 && b > 0 && math.MinInt64-a > -b) ||
-		(a == 0 && b == math.MinInt64) {
-		return 0, ErrOverflow.GenWithStackByArgs("BIGINT", fmt.Sprintf("(%d, %d)", a, b))
-	}
-	return a - b, nil
-}
-
 func Abs(n int64) int64 {
 	y := n >> 63
 	return (n ^ y) - y
@@ -233,31 +151,4 @@ func StrLenOfInt64Fast(x int64) int {
 		size = 1 // add "-" sign on the length count
 	}
 	return size + StrLenOfUint64Fast(uint64(Abs(x)))
-}
-
-var kind2Str = map[byte]string{
-	KindNull:          "null",
-	KindInt64:         "bigint",
-	KindUint64:        "unsigned bigint",
-	KindFloat32:       "float",
-	KindFloat64:       "double",
-	KindString:        "char",
-	KindBytes:         "bytes",
-	KindBinaryLiteral: "bit/hex literal",
-	KindMysqlDecimal:  "decimal",
-	KindMysqlDuration: "time",
-	KindMysqlEnum:     "enum",
-	KindMysqlBit:      "bit",
-	KindMysqlSet:      "set",
-	KindMysqlTime:     "datetime",
-	KindInterface:     "interface",
-	KindMinNotNull:    "min_not_null",
-	KindMaxValue:      "max_value",
-	KindRaw:           "raw",
-	KindMysqlJSON:     "json",
-}
-
-// KindStr converts kind to a string.
-func KindStr(kind byte) (r string) {
-	return kind2Str[kind]
 }

@@ -58,7 +58,6 @@ const (
 	LiteralFalse byte = 0x02
 )
 
-const unknownTypeCodeErrorMsg = "unknown type code: %d"
 const unknownTypeErrorMsg = "unknown type: %s"
 
 // BinaryJSON represents a binary encoded JSON object.

@@ -1411,24 +1411,3 @@ func maxDecimal(precision, frac int, to *MyDecimal) {
 		}
 	}
 }
-
-// NewDecFromInt creates a MyDecimal from int.
-func NewDecFromInt(i int64) *MyDecimal {
-	return new(MyDecimal).FromInt(i)
-}
-
-// NewDecFromFloatForTest creates a MyDecimal from float, as it returns no error, it should only be used in test.
-func NewDecFromFloatForTest(f float64) *MyDecimal {
-	dec := new(MyDecimal)
-	err := dec.FromFloat64(f)
-	terror.Log(errors.Trace(err))
-	return dec
-}
-
-// NewDecFromStringForTest creates a MyDecimal from string, as it returns no error, it should only be used in test.
-func NewDecFromStringForTest(s string) *MyDecimal {
-	dec := new(MyDecimal)
-	err := dec.FromString([]byte(s))
-	terror.Log(errors.Trace(err))
-	return dec
-}
