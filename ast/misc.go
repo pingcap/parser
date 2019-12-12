@@ -1144,17 +1144,15 @@ func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	tlsOptionLen := len(n.TLSOptions)
-
-	if tlsOptionLen != 0 {
+	if len(n.TLSOptions) != 0 {
 		ctx.WriteKeyWord(" REQUIRE ")
 	}
 
-	for i := 0; i < tlsOptionLen; i++ {
+	for i, option := range n.TLSOptions {
 		if i != 0 {
 			ctx.WriteKeyWord(" AND ")
 		}
-		if err := n.TLSOptions[i].Restore(ctx); err != nil {
+		if err := option.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TLSOptions[%d]", i)
 		}
 	}
@@ -1235,17 +1233,15 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	tlsOptionLen := len(n.TLSOptions)
-
-	if tlsOptionLen != 0 {
+	if len(n.TLSOptions) != 0 {
 		ctx.WriteKeyWord(" REQUIRE ")
 	}
 
-	for i := 0; i < tlsOptionLen; i++ {
+	for i, option := range n.TLSOptions {
 		if i != 0 {
 			ctx.WriteKeyWord(" AND ")
 		}
-		if err := n.TLSOptions[i].Restore(ctx); err != nil {
+		if err := option.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.TLSOptions[%d]", i)
 		}
 	}
@@ -1987,15 +1983,14 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 	if n.TLSOptions != nil {
-		tlsOptionLen := len(n.TLSOptions)
-		if tlsOptionLen != 0 {
+		if len(n.TLSOptions) != 0 {
 			ctx.WriteKeyWord(" REQUIRE ")
 		}
-		for i := 0; i < tlsOptionLen; i++ {
+		for i, option := range n.TLSOptions {
 			if i != 0 {
 				ctx.WriteKeyWord(" AND ")
 			}
-			if err := n.TLSOptions[i].Restore(ctx); err != nil {
+			if err := option.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore GrantStmt.TLSOptions[%d]", i)
 			}
 		}
