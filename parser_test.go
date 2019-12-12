@@ -2762,6 +2762,20 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table a(a int, b int, key((a+1), b));", true, "CREATE TABLE `a` (`a` INT,`b` INT,INDEX((`a`+1), `b`))"},
 		{"create table a(a int, b int, key((a + 1) desc));", true, "CREATE TABLE `a` (`a` INT,`b` INT,INDEX((`a`+1)))"},
 
+		// for database/table visibility
+		{"create table a(a int, b int) visible", true, "CREATE TABLE `a` (`a` INT,`b` INT) VISIBLE"},
+		{"create table a(a int, b int) invisible", true, "CREATE TABLE `a` (`a` INT,`b` INT) INVISIBLE"},
+		{"create table a(a int, b int) visible, invisible", true, "CREATE TABLE `a` (`a` INT,`b` INT) VISIBLE INVISIBLE"},
+		{"alter table a visible;", true, "ALTER TABLE `a` VISIBLE"},
+		{"alter table a invisible;", true, "ALTER TABLE `a` INVISIBLE"},
+		{"alter table a invisible, visible;", true, "ALTER TABLE `a` INVISIBLE, VISIBLE"},
+		{"create database db visible", true, "CREATE DATABASE `db` VISIBLE"},
+		{"create database db invisible", true, "CREATE DATABASE `db` INVISIBLE"},
+		{"create database db invisible visible", true, "CREATE DATABASE `db` INVISIBLE VISIBLE"},
+		{"alter database db visible", true, "ALTER DATABASE `db` VISIBLE"},
+		{"alter database db invisible", true, "ALTER DATABASE `db` INVISIBLE"},
+		{"alter database db visible invisible", true, "ALTER DATABASE `db` VISIBLE INVISIBLE"},
+
 		// for create sequence
 		{"create sequence sequence", false, ""},
 		{"create sequence seq", true, "CREATE SEQUENCE `seq`"},

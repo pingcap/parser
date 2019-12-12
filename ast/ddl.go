@@ -61,12 +61,14 @@ const (
 	DatabaseOptionCharset
 	DatabaseOptionCollate
 	DatabaseOptionEncryption
+	DatabaseOptionVisibility
 )
 
 // DatabaseOption represents database option.
 type DatabaseOption struct {
-	Tp    DatabaseOptionType
-	Value string
+	Tp        DatabaseOptionType
+	Value     string
+	UintValue uint64
 }
 
 // Restore implements Node interface.
@@ -84,6 +86,12 @@ func (n *DatabaseOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ENCRYPTION")
 		ctx.WritePlain(" = ")
 		ctx.WriteString(n.Value)
+	case DatabaseOptionVisibility:
+		if n.UintValue == uint64(VisibilityOptionVisible) {
+			ctx.WriteKeyWord("VISIBLE")
+		} else if n.UintValue == uint64(VisibilityOptionInvisible) {
+			ctx.WriteKeyWord("INVISIBLE")
+		}
 	default:
 		return errors.Errorf("invalid DatabaseOptionType: %d", n.Tp)
 	}
@@ -571,14 +579,14 @@ func (n *ColumnOption) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// IndexVisibility is the option for index visibility.
-type IndexVisibility int
+// VisibilityType is the option for database/table/index visibility.
+type VisibilityType int
 
-// IndexVisibility options.
+// VisibilityType options.
 const (
-	IndexVisibilityDefault IndexVisibility = iota
-	IndexVisibilityVisible
-	IndexVisibilityInvisible
+	VisibilityOptionDefault VisibilityType = iota
+	VisibilityOptionVisible
+	VisibilityOptionInvisible
 )
 
 // IndexOption is the index options.
@@ -594,7 +602,7 @@ type IndexOption struct {
 	Tp           model.IndexType
 	Comment      string
 	ParserName   model.CIStr
-	Visibility   IndexVisibility
+	Visibility   VisibilityType
 }
 
 // Restore implements Node interface.
@@ -633,14 +641,14 @@ func (n *IndexOption) Restore(ctx *RestoreCtx) error {
 		hasPrevOption = true
 	}
 
-	if n.Visibility != IndexVisibilityDefault {
+	if n.Visibility != VisibilityOptionDefault {
 		if hasPrevOption {
 			ctx.WritePlain(" ")
 		}
 		switch n.Visibility {
-		case IndexVisibilityVisible:
+		case VisibilityOptionVisible:
 			ctx.WriteKeyWord("VISIBLE")
-		case IndexVisibilityInvisible:
+		case VisibilityOptionInvisible:
 			ctx.WriteKeyWord("INVISIBLE")
 		}
 	}
@@ -1428,7 +1436,8 @@ func (n *CreateIndexStmt) Restore(ctx *RestoreCtx) error {
 	}
 	ctx.WritePlain(")")
 
-	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || len(n.IndexOption.ParserName.O) > 0 || n.IndexOption.Visibility != IndexVisibilityDefault {
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" ||
+		len(n.IndexOption.ParserName.O) > 0 || n.IndexOption.Visibility != VisibilityOptionDefault {
 		ctx.WritePlain(" ")
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
@@ -1715,6 +1724,7 @@ const (
 	TableOptionTableCheckSum
 	TableOptionUnion
 	TableOptionEncryption
+	TableOptionVisibility
 )
 
 // RowFormat types
@@ -1877,6 +1887,12 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 	case TableOptionPreSplitRegion:
 		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
 		ctx.WritePlainf("= %d", n.UintValue)
+	case TableOptionVisibility:
+		if n.UintValue == uint64(VisibilityOptionVisible) {
+			ctx.WriteKeyWord("VISIBLE")
+		} else if n.UintValue == uint64(VisibilityOptionInvisible) {
+			ctx.WriteKeyWord("INVISIBLE")
+		}
 	case TableOptionPackKeys:
 		// TODO: not support
 		ctx.WriteKeyWord("PACK_KEYS ")
@@ -2112,6 +2128,7 @@ const (
 	AlterTableOrderByColumns
 	// AlterTableSetTiFlashReplica uses to set the table TiFlash replica.
 	AlterTableSetTiFlashReplica
+	AlterTableVisibility
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2205,7 +2222,7 @@ type AlterTableSpec struct {
 	PartDefinitions []*PartitionDefinition
 	WithValidation  bool
 	Num             uint64
-	Visibility      IndexVisibility
+	IndexVisibility VisibilityType
 	TiFlashReplica  *TiFlashReplicaSpec
 }
 
@@ -2640,10 +2657,10 @@ func (n *AlterTableSpec) Restore(ctx *RestoreCtx) error {
 	case AlterTableIndexInvisible:
 		ctx.WriteKeyWord("ALTER INDEX ")
 		ctx.WriteName(n.Name)
-		switch n.Visibility {
-		case IndexVisibilityVisible:
+		switch n.IndexVisibility {
+		case VisibilityOptionVisible:
 			ctx.WriteKeyWord(" VISIBLE")
-		case IndexVisibilityInvisible:
+		case VisibilityOptionInvisible:
 			ctx.WriteKeyWord(" INVISIBLE")
 		}
 	default:

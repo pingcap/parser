@@ -884,7 +884,7 @@ import (
 	IndexHintListOpt		"index hint list opt"
 	IndexHintScope			"index hint scope"
 	IndexHintType			"index hint type"
-	IndexInvisible			"index visible/invisible"
+	VisibilityOpt			"database/table/index visible/invisible"
 	IndexKeyTypeOpt			"index key type"
 	IndexLockAndAlgorithmOpt	"index lock and algorithm"
 	IndexName			"index name"
@@ -1816,12 +1816,12 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The DROP CHECK clause is parsed but not implemented yet."))
 		parser.lastErrorAsWarn()
 	}
-|	"ALTER" "INDEX" Identifier IndexInvisible
+|	"ALTER" "INDEX" Identifier VisibilityOpt
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:               ast.AlterTableIndexInvisible,
 			Name:             $3,
-			Visibility:       $4.(ast.IndexVisibility),
+			IndexVisibility:       $4.(ast.VisibilityType),
 		}
 	}
 
@@ -3127,6 +3127,10 @@ DatabaseOption:
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
 	}
+|   VisibilityOpt
+    {
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionVisibility, UintValue: uint64($1.(ast.VisibilityType))}
+    }
 
 DatabaseOptionListOpt:
 	{
@@ -4481,7 +4485,7 @@ IndexOptionList:
 			   	opt1.KeyBlockSize = opt2.KeyBlockSize
 			} else if len(opt2.ParserName.O) > 0 {
 			   	opt1.ParserName = opt2.ParserName
-			} else if opt2.Visibility != ast.IndexVisibilityDefault {
+			} else if opt2.Visibility != ast.VisibilityOptionDefault {
 				opt1.Visibility = opt2.Visibility
 			}
 			$$ = opt1
@@ -4515,10 +4519,10 @@ IndexOption:
 			Comment: $2,
 		}
 	}
-|	IndexInvisible
+|	VisibilityOpt
 	{
 		$$ = &ast.IndexOption {
-			Visibility: $1.(ast.IndexVisibility),
+			Visibility: $1.(ast.VisibilityType),
 		}
 	}
 
@@ -4588,14 +4592,14 @@ IndexTypeName:
  		$$ = model.IndexTypeRtree
  	}
 
-IndexInvisible:
+VisibilityOpt:
 	"VISIBLE"
 	{
-		$$ = ast.IndexVisibilityVisible
+		$$ = ast.VisibilityOptionVisible
 	}
 |	"INVISIBLE"
 	{
-		$$ = ast.IndexVisibilityInvisible
+		$$ = ast.VisibilityOptionInvisible
 	}
 
 /**********************************Identifier********************************************/
@@ -8913,6 +8917,10 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionPreSplitRegion, UintValue: $3.(uint64)}
 	}
+|   VisibilityOpt
+    {
+		$$ = &ast.TableOption{Tp: ast.TableOptionVisibility, UintValue: uint64($1.(ast.VisibilityType))}
+    }
 |	"PACK_KEYS" EqOpt StatsPersistentVal
 	{
 		// Parse it but will ignore it.

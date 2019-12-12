@@ -66,6 +66,8 @@ const (
 	ActionCreateSequence                ActionType = 34
 	ActionAlterSequence                 ActionType = 35
 	ActionDropSequence                  ActionType = 36
+	ActionAlterSchemaVisibility         ActionType = 37
+	ActionAlterTableVisibility          ActionType = 38
 )
 
 const (
@@ -111,6 +113,8 @@ var actionMap = map[ActionType]string{
 	ActionCreateSequence:                "create sequence",
 	ActionAlterSequence:                 "alter sequence",
 	ActionDropSequence:                  "drop sequence",
+	ActionAlterSchemaVisibility:         "alter schema visibility",
+	ActionAlterTableVisibility:          "alter table visibility",
 }
 
 // String return current ddl action in string
