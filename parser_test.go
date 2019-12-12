@@ -29,8 +29,8 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"github.com/pingcap/parser/test_driver"
 	"github.com/pingcap/tidb/types"
-	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 func TestT(t *testing.T) {
@@ -251,7 +251,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 	sel, ok := st.(*ast.SelectStmt)
 	c.Assert(ok, IsTrue)
 	expr := sel.Fields.Fields[0]
-	vExpr := expr.Expr.(*driver.ValueExpr)
+	vExpr := expr.Expr.(*test_driver.ValueExpr)
 	c.Assert(vExpr.Kind(), Equals, types.KindInt64)
 	src = "SELECT 9223372036854775808;"
 	st, err = parser.ParseOneStmt(src, "", "")
@@ -259,7 +259,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 	sel, ok = st.(*ast.SelectStmt)
 	c.Assert(ok, IsTrue)
 	expr = sel.Fields.Fields[0]
-	vExpr = expr.Expr.(*driver.ValueExpr)
+	vExpr = expr.Expr.(*test_driver.ValueExpr)
 	c.Assert(vExpr.Kind(), Equals, types.KindUint64)
 }
 
@@ -4819,7 +4819,7 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 		node.F = strings.ToLower(node.F)
 	case *ast.SelectField:
 		node.Offset = 0
-	case *driver.ValueExpr:
+	case *test_driver.ValueExpr:
 		if node.Kind() == types.KindMysqlDecimal {
 			node.GetMysqlDecimal().FromString(node.GetMysqlDecimal().ToString())
 		}
