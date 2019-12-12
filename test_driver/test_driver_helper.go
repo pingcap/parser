@@ -7,9 +7,6 @@ import (
 	"unicode"
 
 	"github.com/pingcap/errors"
-	"github.com/pingcap/parser/charset"
-	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/types"
 )
 
 // RoundFloat rounds float val to the nearest integer value with float64 format, like MySQL Round function.
@@ -236,78 +233,6 @@ func StrLenOfInt64Fast(x int64) int {
 		size = 1 // add "-" sign on the length count
 	}
 	return size + StrLenOfUint64Fast(uint64(Abs(x)))
-}
-
-// CompareInt64 returns an integer comparing the int64 x to y.
-func CompareInt64(x, y int64) int {
-	if x < y {
-		return -1
-	} else if x == y {
-		return 0
-	}
-
-	return 1
-}
-
-// CompareUint64 returns an integer comparing the uint64 x to y.
-func CompareUint64(x, y uint64) int {
-	if x < y {
-		return -1
-	} else if x == y {
-		return 0
-	}
-
-	return 1
-}
-
-// CompareFloat64 returns an integer comparing the float64 x to y.
-func CompareFloat64(x, y float64) int {
-	if x < y {
-		return -1
-	} else if x == y {
-		return 0
-	}
-
-	return 1
-}
-
-// CompareString returns an integer comparing the string x to y.
-func CompareString(x, y string) int {
-	if x < y {
-		return -1
-	} else if x == y {
-		return 0
-	}
-
-	return 1
-}
-
-// overflow returns an overflowed error.
-func overflow(v interface{}, tp byte) error {
-	return ErrOverflow.GenWithStack("constant %v overflows %s", v, types.TypeStr(tp))
-}
-
-// IsBinaryStr returns a boolean indicating
-// whether the field type is a binary string type.
-func IsBinaryStr(ft *types.FieldType) bool {
-	return ft.Collate == charset.CollationBin && IsString(ft.Tp)
-}
-
-// IsString returns a boolean indicating
-// whether the field type is a string type.
-func IsString(tp byte) bool {
-	return types.IsTypeChar(tp) || types.IsTypeBlob(tp) || IsTypeVarchar(tp) || IsTypeUnspecified(tp)
-}
-
-// IsTypeUnspecified returns a boolean indicating whether the tp is the Unspecified type.
-func IsTypeUnspecified(tp byte) bool {
-	return tp == mysql.TypeUnspecified
-}
-
-// IsTypeVarchar returns a boolean indicating
-// whether the tp is the varchar type like a varstring type or a varchar type.
-func IsTypeVarchar(tp byte) bool {
-	return tp == mysql.TypeVarString || tp == mysql.TypeVarchar
 }
 
 var kind2Str = map[byte]string{

@@ -186,21 +186,6 @@ type MyDecimal struct {
 	wordBuf [maxWordBufLen]int32
 }
 
-// IsNegative returns whether a decimal is negative.
-func (d *MyDecimal) IsNegative() bool {
-	return d.negative
-}
-
-// GetDigitsFrac returns the digitsFrac.
-func (d *MyDecimal) GetDigitsFrac() int8 {
-	return d.digitsFrac
-}
-
-// GetDigitsInt returns the digitsInt.
-func (d *MyDecimal) GetDigitsInt() int8 {
-	return d.digitsInt
-}
-
 // String returns the decimal string representation rounded to resultFrac.
 func (d *MyDecimal) String() string {
 	tmp := *d
@@ -226,23 +211,6 @@ func (d *MyDecimal) removeLeadingZeros() (wordIdx int, digitsInt int) {
 		digitsInt -= countLeadingZeroes((digitsInt-1)%digitsPerWord, d.wordBuf[wordIdx])
 	} else {
 		digitsInt = 0
-	}
-	return
-}
-
-func (d *MyDecimal) removeTrailingZeros() (lastWordIdx int, digitsFrac int) {
-	digitsFrac = int(d.digitsFrac)
-	i := ((digitsFrac - 1) % digitsPerWord) + 1
-	lastWordIdx = digitsToWords(int(d.digitsInt)) + digitsToWords(int(d.digitsFrac))
-	for digitsFrac > 0 && d.wordBuf[lastWordIdx-1] == 0 {
-		digitsFrac -= i
-		i = digitsPerWord
-		lastWordIdx--
-	}
-	if digitsFrac > 0 {
-		digitsFrac -= countTrailingZeroes(9-((digitsFrac-1)%digitsPerWord), d.wordBuf[lastWordIdx-1])
-	} else {
-		digitsFrac = 0
 	}
 	return
 }
@@ -1217,178 +1185,6 @@ func (d *MyDecimal) ToBin(precision, frac int) ([]byte, error) {
 	return bin, err
 }
 
-// ToHashKey removes the leading and trailing zeros and generates a hash key.
-// Two Decimals dec0 and dec1 with different fraction will generate the same hash keys if dec0.Compare(dec1) == 0.
-func (d *MyDecimal) ToHashKey() ([]byte, error) {
-	_, digitsInt := d.removeLeadingZeros()
-	_, digitsFrac := d.removeTrailingZeros()
-	prec := digitsInt + digitsFrac
-	if prec == 0 { // zeroDecimal
-		prec = 1
-	}
-	buf, err := d.ToBin(prec, digitsFrac)
-	if err == ErrTruncated {
-		// This err is caused by shorter digitsFrac;
-		// After removing the trailing zeros from a Decimal,
-		// so digitsFrac may be less than the real digitsFrac of the Decimal,
-		// thus ErrTruncated may be raised, we can ignore it here.
-		err = nil
-	}
-	return buf, err
-}
-
-// PrecisionAndFrac returns the internal precision and frac number.
-func (d *MyDecimal) PrecisionAndFrac() (precision, frac int) {
-	frac = int(d.digitsFrac)
-	_, digitsInt := d.removeLeadingZeros()
-	precision = digitsInt + frac
-	if precision == 0 {
-		precision = 1
-	}
-	return
-}
-
-// IsZero checks whether it's a zero decimal.
-func (d *MyDecimal) IsZero() bool {
-	isZero := true
-	for _, val := range d.wordBuf {
-		if val != 0 {
-			isZero = false
-			break
-		}
-	}
-	return isZero
-}
-
-// FromBin Restores decimal from its binary fixed-length representation.
-func (d *MyDecimal) FromBin(bin []byte, precision, frac int) (binSize int, err error) {
-	if len(bin) == 0 {
-		*d = zeroMyDecimal
-		return 0, ErrBadNumber
-	}
-	digitsInt := precision - frac
-	wordsInt := digitsInt / digitsPerWord
-	leadingDigits := digitsInt - wordsInt*digitsPerWord
-	wordsFrac := frac / digitsPerWord
-	trailingDigits := frac - wordsFrac*digitsPerWord
-	wordsIntTo := wordsInt
-	if leadingDigits > 0 {
-		wordsIntTo++
-	}
-	wordsFracTo := wordsFrac
-	if trailingDigits > 0 {
-		wordsFracTo++
-	}
-
-	binIdx := 0
-	mask := int32(-1)
-	if bin[binIdx]&0x80 > 0 {
-		mask = 0
-	}
-	binSize = DecimalBinSize(precision, frac)
-	dCopy := make([]byte, 40)
-	dCopy = dCopy[:binSize]
-	copy(dCopy, bin)
-	dCopy[0] ^= 0x80
-	bin = dCopy
-	oldWordsIntTo := wordsIntTo
-	wordsIntTo, wordsFracTo, err = fixWordCntError(wordsIntTo, wordsFracTo)
-	if err != nil {
-		if wordsIntTo < oldWordsIntTo {
-			binIdx += dig2bytes[leadingDigits] + (wordsInt-wordsIntTo)*wordSize
-		} else {
-			trailingDigits = 0
-			wordsFrac = wordsFracTo
-		}
-	}
-	d.negative = mask != 0
-	d.digitsInt = int8(wordsInt*digitsPerWord + leadingDigits)
-	d.digitsFrac = int8(wordsFrac*digitsPerWord + trailingDigits)
-
-	wordIdx := 0
-	if leadingDigits > 0 {
-		i := dig2bytes[leadingDigits]
-		x := readWord(bin[binIdx:], i)
-		binIdx += i
-		d.wordBuf[wordIdx] = x ^ mask
-		if uint64(d.wordBuf[wordIdx]) >= uint64(powers10[leadingDigits+1]) {
-			*d = zeroMyDecimal
-			return binSize, ErrBadNumber
-		}
-		if wordIdx > 0 || d.wordBuf[wordIdx] != 0 {
-			wordIdx++
-		} else {
-			d.digitsInt -= int8(leadingDigits)
-		}
-	}
-	for stop := binIdx + wordsInt*wordSize; binIdx < stop; binIdx += wordSize {
-		d.wordBuf[wordIdx] = readWord(bin[binIdx:], 4) ^ mask
-		if uint32(d.wordBuf[wordIdx]) > wordMax {
-			*d = zeroMyDecimal
-			return binSize, ErrBadNumber
-		}
-		if wordIdx > 0 || d.wordBuf[wordIdx] != 0 {
-			wordIdx++
-		} else {
-			d.digitsInt -= digitsPerWord
-		}
-	}
-
-	for stop := binIdx + wordsFrac*wordSize; binIdx < stop; binIdx += wordSize {
-		d.wordBuf[wordIdx] = readWord(bin[binIdx:], 4) ^ mask
-		if uint32(d.wordBuf[wordIdx]) > wordMax {
-			*d = zeroMyDecimal
-			return binSize, ErrBadNumber
-		}
-		wordIdx++
-	}
-
-	if trailingDigits > 0 {
-		i := dig2bytes[trailingDigits]
-		x := readWord(bin[binIdx:], i)
-		d.wordBuf[wordIdx] = (x ^ mask) * powers10[digitsPerWord-trailingDigits]
-		if uint32(d.wordBuf[wordIdx]) > wordMax {
-			*d = zeroMyDecimal
-			return binSize, ErrBadNumber
-		}
-	}
-
-	if d.digitsInt == 0 && d.digitsFrac == 0 {
-		*d = zeroMyDecimal
-	}
-	d.resultFrac = int8(frac)
-	return binSize, err
-}
-
-// DecimalBinSize returns the size of array to hold a binary representation of a decimal.
-func DecimalBinSize(precision, frac int) int {
-	digitsInt := precision - frac
-	wordsInt := digitsInt / digitsPerWord
-	wordsFrac := frac / digitsPerWord
-	xInt := digitsInt - wordsInt*digitsPerWord
-	xFrac := frac - wordsFrac*digitsPerWord
-	return wordsInt*wordSize + dig2bytes[xInt] + wordsFrac*wordSize + dig2bytes[xFrac]
-}
-
-func readWord(b []byte, size int) int32 {
-	var x int32
-	switch size {
-	case 1:
-		x = int32(int8(b[0]))
-	case 2:
-		x = int32(int8(b[0]))<<8 + int32(b[1])
-	case 3:
-		if b[0]&128 > 0 {
-			x = int32(uint32(255)<<24 | uint32(b[0])<<16 | uint32(b[1])<<8 | uint32(b[2]))
-		} else {
-			x = int32(uint32(b[0])<<16 | uint32(b[1])<<8 | uint32(b[2]))
-		}
-	case 4:
-		x = int32(b[3]) + int32(b[2])<<8 + int32(b[1])<<16 + int32(int8(b[0]))<<24
-	}
-	return x
-}
-
 func writeWord(b []byte, word int32, size int) {
 	v := uint32(word)
 	switch size {
@@ -1633,24 +1429,6 @@ func NewDecFromFloatForTest(f float64) *MyDecimal {
 func NewDecFromStringForTest(s string) *MyDecimal {
 	dec := new(MyDecimal)
 	err := dec.FromString([]byte(s))
-	terror.Log(errors.Trace(err))
-	return dec
-}
-
-// NewMaxOrMinDec returns the max or min value decimal for given precision and fraction.
-func NewMaxOrMinDec(negative bool, prec, frac int) *MyDecimal {
-	str := make([]byte, prec+2)
-	for i := 0; i < len(str); i++ {
-		str[i] = '9'
-	}
-	if negative {
-		str[0] = '-'
-	} else {
-		str[0] = '+'
-	}
-	str[1+prec-frac] = '.'
-	dec := new(MyDecimal)
-	err := dec.FromString(str)
 	terror.Log(errors.Trace(err))
 	return dec
 }

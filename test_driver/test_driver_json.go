@@ -5,16 +5,14 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/pingcap/errors"
+	"github.com/pingcap/parser/terror"
 	"math"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
-	"unsafe"
-
-	"github.com/pingcap/errors"
-	"github.com/pingcap/parser/terror"
 )
 
 // TypeCode indicates JSON type.
@@ -679,123 +677,3 @@ var htmlSafeSet = [utf8.RuneSelf]bool{
 	'~':      true,
 	'\u007f': true,
 }
-
-// jsonTypePrecedences is for comparing two
-// See: https://dev.mysql.com/doc/refman/5.7/en/html#json-comparison
-var jsonTypePrecedences = map[string]int{
-	"BLOB":             -1,
-	"BIT":              -2,
-	"OPAQUE":           -3,
-	"DATETIME":         -4,
-	"TIME":             -5,
-	"DATE":             -6,
-	"BOOLEAN":          -7,
-	"ARRAY":            -8,
-	"OBJECT":           -9,
-	"STRING":           -10,
-	"INTEGER":          -11,
-	"UNSIGNED INTEGER": -11,
-	"DOUBLE":           -11,
-	"NULL":             -12,
-}
-
-// CompareBinary compares two binary json objects. Returns -1 if left < right,
-// 0 if left == right, else returns 1.
-func CompareBinary(left, right BinaryJSON) int {
-	precedence1 := jsonTypePrecedences[left.Type()]
-	precedence2 := jsonTypePrecedences[right.Type()]
-	var cmp int
-	if precedence1 == precedence2 {
-		if precedence1 == jsonTypePrecedences["NULL"] {
-			// for JSON null.
-			cmp = 0
-		}
-		switch left.TypeCode {
-		case TypeCodeLiteral:
-			// false is less than true.
-			cmp = int(right.Value[0]) - int(left.Value[0])
-		case TypeCodeInt64, TypeCodeUint64, TypeCodeFloat64:
-			leftFloat := i64AsFloat64(left.GetInt64(), left.TypeCode)
-			rightFloat := i64AsFloat64(right.GetInt64(), right.TypeCode)
-			cmp = compareFloat64PrecisionLoss(leftFloat, rightFloat)
-		case TypeCodeString:
-			cmp = bytes.Compare(left.GetString(), right.GetString())
-		case TypeCodeArray:
-			leftCount := left.GetElemCount()
-			rightCount := right.GetElemCount()
-			for i := 0; i < leftCount && i < rightCount; i++ {
-				elem1 := left.arrayGetElem(i)
-				elem2 := right.arrayGetElem(i)
-				cmp = CompareBinary(elem1, elem2)
-				if cmp != 0 {
-					return cmp
-				}
-			}
-			cmp = leftCount - rightCount
-		case TypeCodeObject:
-			// only equal is defined on two json objects.
-			// larger and smaller are not defined.
-			cmp = bytes.Compare(left.Value, right.Value)
-		}
-	} else {
-		cmp = precedence1 - precedence2
-	}
-	return cmp
-}
-
-// Type returns type of BinaryJSON as string.
-func (bj BinaryJSON) Type() string {
-	switch bj.TypeCode {
-	case TypeCodeObject:
-		return "OBJECT"
-	case TypeCodeArray:
-		return "ARRAY"
-	case TypeCodeLiteral:
-		switch bj.Value[0] {
-		case LiteralNil:
-			return "NULL"
-		default:
-			return "BOOLEAN"
-		}
-	case TypeCodeInt64:
-		return "INTEGER"
-	case TypeCodeUint64:
-		return "UNSIGNED INTEGER"
-	case TypeCodeFloat64:
-		return "DOUBLE"
-	case TypeCodeString:
-		return "STRING"
-	default:
-		msg := fmt.Sprintf(unknownTypeCodeErrorMsg, bj.TypeCode)
-		panic(msg)
-	}
-}
-
-func i64AsFloat64(i64 int64, typeCode TypeCode) float64 {
-	switch typeCode {
-	case TypeCodeLiteral, TypeCodeInt64:
-		return float64(i64)
-	case TypeCodeUint64:
-		u64 := *(*uint64)(unsafe.Pointer(&i64))
-		return float64(u64)
-	case TypeCodeFloat64:
-		return *(*float64)(unsafe.Pointer(&i64))
-	default:
-		msg := fmt.Sprintf(unknownTypeCodeErrorMsg, typeCode)
-		panic(msg)
-	}
-}
-
-// compareFloat64 returns an integer comparing the float64 x to y,
-// allowing precision loss.
-func compareFloat64PrecisionLoss(x, y float64) int {
-	if x-y < floatEpsilon && y-x < floatEpsilon {
-		return 0
-	} else if x-y < 0 {
-		return -1
-	}
-	return 1
-}
-
-// floatEpsilon is the acceptable error quantity when comparing two float numbers.
-const floatEpsilon = 1.e-8

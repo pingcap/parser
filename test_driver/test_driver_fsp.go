@@ -1,8 +1,6 @@
 package test_driver
 
 import (
-	"math"
-	"strconv"
 	"strings"
 
 	"github.com/pingcap/errors"
@@ -29,48 +27,6 @@ func CheckFsp(fsp int) (int8, error) {
 		return DefaultFsp, errors.Errorf("Invalid fsp %d", fsp)
 	}
 	return int8(fsp), nil
-}
-
-// ParseFrac parses the input string according to fsp, returns the microsecond,
-// and also a bool value to indice overflow. eg:
-// "999" fsp=2 will overflow.
-func ParseFrac(s string, fsp int8) (v int, overflow bool, err error) {
-	if len(s) == 0 {
-		return 0, false, nil
-	}
-
-	fsp, err = CheckFsp(int(fsp))
-	if err != nil {
-		return 0, false, errors.Trace(err)
-	}
-
-	if int(fsp) >= len(s) {
-		tmp, e := strconv.ParseInt(s, 10, 64)
-		if e != nil {
-			return 0, false, errors.Trace(e)
-		}
-		v = int(float64(tmp) * math.Pow10(int(MaxFsp)-len(s)))
-		return
-	}
-
-	// Round when fsp < string length.
-	tmp, e := strconv.ParseInt(s[:fsp+1], 10, 64)
-	if e != nil {
-		return 0, false, errors.Trace(e)
-	}
-	tmp = (tmp + 5) / 10
-
-	if float64(tmp) >= math.Pow10(int(fsp)) {
-		// overflow
-		return 0, true, nil
-	}
-
-	// Get the final frac, with 6 digit number
-	//  1236 round 3 -> 124 -> 124000
-	//  0312 round 2 -> 3 -> 30000
-	//  999 round 2 -> 100 -> overflow
-	v = int(float64(tmp) * math.Pow10(int(MaxFsp-fsp)))
-	return
 }
 
 // alignFrac is used to generate alignment frac, like `100` -> `100000` ,`-100` -> `-100000`

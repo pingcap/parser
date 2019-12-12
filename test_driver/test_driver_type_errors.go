@@ -3,22 +3,14 @@ package test_driver
 import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
-	"github.com/pingcap/parser/types"
 )
 
 // const strings for ErrWrongValue
 const (
-	DateTimeStr = "datetime"
-	TimeStr     = "time"
+	TimeStr = "time"
 )
 
 var (
-	// ErrInvalidDefault is returned when meet a invalid default value.
-	ErrInvalidDefault = types.ErrInvalidDefault
-	// ErrDataTooLong is returned when converts a string value that is longer than field type length.
-	ErrDataTooLong = terror.ClassTypes.New(mysql.ErrDataTooLong, mysql.MySQLErrName[mysql.ErrDataTooLong])
-	// ErrIllegalValueForType is returned when value of type is illegal.
-	ErrIllegalValueForType = terror.ClassTypes.New(mysql.ErrIllegalValueForType, mysql.MySQLErrName[mysql.ErrIllegalValueForType])
 	// ErrTruncated is returned when data has been truncated during conversion.
 	ErrTruncated = terror.ClassTypes.New(mysql.WarnDataTruncated, mysql.MySQLErrName[mysql.WarnDataTruncated])
 	// ErrOverflow is returned when data is out of range for a field type.

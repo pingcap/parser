@@ -1,7 +1,6 @@
 package test_driver
 
 import (
-	"math"
 	"sync"
 	"time"
 
@@ -67,7 +66,6 @@ type StatementContext struct {
 		touched uint64
 
 		message           string
-		warnings          []SQLWarn
 		errorCount        uint16
 		histogramsNotLoad bool
 		//execDetails       execdetails.ExecDetails
@@ -100,76 +98,4 @@ type StatementContext struct {
 		digest     string
 	}
 	//Tables []TableEntry
-}
-
-const (
-	// WarnLevelError represents level "Error" for 'SHOW WARNINGS' syntax.
-	WarnLevelError = "Error"
-	// WarnLevelWarning represents level "Warning" for 'SHOW WARNINGS' syntax.
-	WarnLevelWarning = "Warning"
-	// WarnLevelNote represents level "Note" for 'SHOW WARNINGS' syntax.
-	WarnLevelNote = "Note"
-)
-
-// SQLWarn relates a sql warning and it's level.
-type SQLWarn struct {
-	Level string
-	Err   error
-}
-
-// AppendWarning appends a warning with level 'Warning'.
-func (sc *StatementContext) AppendWarning(warn error) {
-	sc.mu.Lock()
-	if len(sc.mu.warnings) < math.MaxUint16 {
-		sc.mu.warnings = append(sc.mu.warnings, SQLWarn{WarnLevelWarning, warn})
-	}
-	sc.mu.Unlock()
-}
-
-// HandleTruncate ignores or returns the error based on the StatementContext state.
-func (sc *StatementContext) HandleTruncate(err error) error {
-	// TODO: At present we have not checked whether the error can be ignored or treated as warning.
-	// We will do that later, and then append WarnDataTruncated instead of the error itself.
-	if err == nil {
-		return nil
-	}
-	if sc.IgnoreTruncate {
-		return nil
-	}
-	if sc.TruncateAsWarning {
-		sc.AppendWarning(err)
-		return nil
-	}
-	return err
-}
-
-// HandleOverflow treats ErrOverflow as warnings or returns the error based on the StmtCtx.OverflowAsWarning state.
-func (sc *StatementContext) HandleOverflow(err error, warnErr error) error {
-	if err == nil {
-		return nil
-	}
-
-	if sc.OverflowAsWarning {
-		sc.AppendWarning(warnErr)
-		return nil
-	}
-	return err
-}
-
-// ShouldClipToZero indicates whether values less than 0 should be clipped to 0 for unsigned integer types.
-// This is the case for `insert`, `update`, `alter table` and `load data infile` statements, when not in strict SQL mode.
-// see https://dev.mysql.com/doc/refman/5.7/en/out-of-range-and-overflow.html
-func (sc *StatementContext) ShouldClipToZero() bool {
-	// TODO: Currently altering column of integer to unsigned integer is not supported.
-	// If it is supported one day, that case should be added here.
-	return sc.InInsertStmt || sc.InLoadDataStmt
-}
-
-// ShouldIgnoreOverflowError indicates whether we should ignore the error when type conversion overflows,
-// so we can leave it for further processing like clipping values less than 0 to 0 for unsigned integer types.
-func (sc *StatementContext) ShouldIgnoreOverflowError() bool {
-	if (sc.InInsertStmt && sc.TruncateAsWarning) || sc.InLoadDataStmt {
-		return true
-	}
-	return false
 }
