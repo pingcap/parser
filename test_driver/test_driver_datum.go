@@ -571,6 +571,10 @@ func SetBinChsClnFlag(ft *types.FieldType) {
 	ft.Flag |= mysql.BinaryFlag
 }
 
+// DefaultFsp is the default digit of fractional seconds part.
+// MySQL use 0 as the default Fsp.
+const DefaultFsp = int8(0)
+
 // DefaultTypeForValue returns the default FieldType for the value.
 func DefaultTypeForValue(value interface{}, tp *types.FieldType) {
 	switch x := value.(type) {

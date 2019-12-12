@@ -8,31 +8,6 @@ import (
 	"github.com/pingcap/errors"
 )
 
-// RoundFloat rounds float val to the nearest integer value with float64 format, like MySQL Round function.
-// RoundFloat uses default rounding mode, see https://dev.mysql.com/doc/refman/5.7/en/precision-math-rounding.html
-// so rounding use "round half away from zero".
-// e.g, 1.5 -> 2, -1.5 -> -2.
-func RoundFloat(f float64) float64 {
-	if math.Abs(f) < 0.5 {
-		return 0
-	}
-
-	return math.Trunc(f + math.Copysign(0.5, f))
-}
-
-// Round rounds the argument f to dec decimal places.
-// dec defaults to 0 if not specified. dec can be negative
-// to cause dec digits left of the decimal point of the
-// value f to become zero.
-func Round(f float64, dec int) float64 {
-	shift := math.Pow10(dec)
-	tmp := f * shift
-	if math.IsInf(tmp, 0) {
-		return f
-	}
-	return RoundFloat(tmp) / shift
-}
-
 func isSpace(c byte) bool {
 	return c == ' ' || c == '\t'
 }

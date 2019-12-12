@@ -67,15 +67,6 @@ type BinaryJSON struct {
 	Value    []byte
 }
 
-// CreateBinary creates a BinaryJSON from interface.
-func CreateBinary(in interface{}) BinaryJSON {
-	typeCode, buf, err := appendBinary(nil, in)
-	if err != nil {
-		panic(err)
-	}
-	return BinaryJSON{TypeCode: typeCode, Value: buf}
-}
-
 // GetInt64 gets the int64 value.
 func (bj BinaryJSON) GetInt64() int64 {
 	return int64(endian.Uint64(bj.Value))
