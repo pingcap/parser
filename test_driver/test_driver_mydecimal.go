@@ -24,7 +24,6 @@ const (
 
 	maxWordBufLen = 9 // A MyDecimal holds 9 words.
 	digitsPerWord = 9 // A word holds 9 digits.
-	wordSize      = 4 // A word is 4 bytes int32.
 	digMask       = ten8
 	wordBase      = ten9
 	wordMax       = wordBase - 1
@@ -73,9 +72,8 @@ var (
 		13, 13, 13, 13, 13, 13, 13, 13, 13,
 		14, 14,
 	}
-	powers10  = [10]int32{ten0, ten1, ten2, ten3, ten4, ten5, ten6, ten7, ten8, ten9}
-	dig2bytes = [10]int{0, 1, 1, 2, 2, 3, 3, 4, 4, 4}
-	fracMax   = [8]int32{
+	powers10 = [10]int32{ten0, ten1, ten2, ten3, ten4, ten5, ten6, ten7, ten8, ten9}
+	fracMax  = [8]int32{
 		900000000,
 		990000000,
 		999000000,
@@ -88,14 +86,6 @@ var (
 	zeroMyDecimal = MyDecimal{}
 )
 
-// get the zero of MyDecimal with the specified result fraction digits
-func zeroMyDecimalWithFrac(frac int8) MyDecimal {
-	zero := MyDecimal{}
-	zero.digitsFrac = frac
-	zero.resultFrac = frac
-	return zero
-}
-
 // add adds a and b and carry, returns the sum and new carry.
 func add(a, b, carry int32) (int32, int32) {
 	sum := a + b + carry
@@ -106,18 +96,6 @@ func add(a, b, carry int32) (int32, int32) {
 		carry = 0
 	}
 	return sum, carry
-}
-
-// sub subtracts b and carry from a, returns the diff and new carry.
-func sub(a, b, carry int32) (int32, int32) {
-	diff := a - b - carry
-	if diff < 0 {
-		carry = 1
-		diff += wordBase
-	} else {
-		carry = 0
-	}
-	return diff, carry
 }
 
 // fixWordCntError limits word count in wordBufLen, and returns overflow or truncate error.
