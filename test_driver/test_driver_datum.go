@@ -227,30 +227,6 @@ func (d *Datum) SetValue(val interface{}) {
 	}
 }
 
-// ToString gets the string representation of the datum.
-func (d *Datum) ToString() (string, error) {
-	switch d.Kind() {
-	case KindInt64:
-		return strconv.FormatInt(d.GetInt64(), 10), nil
-	case KindUint64:
-		return strconv.FormatUint(d.GetUint64(), 10), nil
-	case KindFloat32:
-		return strconv.FormatFloat(float64(d.GetFloat32()), 'f', -1, 32), nil
-	case KindFloat64:
-		return strconv.FormatFloat(d.GetFloat64(), 'f', -1, 64), nil
-	case KindString:
-		return d.GetString(), nil
-	case KindBytes:
-		return d.GetString(), nil
-	case KindMysqlDecimal:
-		return d.GetMysqlDecimal().String(), nil
-	case KindBinaryLiteral, KindMysqlBit:
-		return d.GetBinaryLiteral().ToString(), nil
-	default:
-		return "", errors.Errorf("cannot convert %v(type %T) to string", d.GetValue(), d.GetValue())
-	}
-}
-
 // NewDatum creates a new Datum from an interface{}.
 func NewDatum(in interface{}) (d Datum) {
 	switch x := in.(type) {
