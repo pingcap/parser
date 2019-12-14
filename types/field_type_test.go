@@ -23,7 +23,6 @@ import (
 	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 	. "github.com/pingcap/parser/types"
-	"github.com/pingcap/tidb/util/testleak"
 )
 
 func TestT(t *testing.T) {
@@ -37,7 +36,6 @@ type testFieldTypeSuite struct {
 }
 
 func (s *testFieldTypeSuite) TestFieldType(c *C) {
-	defer testleak.AfterTest(c)()
 	ft := NewFieldType(mysql.TypeDuration)
 	c.Assert(ft.Flen, Equals, UnspecifiedLength)
 	c.Assert(ft.Decimal, Equals, UnspecifiedLength)
