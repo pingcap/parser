@@ -1113,7 +1113,7 @@ func (n *DropSequenceStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(", ")
 		}
 		if err := sequence.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore DropTableStmt.Tables "+string(i))
+			return errors.Annotate(err, "An error occurred while restore DropSequenceStmt.Sequences "+string(i))
 		}
 	}
 
