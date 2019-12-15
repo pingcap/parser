@@ -15,74 +15,25 @@
 
 package test_driver
 
-import (
-	"github.com/pingcap/parser/mysql"
-	"github.com/pingcap/parser/terror"
-)
-
-var (
-	// ErrTruncated is returned when data has been truncated during conversion.
-	ErrTruncated = terror.ClassTypes.New(mysql.WarnDataTruncated, mysql.MySQLErrName[mysql.WarnDataTruncated])
-	// ErrOverflow is returned when data is out of range for a field type.
-	ErrOverflow = terror.ClassTypes.New(mysql.ErrDataOutOfRange, mysql.MySQLErrName[mysql.ErrDataOutOfRange])
-	// ErrBadNumber is return when parsing an invalid binary decimal number.
-	ErrBadNumber = terror.ClassTypes.New(mysql.ErrBadNumber, mysql.MySQLErrName[mysql.ErrBadNumber])
-)
-
-// RoundMode is the type for round mode.
-type RoundMode int32
+const panicInfo = "This branch is not implemented. " +
+	"This is because you are trying to test something specific to TiDB's MyDecimal implementation. " +
+	"It is recommended to do this in TiDB repository."
 
 // constant values.
 const (
-	ten0 = 1
-	ten1 = 10
-	ten2 = 100
-	ten3 = 1000
-	ten4 = 10000
-	ten5 = 100000
-	ten6 = 1000000
-	ten7 = 10000000
-	ten8 = 100000000
-	ten9 = 1000000000
-
 	maxWordBufLen = 9 // A MyDecimal holds 9 words.
 	digitsPerWord = 9 // A word holds 9 digits.
-	digMask       = ten8
-
-	// ModeHalfEven rounds normally.
-	ModeHalfEven RoundMode = 5
+	digMask       = 100_000_000
 )
 
 var (
 	wordBufLen = 9
-	div9       = [128]int{
-		0, 0, 0, 0, 0, 0, 0, 0, 0,
-		1, 1, 1, 1, 1, 1, 1, 1, 1,
-		2, 2, 2, 2, 2, 2, 2, 2, 2,
-		3, 3, 3, 3, 3, 3, 3, 3, 3,
-		4, 4, 4, 4, 4, 4, 4, 4, 4,
-		5, 5, 5, 5, 5, 5, 5, 5, 5,
-		6, 6, 6, 6, 6, 6, 6, 6, 6,
-		7, 7, 7, 7, 7, 7, 7, 7, 7,
-		8, 8, 8, 8, 8, 8, 8, 8, 8,
-		9, 9, 9, 9, 9, 9, 9, 9, 9,
-		10, 10, 10, 10, 10, 10, 10, 10, 10,
-		11, 11, 11, 11, 11, 11, 11, 11, 11,
-		12, 12, 12, 12, 12, 12, 12, 12, 12,
-		13, 13, 13, 13, 13, 13, 13, 13, 13,
-		14, 14,
-	}
-	powers10      = [10]int32{ten0, ten1, ten2, ten3, ten4, ten5, ten6, ten7, ten8, ten9}
-	zeroMyDecimal = MyDecimal{}
 )
 
 // fixWordCntError limits word count in wordBufLen, and returns overflow or truncate error.
 func fixWordCntError(wordsInt, wordsFrac int) (newWordsInt int, newWordsFrac int, err error) {
 	if wordsInt+wordsFrac > wordBufLen {
-		if wordsInt > wordBufLen {
-			return wordBufLen, 0, ErrOverflow
-		}
-		return wordsInt, wordBufLen - wordsInt, ErrTruncated
+		panic(panicInfo)
 	}
 	return wordsInt, wordsFrac, nil
 }
@@ -95,7 +46,7 @@ func fixWordCntError(wordsInt, wordsFrac int) (newWordsInt int, newWordsFrac int
 */
 func countLeadingZeroes(i int, word int32) int {
 	leading := 0
-	for word < powers10[i] {
+	for word < pow10(i) {
 		i--
 		leading++
 	}
@@ -103,9 +54,6 @@ func countLeadingZeroes(i int, word int32) int {
 }
 
 func digitsToWords(digits int) int {
-	if digits+digitsPerWord-1 >= 0 && digits+digitsPerWord-1 < 128 {
-		return div9[digits+digitsPerWord-1]
-	}
 	return (digits + digitsPerWord - 1) / digitsPerWord
 }
 
@@ -119,7 +67,7 @@ type MyDecimal struct {
 
 	negative bool
 
-	//  wordBuf is an array of int32 words.
+	// wordBuf is an array of int32 words.
 	// A word is an int32 value can hold 9 digits.(0 <= word < wordBase)
 	wordBuf [maxWordBufLen]int32
 }
@@ -244,8 +192,7 @@ func (d *MyDecimal) FromString(str []byte) error {
 		}
 	}
 	if len(str) == 0 {
-		*d = zeroMyDecimal
-		return ErrBadNumber
+		panic(panicInfo)
 	}
 	switch str[0] {
 	case '-':
@@ -272,17 +219,13 @@ func (d *MyDecimal) FromString(str []byte) error {
 		endIdx = strIdx
 	}
 	if digitsInt+digitsFrac == 0 {
-		*d = zeroMyDecimal
-		return ErrBadNumber
+		panic(panicInfo)
 	}
 	wordsInt := digitsToWords(digitsInt)
 	wordsFrac := digitsToWords(digitsFrac)
 	wordsInt, wordsFrac, err := fixWordCntError(wordsInt, wordsFrac)
 	if err != nil {
-		digitsFrac = wordsFrac * digitsPerWord
-		if err == ErrOverflow {
-			digitsInt = wordsInt * digitsPerWord
-		}
+		panic(panicInfo)
 	}
 	d.digitsInt = int8(digitsInt)
 	d.digitsFrac = int8(digitsFrac)
@@ -293,7 +236,7 @@ func (d *MyDecimal) FromString(str []byte) error {
 	for digitsInt > 0 {
 		digitsInt--
 		strIdx--
-		word += int32(str[strIdx]-'0') * powers10[innerIdx]
+		word += int32(str[strIdx]-'0') * pow10(innerIdx)
 		innerIdx++
 		if innerIdx == digitsPerWord {
 			wordIdx--
@@ -324,12 +267,10 @@ func (d *MyDecimal) FromString(str []byte) error {
 		}
 	}
 	if innerIdx != 0 {
-		d.wordBuf[wordIdx] = word * powers10[digitsPerWord-innerIdx]
+		d.wordBuf[wordIdx] = word * pow10(digitsPerWord-innerIdx)
 	}
 	if endIdx+1 <= len(str) && (str[endIdx] == 'e' || str[endIdx] == 'E') {
-		panic("This branch is not implemented. " +
-			"This is because you are trying to test something specific to TiDB's MyDecimal implementation. " +
-			"It is recommended to do this in TiDB repository.")
+		panic(panicInfo)
 	}
 	allZero := true
 	for i := 0; i < wordBufLen; i++ {

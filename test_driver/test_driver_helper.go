@@ -34,6 +34,10 @@ func myMin(a, b int) int {
 	return b
 }
 
+func pow10(x int) int32 {
+	return int32(math.Pow10(x))
+}
+
 func Abs(n int64) int64 {
 	y := n >> 63
 	return (n ^ y) - y
