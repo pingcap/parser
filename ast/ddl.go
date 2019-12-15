@@ -1089,6 +1089,54 @@ func (n *DropTableStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// DropSequenceStmt is a statement to drop a Sequence.
+type DropSequenceStmt struct {
+	ddlNode
+
+	IfExists    bool
+	Sequences   []*TableName
+	IsTemporary bool
+}
+
+// Restore implements Node interface.
+func (n *DropSequenceStmt) Restore(ctx *RestoreCtx) error {
+	if n.IsTemporary {
+		ctx.WriteKeyWord("DROP TEMPORARY SEQUENCE ")
+	} else {
+		ctx.WriteKeyWord("DROP SEQUENCE ")
+	}
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	for i, sequence := range n.Sequences {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := sequence.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DropTableStmt.Tables "+string(i))
+		}
+	}
+
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *DropSequenceStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*DropSequenceStmt)
+	for i, val := range n.Sequences {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Sequences[i] = node.(*TableName)
+	}
+	return v.Leave(n)
+}
+
 // RenameTableStmt is a statement to rename a table.
 // See http://dev.mysql.com/doc/refman/5.7/en/rename-table.html
 type RenameTableStmt struct {
