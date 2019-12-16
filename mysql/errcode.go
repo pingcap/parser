@@ -939,6 +939,7 @@ const (
 	ErrSpatialFunctionalIndex                                       = 3760
 	ErrWrongKeyColumnFunctionalIndex                                = 3761
 	ErrFunctionalIndexOnField                                       = 3762
+	ErrFKIncompatibleColumns                                        = 3780
 	ErrFunctionalIndexRowValueIsNotAllowed                          = 3800
 	ErrDependentByFunctionalIndex                                   = 3837
 	ErrInvalidJsonValueForFuncIndex                                 = 3903
@@ -1010,6 +1011,15 @@ const (
 	ErrColumnStateCantNone                 = 8046
 	ErrUnsupportedValueForVar              = 8047
 	ErrUnsupportedIsolationLevel           = 8048
+	ErrLoadPrivilege                       = 8049
+	ErrInvalidPrivilegeType                = 8050
+	ErrUnknownFieldType                    = 8051
+	ErrInvalidSequence                     = 8052
+	ErrCantGetValidID                      = 8053
+	ErrCantSetToNull                       = 8054
+	ErrSnapshotTooOld                      = 8055
+	ErrInvalidTableID                      = 8056
+	ErrInvalidType                         = 8057
 
 	// Error codes used by TiDB ddl package
 	ErrUnsupportedDDLOperation  = 8200
@@ -1028,8 +1038,19 @@ const (
 	ErrInvalidDDLJobVersion     = 8213
 	ErrCancelledDDLJob          = 8214
 	ErrRepairTable              = 8215
-	ErrAlterVisibility          = 8216
-	ErrSchemaState              = 8217
+	ErrInvalidAutoRandom        = 8216
+	ErrInvalidHashKeyFlag       = 8217
+	ErrInvalidListIndex         = 8218
+	ErrInvalidListMetaData      = 8219
+	ErrWriteOnSnapshot          = 8220
+	ErrInvalidKey               = 8221
+	ErrInvalidIndexKey          = 8222
+	ErrDataInConsistent         = 8223
+	ErrDDLJobNotFound           = 8224
+	ErrCancelFinishedDDLJob     = 8225
+	ErrCannotCancelDDLJob       = 8226
+	ErrAlterVisibility          = 8227
+	ErrSchemaState              = 8228
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001

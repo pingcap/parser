@@ -227,7 +227,6 @@ import (
 	rowNumber		"ROW_NUMBER"
 	secondMicrosecond	"SECOND_MICROSECOND"
 	selectKwd		"SELECT"
-	sequence                "SEQUENCE"
 	set			"SET"
 	show			"SHOW"
 	smallIntType		"SMALLINT"
@@ -282,6 +281,7 @@ import (
 	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
 	account		"ACCOUNT"
 	action		"ACTION"
+	advise		"ADVISE"
 	after		"AFTER"
 	against		"AGAINST"
 	always		"ALWAYS"
@@ -289,6 +289,7 @@ import (
 	any 		"ANY"
 	ascii		"ASCII"
 	autoIncrement	"AUTO_INCREMENT"
+	autoRandom	"AUTO_RANDOM"
 	avgRowLength	"AVG_ROW_LENGTH"
 	avg		"AVG"
 	begin		"BEGIN"
@@ -404,6 +405,8 @@ import (
 	merge		"MERGE"
 	minRows		"MIN_ROWS"
 	minValue        "MINVALUE"
+	max_minutes	"MAX_MINUTES"
+	max_idxnum	"MAX_IDXNUM"
 	names		"NAMES"
 	national	"NATIONAL"
 	ncharType	"NCHAR"
@@ -433,6 +436,8 @@ import (
 	processlist	"PROCESSLIST"
 	profile		"PROFILE"
 	profiles	"PROFILES"
+	per_table	"PER_TABLE"
+	per_db		"PER_DB"
 	quarter		"QUARTER"
 	query		"QUERY"
 	queries		"QUERIES"
@@ -461,6 +466,7 @@ import (
 	secondaryUnload	"SECONDARY_UNLOAD"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
+	sequence        "SEQUENCE"
 	serial		"SERIAL"
 	serializable	"SERIALIZABLE"
 	session		"SESSION"
@@ -760,6 +766,7 @@ import (
 	GrantStmt			"Grant statement"
 	GrantRoleStmt			"Grant role statement"
 	InsertIntoStmt			"INSERT INTO statement"
+	IndexAdviseStmt			"INDEX ADVISE stetement"
 	KillStmt			"Kill statement"
 	LoadDataStmt			"Load data statement"
 	LoadStatsStmt			"Load statistic statement"
@@ -1146,6 +1153,10 @@ import (
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
 	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
 	MatchOpt		"optional MATCH clause"
+	MaxMinutesOpt		"MAX_MINUTES num(int)"
+	MaxIndexNumOpt		"MAX_IDXNUM clause"
+	PerTable 		"Max index number PER_TABLE"
+	PerDB			"Max index number PER_DB"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -2610,6 +2621,10 @@ ColumnOption:
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionStorage, StrValue: $2}
 		yylex.AppendError(yylex.Errorf("The STORAGE clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
+	}
+|	"AUTO_RANDOM" OptFieldLen
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoRandom, AutoRandomBitLength: $2.(int)}
 	}
 
 StorageMedia:
@@ -4607,7 +4622,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET"
+ "ACTION" | "ADVISE" |"ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CAPTURE" |"CLEANUP" | "CHARSET"
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC" | "ENCRYPTION" | "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EVOLVE" | "EXECUTE" | "EXTENDED" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "INSERT_METHOD" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REBUILD" | "REDUNDANT" | "REORGANIZE"
@@ -4622,10 +4637,10 @@ UnReservedKeyword:
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "PARTIAL" | "SIMPLE" | "REMOVE" | "PARTITIONING" | "STORAGE" | "DISK" | "STATS_SAMPLE_PAGES" | "SECONDARY_ENGINE" | "SECONDARY_LOAD" | "SECONDARY_UNLOAD" | "VALIDATION"
-| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE"
+| "WITHOUT" | "RTREE" | "EXCHANGE" | "COLUMN_FORMAT" | "REPAIR" | "IMPORT" | "DISCARD" | "TABLE_CHECKSUM" | "UNICODE" | "AUTO_RANDOM"
 | "SQL_TSI_DAY" | "SQL_TSI_HOUR" | "SQL_TSI_MINUTE" | "SQL_TSI_MONTH" | "SQL_TSI_QUARTER" | "SQL_TSI_SECOND" |
 "SQL_TSI_WEEK" | "SQL_TSI_YEAR" | "INVISIBLE" | "VISIBLE" | "TYPE" | "NOWAIT" | "REPLICA" | "LOCATION" | "LABELS"
-| "LOGS" | "HOSTS" | "AGAINST" | "EXPANSION" | "INCREMENT" | "MINVALUE" | "NOMAXVALUE" | "NOMINVALUE" | "NOCACHE" | "CACHE" | "CYCLE" | "NOCYCLE" | "NOORDER"
+| "LOGS" | "HOSTS" | "AGAINST" | "EXPANSION" | "INCREMENT" | "MINVALUE" | "NOMAXVALUE" | "NOMINVALUE" | "NOCACHE" | "CACHE" | "CYCLE" | "NOCYCLE" | "NOORDER" | "SEQUENCE" | "MAX_MINUTES" | "MAX_IDXNUM" | "PER_TABLE" | "PER_DB"
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" |"BUCKETS" | "BUILTINS" | "CANCEL" | "CMSKETCH" | "DDL" | "DEPTH" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "SAMPLES" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
@@ -8084,6 +8099,13 @@ ShowStmt:
 			DBName:	$5.(string),
 		}
 	}
+|	"SHOW" "CREATE" "SEQUENCE" TableName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowCreateSequence,
+			Table:	$4.(*ast.TableName),
+		}
+	}
 |	"SHOW" "CREATE" "USER" Username
         {
                 // See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
@@ -8677,6 +8699,7 @@ Statement:
 |	GrantStmt
 |	GrantRoleStmt
 |	InsertIntoStmt
+|	IndexAdviseStmt
 |	KillStmt
 |	LoadDataStmt
 |	LoadStatsStmt
@@ -9782,7 +9805,7 @@ CreateUserStmt:
 			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
-			TslOptions: $5.([]*ast.TslOption),
+			TLSOptions: $5.([]*ast.TLSOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
@@ -9806,7 +9829,7 @@ AlterUserStmt:
 		$$ = &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
-			TslOptions: $5.([]*ast.TslOption),
+			TLSOptions: $5.([]*ast.TLSOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
@@ -9901,36 +9924,34 @@ ConnectionOption:
 
 RequireClauseOpt:
 	{
-		$$ = []*ast.TslOption{}
+		$$ = []*ast.TLSOption{}
 	}
 | RequireClause
 	{
 		$$ = $1
-		yylex.AppendError(yylex.Errorf("TiDB does not support REQUIRE now, they would be parsed but ignored."))
-		parser.lastErrorAsWarn()
 	}
 
 RequireClause:
 	"REQUIRE" "NONE"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.TslNone,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" "SSL"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.Ssl,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" "X509"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.X509,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" RequireList
 	{
@@ -9940,33 +9961,39 @@ RequireClause:
 RequireList:
 	RequireListElement
 	{
-		$$ = []*ast.TslOption{$1.(*ast.TslOption)}
+		$$ = []*ast.TLSOption{$1.(*ast.TLSOption)}
 	}
-|	RequireListElement "AND" RequireList
+|	RequireList "AND" RequireListElement
 	{
-		l := $3.([]*ast.TslOption)
-		l = append(l, $1.(*ast.TslOption))
+		l := $1.([]*ast.TLSOption)
+		l = append(l, $3.(*ast.TLSOption))
+		$$ = l
+	}
+|	RequireList RequireListElement
+	{
+		l := $1.([]*ast.TLSOption)
+		l = append(l, $2.(*ast.TLSOption))
 		$$ = l
 	}
 
 RequireListElement:
 	"ISSUER" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Issuer,
 			Value: $2,
 		}
 	}
 |	"SUBJECT" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Subject,
 			Value: $2,
 		}
 	}
 |	"CIPHER" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Cipher,
 			Value: $2,
 		}
@@ -10184,14 +10211,15 @@ DropBindingStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/grant.html
  *************************************************************************************/
 GrantStmt:
-	 "GRANT" PrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList WithGrantOptionOpt
+	 "GRANT" PrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList RequireClauseOpt WithGrantOptionOpt
 	 {
 		$$ = &ast.GrantStmt{
 			Privs: $2.([]*ast.PrivElem),
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level: $5.(*ast.GrantLevel),
 			Users: $7.([]*ast.UserSpec),
-			WithGrant: $8.(bool),
+			TLSOptions: $8.([]*ast.TLSOption),
+			WithGrant: $9.(bool),
 		}
 	 }
 
@@ -10933,6 +10961,81 @@ SignedNum:
 |	'-' NUM
 	{
 		$$ = -$2.(int64)
+	}
+
+/********************************************************************
+ * Index Advisor Statement
+ *
+ * INDEX ADVISE
+ * 	[LOCAL]
+ *	INFILE 'file_name'
+ *	[MAX_MINUTES number]
+ *	[MAX_IDXNUM
+ *  	[PER_TABLE number]
+ *  	[PER_DB number]
+ *	]
+ *	[LINES
+ *  	[STARTING BY 'string']
+ *  	[TERMINATED BY 'string']
+ *	]
+ *******************************************************************/
+
+IndexAdviseStmt:
+	"INDEX" "ADVISE" LocalOpt "INFILE" stringLit MaxMinutesOpt MaxIndexNumOpt Lines
+	{
+		x := &ast.IndexAdviseStmt{
+			Path:			$5,
+			MaxMinutes:		$6.(uint64),
+		}
+		if $3 != nil {
+			x.IsLocal = true
+		}
+		if $7 != nil {
+			x.MaxIndexNum = $7.(*ast.MaxIndexNumClause)
+		}
+		if $8 != nil {
+			x.LinesInfo = $8.(*ast.LinesClause)
+		}
+		$$ = x
+	}
+
+MaxMinutesOpt:
+	{
+		$$ = uint64(ast.UnspecifiedSize)
+	}
+|	"MAX_MINUTES" NUM
+	{
+		$$ = getUint64FromNUM($2)
+	}
+
+MaxIndexNumOpt:
+	{
+		$$ = nil
+	}
+|	"MAX_IDXNUM" PerTable PerDB
+	{
+		$$ = &ast.MaxIndexNumClause{
+			PerTable:	$2.(uint64),
+			PerDB: 		$3.(uint64),
+		}
+	}
+
+PerTable:
+	{
+		$$ = uint64(ast.UnspecifiedSize)
+	}
+|	"PER_TABLE" NUM
+	{
+		$$ = getUint64FromNUM($2)
+	}
+
+PerDB:
+	{
+		$$ = uint64(ast.UnspecifiedSize)
+	}
+|	"PER_DB" NUM
+	{
+		$$ = getUint64FromNUM($2)
 	}
 
 %%

@@ -14,10 +14,39 @@
 package parser
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
+
+// CommentCodeVersion is used to track the highest version can be parsed in the comment with pattern /*T!00001 xxx */
+type CommentCodeVersion int
+
+const (
+	CommentCodeNoVersion  CommentCodeVersion = iota
+	CommentCodeAutoRandom CommentCodeVersion = 40000
+
+	CommentCodeCurrentVersion
+)
+
+func (ccv CommentCodeVersion) String() string {
+	return fmt.Sprintf("%05d", ccv)
+}
+
+func extractVersionCodeInComment(comment string) CommentCodeVersion {
+	code, err := strconv.Atoi(specVersionCodeValue.FindString(comment))
+	if err != nil {
+		return CommentCodeNoVersion
+	}
+	return CommentCodeVersion(code)
+}
+
+// WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
+func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
+	return fmt.Sprintf("/*T!%05d %s */", ccv, str)
+}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -138,6 +167,7 @@ var tokenMap = map[string]int{
 	"ACTION":                   action,
 	"ADD":                      add,
 	"ADDDATE":                  addDate,
+	"ADVISE":                   advise,
 	"ADMIN":                    admin,
 	"AFTER":                    after,
 	"AGAINST":                  against,
@@ -153,6 +183,7 @@ var tokenMap = map[string]int{
 	"ASC":                      asc,
 	"ASCII":                    ascii,
 	"AUTO_INCREMENT":           autoIncrement,
+	"AUTO_RANDOM":              autoRandom,
 	"AVG":                      avg,
 	"AVG_ROW_LENGTH":           avgRowLength,
 	"BEGIN":                    begin,
@@ -393,6 +424,8 @@ var tokenMap = map[string]int{
 	"MAX":                      max,
 	"MAX_CONNECTIONS_PER_HOUR": maxConnectionsPerHour,
 	"MAX_EXECUTION_TIME":       maxExecutionTime,
+	"MAX_IDXNUM":               max_idxnum,
+	"MAX_MINUTES":              max_minutes,
 	"MAX_QUERIES_PER_HOUR":     maxQueriesPerHour,
 	"MAX_ROWS":                 maxRows,
 	"MAX_UPDATES_PER_HOUR":     maxUpdatesPerHour,
@@ -461,6 +494,8 @@ var tokenMap = map[string]int{
 	"PARTITIONS":               partitions,
 	"PASSWORD":                 password,
 	"PESSIMISTIC":              pessimistic,
+	"PER_TABLE":                per_table,
+	"PER_DB":                   per_db,
 	"PLUGINS":                  plugins,
 	"POSITION":                 position,
 	"PRECEDING":                preceding,

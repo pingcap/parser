@@ -29,8 +29,7 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
-	"github.com/pingcap/tidb/types"
-	driver "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/pingcap/parser/test_driver"
 )
 
 func TestT(t *testing.T) {
@@ -251,16 +250,16 @@ func (s *testParserSuite) TestSimple(c *C) {
 	sel, ok := st.(*ast.SelectStmt)
 	c.Assert(ok, IsTrue)
 	expr := sel.Fields.Fields[0]
-	vExpr := expr.Expr.(*driver.ValueExpr)
-	c.Assert(vExpr.Kind(), Equals, types.KindInt64)
+	vExpr := expr.Expr.(*test_driver.ValueExpr)
+	c.Assert(vExpr.Kind(), Equals, test_driver.KindInt64)
 	src = "SELECT 9223372036854775808;"
 	st, err = parser.ParseOneStmt(src, "", "")
 	c.Assert(err, IsNil)
 	sel, ok = st.(*ast.SelectStmt)
 	c.Assert(ok, IsTrue)
 	expr = sel.Fields.Fields[0]
-	vExpr = expr.Expr.(*driver.ValueExpr)
-	c.Assert(vExpr.Kind(), Equals, types.KindUint64)
+	vExpr = expr.Expr.(*test_driver.ValueExpr)
+	c.Assert(vExpr.Kind(), Equals, test_driver.KindUint64)
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
@@ -882,6 +881,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show create database
 		{"show create database d1", true, "SHOW CREATE DATABASE `d1`"},
 		{"show create database if not exists d1", true, "SHOW CREATE DATABASE IF NOT EXISTS `d1`"},
+		// for show create sequence
+		{"show create sequence seq", true, "SHOW CREATE SEQUENCE `seq`"},
+		{"show create sequence test.seq", true, "SHOW CREATE SEQUENCE `test`.`seq`"},
 		// for show stats_meta.
 		{"show stats_meta", true, "SHOW STATS_META"},
 		{"show stats_meta where table_name = 't'", true, "SHOW STATS_META WHERE `table_name`='t'"},
@@ -2777,7 +2779,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter database db visible invisible", true, "ALTER DATABASE `db` VISIBLE INVISIBLE"},
 
 		// for create sequence
-		{"create sequence sequence", false, ""},
+		{"create sequence sequence", true, "CREATE SEQUENCE `sequence`"},
 		{"create sequence seq", true, "CREATE SEQUENCE `seq`"},
 		{"create sequence if not exists seq", true, "CREATE SEQUENCE IF NOT EXISTS `seq`"},
 		{"create temporary sequence seq", true, "CREATE TEMPORARY SEQUENCE `seq`"},
@@ -2826,6 +2828,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create temporary sequence sEq order start with 0 minvalue 0 maxvalue 1000", true, "CREATE TEMPORARY SEQUENCE `sEq` ORDER START WITH 0 MINVALUE 0 MAXVALUE 1000"},
 		{"create sequence if not exists seq increment 1 start with 0 minvalue -2 maxvalue 1000", true, "CREATE SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1 START WITH 0 MINVALUE -2 MAXVALUE 1000"},
 		{"create sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle noorder", true, "CREATE SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE NOORDER"},
+
+		// test sequence is not a reserved keyword
+		{"create table sequence (a int)", true, "CREATE TABLE `sequence` (`a` INT)"},
+		{"create table t (sequence int)", true, "CREATE TABLE `t` (`sequence` INT)"},
+
+		// for auto_random
+		{"create table t (a bigint auto_random(3) primary key, b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT AUTO_RANDOM(3) PRIMARY KEY,`b` VARCHAR(255))"},
+		{"create table t (a bigint auto_random primary key, b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT AUTO_RANDOM PRIMARY KEY,`b` VARCHAR(255))"},
+		{"create table t (a bigint primary key auto_random(4), b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(4),`b` VARCHAR(255))"},
+		{"create table t (a bigint primary key auto_random(3) primary key unique, b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(3) PRIMARY KEY UNIQUE KEY,`b` VARCHAR(255))"},
 	}
 	s.RunTest(c, table)
 }
@@ -3368,6 +3380,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{`CREATE USER 'ttt' REQUIRE SSL;`, true, "CREATE USER `ttt`@`%` REQUIRE SSL"},
 		{`CREATE USER 'ttt' REQUIRE NONE;`, true, "CREATE USER `ttt`@`%` REQUIRE NONE"},
 		{`CREATE USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';`, true, "CREATE USER `ttt`@`%` REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA'"},
+		{`CREATE USER 'ttt' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' CIPHER 'EDH-RSA-DES-CBC3-SHA' SUBJECT '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com';`, true, "CREATE USER `ttt`@`%` REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA' AND SUBJECT '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com'"},
 		{`CREATE USER 'ttt' WITH MAX_QUERIES_PER_HOUR 2;`, true, "CREATE USER `ttt`@`%` WITH MAX_QUERIES_PER_HOUR 2"},
 		{`CREATE USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;`, true, "CREATE USER `ttt`@`localhost` REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
 		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED BY PASSWORD '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
@@ -3431,6 +3444,10 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{`DROP ROLE IF EXISTS 'role'@'localhost'`, true, "DROP ROLE IF EXISTS `role`@`localhost`"},
 
 		// for grant statement
+		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' REQUIRE X509;", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost` REQUIRE X509"},
+		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' REQUIRE SSL;", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost` REQUIRE SSL"},
+		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' REQUIRE NONE;", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost` REQUIRE NONE"},
+		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost` REQUIRE ISSUER '/C=SE/ST=Stockholm/L=Stockholm/O=MySQL/CN=CA/emailAddress=ca@example.com' AND CIPHER 'EDH-RSA-DES-CBC3-SHA'"},
 		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost';", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost`"},
 		{"GRANT ALL ON TABLE db1.* TO 'jeffrey'@'localhost';", true, "GRANT ALL ON TABLE `db1`.* TO `jeffrey`@`localhost`"},
 		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' WITH GRANT OPTION;", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost` WITH GRANT OPTION"},
@@ -4823,8 +4840,8 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 		node.F = strings.ToLower(node.F)
 	case *ast.SelectField:
 		node.Offset = 0
-	case *driver.ValueExpr:
-		if node.Kind() == types.KindMysqlDecimal {
+	case *test_driver.ValueExpr:
+		if node.Kind() == test_driver.KindMysqlDecimal {
 			node.GetMysqlDecimal().FromString(node.GetMysqlDecimal().ToString())
 		}
 	case *ast.GrantStmt:
@@ -4850,4 +4867,64 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 // Leave implements Visitor interface.
 func (checker *nodeTextCleaner) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
+}
+
+// For index advisor
+func (s *testParserSuite) TestIndexAdviseStmt(c *C) {
+	table := []testCase{
+		{"INDEX ADVISE INFILE '/tmp/t.sql'", true, "INDEX ADVISE INFILE '/tmp/t.sql'"},
+		{"INDEX ADVISE LOCAL INFILE '/tmp/t.sql'", true, "INDEX ADVISE LOCAL INFILE '/tmp/t.sql'"},
+
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1", false, ""},
+
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_TABLE 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_TABLE 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_DB 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_TABLE 8 PER_DB 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_TABLE 8 PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_IDXNUM PER_DB 4 PER_TABLE 8", false, ""},
+
+		{"INDEX ADVISE INFILE '/tmp/t.sql' LINES STARTING BY 'ab'", true, "INDEX ADVISE INFILE '/tmp/t.sql' LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' LINES TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' LINES TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' LINES TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' LINES STARTING BY 'ab' TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' LINES STARTING BY 'ab' TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' LINES STARTING BY 'ab' TERMINATED BY 'cd'"},
+
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_DB 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_DB 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 8 PER_DB 4", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 8 PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 MAX_IDXNUM PER_TABLE 4", false, ""},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 MAX_IDXNUM PER_DB 4", false, ""},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 MAX_IDXNUM PER_TABLE 8 PER_DB 4", false, ""},
+
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES STARTING BY 'ab'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES STARTING BY 'ab' TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES STARTING BY 'ab'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES STARTING BY 'ab' TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES STARTING BY 'ab' TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 LINES STARTING BY 'ab' TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 LINES STARTING BY 'ab' TERMINATED BY '\n'", false, ""},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 LINES STARTING BY 'ab' TERMINATED BY 'cd'", false, ""},
+
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 4 LINES STARTING BY 'ab'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_DB 4 LINES STARTING BY 'ab'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_DB 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 3 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY '\n'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'", true, "INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES 0 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'"},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY '\n'", false, ""},
+		{"INDEX ADVISE INFILE '/tmp/t.sql' MAX_MINUTES -1 MAX_IDXNUM PER_TABLE 8 PER_DB 4 LINES STARTING BY 'ab' TERMINATED BY 'cd'", false, ""},
+	}
+
+	s.RunTest(c, table)
 }
