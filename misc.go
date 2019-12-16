@@ -14,10 +14,39 @@
 package parser
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
+
+// CommentCodeVersion is used to track the highest version can be parsed in the comment with pattern /*T!00001 xxx */
+type CommentCodeVersion int
+
+const (
+	CommentCodeNoVersion  CommentCodeVersion = iota
+	CommentCodeAutoRandom CommentCodeVersion = 40000
+
+	CommentCodeCurrentVersion
+)
+
+func (ccv CommentCodeVersion) String() string {
+	return fmt.Sprintf("%05d", ccv)
+}
+
+func extractVersionCodeInComment(comment string) CommentCodeVersion {
+	code, err := strconv.Atoi(specVersionCodeValue.FindString(comment))
+	if err != nil {
+		return CommentCodeNoVersion
+	}
+	return CommentCodeVersion(code)
+}
+
+// WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
+func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
+	return fmt.Sprintf("/*T!%05d %s */", ccv, str)
+}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -138,6 +167,7 @@ var tokenMap = map[string]int{
 	"ACTION":                   action,
 	"ADD":                      add,
 	"ADDDATE":                  addDate,
+	"ADVISE":                   advise,
 	"ADMIN":                    admin,
 	"AFTER":                    after,
 	"AGAINST":                  against,
@@ -153,6 +183,7 @@ var tokenMap = map[string]int{
 	"ASC":                      asc,
 	"ASCII":                    ascii,
 	"AUTO_INCREMENT":           autoIncrement,
+	"AUTO_RANDOM":              autoRandom,
 	"AVG":                      avg,
 	"AVG_ROW_LENGTH":           avgRowLength,
 	"BEGIN":                    begin,
@@ -175,11 +206,13 @@ var tokenMap = map[string]int{
 	"BUILTINS":                 builtins,
 	"BY":                       by,
 	"BYTE":                     byteType,
+	"CACHE":                    cache,
 	"CANCEL":                   cancel,
 	"CASCADE":                  cascade,
 	"CASCADED":                 cascaded,
 	"CASE":                     caseKwd,
 	"CAST":                     cast,
+	"CAPTURE":                  capture,
 	"CHANGE":                   change,
 	"CHAR":                     charType,
 	"CHARACTER":                character,
@@ -219,6 +252,7 @@ var tokenMap = map[string]int{
 	"CURRENT_USER":             currentUser,
 	"CURRENT_ROLE":             currentRole,
 	"CURTIME":                  curTime,
+	"CYCLE":                    cycle,
 	"DATA":                     data,
 	"DATABASE":                 database,
 	"DATABASES":                databases,
@@ -271,6 +305,7 @@ var tokenMap = map[string]int{
 	"ESCAPED":                  escaped,
 	"EVENT":                    event,
 	"EVENTS":                   events,
+	"EVOLVE":                   evolve,
 	"EXACT":                    exact,
 	"EXCLUSIVE":                exclusive,
 	"EXCEPT":                   except,
@@ -280,6 +315,7 @@ var tokenMap = map[string]int{
 	"EXPANSION":                expansion,
 	"EXPIRE":                   expire,
 	"EXPLAIN":                  explain,
+	"EXTENDED":                 extended,
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
 	"FAULTS":                   faultsSym,
@@ -288,6 +324,7 @@ var tokenMap = map[string]int{
 	"FIXED":                    fixed,
 	"FLOAT":                    floatType,
 	"FLUSH":                    flush,
+	"FLASHBACK":                flashback,
 	"FOLLOWING":                following,
 	"FOR":                      forKwd,
 	"FORCE":                    force,
@@ -321,6 +358,7 @@ var tokenMap = map[string]int{
 	"IGNORE_INDEX":             hintIgnoreIndex,
 	"IMPORT":                   importKwd,
 	"IN":                       in,
+	"INCREMENT":                increment,
 	"INCREMENTAL":              incremental,
 	"INDEX":                    index,
 	"INDEXES":                  indexes,
@@ -386,6 +424,8 @@ var tokenMap = map[string]int{
 	"MAX":                      max,
 	"MAX_CONNECTIONS_PER_HOUR": maxConnectionsPerHour,
 	"MAX_EXECUTION_TIME":       maxExecutionTime,
+	"MAX_IDXNUM":               max_idxnum,
+	"MAX_MINUTES":              max_minutes,
 	"MAX_QUERIES_PER_HOUR":     maxQueriesPerHour,
 	"MAX_ROWS":                 maxRows,
 	"MAX_UPDATES_PER_HOUR":     maxUpdatesPerHour,
@@ -403,6 +443,7 @@ var tokenMap = map[string]int{
 	"MINUTE":                   minute,
 	"MINUTE_MICROSECOND":       minuteMicrosecond,
 	"MINUTE_SECOND":            minuteSecond,
+	"MINVALUE":                 minValue,
 	"MOD":                      mod,
 	"MODE":                     mode,
 	"MODIFY":                   modify,
@@ -414,11 +455,17 @@ var tokenMap = map[string]int{
 	"NEXT_ROW_ID":              next_row_id,
 	"NO":                       no,
 	"NO_INDEX_MERGE":           hintNoIndexMerge,
+	"NO_SWAP_JOIN_INPUTS":      hintNSJI,
 	"NO_WRITE_TO_BINLOG":       noWriteToBinLog,
+	"NOCACHE":                  nocache,
+	"NOCYCLE":                  nocycle,
 	"NODE_ID":                  nodeID,
 	"NODE_STATE":               nodeState,
 	"NODEGROUP":                nodegroup,
+	"NOMAXVALUE":               nomaxvalue,
+	"NOMINVALUE":               nominvalue,
 	"NONE":                     none,
+	"NOORDER":                  noorder,
 	"NOT":                      not,
 	"NOW":                      now,
 	"NULL":                     null,
@@ -447,6 +494,8 @@ var tokenMap = map[string]int{
 	"PARTITIONS":               partitions,
 	"PASSWORD":                 password,
 	"PESSIMISTIC":              pessimistic,
+	"PER_TABLE":                per_table,
+	"PER_DB":                   per_db,
 	"PLUGINS":                  plugins,
 	"POSITION":                 position,
 	"PRECEDING":                preceding,
@@ -506,6 +555,7 @@ var tokenMap = map[string]int{
 	"ROW_FORMAT":               rowFormat,
 	"RTREE":                    rtree,
 	"SAMPLES":                  samples,
+	"SWAP_JOIN_INPUTS":         hintSJI,
 	"SCHEMA":                   database,
 	"SCHEMAS":                  databases,
 	"SECOND":                   second,
@@ -515,6 +565,7 @@ var tokenMap = map[string]int{
 	"SECOND_MICROSECOND":       secondMicrosecond,
 	"SECURITY":                 security,
 	"SELECT":                   selectKwd,
+	"SEQUENCE":                 sequence,
 	"SERIAL":                   serial,
 	"SERIALIZABLE":             serializable,
 	"SESSION":                  session,
@@ -637,6 +688,7 @@ var tokenMap = map[string]int{
 	"UNKNOWN":                  unknown,
 	"UNLOCK":                   unlock,
 	"UNSIGNED":                 unsigned,
+	"UNTIL":                    until,
 	"UPDATE":                   update,
 	"USAGE":                    usage,
 	"USE":                      use,
@@ -770,7 +822,7 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		}
 	}
 
-	checkBtFuncToken, tokenStr := false, string(data)
+	checkBtFuncToken := false
 	if s.r.peek() == '(' {
 		checkBtFuncToken = true
 	} else if s.sqlMode.HasIgnoreSpaceMode() {
@@ -780,7 +832,7 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		}
 	}
 	if checkBtFuncToken {
-		if tok := btFuncTokenMap[tokenStr]; tok != 0 {
+		if tok := btFuncTokenMap[string(data)]; tok != 0 {
 			return tok
 		}
 	}

@@ -93,6 +93,8 @@ type ColumnInfo struct {
 	types.FieldType     `json:"type"`
 	State               SchemaState `json:"state"`
 	Comment             string      `json:"comment"`
+	// A hidden column is used internally(expression index) and are not accessible by users.
+	Hidden bool `json:"hidden"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
 	//              That is a bug if multiple TiDB servers in different system time zone.
@@ -139,6 +141,18 @@ func (c *ColumnInfo) GetDefaultValue() interface{} {
 		return string(c.DefaultValueBit)
 	}
 	return c.DefaultValue
+}
+
+// GetTypeDesc gets the description for column type.
+func (c *ColumnInfo) GetTypeDesc() string {
+	desc := c.FieldType.CompactStr()
+	if mysql.HasUnsignedFlag(c.Flag) && c.Tp != mysql.TypeBit && c.Tp != mysql.TypeYear {
+		desc += " unsigned"
+	}
+	if mysql.HasZerofillFlag(c.Flag) && c.Tp != mysql.TypeYear {
+		desc += " zerofill"
+	}
+	return desc
 }
 
 // FindColumnInfo finds ColumnInfo in cols by name.
@@ -221,6 +235,8 @@ type TableInfo struct {
 	ShardRowIDBits uint64
 	// MaxShardRowIDBits uses to record the max ShardRowIDBits be used so far.
 	MaxShardRowIDBits uint64 `json:"max_shard_row_id_bits"`
+	// AutoRandomBits is used to set the bit number to shard automatically when PKIsHandle.
+	AutoRandomBits uint64 `json:"auto_shard_bits"`
 	// PreSplitRegions specify the pre-split region when create table.
 	// The pre-split region num is 2^(PreSplitRegions-1).
 	// And the PreSplitRegions should less than or equal to ShardRowIDBits.
@@ -379,11 +395,9 @@ func (t *TableInfo) Clone() *TableInfo {
 
 // GetPkName will return the pk name if pk exists.
 func (t *TableInfo) GetPkName() CIStr {
-	if t.PKIsHandle {
-		for _, colInfo := range t.Columns {
-			if mysql.HasPriKeyFlag(colInfo.Flag) {
-				return colInfo.Name
-			}
+	for _, colInfo := range t.Columns {
+		if mysql.HasPriKeyFlag(colInfo.Flag) {
+			return colInfo.Name
 		}
 	}
 	return CIStr{}
@@ -415,6 +429,19 @@ func (t *TableInfo) IsAutoIncColUnsigned() bool {
 		return false
 	}
 	return mysql.HasUnsignedFlag(col.Flag)
+}
+
+// ContainsAutoRandomBits indicates whether a table contains auto_random column.
+func (t *TableInfo) ContainsAutoRandomBits() bool {
+	return t.AutoRandomBits != 0
+}
+
+// IsAutoRandomBitColUnsigned indicates whether the auto_random column is unsigned. Make sure the table contains auto_random before calling this method.
+func (t *TableInfo) IsAutoRandomBitColUnsigned() bool {
+	if !t.PKIsHandle || t.AutoRandomBits == 0 {
+		return false
+	}
+	return mysql.HasUnsignedFlag(t.GetPkColInfo().Flag)
 }
 
 // Cols returns the columns of the table in public state.
