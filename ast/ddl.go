@@ -33,6 +33,7 @@ var (
 	_ DDLNode = &DropDatabaseStmt{}
 	_ DDLNode = &DropIndexStmt{}
 	_ DDLNode = &DropTableStmt{}
+	_ DDLNode = &DropSequenceStmt{}
 	_ DDLNode = &RenameTableStmt{}
 	_ DDLNode = &TruncateTableStmt{}
 	_ DDLNode = &RepairTableStmt{}
@@ -1113,7 +1114,7 @@ func (n *DropSequenceStmt) Restore(ctx *RestoreCtx) error {
 			ctx.WritePlain(", ")
 		}
 		if err := sequence.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore DropSequenceStmt.Sequences "+string(i))
+			return errors.Annotatef(err, "An error occurred while restore DropSequenceStmt.Sequences[%d]", i)
 		}
 	}
 
