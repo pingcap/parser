@@ -60,8 +60,8 @@ const (
 	account                    = 57571
 	action                     = 57572
 	add                        = 57359
-	addDate                    = 57835
-	admin                      = 57887
+	addDate                    = 57834
+	admin                      = 57886
 	advise                     = 57573
 	after                      = 57574
 	against                    = 57575
@@ -86,22 +86,22 @@ const (
 	between                    = 57366
 	bigIntType                 = 57367
 	binaryType                 = 57368
-	binding                    = 57825
-	bindings                   = 57826
+	binding                    = 57824
+	bindings                   = 57825
 	binlog                     = 57585
-	bitAnd                     = 57836
+	bitAnd                     = 57835
 	bitLit                     = 57970
-	bitOr                      = 57837
+	bitOr                      = 57836
 	bitType                    = 57586
-	bitXor                     = 57838
+	bitXor                     = 57837
 	blobType                   = 57369
 	block                      = 57587
 	boolType                   = 57589
 	booleanType                = 57588
 	both                       = 57370
-	bound                      = 57839
+	bound                      = 57838
 	btree                      = 57590
-	buckets                    = 57888
+	buckets                    = 57887
 	builtinAddDate             = 57940
 	builtinBitAnd              = 57941
 	builtinBitOr               = 57942
@@ -128,16 +128,16 @@ const (
 	builtinUser                = 57963
 	builtinVarPop              = 57964
 	builtinVarSamp             = 57965
-	builtins                   = 57889
+	builtins                   = 57888
 	by                         = 57371
 	byteType                   = 57591
 	cache                      = 57592
-	cancel                     = 57890
+	cancel                     = 57889
 	capture                    = 57594
 	cascade                    = 57372
 	cascaded                   = 57593
 	caseKwd                    = 57373
-	cast                       = 57840
+	cast                       = 57839
 	change                     = 57374
 	charType                   = 57376
 	character                  = 57375
@@ -147,7 +147,7 @@ const (
 	cipher                     = 57597
 	cleanup                    = 57598
 	client                     = 57599
-	cmSketch                   = 57891
+	cmSketch                   = 57890
 	coalesce                   = 57600
 	collate                    = 57378
 	collation                  = 57601
@@ -165,14 +165,14 @@ const (
 	constraint                 = 57380
 	context                    = 57612
 	convert                    = 57381
-	copyKwd                    = 57841
-	count                      = 57842
+	copyKwd                    = 57840
+	count                      = 57841
 	cpu                        = 57613
 	create                     = 57382
 	createTableSelect          = 57992
 	cross                      = 57383
 	cumeDist                   = 57384
-	curTime                    = 57843
+	curTime                    = 57842
 	current                    = 57614
 	currentDate                = 57385
 	currentRole                = 57389
@@ -183,8 +183,8 @@ const (
 	data                       = 57617
 	database                   = 57390
 	databases                  = 57391
-	dateAdd                    = 57844
-	dateSub                    = 57845
+	dateAdd                    = 57843
+	dateSub                    = 57844
 	dateType                   = 57618
 	datetimeType               = 57619
 	day                        = 57616
@@ -192,7 +192,7 @@ const (
 	dayMicrosecond             = 57393
 	dayMinute                  = 57394
 	daySecond                  = 57395
-	ddl                        = 57892
+	ddl                        = 57891
 	deallocate                 = 57620
 	decLit                     = 57967
 	decimalType                = 57396
@@ -202,7 +202,7 @@ const (
 	delayed                    = 57398
 	deleteKwd                  = 57399
 	denseRank                  = 57400
-	depth                      = 57893
+	depth                      = 57892
 	desc                       = 57401
 	describe                   = 57402
 	directory                  = 57623
@@ -215,7 +215,7 @@ const (
 	do                         = 57627
 	doubleAtIdentifier         = 57350
 	doubleType                 = 57406
-	drainer                    = 57894
+	drainer                    = 57893
 	drop                       = 57407
 	dual                       = 57408
 	duplicate                  = 57628
@@ -226,7 +226,7 @@ const (
 	enclosed                   = 57410
 	encryption                 = 57631
 	end                        = 57632
-	enforced                   = 57833
+	enforced                   = 57832
 	engine                     = 57633
 	engines                    = 57634
 	enum                       = 57635
@@ -237,7 +237,7 @@ const (
 	event                      = 57636
 	events                     = 57637
 	evolve                     = 57638
-	exact                      = 57846
+	exact                      = 57845
 	except                     = 57414
 	exchange                   = 57640
 	exclusive                  = 57641
@@ -246,16 +246,16 @@ const (
 	expansion                  = 57643
 	expire                     = 57644
 	explain                    = 57413
-	exprPushdownBlacklist      = 57885
+	exprPushdownBlacklist      = 57884
 	extended                   = 57645
-	extract                    = 57847
+	extract                    = 57846
 	falseKwd                   = 57415
 	faultsSym                  = 57646
 	fields                     = 57647
 	first                      = 57648
 	firstValue                 = 57416
 	fixed                      = 57649
-	flashback                  = 57848
+	flashback                  = 57847
 	floatLit                   = 57966
 	floatType                  = 57417
 	flush                      = 57650
@@ -270,12 +270,12 @@ const (
 	function                   = 57654
 	ge                         = 57974
 	generated                  = 57423
-	getFormat                  = 57849
-	global                     = 57798
+	getFormat                  = 57848
+	global                     = 57797
 	grant                      = 57424
 	grants                     = 57655
 	group                      = 57425
-	groupConcat                = 57850
+	groupConcat                = 57849
 	groups                     = 57426
 	hash                       = 57656
 	having                     = 57427
@@ -316,7 +316,7 @@ const (
 	hourMicrosecond            = 57429
 	hourMinute                 = 57430
 	hourSecond                 = 57431
-	identSQLErrors             = 57829
+	identSQLErrors             = 57828
 	identified                 = 57660
 	identifier                 = 57346
 	ifKwd                      = 57432
@@ -329,11 +329,11 @@ const (
 	indexes                    = 57667
 	infile                     = 57436
 	inner                      = 57437
-	inplace                    = 57852
+	inplace                    = 57851
 	insert                     = 57442
 	insertMethod               = 57662
 	insertValues               = 57990
-	instant                    = 57853
+	instant                    = 57852
 	int1Type                   = 57444
 	int2Type                   = 57445
 	int3Type                   = 57446
@@ -342,7 +342,7 @@ const (
 	intLit                     = 57968
 	intType                    = 57443
 	integerType                = 57438
-	internal                   = 57854
+	internal                   = 57853
 	interval                   = 57439
 	into                       = 57440
 	invalid                    = 57351
@@ -353,8 +353,8 @@ const (
 	is                         = 57441
 	isolation                  = 57663
 	issuer                     = 57664
-	job                        = 57896
-	jobs                       = 57895
+	job                        = 57895
+	jobs                       = 57894
 	join                       = 57449
 	jsonType                   = 57672
 	jss                        = 57976
@@ -407,9 +407,9 @@ const (
 	lsh                        = 57978
 	master                     = 57682
 	match                      = 57470
-	max                        = 57856
+	max                        = 57855
 	maxConnectionsPerHour      = 57689
-	maxExecutionTime           = 57857
+	maxExecutionTime           = 57856
 	maxQueriesPerHour          = 57690
 	maxRows                    = 57688
 	maxUpdatesPerHour          = 57691
@@ -423,7 +423,7 @@ const (
 	memory                     = 57693
 	merge                      = 57694
 	microsecond                = 57683
-	min                        = 57855
+	min                        = 57854
 	minRows                    = 57695
 	minValue                   = 57696
 	minute                     = 57684
@@ -441,13 +441,13 @@ const (
 	neq                        = 57979
 	neqSynonym                 = 57980
 	never                      = 57702
-	next_row_id                = 57851
+	next_row_id                = 57850
 	no                         = 57703
 	noWriteToBinLog            = 57479
 	nocache                    = 57704
 	nocycle                    = 57705
-	nodeID                     = 57897
-	nodeState                  = 57898
+	nodeID                     = 57896
+	nodeState                  = 57897
 	nodegroup                  = 57706
 	nomaxvalue                 = 57707
 	nominvalue                 = 57708
@@ -455,8 +455,8 @@ const (
 	noorder                    = 57710
 	not                        = 57478
 	not2                       = 57984
-	now                        = 57858
-	nowait                     = 57834
+	now                        = 57857
+	nowait                     = 57833
 	nthValue                   = 57480
 	ntile                      = 57481
 	null                       = 57482
@@ -470,252 +470,252 @@ const (
 	offset                     = 57712
 	on                         = 57485
 	only                       = 57713
-	open                       = 57791
-	optRuleBlacklist           = 57886
-	optimistic                 = 57899
+	open                       = 57790
+	optRuleBlacklist           = 57885
+	optimistic                 = 57898
 	optimize                   = 57486
 	option                     = 57487
 	optionally                 = 57488
-	opttrace                   = 57714
+	opttrace                   = 57899
 	or                         = 57489
 	order                      = 57490
 	outer                      = 57491
 	over                       = 57492
 	packKeys                   = 57493
-	pageSym                    = 57715
+	pageSym                    = 57714
 	paramMarker                = 57982
 	parser                     = 57495
-	partial                    = 57717
+	partial                    = 57716
 	partition                  = 57494
-	partitioning               = 57718
-	partitions                 = 57719
-	password                   = 57716
-	per_db                     = 57730
-	per_table                  = 57729
+	partitioning               = 57717
+	partitions                 = 57718
+	password                   = 57715
+	per_db                     = 57729
+	per_table                  = 57728
 	percentRank                = 57496
 	pessimistic                = 57900
 	pipes                      = 57355
-	pipesAsOr                  = 57720
-	plugins                    = 57721
-	position                   = 57859
+	pipesAsOr                  = 57719
+	plugins                    = 57720
+	position                   = 57858
 	preSplitRegions            = 57501
-	preceding                  = 57722
+	preceding                  = 57721
 	precisionType              = 57497
-	prepare                    = 57723
+	prepare                    = 57722
 	primary                    = 57498
-	privileges                 = 57724
+	privileges                 = 57723
 	procedure                  = 57499
-	process                    = 57725
-	processlist                = 57726
-	profile                    = 57727
-	profiles                   = 57728
+	process                    = 57724
+	processlist                = 57725
+	profile                    = 57726
+	profiles                   = 57727
 	pump                       = 57901
-	quarter                    = 57731
-	queries                    = 57733
-	query                      = 57732
-	quick                      = 57734
+	quarter                    = 57730
+	queries                    = 57732
+	query                      = 57731
+	quick                      = 57733
 	rangeKwd                   = 57502
 	rank                       = 57503
 	read                       = 57504
 	realType                   = 57505
-	rebuild                    = 57735
-	recent                     = 57860
-	recover                    = 57736
-	redundant                  = 57737
+	rebuild                    = 57734
+	recent                     = 57859
+	recover                    = 57735
+	redundant                  = 57736
 	references                 = 57506
 	regexpKwd                  = 57507
 	region                     = 57939
 	regions                    = 57938
-	reload                     = 57738
-	remove                     = 57739
+	reload                     = 57737
+	remove                     = 57738
 	rename                     = 57508
-	reorganize                 = 57740
-	repair                     = 57741
+	reorganize                 = 57739
+	repair                     = 57740
 	repeat                     = 57509
-	repeatable                 = 57742
+	repeatable                 = 57741
 	replace                    = 57510
-	replica                    = 57744
-	replication                = 57745
+	replica                    = 57743
+	replication                = 57744
 	require                    = 57511
-	respect                    = 57743
+	respect                    = 57742
 	restrict                   = 57512
-	reverse                    = 57746
+	reverse                    = 57745
 	revoke                     = 57513
 	right                      = 57514
 	rlike                      = 57515
-	role                       = 57747
-	rollback                   = 57748
-	routine                    = 57749
+	role                       = 57746
+	rollback                   = 57747
+	routine                    = 57748
 	row                        = 57516
-	rowCount                   = 57750
-	rowFormat                  = 57751
+	rowCount                   = 57749
+	rowFormat                  = 57750
 	rowNumber                  = 57518
 	rows                       = 57517
 	rsh                        = 57983
-	rtree                      = 57752
+	rtree                      = 57751
 	samples                    = 57902
-	second                     = 57753
+	second                     = 57752
 	secondMicrosecond          = 57519
-	secondaryEngine            = 57754
-	secondaryLoad              = 57755
-	secondaryUnload            = 57756
-	security                   = 57757
+	secondaryEngine            = 57753
+	secondaryLoad              = 57754
+	secondaryUnload            = 57755
+	security                   = 57756
 	selectKwd                  = 57520
-	separator                  = 57758
-	sequence                   = 57759
-	serial                     = 57760
-	serializable               = 57761
-	session                    = 57762
+	separator                  = 57757
+	sequence                   = 57758
+	serial                     = 57759
+	serializable               = 57760
+	session                    = 57761
 	set                        = 57521
 	shardRowIDBits             = 57500
-	share                      = 57763
-	shared                     = 57764
+	share                      = 57762
+	shared                     = 57763
 	show                       = 57522
-	shutdown                   = 57765
-	signed                     = 57766
-	simple                     = 57767
+	shutdown                   = 57764
+	signed                     = 57765
+	simple                     = 57766
 	singleAtIdentifier         = 57349
-	slave                      = 57768
-	slow                       = 57769
+	slave                      = 57767
+	slow                       = 57768
 	smallIntType               = 57523
-	snapshot                   = 57770
-	some                       = 57797
-	source                     = 57792
+	snapshot                   = 57769
+	some                       = 57796
+	source                     = 57791
 	spatial                    = 57524
 	split                      = 57936
 	sql                        = 57525
 	sqlBigResult               = 57526
-	sqlBufferResult            = 57771
-	sqlCache                   = 57772
+	sqlBufferResult            = 57770
+	sqlCache                   = 57771
 	sqlCalcFoundRows           = 57527
-	sqlNoCache                 = 57773
+	sqlNoCache                 = 57772
 	sqlSmallResult             = 57528
-	sqlTsiDay                  = 57774
-	sqlTsiHour                 = 57775
-	sqlTsiMinute               = 57776
-	sqlTsiMonth                = 57777
-	sqlTsiQuarter              = 57778
-	sqlTsiSecond               = 57779
-	sqlTsiWeek                 = 57780
-	sqlTsiYear                 = 57781
+	sqlTsiDay                  = 57773
+	sqlTsiHour                 = 57774
+	sqlTsiMinute               = 57775
+	sqlTsiMonth                = 57776
+	sqlTsiQuarter              = 57777
+	sqlTsiSecond               = 57778
+	sqlTsiWeek                 = 57779
+	sqlTsiYear                 = 57780
 	ssl                        = 57529
-	staleness                  = 57861
-	start                      = 57782
+	staleness                  = 57860
+	start                      = 57781
 	starting                   = 57530
 	stats                      = 57903
-	statsAutoRecalc            = 57783
+	statsAutoRecalc            = 57782
 	statsBuckets               = 57906
 	statsHealthy               = 57907
 	statsHistograms            = 57905
 	statsMeta                  = 57904
-	statsPersistent            = 57784
-	statsSamplePages           = 57785
-	status                     = 57786
-	std                        = 57862
-	stddev                     = 57863
-	stddevPop                  = 57864
-	stddevSamp                 = 57865
-	storage                    = 57787
+	statsPersistent            = 57783
+	statsSamplePages           = 57784
+	status                     = 57785
+	std                        = 57861
+	stddev                     = 57862
+	stddevPop                  = 57863
+	stddevSamp                 = 57864
+	storage                    = 57786
 	stored                     = 57533
 	straightJoin               = 57531
 	stringLit                  = 57348
-	strong                     = 57866
-	subDate                    = 57867
-	subject                    = 57793
-	subpartition               = 57794
-	subpartitions              = 57795
-	substring                  = 57869
-	sum                        = 57868
-	super                      = 57796
-	swaps                      = 57788
-	switchesSym                = 57789
-	systemTime                 = 57790
-	tableChecksum              = 57799
+	strong                     = 57865
+	subDate                    = 57866
+	subject                    = 57792
+	subpartition               = 57793
+	subpartitions              = 57794
+	substring                  = 57868
+	sum                        = 57867
+	super                      = 57795
+	swaps                      = 57787
+	switchesSym                = 57788
+	systemTime                 = 57789
+	tableChecksum              = 57798
 	tableKwd                   = 57532
 	tableRefPriority           = 57998
-	tables                     = 57800
-	tablespace                 = 57801
-	temporary                  = 57802
-	temptable                  = 57803
+	tables                     = 57799
+	tablespace                 = 57800
+	temporary                  = 57801
+	temptable                  = 57802
 	terminated                 = 57534
-	textType                   = 57804
-	than                       = 57805
+	textType                   = 57803
+	than                       = 57804
 	then                       = 57535
 	tidb                       = 57908
-	timeType                   = 57806
-	timestampAdd               = 57870
-	timestampDiff              = 57871
-	timestampType              = 57807
+	timeType                   = 57805
+	timestampAdd               = 57869
+	timestampDiff              = 57870
+	timestampType              = 57806
 	tinyIntType                = 57537
 	tinyblobType               = 57536
 	tinytextType               = 57538
 	to                         = 57539
-	tokudbDefault              = 57872
-	tokudbFast                 = 57873
-	tokudbLzma                 = 57874
-	tokudbQuickLZ              = 57875
-	tokudbSmall                = 57877
-	tokudbSnappy               = 57876
-	tokudbUncompressed         = 57878
-	tokudbZlib                 = 57879
-	top                        = 57880
+	tokudbDefault              = 57871
+	tokudbFast                 = 57872
+	tokudbLzma                 = 57873
+	tokudbQuickLZ              = 57874
+	tokudbSmall                = 57876
+	tokudbSnappy               = 57875
+	tokudbUncompressed         = 57877
+	tokudbZlib                 = 57878
+	top                        = 57879
 	topn                       = 57935
-	tp                         = 57813
-	trace                      = 57808
-	traditional                = 57809
+	tp                         = 57812
+	trace                      = 57807
+	traditional                = 57808
 	trailing                   = 57540
-	transaction                = 57810
+	transaction                = 57809
 	trigger                    = 57541
-	triggers                   = 57811
-	trim                       = 57881
+	triggers                   = 57810
+	trim                       = 57880
 	trueKwd                    = 57542
-	truncate                   = 57812
-	unbounded                  = 57814
-	uncommitted                = 57815
-	undefined                  = 57819
+	truncate                   = 57811
+	unbounded                  = 57813
+	uncommitted                = 57814
+	undefined                  = 57818
 	underscoreCS               = 57347
-	unicodeSym                 = 57816
+	unicodeSym                 = 57815
 	union                      = 57544
 	unique                     = 57543
-	unknown                    = 57817
+	unknown                    = 57816
 	unlock                     = 57545
 	unsigned                   = 57546
 	until                      = 57547
 	update                     = 57548
 	usage                      = 57549
 	use                        = 57550
-	user                       = 57818
+	user                       = 57817
 	using                      = 57551
 	utcDate                    = 57552
 	utcTime                    = 57554
 	utcTimestamp               = 57553
-	validation                 = 57820
-	value                      = 57821
+	validation                 = 57819
+	value                      = 57820
 	values                     = 57555
-	varPop                     = 57883
-	varSamp                    = 57884
+	varPop                     = 57882
+	varSamp                    = 57883
 	varbinaryType              = 57559
 	varcharType                = 57557
 	varcharacter               = 57558
-	variables                  = 57822
-	variance                   = 57882
+	variables                  = 57821
+	variance                   = 57881
 	varying                    = 57560
-	view                       = 57823
+	view                       = 57822
 	virtual                    = 57561
-	visible                    = 57824
-	warnings                   = 57827
-	week                       = 57830
+	visible                    = 57823
+	warnings                   = 57826
+	week                       = 57829
 	when                       = 57562
 	where                      = 57563
 	width                      = 57937
 	window                     = 57565
 	with                       = 57566
-	without                    = 57828
+	without                    = 57827
 	write                      = 57564
-	x509                       = 57832
+	x509                       = 57831
 	xor                        = 57567
 	yearMonth                  = 57568
-	yearType                   = 57831
+	yearType                   = 57830
 	zerofill                   = 57569
 
 	yyMaxDepth = 200
@@ -726,20 +726,20 @@ var (
 	yyXLAT = map[int]int{
 		57344: 0,    // $end (1760x)
 		59:    1,    // ';' (1759x)
-		57739: 2,    // remove (1603x)
+		57738: 2,    // remove (1603x)
 		57604: 3,    // comment (1550x)
-		57787: 4,    // storage (1527x)
+		57786: 4,    // storage (1527x)
 		57580: 5,    // autoIncrement (1515x)
 		44:    6,    // ',' (1470x)
 		57648: 7,    // first (1429x)
 		57574: 8,    // after (1428x)
-		57760: 9,    // serial (1424x)
+		57759: 9,    // serial (1424x)
 		57581: 10,   // autoRandom (1423x)
 		57602: 11,   // columnFormat (1423x)
-		57716: 12,   // password (1383x)
+		57715: 12,   // password (1383x)
 		57595: 13,   // charsetKwd (1374x)
 		57673: 14,   // keyBlockSize (1351x)
-		57801: 15,   // tablespace (1348x)
+		57800: 15,   // tablespace (1348x)
 		57617: 16,   // data (1342x)
 		57633: 17,   // engine (1342x)
 		57631: 18,   // encryption (1341x)
@@ -752,15 +752,15 @@ var (
 		57582: 25,   // avgRowLength (1328x)
 		57609: 26,   // compression (1328x)
 		57622: 27,   // delayKeyWrite (1328x)
-		57751: 28,   // rowFormat (1328x)
-		57754: 29,   // secondaryEngine (1328x)
-		57783: 30,   // statsAutoRecalc (1328x)
-		57784: 31,   // statsPersistent (1328x)
-		57785: 32,   // statsSamplePages (1328x)
-		57799: 33,   // tableChecksum (1328x)
+		57750: 28,   // rowFormat (1328x)
+		57753: 29,   // secondaryEngine (1328x)
+		57782: 30,   // statsAutoRecalc (1328x)
+		57783: 31,   // statsPersistent (1328x)
+		57784: 32,   // statsSamplePages (1328x)
+		57798: 33,   // tableChecksum (1328x)
 		41:    34,   // ')' (1285x)
 		57571: 35,   // account (1285x)
-		57766: 36,   // signed (1280x)
+		57765: 36,   // signed (1280x)
 		57909: 37,   // hintAggToCop (1265x)
 		57924: 38,   // hintEnablePlanCache (1265x)
 		57917: 39,   // hintHASHAGG (1265x)
@@ -783,8 +783,8 @@ var (
 		57921: 56,   // hintUseIndexMerge (1265x)
 		57925: 57,   // hintUsePlanCache (1265x)
 		57923: 58,   // hintUseToja (1265x)
-		57857: 59,   // maxExecutionTime (1265x)
-		57782: 60,   // start (1263x)
+		57856: 59,   // maxExecutionTime (1265x)
+		57781: 60,   // start (1263x)
 		57703: 61,   // no (1261x)
 		57592: 62,   // cache (1260x)
 		57615: 63,   // cycle (1260x)
@@ -796,38 +796,38 @@ var (
 		57707: 69,   // nomaxvalue (1259x)
 		57708: 70,   // nominvalue (1259x)
 		57710: 71,   // noorder (1259x)
-		57813: 72,   // tp (1259x)
+		57812: 72,   // tp (1259x)
 		57668: 73,   // invisible (1258x)
-		57824: 74,   // visible (1258x)
-		57823: 75,   // view (1254x)
-		57794: 76,   // subpartition (1249x)
-		57719: 77,   // partitions (1248x)
+		57823: 74,   // visible (1258x)
+		57822: 75,   // view (1254x)
+		57793: 76,   // subpartition (1249x)
+		57718: 77,   // partitions (1248x)
 		57579: 78,   // ascii (1247x)
 		57591: 79,   // byteType (1247x)
-		57816: 80,   // unicodeSym (1247x)
-		57800: 81,   // tables (1246x)
+		57815: 80,   // unicodeSym (1247x)
+		57799: 81,   // tables (1246x)
 		57603: 82,   // columns (1245x)
 		57647: 83,   // fields (1245x)
-		57758: 84,   // separator (1245x)
-		57786: 85,   // status (1245x)
+		57757: 84,   // separator (1245x)
+		57785: 85,   // status (1245x)
 		57616: 86,   // day (1244x)
-		57722: 87,   // preceding (1244x)
-		57781: 88,   // sqlTsiYear (1244x)
-		57831: 89,   // yearType (1244x)
+		57721: 87,   // preceding (1244x)
+		57780: 88,   // sqlTsiYear (1244x)
+		57830: 89,   // yearType (1244x)
 		57659: 90,   // hour (1243x)
 		57683: 91,   // microsecond (1243x)
 		57684: 92,   // minute (1243x)
 		57687: 93,   // month (1243x)
-		57731: 94,   // quarter (1243x)
-		57753: 95,   // second (1243x)
-		57774: 96,   // sqlTsiDay (1243x)
-		57775: 97,   // sqlTsiHour (1243x)
-		57776: 98,   // sqlTsiMinute (1243x)
-		57777: 99,   // sqlTsiMonth (1243x)
-		57778: 100,  // sqlTsiQuarter (1243x)
-		57779: 101,  // sqlTsiSecond (1243x)
-		57780: 102,  // sqlTsiWeek (1243x)
-		57830: 103,  // week (1243x)
+		57730: 94,   // quarter (1243x)
+		57752: 95,   // second (1243x)
+		57773: 96,   // sqlTsiDay (1243x)
+		57774: 97,   // sqlTsiHour (1243x)
+		57775: 98,   // sqlTsiMinute (1243x)
+		57776: 99,   // sqlTsiMonth (1243x)
+		57777: 100,  // sqlTsiQuarter (1243x)
+		57778: 101,  // sqlTsiSecond (1243x)
+		57779: 102,  // sqlTsiWeek (1243x)
+		57829: 103,  // week (1243x)
 		57597: 104,  // cipher (1242x)
 		57664: 105,  // issuer (1242x)
 		57679: 106,  // local (1242x)
@@ -835,25 +835,25 @@ var (
 		57690: 108,  // maxQueriesPerHour (1242x)
 		57691: 109,  // maxUpdatesPerHour (1242x)
 		57692: 110,  // maxUserConnections (1242x)
-		57793: 111,  // subject (1242x)
+		57792: 111,  // subject (1242x)
 		57621: 112,  // definer (1241x)
 		57656: 113,  // hash (1241x)
 		57660: 114,  // identified (1241x)
-		57743: 115,  // respect (1241x)
-		57826: 116,  // bindings (1240x)
+		57742: 115,  // respect (1241x)
+		57825: 116,  // bindings (1240x)
 		57614: 117,  // current (1240x)
 		57651: 118,  // following (1240x)
-		57825: 119,  // binding (1239x)
+		57824: 119,  // binding (1239x)
 		57632: 120,  // end (1239x)
-		57732: 121,  // query (1239x)
-		57759: 122,  // sequence (1239x)
-		57807: 123,  // timestampType (1239x)
-		57814: 124,  // unbounded (1239x)
-		57833: 125,  // enforced (1238x)
-		57723: 126,  // prepare (1238x)
+		57731: 121,  // query (1239x)
+		57758: 122,  // sequence (1239x)
+		57806: 123,  // timestampType (1239x)
+		57813: 124,  // unbounded (1239x)
+		57832: 125,  // enforced (1238x)
+		57722: 126,  // prepare (1238x)
 		57938: 127,  // regions (1238x)
-		57747: 128,  // role (1238x)
-		57818: 129,  // user (1238x)
+		57746: 128,  // role (1238x)
+		57817: 129,  // user (1238x)
 		57584: 130,  // begin (1237x)
 		57590: 131,  // btree (1237x)
 		57605: 132,  // commit (1237x)
@@ -865,39 +865,39 @@ var (
 		57672: 138,  // jsonType (1237x)
 		57693: 139,  // memory (1237x)
 		57712: 140,  // offset (1237x)
-		57724: 141,  // privileges (1237x)
-		57748: 142,  // rollback (1237x)
-		57752: 143,  // rtree (1237x)
-		57802: 144,  // temporary (1237x)
-		57806: 145,  // timeType (1237x)
-		57812: 146,  // truncate (1237x)
-		57820: 147,  // validation (1237x)
-		57821: 148,  // value (1237x)
-		57822: 149,  // variables (1237x)
+		57723: 141,  // privileges (1237x)
+		57747: 142,  // rollback (1237x)
+		57751: 143,  // rtree (1237x)
+		57801: 144,  // temporary (1237x)
+		57805: 145,  // timeType (1237x)
+		57811: 146,  // truncate (1237x)
+		57819: 147,  // validation (1237x)
+		57820: 148,  // value (1237x)
+		57821: 149,  // variables (1237x)
 		57624: 150,  // disable (1236x)
 		57629: 151,  // dynamic (1236x)
 		57630: 152,  // enable (1236x)
 		57642: 153,  // execute (1236x)
 		57650: 154,  // flush (1236x)
 		57653: 155,  // full (1236x)
-		57798: 156,  // global (1236x)
+		57797: 156,  // global (1236x)
 		57933: 157,  // hintTiKV (1236x)
 		57698: 158,  // max_idxnum (1236x)
 		57685: 159,  // mode (1236x)
 		57702: 160,  // never (1236x)
-		57851: 161,  // next_row_id (1236x)
-		57730: 162,  // per_db (1236x)
-		57721: 163,  // plugins (1236x)
-		57726: 164,  // processlist (1236x)
-		57736: 165,  // recover (1236x)
-		57741: 166,  // repair (1236x)
-		57762: 167,  // session (1236x)
-		57765: 168,  // shutdown (1236x)
-		57795: 169,  // subpartitions (1236x)
+		57850: 161,  // next_row_id (1236x)
+		57729: 162,  // per_db (1236x)
+		57720: 163,  // plugins (1236x)
+		57725: 164,  // processlist (1236x)
+		57735: 165,  // recover (1236x)
+		57740: 166,  // repair (1236x)
+		57761: 167,  // session (1236x)
+		57764: 168,  // shutdown (1236x)
+		57794: 169,  // subpartitions (1236x)
 		57908: 170,  // tidb (1236x)
-		57817: 171,  // unknown (1236x)
-		57828: 172,  // without (1236x)
-		57887: 173,  // admin (1235x)
+		57816: 171,  // unknown (1236x)
+		57827: 172,  // without (1236x)
+		57886: 173,  // admin (1235x)
 		57585: 174,  // binlog (1235x)
 		57587: 175,  // block (1235x)
 		57588: 176,  // booleanType (1235x)
@@ -906,96 +906,96 @@ var (
 		57607: 179,  // compact (1235x)
 		57608: 180,  // compressed (1235x)
 		57612: 181,  // context (1235x)
-		57841: 182,  // copyKwd (1235x)
+		57840: 182,  // copyKwd (1235x)
 		57613: 183,  // cpu (1235x)
 		57620: 184,  // deallocate (1235x)
 		57623: 185,  // directory (1235x)
 		57625: 186,  // discard (1235x)
 		57626: 187,  // disk (1235x)
 		57627: 188,  // do (1235x)
-		57894: 189,  // drainer (1235x)
+		57893: 189,  // drainer (1235x)
 		57640: 190,  // exchange (1235x)
 		57643: 191,  // expansion (1235x)
-		57848: 192,  // flashback (1235x)
+		57847: 192,  // flashback (1235x)
 		57931: 193,  // hintOLAP (1235x)
 		57932: 194,  // hintOLTP (1235x)
 		57658: 195,  // hosts (1235x)
 		57346: 196,  // identifier (1235x)
 		57661: 197,  // importKwd (1235x)
-		57852: 198,  // inplace (1235x)
-		57853: 199,  // instant (1235x)
+		57851: 198,  // inplace (1235x)
+		57852: 199,  // instant (1235x)
 		57671: 200,  // ipc (1235x)
-		57896: 201,  // job (1235x)
-		57895: 202,  // jobs (1235x)
+		57895: 201,  // job (1235x)
+		57894: 202,  // jobs (1235x)
 		57680: 203,  // location (1235x)
 		57681: 204,  // logs (1235x)
 		57686: 205,  // modify (1235x)
-		57897: 206,  // nodeID (1235x)
-		57898: 207,  // nodeState (1235x)
+		57896: 206,  // nodeID (1235x)
+		57897: 207,  // nodeState (1235x)
 		57711: 208,  // nulls (1235x)
 		57713: 209,  // only (1235x)
-		57715: 210,  // pageSym (1235x)
+		57714: 210,  // pageSym (1235x)
 		57901: 211,  // pump (1235x)
-		57735: 212,  // rebuild (1235x)
-		57737: 213,  // redundant (1235x)
-		57738: 214,  // reload (1235x)
-		57740: 215,  // reorganize (1235x)
-		57749: 216,  // routine (1235x)
-		57755: 217,  // secondaryLoad (1235x)
-		57756: 218,  // secondaryUnload (1235x)
-		57768: 219,  // slave (1235x)
-		57792: 220,  // source (1235x)
+		57734: 212,  // rebuild (1235x)
+		57736: 213,  // redundant (1235x)
+		57737: 214,  // reload (1235x)
+		57739: 215,  // reorganize (1235x)
+		57748: 216,  // routine (1235x)
+		57754: 217,  // secondaryLoad (1235x)
+		57755: 218,  // secondaryUnload (1235x)
+		57767: 219,  // slave (1235x)
+		57791: 220,  // source (1235x)
 		57936: 221,  // split (1235x)
-		57861: 222,  // staleness (1235x)
+		57860: 222,  // staleness (1235x)
 		57903: 223,  // stats (1235x)
-		57788: 224,  // swaps (1235x)
-		57872: 225,  // tokudbDefault (1235x)
-		57873: 226,  // tokudbFast (1235x)
-		57874: 227,  // tokudbLzma (1235x)
-		57875: 228,  // tokudbQuickLZ (1235x)
-		57877: 229,  // tokudbSmall (1235x)
-		57876: 230,  // tokudbSnappy (1235x)
-		57878: 231,  // tokudbUncompressed (1235x)
-		57879: 232,  // tokudbZlib (1235x)
-		57808: 233,  // trace (1235x)
+		57787: 224,  // swaps (1235x)
+		57871: 225,  // tokudbDefault (1235x)
+		57872: 226,  // tokudbFast (1235x)
+		57873: 227,  // tokudbLzma (1235x)
+		57874: 228,  // tokudbQuickLZ (1235x)
+		57876: 229,  // tokudbSmall (1235x)
+		57875: 230,  // tokudbSnappy (1235x)
+		57877: 231,  // tokudbUncompressed (1235x)
+		57878: 232,  // tokudbZlib (1235x)
+		57807: 233,  // trace (1235x)
 		57572: 234,  // action (1234x)
 		57573: 235,  // advise (1234x)
 		57575: 236,  // against (1234x)
 		57576: 237,  // always (1234x)
 		57586: 238,  // bitType (1234x)
 		57589: 239,  // boolType (1234x)
-		57839: 240,  // bound (1234x)
-		57888: 241,  // buckets (1234x)
-		57889: 242,  // builtins (1234x)
-		57890: 243,  // cancel (1234x)
+		57838: 240,  // bound (1234x)
+		57887: 241,  // buckets (1234x)
+		57888: 242,  // builtins (1234x)
+		57889: 243,  // cancel (1234x)
 		57594: 244,  // capture (1234x)
 		57593: 245,  // cascaded (1234x)
 		57598: 246,  // cleanup (1234x)
-		57891: 247,  // cmSketch (1234x)
+		57890: 247,  // cmSketch (1234x)
 		57601: 248,  // collation (1234x)
 		57606: 249,  // committed (1234x)
 		57611: 250,  // consistent (1234x)
-		57892: 251,  // ddl (1234x)
-		57893: 252,  // depth (1234x)
+		57891: 251,  // ddl (1234x)
+		57892: 252,  // depth (1234x)
 		57628: 253,  // duplicate (1234x)
 		57634: 254,  // engines (1234x)
 		57635: 255,  // enum (1234x)
 		57636: 256,  // event (1234x)
 		57637: 257,  // events (1234x)
 		57638: 258,  // evolve (1234x)
-		57846: 259,  // exact (1234x)
+		57845: 259,  // exact (1234x)
 		57644: 260,  // expire (1234x)
-		57885: 261,  // exprPushdownBlacklist (1234x)
+		57884: 261,  // exprPushdownBlacklist (1234x)
 		57645: 262,  // extended (1234x)
 		57646: 263,  // faultsSym (1234x)
 		57652: 264,  // format (1234x)
 		57654: 265,  // function (1234x)
 		57655: 266,  // grants (1234x)
 		57657: 267,  // history (1234x)
-		57829: 268,  // identSQLErrors (1234x)
+		57828: 268,  // identSQLErrors (1234x)
 		57666: 269,  // incremental (1234x)
 		57667: 270,  // indexes (1234x)
-		57854: 271,  // internal (1234x)
+		57853: 271,  // internal (1234x)
 		57669: 272,  // invoker (1234x)
 		57670: 273,  // io (1234x)
 		57674: 274,  // labels (1234x)
@@ -1004,99 +1004,99 @@ var (
 		57677: 277,  // level (1234x)
 		57678: 278,  // list (1234x)
 		57682: 279,  // master (1234x)
-		57856: 280,  // max (1234x)
+		57855: 280,  // max (1234x)
 		57697: 281,  // max_minutes (1234x)
 		57694: 282,  // merge (1234x)
-		57855: 283,  // min (1234x)
+		57854: 283,  // min (1234x)
 		57700: 284,  // national (1234x)
 		57701: 285,  // ncharType (1234x)
 		57709: 286,  // none (1234x)
-		57834: 287,  // nowait (1234x)
-		57791: 288,  // open (1234x)
-		57899: 289,  // optimistic (1234x)
-		57886: 290,  // optRuleBlacklist (1234x)
-		57714: 291,  // opttrace (1234x)
-		57717: 292,  // partial (1234x)
-		57718: 293,  // partitioning (1234x)
-		57729: 294,  // per_table (1234x)
+		57833: 287,  // nowait (1234x)
+		57790: 288,  // open (1234x)
+		57898: 289,  // optimistic (1234x)
+		57885: 290,  // optRuleBlacklist (1234x)
+		57899: 291,  // opttrace (1234x)
+		57716: 292,  // partial (1234x)
+		57717: 293,  // partitioning (1234x)
+		57728: 294,  // per_table (1234x)
 		57900: 295,  // pessimistic (1234x)
-		57725: 296,  // process (1234x)
-		57727: 297,  // profile (1234x)
-		57728: 298,  // profiles (1234x)
-		57733: 299,  // queries (1234x)
-		57860: 300,  // recent (1234x)
+		57724: 296,  // process (1234x)
+		57726: 297,  // profile (1234x)
+		57727: 298,  // profiles (1234x)
+		57732: 299,  // queries (1234x)
+		57859: 300,  // recent (1234x)
 		57939: 301,  // region (1234x)
-		57742: 302,  // repeatable (1234x)
-		57744: 303,  // replica (1234x)
-		57745: 304,  // replication (1234x)
+		57741: 302,  // repeatable (1234x)
+		57743: 303,  // replica (1234x)
+		57744: 304,  // replication (1234x)
 		57902: 305,  // samples (1234x)
-		57757: 306,  // security (1234x)
-		57761: 307,  // serializable (1234x)
-		57763: 308,  // share (1234x)
-		57767: 309,  // simple (1234x)
-		57770: 310,  // snapshot (1234x)
+		57756: 306,  // security (1234x)
+		57760: 307,  // serializable (1234x)
+		57762: 308,  // share (1234x)
+		57766: 309,  // simple (1234x)
+		57769: 310,  // snapshot (1234x)
 		57906: 311,  // statsBuckets (1234x)
 		57907: 312,  // statsHealthy (1234x)
 		57905: 313,  // statsHistograms (1234x)
 		57904: 314,  // statsMeta (1234x)
-		57866: 315,  // strong (1234x)
-		57796: 316,  // super (1234x)
-		57789: 317,  // switchesSym (1234x)
-		57790: 318,  // systemTime (1234x)
-		57803: 319,  // temptable (1234x)
-		57804: 320,  // textType (1234x)
-		57805: 321,  // than (1234x)
-		57880: 322,  // top (1234x)
+		57865: 315,  // strong (1234x)
+		57795: 316,  // super (1234x)
+		57788: 317,  // switchesSym (1234x)
+		57789: 318,  // systemTime (1234x)
+		57802: 319,  // temptable (1234x)
+		57803: 320,  // textType (1234x)
+		57804: 321,  // than (1234x)
+		57879: 322,  // top (1234x)
 		57935: 323,  // topn (1234x)
-		57809: 324,  // traditional (1234x)
-		57810: 325,  // transaction (1234x)
-		57811: 326,  // triggers (1234x)
-		57815: 327,  // uncommitted (1234x)
-		57819: 328,  // undefined (1234x)
-		57827: 329,  // warnings (1234x)
+		57808: 324,  // traditional (1234x)
+		57809: 325,  // transaction (1234x)
+		57810: 326,  // triggers (1234x)
+		57814: 327,  // uncommitted (1234x)
+		57818: 328,  // undefined (1234x)
+		57826: 329,  // warnings (1234x)
 		57937: 330,  // width (1234x)
-		57832: 331,  // x509 (1234x)
-		57835: 332,  // addDate (1233x)
+		57831: 331,  // x509 (1234x)
+		57834: 332,  // addDate (1233x)
 		57578: 333,  // any (1233x)
 		57583: 334,  // avg (1233x)
-		57836: 335,  // bitAnd (1233x)
-		57837: 336,  // bitOr (1233x)
-		57838: 337,  // bitXor (1233x)
-		57840: 338,  // cast (1233x)
-		57842: 339,  // count (1233x)
-		57843: 340,  // curTime (1233x)
-		57844: 341,  // dateAdd (1233x)
-		57845: 342,  // dateSub (1233x)
+		57835: 335,  // bitAnd (1233x)
+		57836: 336,  // bitOr (1233x)
+		57837: 337,  // bitXor (1233x)
+		57839: 338,  // cast (1233x)
+		57841: 339,  // count (1233x)
+		57842: 340,  // curTime (1233x)
+		57843: 341,  // dateAdd (1233x)
+		57844: 342,  // dateSub (1233x)
 		57639: 343,  // escape (1233x)
 		57641: 344,  // exclusive (1233x)
-		57847: 345,  // extract (1233x)
-		57849: 346,  // getFormat (1233x)
-		57850: 347,  // groupConcat (1233x)
+		57846: 345,  // extract (1233x)
+		57848: 346,  // getFormat (1233x)
+		57849: 347,  // groupConcat (1233x)
 		57699: 348,  // names (1233x)
-		57858: 349,  // now (1233x)
-		57859: 350,  // position (1233x)
-		57734: 351,  // quick (1233x)
-		57746: 352,  // reverse (1233x)
-		57750: 353,  // rowCount (1233x)
-		57764: 354,  // shared (1233x)
-		57769: 355,  // slow (1233x)
-		57797: 356,  // some (1233x)
-		57771: 357,  // sqlBufferResult (1233x)
-		57772: 358,  // sqlCache (1233x)
-		57773: 359,  // sqlNoCache (1233x)
-		57862: 360,  // std (1233x)
-		57863: 361,  // stddev (1233x)
-		57864: 362,  // stddevPop (1233x)
-		57865: 363,  // stddevSamp (1233x)
-		57867: 364,  // subDate (1233x)
-		57869: 365,  // substring (1233x)
-		57868: 366,  // sum (1233x)
-		57870: 367,  // timestampAdd (1233x)
-		57871: 368,  // timestampDiff (1233x)
-		57881: 369,  // trim (1233x)
-		57882: 370,  // variance (1233x)
-		57883: 371,  // varPop (1233x)
-		57884: 372,  // varSamp (1233x)
+		57857: 349,  // now (1233x)
+		57858: 350,  // position (1233x)
+		57733: 351,  // quick (1233x)
+		57745: 352,  // reverse (1233x)
+		57749: 353,  // rowCount (1233x)
+		57763: 354,  // shared (1233x)
+		57768: 355,  // slow (1233x)
+		57796: 356,  // some (1233x)
+		57770: 357,  // sqlBufferResult (1233x)
+		57771: 358,  // sqlCache (1233x)
+		57772: 359,  // sqlNoCache (1233x)
+		57861: 360,  // std (1233x)
+		57862: 361,  // stddev (1233x)
+		57863: 362,  // stddevPop (1233x)
+		57864: 363,  // stddevSamp (1233x)
+		57866: 364,  // subDate (1233x)
+		57868: 365,  // substring (1233x)
+		57867: 366,  // sum (1233x)
+		57869: 367,  // timestampAdd (1233x)
+		57870: 368,  // timestampDiff (1233x)
+		57880: 369,  // trim (1233x)
+		57881: 370,  // variance (1233x)
+		57882: 371,  // varPop (1233x)
+		57883: 372,  // varSamp (1233x)
 		40:    373,  // '(' (1116x)
 		57485: 374,  // on (1007x)
 		57348: 375,  // stringLit (972x)
@@ -1124,7 +1124,7 @@ var (
 		57510: 397,  // replace (719x)
 		57489: 398,  // or (714x)
 		57354: 399,  // andand (713x)
-		57720: 400,  // pipesAsOr (713x)
+		57719: 400,  // pipesAsOr (713x)
 		57567: 401,  // xor (713x)
 		57421: 402,  // from (708x)
 		57968: 403,  // intLit (707x)

@@ -482,6 +482,7 @@ var tokenMap = map[string]int{
 	"OPTIMIZE":                 optimize,
 	"OPTION":                   option,
 	"OPTIONALLY":               optionally,
+	"OPT_TRACE":                opttrace,
 	"OR":                       or,
 	"ORDER":                    order,
 	"OUTER":                    outer,
