@@ -593,8 +593,10 @@ const (
 	DefaultSequenceIncrementValue = 1
 	DefaultPositiveSequenceStartValue = 1
 	DefaultNegativeSequenceStartValue = -1
+	DefaultPositiveSequenceMinValue = 1
 	DefaultPositiveSequenceMaxValue = 9223372036854775806
-	DefaultNegativeSequenceMaxValue = -9223372036854775806
+	DefaultNegativeSequenceMaxValue = -1
+	DefaultNegativeSequenceMinValue = -9223372036854775806
 )
 
 // SequenceInfo provide meta data describing a DB sequence.
