@@ -605,10 +605,10 @@ type SequenceInfo struct {
 	Cache bool                     `json:"sequence_cache"`
 	Order bool                     `json:"sequence_order"`
 	Cycle bool                     `json:"sequence_cycle"`
-	CacheValue int64               `json:"sequence_cache_val"`
 	MinValue int64                 `json:"sequence_minvalue"`
 	MaxValue int64                 `json:"sequence_maxvalue"`
 	Increment int64                `json:"sequence_increment"`
+	CacheValue int64               `json:"sequence_cache_val"`
 	Comment string                 `json:"sequence_comment"`
 }
 

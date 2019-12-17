@@ -951,6 +951,13 @@ const (
 	ErrOnlyOneDefaultPartionAllowed         = 4030
 	ErrWrongPartitionTypeExpectedSystemTime = 4113
 	ErrSystemVersioningWrongPartitions      = 4128
+	ErrSequenceRunOut                       = 4135
+	ErrSequenceInvalidData                  = 4136
+	ErrSequenceAccessFail                   = 4137
+	ErrNotSequence                          = 4138
+	ErrUnknownSequence                      = 4139
+	ErrWrongInsertIntoSequence              = 4140
+	ErrSequenceInvalidTableStructure        = 4141
 
 	// TiDB self-defined errors.
 	ErrMemExceedThreshold                  = 8001
