@@ -586,13 +586,15 @@ type ViewInfo struct {
 }
 
 const (
-	DefaultSequenceMinValue = 1
-	DefaultSequenceMaxValue = 9223372036854775806
-	DefaultSequenceStartValue = 1
+	DefaultSequenceCacheBool = true
+	DefaultSequenceCycleBool = false
+	DefaultSequenceOrderBool = false
 	DefaultSequenceCacheValue = 1000
-	DefaultSequenceCycleValue = false
-	DefaultSequenceOrderValue = false
 	DefaultSequenceIncrementValue = 1
+	DefaultPositiveSequenceStartValue = 1
+	DefaultNegativeSequenceStartValue = -1
+	DefaultPositiveSequenceMaxValue = 9223372036854775806
+	DefaultNegativeSequenceMaxValue = -9223372036854775806
 )
 
 // SequenceInfo provide meta data describing a DB sequence.
@@ -605,6 +607,7 @@ type SequenceInfo struct {
 	MinValue int64                 `json:"sequence_minvalue"`
 	MaxValue int64                 `json:"sequence_maxvalue"`
 	Increment int64                `json:"sequence_increment"`
+	Comment string                 `json:"sequence_comment"`
 }
 
 // PartitionType is the type for PartitionInfo
