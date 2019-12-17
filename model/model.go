@@ -585,6 +585,16 @@ type ViewInfo struct {
 	Cols        []CIStr            `json:"view_cols"`
 }
 
+const (
+	DefaultSequenceMinValue = 1
+	DefaultSequenceMaxValue = 9223372036854775806
+	DefaultSequenceStartValue = 1
+	DefaultSequenceCacheValue = 1000
+	DefaultSequenceCycleValue = false
+	DefaultSequenceOrderValue = false
+	DefaultSequenceIncrementValue = 1
+)
+
 // SequenceInfo provide meta data describing a DB sequence.
 type SequenceInfo struct {
 	Start int64                    `json:"sequence_start"`
