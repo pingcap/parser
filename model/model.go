@@ -598,10 +598,10 @@ const (
 // SequenceInfo provide meta data describing a DB sequence.
 type SequenceInfo struct {
 	Start int64                    `json:"sequence_start"`
-	// cache < 0 means nocache
-	Cache int64                    `json:"sequence_cache"`
+	Cache bool                     `json:"sequence_cache"`
 	Order bool                     `json:"sequence_order"`
 	Cycle bool                     `json:"sequence_cycle"`
+	CacheValue int64               `json:"sequence_cache_val"`
 	MinValue int64                 `json:"sequence_minvalue"`
 	MaxValue int64                 `json:"sequence_maxvalue"`
 	Increment int64                `json:"sequence_increment"`
