@@ -609,12 +609,25 @@ const (
 	FlushLogs
 )
 
+// LogType is the log type used in FLUSH statement.
+type LogType int8
+
+const (
+	NoLogType LogType = iota
+	BinaryLogType
+	EngineLogType
+	ErrorLogType
+	GeneralLogType
+	SlowLogType
+)
+
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
 type FlushStmt struct {
 	stmtNode
 
 	Tp              FlushStmtType // Privileges/Tables/...
 	NoWriteToBinLog bool
+	LogType         LogType
 	Tables          []*TableName // For FlushTableStmt, if Tables is empty, it means flush all tables.
 	ReadLock        bool
 	Plugins         []string
@@ -659,6 +672,22 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 	case FlushHosts:
 		ctx.WriteKeyWord("HOSTS")
 	case FlushLogs:
+		if n.LogType != NoLogType {
+			var logType string
+			switch n.LogType {
+			case BinaryLogType:
+				logType = "BINARY"
+			case EngineLogType:
+				logType = "ENGINE"
+			case ErrorLogType:
+				logType = "ERROR"
+			case GeneralLogType:
+				logType = "GENERAL"
+			case SlowLogType:
+				logType = "SLOW"
+			}
+			ctx.WriteKeyWord(fmt.Sprintf("%s ", logType))
+		}
 		ctx.WriteKeyWord("LOGS")
 	default:
 		return errors.New("Unsupported type of FlushStmt")
