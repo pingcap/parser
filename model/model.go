@@ -247,6 +247,9 @@ type TableInfo struct {
 	Compression string `json:"compression"`
 
 	View *ViewInfo `json:"view"`
+
+	Sequence *SequenceInfo `json:"sequence"`
+
 	// Lock represent the table lock info.
 	Lock *TableLockInfo `json:"Lock"`
 
@@ -504,6 +507,11 @@ func (t *TableInfo) IsView() bool {
 	return t.View != nil
 }
 
+// IsSequence checks if tableinfo is a sequence
+func (t *TableInfo) IsSequence() bool {
+	return t.Sequence != nil
+}
+
 // ViewAlgorithm is VIEW's SQL AlGORITHM characteristic.
 // See https://dev.mysql.com/doc/refman/5.7/en/view-algorithms.html
 type ViewAlgorithm int
@@ -575,6 +583,18 @@ type ViewInfo struct {
 	SelectStmt  string             `json:"view_select"`
 	CheckOption ViewCheckOption    `json:"view_checkoption"`
 	Cols        []CIStr            `json:"view_cols"`
+}
+
+// SequenceInfo provide meta data describing a DB sequence.
+type SequenceInfo struct {
+	Start int64                    `json:"sequence_start"`
+	// cache < 0 means nocache
+	Cache int64                    `json:"sequence_cache"`
+	Order bool                     `json:"sequence_order"`
+	Cycle bool                     `json:"sequence_cycle"`
+	MinValue int64                 `json:"sequence_minvalue"`
+	MaxValue int64                 `json:"sequence_maxvalue"`
+	Increment int64                `json:"sequence_increment"`
 }
 
 // PartitionType is the type for PartitionInfo
