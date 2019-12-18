@@ -502,12 +502,12 @@ func (t *TableInfo) ColumnIsInIndex(c *ColumnInfo) bool {
 	return false
 }
 
-// IsView checks if tableinfo is a view
+// IsView checks if TableInfo is a view.
 func (t *TableInfo) IsView() bool {
 	return t.View != nil
 }
 
-// IsSequence checks if tableinfo is a sequence
+// IsSequence checks if TableInfo is a sequence.
 func (t *TableInfo) IsSequence() bool {
 	return t.Sequence != nil
 }
@@ -605,10 +605,10 @@ type SequenceInfo struct {
 	Cache      bool   `json:"sequence_cache"`
 	Order      bool   `json:"sequence_order"`
 	Cycle      bool   `json:"sequence_cycle"`
-	MinValue   int64  `json:"sequence_minvalue"`
-	MaxValue   int64  `json:"sequence_maxvalue"`
+	MinValue   int64  `json:"sequence_min_value"`
+	MaxValue   int64  `json:"sequence_max_value"`
 	Increment  int64  `json:"sequence_increment"`
-	CacheValue int64  `json:"sequence_cache_val"`
+	CacheValue int64  `json:"sequence_cache_value"`
 	Comment    string `json:"sequence_comment"`
 }
 
