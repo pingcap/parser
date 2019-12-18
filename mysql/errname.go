@@ -1036,7 +1036,7 @@ var MySQLErrName = map[uint16]string{
 	ErrCancelFinishedDDLJob:       "This job:%v is finished, so can't be cancelled",
 	ErrCannotCancelDDLJob:         "This job:%v is almost finished, can't be cancelled now",
 
-	ErrSequenceUnsupportedTableOption:      "Sequence: unsupported table option %s",
+	ErrSequenceUnsupportedTableOption:      "Unsupported sequence table-option %s",
 	ErrUnsupportedType:                     "Unsupported type %T",
 	ErrAnalyzeMissIndex:                    "Index '%s' in field list does not exist in table '%s'",
 	ErrCartesianProductUnsupported:         "Cartesian product is unsupported",
