@@ -8632,27 +8632,27 @@ FlushOption:
 
 LogTypeOpt:
 	/* empty */{
-		$$ = ast.NoLogType
+		$$ = ast.LogTypeDefault
 	}
 |	"BINARY"
 	{
-		$$ = ast.BinaryLogType
+		$$ = ast.LogTypeBinary
 	}
 |	"ENGINE"
 	{
-		$$ = ast.EngineLogType
+		$$ = ast.LogTypeEngine
 	}
 |	"ERROR"
 	{
-		$$ = ast.ErrorLogType
+		$$ = ast.LogTypeError
 	}
 |	"GENERAL"
 	{
-		$$ = ast.GeneralLogType
+		$$ = ast.LogTypeGeneral
 	}
 |	"SLOW"
 	{
-		$$ = ast.SlowLogType
+		$$ = ast.LogTypeSlow
 	}
 
 NoWriteToBinLogAliasOpt:

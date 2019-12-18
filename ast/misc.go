@@ -613,12 +613,12 @@ const (
 type LogType int8
 
 const (
-	NoLogType LogType = iota
-	BinaryLogType
-	EngineLogType
-	ErrorLogType
-	GeneralLogType
-	SlowLogType
+	LogTypeDefault LogType = iota
+	LogTypeBinary
+	LogTypeEngine
+	LogTypeError
+	LogTypeGeneral
+	LogTypeSlow
 )
 
 // FlushStmt is a statement to flush tables/privileges/optimizer costs and so on.
@@ -672,23 +672,22 @@ func (n *FlushStmt) Restore(ctx *RestoreCtx) error {
 	case FlushHosts:
 		ctx.WriteKeyWord("HOSTS")
 	case FlushLogs:
-		if n.LogType != NoLogType {
-			var logType string
-			switch n.LogType {
-			case BinaryLogType:
-				logType = "BINARY"
-			case EngineLogType:
-				logType = "ENGINE"
-			case ErrorLogType:
-				logType = "ERROR"
-			case GeneralLogType:
-				logType = "GENERAL"
-			case SlowLogType:
-				logType = "SLOW"
-			}
-			ctx.WriteKeyWord(fmt.Sprintf("%s ", logType))
+		var logType string
+		switch n.LogType {
+		case LogTypeDefault:
+			logType = "LOGS"
+		case LogTypeBinary:
+			logType = "BINARY LOGS"
+		case LogTypeEngine:
+			logType = "ENGINE LOGS"
+		case LogTypeError:
+			logType = "ERROR LOGS"
+		case LogTypeGeneral:
+			logType = "GENERAL LOGS"
+		case LogTypeSlow:
+			logType = "SLOW LOGS"
 		}
-		ctx.WriteKeyWord("LOGS")
+		ctx.WriteKeyWord(logType)
 	default:
 		return errors.New("Unsupported type of FlushStmt")
 	}

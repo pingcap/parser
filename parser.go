@@ -15878,27 +15878,27 @@ yynewstate:
 		}
 	case 1579:
 		{
-			parser.yyVAL.item = ast.NoLogType
+			parser.yyVAL.item = ast.LogTypeDefault
 		}
 	case 1580:
 		{
-			parser.yyVAL.item = ast.BinaryLogType
+			parser.yyVAL.item = ast.LogTypeBinary
 		}
 	case 1581:
 		{
-			parser.yyVAL.item = ast.EngineLogType
+			parser.yyVAL.item = ast.LogTypeEngine
 		}
 	case 1582:
 		{
-			parser.yyVAL.item = ast.ErrorLogType
+			parser.yyVAL.item = ast.LogTypeError
 		}
 	case 1583:
 		{
-			parser.yyVAL.item = ast.GeneralLogType
+			parser.yyVAL.item = ast.LogTypeGeneral
 		}
 	case 1584:
 		{
-			parser.yyVAL.item = ast.SlowLogType
+			parser.yyVAL.item = ast.LogTypeSlow
 		}
 	case 1585:
 		{
