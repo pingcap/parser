@@ -589,14 +589,14 @@ const (
 	DefaultSequenceCacheBool          = true
 	DefaultSequenceCycleBool          = false
 	DefaultSequenceOrderBool          = false
-	DefaultSequenceCacheValue         = 1000
-	DefaultSequenceIncrementValue     = 1
-	DefaultPositiveSequenceStartValue = 1
-	DefaultNegativeSequenceStartValue = -1
-	DefaultPositiveSequenceMinValue   = 1
-	DefaultPositiveSequenceMaxValue   = 9223372036854775806
-	DefaultNegativeSequenceMaxValue   = -1
-	DefaultNegativeSequenceMinValue   = -9223372036854775807
+	DefaultSequenceCacheValue         = int64(1000)
+	DefaultSequenceIncrementValue     = int64(1)
+	DefaultPositiveSequenceStartValue = int64(1)
+	DefaultNegativeSequenceStartValue = int64(-1)
+	DefaultPositiveSequenceMinValue   = int64(1)
+	DefaultPositiveSequenceMaxValue   = int64(9223372036854775806)
+	DefaultNegativeSequenceMaxValue   = int64(-1)
+	DefaultNegativeSequenceMinValue   = int64(-9223372036854775807)
 )
 
 // SequenceInfo provide meta data describing a DB sequence.
