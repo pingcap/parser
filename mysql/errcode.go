@@ -893,6 +893,7 @@ const (
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
+	ErrFKIncompatibleColumns                                        = 3780
 
 	// TiDB self-defined errors.
 	ErrMemExceedThreshold         = 8001
