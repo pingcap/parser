@@ -586,30 +586,30 @@ type ViewInfo struct {
 }
 
 const (
-	DefaultSequenceCacheBool = true
-	DefaultSequenceCycleBool = false
-	DefaultSequenceOrderBool = false
-	DefaultSequenceCacheValue = 1000
-	DefaultSequenceIncrementValue = 1
+	DefaultSequenceCacheBool          = true
+	DefaultSequenceCycleBool          = false
+	DefaultSequenceOrderBool          = false
+	DefaultSequenceCacheValue         = 1000
+	DefaultSequenceIncrementValue     = 1
 	DefaultPositiveSequenceStartValue = 1
 	DefaultNegativeSequenceStartValue = -1
-	DefaultPositiveSequenceMinValue = 1
-	DefaultPositiveSequenceMaxValue = 9223372036854775806
-	DefaultNegativeSequenceMaxValue = -1
-	DefaultNegativeSequenceMinValue = -9223372036854775806
+	DefaultPositiveSequenceMinValue   = 1
+	DefaultPositiveSequenceMaxValue   = 9223372036854775806
+	DefaultNegativeSequenceMaxValue   = -1
+	DefaultNegativeSequenceMinValue   = -9223372036854775806
 )
 
 // SequenceInfo provide meta data describing a DB sequence.
 type SequenceInfo struct {
-	Start int64                    `json:"sequence_start"`
-	Cache bool                     `json:"sequence_cache"`
-	Order bool                     `json:"sequence_order"`
-	Cycle bool                     `json:"sequence_cycle"`
-	MinValue int64                 `json:"sequence_minvalue"`
-	MaxValue int64                 `json:"sequence_maxvalue"`
-	Increment int64                `json:"sequence_increment"`
-	CacheValue int64               `json:"sequence_cache_val"`
-	Comment string                 `json:"sequence_comment"`
+	Start      int64  `json:"sequence_start"`
+	Cache      bool   `json:"sequence_cache"`
+	Order      bool   `json:"sequence_order"`
+	Cycle      bool   `json:"sequence_cycle"`
+	MinValue   int64  `json:"sequence_minvalue"`
+	MaxValue   int64  `json:"sequence_maxvalue"`
+	Increment  int64  `json:"sequence_increment"`
+	CacheValue int64  `json:"sequence_cache_val"`
+	Comment    string `json:"sequence_comment"`
 }
 
 // PartitionType is the type for PartitionInfo
