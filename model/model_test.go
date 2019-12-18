@@ -98,7 +98,7 @@ func (*testModelSuite) TestModelBasic(c *C) {
 		Name:    NewCIStr("test"),
 		Charset: "utf8",
 		Collate: "utf8_bin",
-		Tables:  []*TableInfo{table, table2},
+		Tables:  []*TableInfo{table},
 	}
 
 	n := dbInfo.Clone()
