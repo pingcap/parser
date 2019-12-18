@@ -44,4 +44,9 @@ const (
 	FlagInUnionStmt = 1 << 9
 	// FlagInLoadDataStmt indicates if this is a LOAD DATA statement.
 	FlagInLoadDataStmt = 1 << 10
+	// FlagCastStrToIntStrict is used to control the way we cast float format string to int.
+	// If ConvertStrToIntStrict is false, we convert it to a valid float string first,
+	// then cast the float string to int string. Otherwise, we cast string to integer
+	// prefix in a strict way, only extract 0-9 and (+ or - in first bit).
+	FlagCastStrToIntStrict = 1 << 11
 )
