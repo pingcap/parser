@@ -22,6 +22,8 @@ import (
 	"github.com/pingcap/parser/mysql"
 )
 
+
+
 func TestT(t *testing.T) {
 	CustomVerboseFlag = true
 	TestingT(t)
