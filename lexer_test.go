@@ -15,12 +15,17 @@ package parser
 
 import (
 	"fmt"
+	"testing"
 	"unicode"
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser/mysql"
 )
 
+func TestT(t *testing.T) {
+	CustomVerboseFlag = true
+	TestingT(t)
+}
 var _ = Suite(&testLexerSuite{})
 
 type testLexerSuite struct {
