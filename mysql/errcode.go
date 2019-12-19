@@ -922,6 +922,7 @@ const (
 	ErrWindowNoGroupOrderUnused                                     = 3597
 	ErrWindowExplainJson                                            = 3598
 	ErrWindowFunctionIgnoresFrame                                   = 3599
+	ErrFKIncompatibleColumns                                        = 3780
 
 	// MariaDB errors.
 	ErrOnlyOneDefaultPartionAllowed         = 4030

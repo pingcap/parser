@@ -918,6 +918,7 @@ var MySQLErrName = map[uint16]string{
 	ErrRoleNotGranted:                                        "%s is is not granted to %s",
 	ErrMaxExecTimeExceeded:                                   "Query execution was interrupted, max_execution_time exceeded.",
 	ErrLockAcquireFailAndNoWaitSet:                           "Statement aborted because lock(s) could not be acquired immediately and NOWAIT is set.",
+	ErrFKIncompatibleColumns:                                 "Referencing column '%s' in foreign key constraint '%s' are incompatible",
 
 	// MariaDB errors.
 	ErrOnlyOneDefaultPartionAllowed:         "Only one DEFAULT partition allowed",
