@@ -254,7 +254,7 @@ const (
 const AllPrivMask = AllPriv - 1
 
 // GlobalDBVisible is a collection of global privileges which allow user to see all databases name.
-const GlobalDBVisible = CreatePriv | SelectPriv | InsertPriv | UpdatePriv | DeletePriv | ShowDBPriv | DropPriv | AlterPriv | IndexPriv | CreateViewPriv | ShowViewPriv
+const GlobalDBVisible = CreatePriv | SelectPriv | InsertPriv | UpdatePriv | DeletePriv | ShowDBPriv | DropPriv | AlterPriv | IndexPriv | CreateViewPriv | ShowViewPriv | GrantPriv
 
 // MySQL type maximum length.
 const (
