@@ -165,6 +165,11 @@ var (
 )
 
 func main() {
+	err := Format("/home/tangenta/go/src/github.com/pingcap/parser/parser.y")
+	fmt.Printf("%v\n", err)
+}
+
+func main3() {
 	log.SetFlags(0)
 
 	defer func() {
