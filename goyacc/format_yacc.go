@@ -88,7 +88,7 @@ func printDefinitions(formatter format.Formatter, definitions []*parser.Definiti
 			err = handleUnion(formatter, def)
 		case LCURLRCURLCase:
 			err = handleProlog(formatter, def)
-		case ReservedWordTagNameListCase:
+		case ReservedWordTagNameListCase, ReservedWordTagCase:
 			err = handleReservedWordTagNameList(formatter, def)
 		}
 		if err != nil {
@@ -202,7 +202,7 @@ func getTokenComment(token *parser.Token, layout stringLayout) string {
 	case divNewLineStringLayout:
 		splitter, beforeComment = "\n", "\n"
 	default:
-		panic(errors.WithStack(errors.Errorf("unsupported stringLayout: %v", layout)))
+		panic(errors.Errorf("unsupported stringLayout: %v", layout))
 	}
 
 	var sb strings.Builder
@@ -245,15 +245,13 @@ func joinNames(names NameArr) string {
 }
 
 func printSingleName(f format.Formatter, name *parser.Name, maxCharLength int) error {
-	if hasComments(name) {
-		_, err := f.Format("\n%s\n", strings.Join(name.Token.Comments, "\n"))
-		if err != nil {
-			return err
-		}
+	cmt := getTokenComment(name.Token, divNewLineStringLayout)
+	if _, err := f.Format(escapePercent(cmt)); err != nil {
+		return err
 	}
-	if name.LiteralStringOpt != nil && name.LiteralStringOpt.Token != nil {
-		strLit := fmt.Sprintf(" %s", name.LiteralStringOpt.Token.Val)
-		_, err := f.Format("%-*s%s\n", maxCharLength, name.Token.Val, strLit)
+	strLit := name.LiteralStringOpt
+	if strLit != nil && strLit.Token != nil {
+		_, err := f.Format("%-*s %s\n", maxCharLength, name.Token.Val, strLit.Token.Val)
 		return err
 	} else {
 		_, err := f.Format("%s\n", name.Token.Val)
@@ -477,7 +475,7 @@ func (s *SpecialActionValTransformer) restore(src string) string {
 	return yaccFmtVarRegex.ReplaceAllStringFunc(src, func(matched string) string {
 		origin, ok := s.store[matched]
 		if !ok {
-			panic(errors.WithStack(errors.Errorf("mismatch in SpecialActionValTransformer")).Error())
+			panic(errors.Errorf("mismatch in SpecialActionValTransformer"))
 		}
 		return origin
 	})
@@ -531,7 +529,7 @@ func (n *NotNilAssert) and(target interface{}) *NotNilAssert {
 		return n
 	}
 	if target == nil {
-		n.err = errors.WithStack(errors.Errorf("encounter nil, index: %d", n.idx))
+		n.err = errors.Errorf("encounter nil, index: %d", n.idx)
 	}
 	n.idx += 1
 	return n

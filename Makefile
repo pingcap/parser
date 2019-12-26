@@ -35,7 +35,7 @@ fmt: bin/goyacc
 	@echo "gofmt (simplify)"
 	@gofmt -s -l -w . 2>&1 | awk '{print} END{if(NR>0) {exit 1}}'
 	@bin/goyacc -fmt -fmtout parser_golden.y parser.y
-	@(git diff --no-index --quiet parser.y parser_golden.y && rm parser_golden.y) || (mv parser_golden.y parser.y && >&2 echo "formatted parser.y" && exit 1)
+	@(git diff --no-index --exit-code parser.y parser_golden.y && rm parser_golden.y) || (mv parser_golden.y parser.y && >&2 echo "formatted parser.y" && exit 1)
 
 clean:
 	go clean -i ./...

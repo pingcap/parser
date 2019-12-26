@@ -3176,6 +3176,21 @@ DatabaseOptionList:
 		$$ = append($1.([]*ast.DatabaseOption), $2.(*ast.DatabaseOption))
 	}
 
+/*******************************************************************
+ *
+ *  Create Table Statement
+ *
+ *  Example:
+ *      CREATE TABLE Persons
+ *      (
+ *          P_Id int NOT NULL,
+ *          LastName varchar(255) NOT NULL,
+ *          FirstName varchar(255),
+ *          Address varchar(255),
+ *          City varchar(255),
+ *          PRIMARY KEY (P_Id)
+ *      )
+ *******************************************************************/
 CreateTableStmt:
 	"CREATE" OptTemporary "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt
 	{
@@ -6445,6 +6460,14 @@ QuickOptional:
 		$$ = true
 	}
 
+/***************************Prepared Statement Start******************************
+ * See https://dev.mysql.com/doc/refman/5.7/en/prepare.html
+ * Example:
+ * PREPARE stmt_name FROM 'SELECT SQRT(POW(?,2) + POW(?,2)) AS hypotenuse';
+ * OR
+ * SET @s = 'SELECT SQRT(POW(?,2) + POW(?,2)) AS hypotenuse';
+ * PREPARE stmt_name FROM @s;
+ */
 PreparedStmt:
 	"PREPARE" Identifier "FROM" PrepareSQL
 	{
@@ -11062,6 +11085,11 @@ LoadDataSetItem:
 		}
 	}
 
+/*********************************************************************
+ * Lock/Unlock Tables
+ * See http://dev.mysql.com/doc/refman/5.7/en/lock-tables.html
+ * All the statement leaves empty. This is used to prevent mysqldump error.
+ *********************************************************************/
 UnlockTablesStmt:
 	"UNLOCK" TablesTerminalSym
 	{
@@ -11117,6 +11145,10 @@ TableLockList:
 		$$ = append($1.([]ast.TableLock), $3.(ast.TableLock))
 	}
 
+/********************************************************************
+ * Kill Statement
+ * See https://dev.mysql.com/doc/refman/5.7/en/kill.html
+ *******************************************************************/
 KillStmt:
 	KillOrKillTiDB NUM
 	{
@@ -11161,6 +11193,21 @@ LoadStatsStmt:
 		}
 	}
 
+/********************************************************************************************
+ *
+ *  Create Sequence Statement
+ *
+ *  Example:
+ *	CREATE [TEMPORARY] SEQUENCE [IF NOT EXISTS] sequence_name
+ *	[ INCREMENT [ BY | = ] increment ]
+ *	[ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
+ *	[ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
+ *	[ START [ WITH | = ] start ]
+ *	[ CACHE [=] cache | NOCACHE | NO CACHE]
+ *	[ CYCLE | NOCYCLE | NO CYCLE]
+ *	[ ORDER | NOORDER | NO ORDER]
+ *	[table_options]
+ ********************************************************************************************/
 CreateSequenceStmt:
 	"CREATE" OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
 	{
@@ -11291,6 +11338,22 @@ DropSequenceStmt:
 		}
 	}
 
+/********************************************************************
+ * Index Advisor Statement
+ *
+ * INDEX ADVISE
+ * 	[LOCAL]
+ *	INFILE 'file_name'
+ *	[MAX_MINUTES number]
+ *	[MAX_IDXNUM
+ *  	[PER_TABLE number]
+ *  	[PER_DB number]
+ *	]
+ *	[LINES
+ *  	[STARTING BY 'string']
+ *  	[TERMINATED BY 'string']
+ *	]
+ *******************************************************************/
 IndexAdviseStmt:
 	"INDEX" "ADVISE" LocalOpt "INFILE" stringLit MaxMinutesOpt MaxIndexNumOpt Lines
 	{
