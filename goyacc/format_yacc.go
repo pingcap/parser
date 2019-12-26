@@ -1,3 +1,16 @@
+// Copyright 2019 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -11,16 +24,13 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 )
 
-func Format(inputFilename string) (err error) {
-	name, ext := splitFileNameAndExt(inputFilename)
-	outFilename := fmt.Sprintf("%s_golden%s", name, ext)
+func Format(inputFilename string, goldenFilename string) (err error) {
 	yFmt := &OutputFormatter{}
-	if err = yFmt.Setup(outFilename); err != nil {
+	if err = yFmt.Setup(goldenFilename); err != nil {
 		return err
 	}
 	defer func() {
@@ -39,12 +49,7 @@ func Format(inputFilename string) (err error) {
 	if err = printRules(yFmt, spec.Rules); err != nil {
 		return err
 	}
-	panic("implement me!")
-}
-
-func splitFileNameAndExt(filename string) (name, ext string) {
-	ext = path.Ext(filename)
-	return filename[:len(filename)-len(ext)], ext
+	return nil
 }
 
 func parseFileToSpec(inputFilename string) (*parser.Specification, error) {
@@ -89,7 +94,7 @@ func printDefinitions(formatter format.Formatter, definitions []*parser.Definiti
 			return err
 		}
 	}
-	_, err := formatter.Format("\n%%%%\n")
+	_, err := formatter.Format("\n%%%%")
 	return err
 }
 
@@ -101,7 +106,7 @@ func handleStart(f format.Formatter, definition *parser.Definition) error {
 	}
 	cmt1 := strings.Join(definition.Token.Comments, "\n")
 	cmt2 := strings.Join(definition.Token2.Comments, "\n")
-	_, err := f.Format("\n%s%s\t%s%s", cmt1, definition.Token.Val, cmt2, definition.Token2.Val)
+	_, err := f.Format("\n%s%s\t%s%s\n", cmt1, definition.Token.Val, cmt2, definition.Token2.Val)
 	return err
 }
 
@@ -111,7 +116,7 @@ func handleUnion(f format.Formatter, definition *parser.Definition) error {
 		return err
 	}
 	if len(definition.Value) != 0 {
-		_, err := f.Format("%%union%i%s%u\n", definition.Value)
+		_, err := f.Format("%%union%i%s%u\n\n", definition.Value)
 		if err != nil {
 			return err
 		}
@@ -134,7 +139,7 @@ func handleReservedWordTagNameList(f format.Formatter, def *parser.Definition) e
 		and(def.ReservedWord.Token).NotNil(); err != nil {
 		return err
 	}
-	comment := getTokenComment(def.ReservedWord.Token, divCommentLayout)
+	comment := getTokenComment(def.ReservedWord.Token, divNewLineStringLayout)
 	directive := def.ReservedWord.Token.Val
 
 	hasTag := def.Tag != nil
@@ -175,24 +180,27 @@ func joinTag(tag *parser.Tag) string {
 	return sb.String()
 }
 
-type commentLayout int8
+type stringLayout int8
 const (
-	spanCommentLayout commentLayout = iota
-	divCommentLayout
+	spanStringLayout stringLayout = iota
+	divStringLayout
+	divNewLineStringLayout
 )
 
-func getTokenComment(token *parser.Token, layout commentLayout) string {
+func getTokenComment(token *parser.Token, layout stringLayout) string {
 	if len(token.Comments) == 0 {
 		return ""
 	}
 	var splitter, beforeComment string
 	switch layout {
-	case spanCommentLayout:
+	case spanStringLayout:
 		splitter, beforeComment = " ", ""
-	case divCommentLayout:
+	case divStringLayout:
+		splitter, beforeComment = "\n", ""
+	case divNewLineStringLayout:
 		splitter, beforeComment = "\n", "\n"
 	default:
-		panic(errors.WithStack(errors.Errorf("unsupported commentLayout: %v", layout)))
+		panic(errors.WithStack(errors.Errorf("unsupported stringLayout: %v", layout)))
 	}
 
 	var sb strings.Builder
@@ -228,7 +236,7 @@ func joinNames(names NameArr) string {
 	var sb strings.Builder
 	for _, name := range names {
 		sb.WriteString(" ")
-		sb.WriteString(getTokenComment(name.Token, spanCommentLayout))
+		sb.WriteString(getTokenComment(name.Token, spanStringLayout))
 		sb.WriteString(name.Token.Val)
 	}
 	return sb.String()
@@ -287,15 +295,25 @@ func noComment(n *parser.Name) bool {
 	return !hasComments(n)
 }
 
+func containsActionInRule(rule *parser.Rule) bool {
+	for _, b := range rule.Body {
+		if _, ok := b.(*parser.Action); ok {
+			return true
+		}
+	}
+	return false
+}
+
 type RuleArr []*parser.Rule
 
 func printRules(f format.Formatter, rules RuleArr) (err error) {
 	var lastRuleName string
 	for _, rule := range rules {
 		if rule.Name.Val == lastRuleName {
-			_, err = f.Format("\n|\t%i")
+			cmt := getTokenComment(rule.Token, divStringLayout)
+			_, err = f.Format("\n%s|\t%i", cmt)
 		} else {
-			cmt := getTokenComment(rule.Name, divCommentLayout)
+			cmt := getTokenComment(rule.Name, divStringLayout)
 			_, err = f.Format("\n\n%s%s:%i\n", cmt, rule.Name.Val)
 		}
 		if err != nil {
@@ -314,62 +332,91 @@ func printRules(f format.Formatter, rules RuleArr) (err error) {
 	return err
 }
 
+type ruleItemType int8
+const (
+	identRuleItemType ruleItemType = 1
+	actionRuleItemType ruleItemType = 2
+	strLiteralRuleItemType ruleItemType = 3
+)
+
 func printRuleBody(f format.Formatter, rule *parser.Rule) error {
-	emptyBody := true
-	for i, body := range rule.Body {
-		switch b := body.(type) {
-		case string, int:
-			if bInt, ok := b.(int); ok {
-				b = fmt.Sprintf("'%c'", bInt)
-			}
-			term := fmt.Sprintf(" %s", b)
-			if i == 0 {
+	firstRuleItem, counter := rule.RuleItemList, 0
+	for ri := rule.RuleItemList; ri != nil; ri = ri.RuleItemList {
+		switch ruleItemType(ri.Case){
+		case identRuleItemType, strLiteralRuleItemType:
+			term := fmt.Sprintf(" %s", ri.Token.Val)
+			if ri == firstRuleItem {
 				term = term[1:]
 			}
+			cmt := getTokenComment(ri.Token, divStringLayout)
 
+			if _, err := f.Format(escapePercent(cmt)); err != nil {
+				return err
+			}
 			if _, err := f.Format("%s", term); err != nil {
 				return err
 			}
-			emptyBody = false
-		case *parser.Action:
-			if rule.Precedence != nil {
-				if err := handlePrecedenceBeforeAction(f, rule.Precedence); err != nil {
-					return err
-				}
-				emptyBody = false
-			}
-
-			if !emptyBody {
-				if _, err := f.Format("\n"); err != nil {
-					return err
-				}
-			}
-
-			goSnippet, err := formatGoSnippet(b.Values)
-			if err != nil {
+		case actionRuleItemType:
+			isFirstRuleItem := ri == firstRuleItem
+			if err := handlePrecedence(f, rule.Precedence, isFirstRuleItem); err != nil {
 				return err
 			}
-
-			if _, err := f.Format("{%i"); err != nil {
+			if err := handleAction(f, rule, ri.Action, isFirstRuleItem); err != nil {
 				return err
 			}
-			if _, err := f.Format(goSnippet); err != nil {
-				return err
-			}
-			if _, err := f.Format("%u\n}"); err != nil {
-				return err
-			}
+		}
+		counter += 1
+	}
+	if err := checkInconsistencyInYaccParser(f, rule, counter); err != nil {
+		return err
+	}
+	if !containsActionInRule(rule) {
+		if err := handlePrecedence(f, rule.Precedence, counter == 0); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func handlePrecedenceBeforeAction(f format.Formatter, p *parser.Precedence) error {
+func handleAction(f format.Formatter, rule *parser.Rule, action *parser.Action, isFirstItem bool) error {
+	if !isFirstItem || rule.Precedence != nil {
+		if _, err := f.Format("\n"); err != nil {
+			return err
+		}
+	}
+
+	cmt := getTokenComment(action.Token, divStringLayout)
+	if _, err := f.Format(escapePercent(cmt)); err != nil {
+		return err
+	}
+
+	goSnippet, err := formatGoSnippet(action.Values)
+	goSnippet = escapePercent(goSnippet)
+	if err != nil {
+		return err
+	}
+	snippet := "{}"
+	if len(goSnippet) != 0 {
+		snippet = fmt.Sprintf("{%%i%s%%u\n}", goSnippet)
+	}
+	_, err = f.Format(snippet)
+	return err
+}
+
+func handlePrecedence(f format.Formatter, p *parser.Precedence, isFirstItem bool) error {
+	if p == nil {
+		return nil
+	}
 	if err := Ensure(p.Token).
 		and(p.Token2).NotNil(); err != nil {
 		return err
 	}
-	cmt := getTokenComment(p.Token, spanCommentLayout)
+	cmt := getTokenComment(p.Token, spanStringLayout)
+	if !isFirstItem {
+		if _, err := f.Format(" "); err != nil {
+			return err
+		}
+	}
 	_, err := f.Format("%s%s %s", cmt, p.Token.Val, p.Token2.Val)
 	return err
 }
@@ -492,4 +539,39 @@ func (n *NotNilAssert) NotNil() error {
 
 func Ensure(target interface{}) *NotNilAssert {
 	return (&NotNilAssert{}).and(target)
+}
+
+func escapePercent(src string) string {
+	return strings.ReplaceAll(src, "%", "%%")
+}
+
+func checkInconsistencyInYaccParser(f format.Formatter, rule *parser.Rule, counter int) error {
+	if counter == len(rule.Body) {
+		return nil
+	}
+	// pickup rule item in ruleBody
+	for i := counter; i < len(rule.Body); i++ {
+		body := rule.Body[i]
+		switch b := body.(type) {
+		case string, int:
+			if bInt, ok := b.(int); ok {
+				b = fmt.Sprintf("'%c'", bInt)
+			}
+			term := fmt.Sprintf(" %s", b)
+			if i == 0 {
+				term = term[1:]
+			}
+			_, err := f.Format("%s", term)
+			return err
+		case *parser.Action:
+			isFirstRuleItem := i == 0
+			if err := handlePrecedence(f, rule.Precedence, isFirstRuleItem); err != nil {
+				return err
+			}
+			if err := handleAction(f, rule, b, isFirstRuleItem); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -31,9 +31,10 @@ parser: bin/goyacc
 bin/goyacc: goyacc/main.go
 	GO111MODULE=on go build -o bin/goyacc goyacc/main.go
 
-fmt:
+fmt: bin/goyacc
 	@echo "gofmt (simplify)"
 	@gofmt -s -l -w . 2>&1 | awk '{print} END{if(NR>0) {exit 1}}'
+	@bin/goyacc -fmt -o parser_golden.y
 
 clean:
 	go clean -i ./...

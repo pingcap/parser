@@ -162,14 +162,11 @@ var (
 	oResolved   = flag.Bool("ex", false, "explain how were conflicts resolved")
 	oXErrors    = flag.String("xe", "", "generate eXtra errors from examples source file")
 	oXErrorsGen = flag.String("xegen", "", "generate error from examples source file automatically from the grammar")
+	oFormat	    = flag.Bool("fmt", false, "format the yacc file")
+	oFormatOut  = flag.String("o", "golden.y", "yacc formatter output")
 )
 
 func main() {
-	err := Format("/home/tangenta/go/src/github.com/pingcap/parser/parser.y")
-	fmt.Printf("%v\n", err)
-}
-
-func main3() {
 	log.SetFlags(0)
 
 	defer func() {
@@ -193,6 +190,13 @@ func main3() {
 		in = flag.Arg(0)
 	default:
 		log.Fatal("expected at most one non flag argument")
+	}
+
+	if *oFormat {
+		if err := Format(in, *oFormatOut); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
 	if err := main1(in); err != nil {

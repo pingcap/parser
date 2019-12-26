@@ -6124,7 +6124,6 @@ QuickOptional:
  * SET @s = 'SELECT SQRT(POW(?,2) + POW(?,2)) AS hypotenuse';
  * PREPARE stmt_name FROM @s;
  */
-
 PreparedStmt:
 	"PREPARE" Identifier "FROM" PrepareSQL
 	{
@@ -6187,7 +6186,6 @@ UserVariableList:
 /*
  * See https://dev.mysql.com/doc/refman/5.0/en/deallocate-prepare.html
  */
-
 DeallocateStmt:
 	DeallocateSym "PREPARE" Identifier
 	{
@@ -10803,7 +10801,6 @@ TableLockList:
  * Kill Statement
  * See https://dev.mysql.com/doc/refman/5.7/en/kill.html
  *******************************************************************/
-
 KillStmt:
 	KillOrKillTiDB NUM
 	{
@@ -10865,7 +10862,6 @@ LoadStatsStmt:
  *	[ ORDER | NOORDER | NO ORDER]
  *	[table_options]
  ********************************************************************************************/
-
 CreateSequenceStmt:
 	"CREATE" OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
 	{
@@ -11012,7 +11008,6 @@ DropSequenceStmt:
  *  	[TERMINATED BY 'string']
  *	]
  *******************************************************************/
-
 IndexAdviseStmt:
 	"INDEX" "ADVISE" LocalOpt "INFILE" stringLit MaxMinutesOpt MaxIndexNumOpt Lines
 	{
