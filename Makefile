@@ -35,6 +35,7 @@ fmt: bin/goyacc
 	@echo "gofmt (simplify)"
 	@gofmt -s -l -w . 2>&1 | awk '{print} END{if(NR>0) {exit 1}}'
 	@bin/goyacc -fmt -fmtout parser_golden.y parser.y
+	@mv parser_golden.y parser.y
 
 clean:
 	go clean -i ./...
