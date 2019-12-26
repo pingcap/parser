@@ -9649,7 +9649,6 @@ yynewstate:
 			} else {
 				parser.yyVAL.item = nil
 			}
-
 		}
 	case 6:
 		{
@@ -12199,8 +12198,8 @@ yynewstate:
 	case 477:
 		{
 			/*
-			* ODBC escape syntax.
-			* See https://dev.mysql.com/doc/refman/5.7/en/expressions.html
+			 * ODBC escape syntax.
+			 * See https://dev.mysql.com/doc/refman/5.7/en/expressions.html
 			 */
 			expr := yyS[yypt-2].expr
 			asName := yyS[yypt-0].item.(string)
@@ -14113,8 +14112,8 @@ yynewstate:
 	case 1259:
 		{
 			/*
-			* ODBC escape syntax for outer join is { OJ join_table }
-			* Use an Identifier for OJ
+			 * ODBC escape syntax for outer join is { OJ join_table }
+			 * Use an Identifier for OJ
 			 */
 			parser.yyVAL.item = yyS[yypt-1].item
 		}
@@ -16600,7 +16599,6 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeTinyBlob)
 			parser.yyVAL.item = x
-
 		}
 	case 1805:
 		{
@@ -17665,7 +17663,6 @@ yynewstate:
 				Column: yyS[yypt-2].expr.(*ast.ColumnNameExpr).Name,
 				Expr:   yyS[yypt-0].expr,
 			}
-
 		}
 	case 1989:
 		{
