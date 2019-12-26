@@ -70,7 +70,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "language", "until",
+		"match", "until",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -96,7 +96,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"start", "global", "tables", "tablespace", "text", "time", "timestamp", "tidb", "transaction", "truncate", "unknown",
 		"value", "warnings", "year", "now", "substr", "subpartition", "subpartitions", "substring", "mode", "any", "some", "user", "identified",
 		"collation", "comment", "avg_row_length", "checksum", "compression", "connection", "key_block_size",
-		"max_rows", "min_rows", "national", "quarter", "escape", "grants", "status", "fields", "triggers",
+		"max_rows", "min_rows", "national", "quarter", "escape", "grants", "status", "fields", "triggers", "language",
 		"delay_key_write", "isolation", "partitions", "repeatable", "committed", "uncommitted", "only", "serializable", "level",
 		"curtime", "variables", "dayname", "version", "btree", "hash", "row_format", "dynamic", "fixed", "compressed",
 		"compact", "redundant", "sql_no_cache sql_no_cache", "sql_cache sql_cache", "action", "round",
@@ -3283,6 +3283,9 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
 	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
 	c.Assert(hints[2].MemoryQuota, Equals, int64(-1))
+
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(18446744073709551612 MB), memory_quota(8689934592 GB) */ 1", "", "")
+	c.Assert(err, IsNil)
 
 	// Test HASH_AGG
 	stmt, _, err = parser.Parse("select /*+ HASH_AGG(), hash_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
