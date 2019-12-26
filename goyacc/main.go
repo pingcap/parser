@@ -162,8 +162,8 @@ var (
 	oResolved   = flag.Bool("ex", false, "explain how were conflicts resolved")
 	oXErrors    = flag.String("xe", "", "generate eXtra errors from examples source file")
 	oXErrorsGen = flag.String("xegen", "", "generate error from examples source file automatically from the grammar")
-	oFormat	    = flag.Bool("fmt", false, "format the yacc file")
-	oFormatOut  = flag.String("o", "golden.y", "yacc formatter output")
+	oFormat     = flag.Bool("fmt", false, "format the yacc file")
+	oFormatOut  = flag.String("fmtout", "golden.y", "yacc formatter output")
 )
 
 func main() {

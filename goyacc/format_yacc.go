@@ -16,16 +16,17 @@ package main
 import (
 	"bufio"
 	"fmt"
-	parser "github.com/cznic/parser/yacc"
-	"github.com/cznic/strutil"
-	"github.com/pingcap/errors"
-	"github.com/pingcap/parser/format"
-	gofmt "go/format"
 	"go/token"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
+
+	parser "github.com/cznic/parser/yacc"
+	"github.com/cznic/strutil"
+	"github.com/pingcap/errors"
+	"github.com/pingcap/parser/format"
+	gofmt "go/format"
 )
 
 func Format(inputFilename string, goldenFilename string) (err error) {
@@ -146,8 +147,8 @@ func handleReservedWordTagNameList(f format.Formatter, def *parser.Definition) e
 	var wordAfterDirective string
 	if hasTag {
 		wordAfterDirective = joinTag(def.Tag)
- 	} else {
- 		wordAfterDirective = joinNames(def.Nlist)
+	} else {
+		wordAfterDirective = joinNames(def.Nlist)
 	}
 
 	if _, err := f.Format("%s%s%s%i", comment, directive, wordAfterDirective); err != nil {
@@ -181,6 +182,7 @@ func joinTag(tag *parser.Tag) string {
 }
 
 type stringLayout int8
+
 const (
 	spanStringLayout stringLayout = iota
 	divStringLayout
@@ -333,16 +335,17 @@ func printRules(f format.Formatter, rules RuleArr) (err error) {
 }
 
 type ruleItemType int8
+
 const (
-	identRuleItemType ruleItemType = 1
-	actionRuleItemType ruleItemType = 2
+	identRuleItemType      ruleItemType = 1
+	actionRuleItemType     ruleItemType = 2
 	strLiteralRuleItemType ruleItemType = 3
 )
 
 func printRuleBody(f format.Formatter, rule *parser.Rule) error {
 	firstRuleItem, counter := rule.RuleItemList, 0
 	for ri := rule.RuleItemList; ri != nil; ri = ri.RuleItemList {
-		switch ruleItemType(ri.Case){
+		switch ruleItemType(ri.Case) {
 		case identRuleItemType, strLiteralRuleItemType:
 			term := fmt.Sprintf(" %s", ri.Token.Val)
 			if ri == firstRuleItem {
@@ -442,7 +445,7 @@ func collectGoSnippet(tran *SpecialActionValTransformer, actionValArr []*parser.
 	}
 	snipWithPar := strings.TrimSpace(sb.String())
 	if strings.HasPrefix(snipWithPar, "{") && strings.HasSuffix(snipWithPar, "}") {
-		return snipWithPar[1:len(snipWithPar)-1]
+		return snipWithPar[1 : len(snipWithPar)-1]
 	}
 	return ""
 }
@@ -458,6 +461,7 @@ type SpecialActionValTransformer struct {
 }
 
 const yaccFmtVar = "_yaccfmt_var_"
+
 var yaccFmtVarRegex = regexp.MustCompile("_yaccfmt_var_[0-9]{1,5}")
 
 func (s *SpecialActionValTransformer) transform(val string) string {
@@ -480,9 +484,9 @@ func (s *SpecialActionValTransformer) restore(src string) string {
 }
 
 type OutputFormatter struct {
-	file *os.File
+	file      *os.File
 	readBytes []byte
-	out *bufio.Writer
+	out       *bufio.Writer
 	formatter strutil.Formatter
 }
 
