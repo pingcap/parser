@@ -30,6 +30,11 @@ import (
 )
 
 func Format(inputFilename string, goldenFilename string) (err error) {
+	spec, err := parseFileToSpec(inputFilename)
+	if err != nil {
+		return err
+	}
+
 	yFmt := &OutputFormatter{}
 	if err = yFmt.Setup(goldenFilename); err != nil {
 		return err
@@ -37,11 +42,6 @@ func Format(inputFilename string, goldenFilename string) (err error) {
 	defer func() {
 		err = yFmt.Teardown()
 	}()
-
-	spec, err := parseFileToSpec(inputFilename)
-	if err != nil {
-		return err
-	}
 
 	if err = printDefinitions(yFmt, spec.Defs); err != nil {
 		return err
