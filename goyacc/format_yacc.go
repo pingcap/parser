@@ -398,7 +398,7 @@ func handleAction(f format.Formatter, rule *parser.Rule, action *parser.Action, 
 	}
 	snippet := "{}"
 	if len(goSnippet) != 0 {
-		snippet = fmt.Sprintf("{%%i%s%%u\n}", goSnippet)
+		snippet = fmt.Sprintf("{%%i\n%s%%u\n}", goSnippet)
 	}
 	_, err = f.Format(snippet)
 	return err
@@ -432,7 +432,7 @@ func formatGoSnippet(actVal []*parser.ActionValue) (string, error) {
 		return "", err
 	}
 	formattedSnippet := tran.restore(string(formatted))
-	return strings.TrimRight(formattedSnippet, "\n"), nil
+	return strings.TrimSpace(formattedSnippet), nil
 }
 
 func collectGoSnippet(tran *SpecialActionValTransformer, actionValArr []*parser.ActionValue) string {

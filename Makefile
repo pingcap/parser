@@ -4,9 +4,9 @@ ARCH:="`uname -s`"
 MAC:="Darwin"
 LINUX:="Linux"
 
-all: parser.go fmt
+all: fmt parser.go
 
-test: parser.go fmt
+test: fmt parser.go
 	sh test.sh
 
 parser.go: parser.y

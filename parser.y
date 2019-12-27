@@ -3843,10 +3843,11 @@ DropTableStmt:
 
 OptTemporary:
 	/* empty */
-	{	$$ = false 
+	{
+		$$ = false
 	}
 |	"TEMPORARY"
-	{ 
+	{
 		$$ = true
 		yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
 		parser.lastErrorAsWarn()
@@ -4423,7 +4424,6 @@ FieldList:
 	}
 |	FieldList ',' Field
 	{
-
 		fl := $1.([]*ast.SelectField)
 		last := fl[len(fl)-1]
 		if last.Expr != nil && last.AsName.O == "" {
@@ -8467,7 +8467,6 @@ ShowStmt:
 	}
 |	"SHOW" "TABLE" TableName "REGIONS" WhereClauseOptional
 	{
-
 		stmt := &ast.ShowStmt{
 			Tp:    ast.ShowRegions,
 			Table: $3.(*ast.TableName),

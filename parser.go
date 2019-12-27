@@ -12237,7 +12237,6 @@ yynewstate:
 		}
 	case 485:
 		{
-
 			fl := yyS[yypt-2].item.([]*ast.SelectField)
 			last := fl[len(fl)-1]
 			if last.Expr != nil && last.AsName.O == "" {
@@ -15412,7 +15411,6 @@ yynewstate:
 		}
 	case 1500:
 		{
-
 			stmt := &ast.ShowStmt{
 				Tp:    ast.ShowRegions,
 				Table: yyS[yypt-2].item.(*ast.TableName),
