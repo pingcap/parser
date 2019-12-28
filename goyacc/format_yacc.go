@@ -16,6 +16,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	gofmt "go/format"
 	"go/token"
 	"io/ioutil"
 	"os"
@@ -26,7 +27,6 @@ import (
 	"github.com/cznic/strutil"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/format"
-	gofmt "go/format"
 )
 
 func Format(inputFilename string, goldenFilename string) (err error) {
