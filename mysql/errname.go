@@ -1037,6 +1037,7 @@ var MySQLErrName = map[uint16]string{
 	ErrCannotCancelDDLJob:         "This job:%v is almost finished, can't be cancelled now",
 	ErrUnknownAllocatorType:       "Invalid allocator type",
 	ErrAutoRandReadFailed:         "Failed to read auto-random value from storage engine",
+	ErrInvalidIncrementAndOffset:  "Invalid auto increment and offset",
 
 	ErrSequenceUnsupportedTableOption:      "Unsupported sequence table-option %s",
 	ErrUnsupportedType:                     "Unsupported type %T",
