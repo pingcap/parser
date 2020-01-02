@@ -245,6 +245,11 @@ const (
 	// ShutdownPriv the privilege to shutdown a server.
 	ShutdownPriv
 
+	// ReloadPriv is the privilege to enable the use of the FLUSH statement.
+	ReloadPriv
+	// FilePriv is the privilege to enable the use of LOAD DATA and SELECT ... INTO OUTFILE.
+	FilePriv
+
 	// AllPriv is the privilege for all actions.
 	AllPriv
 )
