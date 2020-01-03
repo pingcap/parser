@@ -802,6 +802,25 @@ func (s *Scanner) scanDigits() string {
 	return s.r.data(&pos)
 }
 
+// scanVersionDigits scans for `min` to `max` digits (range inclusive) used in
+// `/*!12345 ... */` comments.
+func (s *Scanner) scanVersionDigits(min, max int) (version CommentCodeVersion) {
+	pos := s.r.pos()
+	for i := 0; i < max; i++ {
+		ch := s.r.peek()
+		if isDigit(ch) {
+			version = version*10 + CommentCodeVersion(ch-'0')
+			s.r.inc()
+		} else if i < min {
+			s.r.p = pos
+			return CommentCodeNoVersion
+		} else {
+			break
+		}
+	}
+	return
+}
+
 type reader struct {
 	s string
 	p Pos

@@ -395,3 +395,94 @@ func (s *testLexerSuite) TestIllegal(c *C) {
 	}
 	runTest(c, table)
 }
+
+func (s *testLexerSuite) TestVersionDigits(c *C) {
+	tests := []struct {
+		input    string
+		min      int
+		max      int
+		version  CommentCodeVersion
+		nextChar rune
+	}{
+		{
+			input:    "12345",
+			min:      5,
+			max:      5,
+			version:  12345,
+			nextChar: unicode.ReplacementChar,
+		},
+		{
+			input:    "12345xyz",
+			min:      5,
+			max:      5,
+			version:  12345,
+			nextChar: 'x',
+		},
+		{
+			input:    "1234xyz",
+			min:      5,
+			max:      5,
+			version:  CommentCodeNoVersion,
+			nextChar: '1',
+		},
+		{
+			input:    "123456",
+			min:      5,
+			max:      5,
+			version:  12345,
+			nextChar: '6',
+		},
+		{
+			input:    "1234",
+			min:      5,
+			max:      5,
+			version:  CommentCodeNoVersion,
+			nextChar: '1',
+		},
+		{
+			input:    "",
+			min:      5,
+			max:      5,
+			version:  CommentCodeNoVersion,
+			nextChar: unicode.ReplacementChar,
+		},
+		{
+			input:    "1234567xyz",
+			min:      5,
+			max:      6,
+			version:  123456,
+			nextChar: '7',
+		},
+		{
+			input:    "12345xyz",
+			min:      5,
+			max:      6,
+			version:  12345,
+			nextChar: 'x',
+		},
+		{
+			input:    "12345",
+			min:      5,
+			max:      6,
+			version:  12345,
+			nextChar: unicode.ReplacementChar,
+		},
+		{
+			input:    "1234xyz",
+			min:      5,
+			max:      6,
+			version:  CommentCodeNoVersion,
+			nextChar: '1',
+		},
+	}
+
+	scanner := NewScanner("")
+	for _, t := range tests {
+		comment := Commentf("input = %s", t.input)
+		scanner.reset(t.input)
+		version := scanner.scanVersionDigits(t.min, t.max)
+		c.Assert(version, Equals, t.version, comment)
+		nextChar := scanner.r.readByte()
+		c.Assert(nextChar, Equals, t.nextChar, comment)
+	}
+}
