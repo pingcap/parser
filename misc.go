@@ -15,7 +15,6 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
@@ -33,14 +32,6 @@ const (
 
 func (ccv CommentCodeVersion) String() string {
 	return fmt.Sprintf("%05d", ccv)
-}
-
-func extractVersionCodeInComment(comment string) CommentCodeVersion {
-	code, err := strconv.Atoi(specVersionCodeValue.FindString(comment))
-	if err != nil {
-		return CommentCodeNoVersion
-	}
-	return CommentCodeVersion(code)
 }
 
 // WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
@@ -111,7 +102,6 @@ func init() {
 	// set root trie node's token to invalid, so when input match nothing
 	// in the trie, invalid will be the default return token.
 	ruleTable.token = invalid
-	initTokenByte('*', int('*'))
 	initTokenByte('/', int('/'))
 	initTokenByte('+', int('+'))
 	initTokenByte('>', int('>'))
@@ -150,6 +140,7 @@ func init() {
 
 	initTokenFunc("@", startWithAt)
 	initTokenFunc("/", startWithSlash)
+	initTokenFunc("*", startWithStar)
 	initTokenFunc("-", startWithDash)
 	initTokenFunc("#", startWithSharp)
 	initTokenFunc("Xx", startWithXx)

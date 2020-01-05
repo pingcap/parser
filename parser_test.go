@@ -280,9 +280,9 @@ func (s *testParserSuite) TestSpecialComments(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(stmts, HasLen, 2)
 	c.Assert(stmts[0], FitsTypeOf, &ast.SetStmt{})
-	c.Assert(stmts[0].Text(), Equals, "SET x = 1;")
+	c.Assert(stmts[0].Text(), Equals, "/*! SET x = 1;")
 	c.Assert(stmts[1], FitsTypeOf, &ast.SelectStmt{})
-	c.Assert(stmts[1].Text(), Equals, "/*! SET x = 1; SELECT 2 */")
+	c.Assert(stmts[1].Text(), Equals, " SELECT 2 */")
 	// ^ not sure if correct approach; having multiple statements in MySQL is a syntax error.
 
 	// 3. Make sure invalid text won't cause infinite loop

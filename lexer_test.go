@@ -176,6 +176,11 @@ SELECT`, selectKwd},
 		{"--\tSELECT", 0},
 		{"--\r\nSELECT", selectKwd},
 		{"--", 0},
+
+		// The odd behavior of '*/' inside conditional comment is the same as
+		// that of MySQL.
+		{"/*T!99999 '*/0 -- ' */", intLit},    // equivalent to 0
+		{"/*T!00000 '*/0 -- ' */", stringLit}, // equivalent to '*/0 -- '
 	}
 	runTest(c, table)
 }
@@ -260,7 +265,7 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "select")
-	c.Assert(pos, Equals, Pos{0, 0, 9})
+	c.Assert(pos, Equals, Pos{0, 9, 9})
 
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, intLit)
@@ -269,21 +274,16 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 }
 
 func (s *testLexerSuite) TestSpecialCodeComment(c *C) {
-	specCmt := "/*T!123456 auto_random(5) */"
-	c.Assert(extractVersionCodeInComment(specCmt), Equals, CommentCodeVersion(123456))
-
-	specCmt = "/*T!40000 auto_random(5) */"
-	c.Assert(extractVersionCodeInComment(specCmt), Equals, CommentCodeAutoRandom)
-	l := NewScanner(specCmt)
+	l := NewScanner("/*T!40000 auto_random(5) */")
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "auto_random")
-	c.Assert(pos, Equals, Pos{0, 0, 10})
+	c.Assert(pos, Equals, Pos{0, 10, 10})
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int('('))
 	tok, pos, lit = l.scan()
 	c.Assert(lit, Equals, "5")
-	c.Assert(pos, Equals, Pos{0, 12, 22})
+	c.Assert(pos, Equals, Pos{0, 22, 22})
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int(')'))
 
