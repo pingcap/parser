@@ -56,6 +56,10 @@ type Scanner struct {
 	// lastScanOffset indicates last offset returned by scan().
 	// It's used to substring sql in syntax error message.
 	lastScanOffset int
+
+	// lastKeyword records the previous keyword returned by scan().
+	// determine whether an optimizer hint should be parsed or ignored.
+	lastKeyword int
 }
 
 // Errors returns the errors and warns during a scan.
@@ -71,6 +75,7 @@ func (s *Scanner) reset(sql string) {
 	s.warns = s.warns[:0]
 	s.stmtStartPos = 0
 	s.inBangComment = false
+	s.lastKeyword = 0
 }
 
 func (s *Scanner) stmtText() string {
@@ -120,6 +125,7 @@ func (s *Scanner) AppendError(err error) {
 func (s *Scanner) Lex(v *yySymType) int {
 	tok, pos, lit := s.scan()
 	s.lastScanOffset = pos.Offset
+	s.lastKeyword = 0
 	v.offset = pos.Offset
 	v.ident = lit
 	if tok == identifier {
@@ -128,6 +134,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 	if tok == identifier {
 		if tok1 := s.isTokenIdentifier(lit, pos.Offset); tok1 != 0 {
 			tok = tok1
+			s.lastKeyword = tok1
 		}
 	}
 	if s.sqlMode.HasANSIQuotesMode() &&
@@ -332,6 +339,9 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		return
 	}
 
+	isOptimizerHint := false
+	var optimizerHintBegin Pos
+
 	s.r.inc() // we see '/*' so far.
 	switch s.r.readByte() {
 	case '!': // '/*!' MySQL-specific comments
@@ -360,8 +370,12 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 
 	case '+': // '/*+' optimizer hints
 		// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html
-		// TODO.
-		break
+		if _, ok := hintedTokens[s.lastKeyword]; ok {
+			// only recognize optimizers hints directly followed by certain
+			// keywords like SELECT, INSERT, etc.
+			optimizerHintBegin = s.r.pos()
+			isOptimizerHint = true
+		}
 
 	default:
 		break
@@ -369,17 +383,30 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 
 	// standard C-like comment. read until we see '*/' then drop it.
 	for {
-		s.r.incAsLongAs(func(ch rune) bool { return ch != '*' })
-		s.r.inc()
-		ch0 := s.r.readByte()
-		if ch0 == '/' {
-			// Meets */, means comment end.
-			return s.scan()
-		} else if s.r.eof() {
-			// unclosed comment
-			s.errs = append(s.errs, ParseErrorWith(s.r.data(&pos), s.r.p.Line))
-			return
+		if s.r.incAsLongAs(func(ch rune) bool { return ch != '*' }) == '*' {
+			var optimizerHint string
+			if isOptimizerHint {
+				optimizerHint = s.r.data(&optimizerHintBegin)
+			}
+
+			s.r.inc()
+			switch s.r.readByte() {
+			case '/':
+				// Meets */, means comment end.
+				if isOptimizerHint {
+					return hintComment, pos, strings.TrimSpace(optimizerHint)
+				} else {
+					return s.scan()
+				}
+			case 0:
+				break
+			default:
+				continue
+			}
 		}
+		// unclosed comment or other errors.
+		s.errs = append(s.errs, ParseErrorWith(s.r.data(&pos), s.r.p.Line))
+		return
 	}
 }
 

@@ -61,8 +61,7 @@ import (
 	singleAtIdentifier "identifier with single leading at"
 	doubleAtIdentifier "identifier with double leading at"
 	invalid            "a special token never used by parser, used by lexer to indicate error"
-	hintBegin          "hintBegin is a virtual token for optimizer hint grammar"
-	hintEnd            "hintEnd is a virtual token for optimizer hint grammar"
+	hintComment        "an optimizer hint"
 	andand             "&&"
 	pipes              "||"
 

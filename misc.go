@@ -794,6 +794,20 @@ var aliases = map[string]string{
 	"TIDB_SMJ":  "SM_JOIN",
 }
 
+// hintedTokens is a set of tokens which recognizes a hint.
+// According to https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html,
+// only SELECT, INSERT, REPLACE, UPDATE and DELETE accept optimizer hints.
+// additionally we support CREATE and PARTITION for hints at table creation.
+var hintedTokens = map[int]struct{}{
+	selectKwd: {},
+	insert:    {},
+	replace:   {},
+	update:    {},
+	deleteKwd: {},
+	create:    {},
+	partition: {},
+}
+
 func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 	// An identifier before or after '.' means it is part of a qualified identifier.
 	// We do not parse it as keyword.

@@ -163,7 +163,6 @@ func (s *testLexerSuite) TestComment(c *C) {
 	table := []testCaseItem{
 		{"-- select --\n1", intLit},
 		{"/*!40101 SET character_set_client = utf8 */;", set},
-		{"/*+ BKA(t1) */", hintBegin},
 		{"/* SET character_set_client = utf8 */;", int(';')},
 		{"/* some comments */ SELECT ", selectKwd},
 		{`-- comment continues to the end of line
@@ -293,27 +292,106 @@ func (s *testLexerSuite) TestSpecialCodeComment(c *C) {
 }
 
 func (s *testLexerSuite) TestOptimizerHint(c *C) {
-	l := NewScanner("  /*+ BKA(t1) */")
+	l := NewScanner("SELECT /*+ BKA(t1) */ 0;")
 	tokens := []struct {
-		tok int
-		lit string
-		pos int
+		tok   int
+		ident string
+		pos   int
 	}{
-		{hintBegin, "", 2},
-		{identifier, "BKA", 6},
-		{int('('), "(", 9},
-		{identifier, "t1", 10},
-		{int(')'), ")", 12},
-		{hintEnd, "", 14},
+		{selectKwd, "SELECT", 0},
+		{hintComment, "BKA(t1)", 7},
+		{intLit, "0", 22},
+		{';', ";", 23},
 	}
 	for i := 0; ; i++ {
-		tok, pos, lit := l.scan()
+		var sym yySymType
+		tok := l.Lex(&sym)
 		if tok == 0 {
 			return
 		}
 		c.Assert(tok, Equals, tokens[i].tok, Commentf("%d", i))
-		c.Assert(lit, Equals, tokens[i].lit, Commentf("%d", i))
-		c.Assert(pos.Offset, Equals, tokens[i].pos, Commentf("%d", i))
+		c.Assert(sym.ident, Equals, tokens[i].ident, Commentf("%d", i))
+		c.Assert(sym.offset, Equals, tokens[i].pos, Commentf("%d", i))
+	}
+}
+
+func (s *testLexerSuite) TestOptimizerHintAfterCertainKeywordOnly(c *C) {
+	tests := []struct {
+		input  string
+		tokens []int
+	}{
+		{
+			input:  "SELECT /*+ hint */ *",
+			tokens: []int{selectKwd, hintComment, '*', 0},
+		},
+		{
+			input:  "UPDATE /*+ hint */",
+			tokens: []int{update, hintComment, 0},
+		},
+		{
+			input:  "INSERT /*+ hint */",
+			tokens: []int{insert, hintComment, 0},
+		},
+		{
+			input:  "REPLACE /*+ hint */",
+			tokens: []int{replace, hintComment, 0},
+		},
+		{
+			input:  "DELETE /*+ hint */",
+			tokens: []int{deleteKwd, hintComment, 0},
+		},
+		{
+			input:  "CREATE /*+ hint */",
+			tokens: []int{create, hintComment, 0},
+		},
+		{
+			input:  "/*+ hint */ SELECT *",
+			tokens: []int{selectKwd, '*', 0},
+		},
+		{
+			input:  "SELECT /* comment */ /*+ hint */ *",
+			tokens: []int{selectKwd, hintComment, '*', 0},
+		},
+		{
+			input:  "SELECT * /*+ hint */",
+			tokens: []int{selectKwd, '*', 0},
+		},
+		{
+			input:  "SELECT /*T!000000 * */ /*+ hint */",
+			tokens: []int{selectKwd, '*', 0},
+		},
+		{
+			input:  "SELECT /*T!999999 * */ /*+ hint */",
+			tokens: []int{selectKwd, hintComment, 0},
+		},
+		{
+			input:  "SELECT /*+ hint1 */ /*+ hint2 */ *",
+			tokens: []int{selectKwd, hintComment, '*', 0},
+		},
+		{
+			input:  "SELECT * FROM /*+ hint */",
+			tokens: []int{selectKwd, '*', from, 0},
+		},
+		{
+			input:  "`SELECT` /*+ hint */",
+			tokens: []int{identifier, 0},
+		},
+		{
+			input:  "'SELECT' /*+ hint */",
+			tokens: []int{stringLit, 0},
+		},
+	}
+
+	for _, tc := range tests {
+		scanner := NewScanner(tc.input)
+		var sym yySymType
+		for i := 0; ; i++ {
+			tok := scanner.Lex(&sym)
+			c.Assert(tok, Equals, tc.tokens[i], Commentf("input = [%s], i = %d", tc.input, i))
+			if tok == 0 {
+				break
+			}
+		}
 	}
 }
 
