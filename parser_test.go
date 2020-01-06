@@ -2851,15 +2851,15 @@ func (s *testParserSuite) TestHintError(c *C) {
 	stmt, warns, err := parser.Parse("select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0].Error(), Equals, "line 1 column 32 near \"tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
+	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 11 near "tidb_unknow\(T1,t2\)" `)
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	stmt, warns, err = parser.Parse("select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0].Error(), Equals, "line 1 column 53 near \"tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
+	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 11 near "tidb_unknow\(T1,t2, 1\) TIDB_INLJ\(t1, T2\)" `)
 	stmt, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
-	c.Assert(err, NotNil)
+	c.Assert(err, IsNil) // Hints are ignored after the "FROM" keyword!
 	stmt, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
@@ -3274,18 +3274,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].QueryType.L, Equals, "oltp")
 
 	// Test MEMORY_QUOTA
-	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB), memory_quota(1 NO_SUCH_UNIT) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(hints, HasLen, 3)
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
 	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
 	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
-	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[2].MemoryQuota, Equals, int64(-1))
 
 	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(18446744073709551612 MB), memory_quota(8689934592 GB) */ 1", "", "")
 	c.Assert(err, IsNil)
