@@ -390,8 +390,9 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			}
 
 			s.r.inc()
-			switch s.r.readByte() {
+			switch s.r.peek() {
 			case '/':
+				s.r.inc()
 				// Meets */, means comment end.
 				if isOptimizerHint {
 					return hintComment, pos, strings.TrimSpace(optimizerHint)
