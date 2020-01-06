@@ -779,6 +779,14 @@ func (s *Scanner) scanVersionDigits(min, max int) (version CommentCodeVersion) {
 	return
 }
 
+func (s *Scanner) lastErrorAsWarn() {
+	if len(s.errs) == 0 {
+		return
+	}
+	s.warns = append(s.warns, s.errs[len(s.errs)-1])
+	s.errs = s.errs[:len(s.errs)-1]
+}
+
 type reader struct {
 	s string
 	p Pos

@@ -152,11 +152,7 @@ func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode
 }
 
 func (parser *Parser) lastErrorAsWarn() {
-	if len(parser.lexer.errs) == 0 {
-		return
-	}
-	parser.lexer.warns = append(parser.lexer.warns, parser.lexer.errs[len(parser.lexer.errs)-1])
-	parser.lexer.errs = parser.lexer.errs[:len(parser.lexer.errs)-1]
+	parser.lexer.lastErrorAsWarn()
 }
 
 // ParseOneStmt parses a query and returns an ast.StmtNode.
