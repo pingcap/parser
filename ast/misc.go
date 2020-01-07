@@ -49,6 +49,7 @@ var (
 	_ StmtNode = &KillStmt{}
 	_ StmtNode = &CreateBindingStmt{}
 	_ StmtNode = &DropBindingStmt{}
+	_ StmtNode = &ShutdownStmt{}
 
 	_ Node = &PrivElem{}
 	_ Node = &VariableAssignment{}
@@ -975,12 +976,12 @@ const (
 	Subject
 )
 
-type TslOption struct {
+type TLSOption struct {
 	Type  int
 	Value string
 }
 
-func (t *TslOption) Restore(ctx *RestoreCtx) error {
+func (t *TLSOption) Restore(ctx *RestoreCtx) error {
 	switch t.Type {
 	case TslNone:
 		ctx.WriteKeyWord("NONE")
@@ -995,10 +996,10 @@ func (t *TslOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteKeyWord("ISSUER ")
 		ctx.WriteString(t.Value)
 	case Subject:
-		ctx.WriteKeyWord("CIPHER")
+		ctx.WriteKeyWord("SUBJECT ")
 		ctx.WriteString(t.Value)
 	default:
-		return errors.Errorf("Unsupported TslOption.Type %d", t.Type)
+		return errors.Errorf("Unsupported TLSOption.Type %d", t.Type)
 	}
 	return nil
 }
@@ -1055,7 +1056,7 @@ func (p *PasswordOrLockOption) Restore(ctx *RestoreCtx) error {
 	case PasswordExpireNever:
 		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
 	case PasswordExpireInterval:
-		ctx.WriteKeyWord("PASSWORD EXPIRE NEVER")
+		ctx.WriteKeyWord("PASSWORD EXPIRE INTERVAL")
 		ctx.WritePlainf(" %d", p.Count)
 		ctx.WriteKeyWord(" DAY")
 	case Lock:
@@ -1076,7 +1077,7 @@ type CreateUserStmt struct {
 	IsCreateRole          bool
 	IfNotExists           bool
 	Specs                 []*UserSpec
-	TslOptions            []*TslOption
+	TLSOptions            []*TLSOption
 	ResourceOptions       []*ResourceOption
 	PasswordOrLockOptions []*PasswordOrLockOption
 }
@@ -1100,19 +1101,16 @@ func (n *CreateUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 	}
 
-	tslOptionLen := len(n.TslOptions)
-
-	if tslOptionLen != 0 {
+	if len(n.TLSOptions) != 0 {
 		ctx.WriteKeyWord(" REQUIRE ")
 	}
 
-	// Restore `tslOptions` reversely to keep order the same with original sql
-	for i := tslOptionLen; i > 0; i-- {
-		if i != tslOptionLen {
+	for i, option := range n.TLSOptions {
+		if i != 0 {
 			ctx.WriteKeyWord(" AND ")
 		}
-		if err := n.TslOptions[i-1].Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TslOptions[%d]", i)
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateUserStmt.TLSOptions[%d]", i)
 		}
 	}
 
@@ -1162,9 +1160,12 @@ func (n *CreateUserStmt) SecureText() string {
 type AlterUserStmt struct {
 	stmtNode
 
-	IfExists    bool
-	CurrentAuth *AuthOption
-	Specs       []*UserSpec
+	IfExists              bool
+	CurrentAuth           *AuthOption
+	Specs                 []*UserSpec
+	TLSOptions            []*TLSOption
+	ResourceOptions       []*ResourceOption
+	PasswordOrLockOptions []*PasswordOrLockOption
 }
 
 // Restore implements Node interface.
@@ -1186,6 +1187,37 @@ func (n *AlterUserStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.Specs[%d]", i)
+		}
+	}
+
+	if len(n.TLSOptions) != 0 {
+		ctx.WriteKeyWord(" REQUIRE ")
+	}
+
+	for i, option := range n.TLSOptions {
+		if i != 0 {
+			ctx.WriteKeyWord(" AND ")
+		}
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.TLSOptions[%d]", i)
+		}
+	}
+
+	if len(n.ResourceOptions) != 0 {
+		ctx.WriteKeyWord(" WITH")
+	}
+
+	for i, v := range n.ResourceOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.ResourceOptions[%d]", i)
+		}
+	}
+
+	for i, v := range n.PasswordOrLockOptions {
+		ctx.WritePlain(" ")
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterUserStmt.PasswordOrLockOptions[%d]", i)
 		}
 	}
 	return nil
@@ -1612,51 +1644,17 @@ type PrivElem struct {
 
 // Restore implements Node interface.
 func (n *PrivElem) Restore(ctx *RestoreCtx) error {
-	switch n.Priv {
-	case 0:
+	if n.Priv == 0 {
 		ctx.WritePlain("/* UNSUPPORTED TYPE */")
-	case mysql.AllPriv:
+	} else if n.Priv == mysql.AllPriv {
 		ctx.WriteKeyWord("ALL")
-	case mysql.AlterPriv:
-		ctx.WriteKeyWord("ALTER")
-	case mysql.CreatePriv:
-		ctx.WriteKeyWord("CREATE")
-	case mysql.CreateUserPriv:
-		ctx.WriteKeyWord("CREATE USER")
-	case mysql.CreateRolePriv:
-		ctx.WriteKeyWord("CREATE ROLE")
-	case mysql.TriggerPriv:
-		ctx.WriteKeyWord("TRIGGER")
-	case mysql.DeletePriv:
-		ctx.WriteKeyWord("DELETE")
-	case mysql.DropPriv:
-		ctx.WriteKeyWord("DROP")
-	case mysql.ProcessPriv:
-		ctx.WriteKeyWord("PROCESS")
-	case mysql.ExecutePriv:
-		ctx.WriteKeyWord("EXECUTE")
-	case mysql.IndexPriv:
-		ctx.WriteKeyWord("INDEX")
-	case mysql.InsertPriv:
-		ctx.WriteKeyWord("INSERT")
-	case mysql.SelectPriv:
-		ctx.WriteKeyWord("SELECT")
-	case mysql.SuperPriv:
-		ctx.WriteKeyWord("SUPER")
-	case mysql.ShowDBPriv:
-		ctx.WriteKeyWord("SHOW DATABASES")
-	case mysql.UpdatePriv:
-		ctx.WriteKeyWord("UPDATE")
-	case mysql.GrantPriv:
-		ctx.WriteKeyWord("GRANT OPTION")
-	case mysql.ReferencesPriv:
-		ctx.WriteKeyWord("REFERENCES")
-	case mysql.CreateViewPriv:
-		ctx.WriteKeyWord("CREATE VIEW")
-	case mysql.ShowViewPriv:
-		ctx.WriteKeyWord("SHOW VIEW")
-	default:
-		return errors.New("Undefined privilege type")
+	} else {
+		str, ok := mysql.Priv2Str[n.Priv]
+		if ok {
+			ctx.WriteKeyWord(str)
+		} else {
+			return errors.New("Undefined privilege type")
+		}
 	}
 	if n.Cols != nil {
 		ctx.WritePlain(" (")
@@ -1865,6 +1863,7 @@ type GrantStmt struct {
 	ObjectType ObjectTypeType
 	Level      *GrantLevel
 	Users      []*UserSpec
+	TLSOptions []*TLSOption
 	WithGrant  bool
 }
 
@@ -1898,6 +1897,19 @@ func (n *GrantStmt) Restore(ctx *RestoreCtx) error {
 		}
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore GrantStmt.Users[%d]", i)
+		}
+	}
+	if n.TLSOptions != nil {
+		if len(n.TLSOptions) != 0 {
+			ctx.WriteKeyWord(" REQUIRE ")
+		}
+		for i, option := range n.TLSOptions {
+			if i != 0 {
+				ctx.WriteKeyWord(" AND ")
+			}
+			if err := option.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore GrantStmt.TLSOptions[%d]", i)
+			}
 		}
 	}
 	if n.WithGrant {
@@ -1986,6 +1998,28 @@ func (n *GrantRoleStmt) SecureText() string {
 		text = text[:idx]
 	}
 	return text
+}
+
+// ShutdownStmt is a statement to stop the TiDB server.
+// See https://dev.mysql.com/doc/refman/5.7/en/shutdown.html
+type ShutdownStmt struct {
+	stmtNode
+}
+
+// Restore implements Node interface.
+func (n *ShutdownStmt) Restore(ctx *RestoreCtx) error {
+	ctx.WriteKeyWord("SHUTDOWN")
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *ShutdownStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ShutdownStmt)
+	return v.Leave(n)
 }
 
 // Ident is the table identifier composed of schema name and table name.
