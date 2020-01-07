@@ -7230,7 +7230,7 @@ TableOptimizerHints:
 	}
 |	hintComment
 	{
-		hints, warns := ParseHint($1, parser.lexer.GetSQLMode())
+		hints, warns := parser.parseHint($1)
 		for _, w := range warns {
 			yylex.AppendError(w)
 			parser.lastErrorAsWarn()

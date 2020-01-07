@@ -13980,7 +13980,7 @@ yynewstate:
 		}
 	case 1289:
 		{
-			hints, warns := ParseHint(yyS[yypt-0].ident, parser.lexer.GetSQLMode())
+			hints, warns := parser.parseHint(yyS[yypt-0].ident)
 			for _, w := range warns {
 				yylex.AppendError(w)
 				parser.lastErrorAsWarn()

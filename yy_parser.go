@@ -87,11 +87,12 @@ func TrimCodeVersionComment(txt string) string {
 
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
 type Parser struct {
-	charset   string
-	collation string
-	result    []ast.StmtNode
-	src       string
-	lexer     Scanner
+	charset    string
+	collation  string
+	result     []ast.StmtNode
+	src        string
+	lexer      Scanner
+	hintParser *hintParser
 
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
@@ -207,6 +208,13 @@ func (parser *Parser) endOffset(v *yySymType) int {
 		offset--
 	}
 	return offset
+}
+
+func (parser *Parser) parseHint(input string) ([]*ast.TableOptimizerHint, []error) {
+	if parser.hintParser == nil {
+		parser.hintParser = newHintParser()
+	}
+	return parser.hintParser.parse(input, parser.lexer.GetSQLMode(), parser.lexer.lastHintPos)
 }
 
 func toInt(l yyLexer, lval *yySymType, str string) int {

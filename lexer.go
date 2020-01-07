@@ -60,6 +60,9 @@ type Scanner struct {
 	// lastKeyword records the previous keyword returned by scan().
 	// determine whether an optimizer hint should be parsed or ignored.
 	lastKeyword int
+
+	// hintPos records the start position of the previous optimizer hint.
+	lastHintPos Pos
 }
 
 // Errors returns the errors and warns during a scan.
@@ -341,7 +344,6 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 
 	isOptimizerHint := false
 	currentCharIsStar := false
-	var optimizerHintBegin Pos
 
 	s.r.inc() // we see '/*' so far.
 	switch s.r.readByte() {
@@ -374,7 +376,6 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		if _, ok := hintedTokens[s.lastKeyword]; ok {
 			// only recognize optimizers hints directly followed by certain
 			// keywords like SELECT, INSERT, etc.
-			optimizerHintBegin = s.r.pos()
 			isOptimizerHint = true
 		}
 
@@ -392,9 +393,8 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			case '/':
 				// Meets */, means comment end.
 				if isOptimizerHint {
-					optimizerHint := s.r.data(&optimizerHintBegin)
-					optimizerHint = optimizerHint[:len(optimizerHint)-2] // remove the final '*/'
-					return hintComment, pos, strings.TrimSpace(optimizerHint)
+					s.lastHintPos = pos
+					return hintComment, pos, s.r.data(&pos)
 				} else {
 					return s.scan()
 				}

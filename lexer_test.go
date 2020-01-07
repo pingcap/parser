@@ -299,7 +299,7 @@ func (s *testLexerSuite) TestOptimizerHint(c *C) {
 		pos   int
 	}{
 		{selectKwd, "SELECT", 0},
-		{hintComment, "BKA(t1)", 7},
+		{hintComment, "/*+ BKA(t1) */", 7},
 		{intLit, "0", 22},
 		{';', ";", 23},
 	}

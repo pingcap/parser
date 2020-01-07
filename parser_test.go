@@ -2856,16 +2856,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 func (s *testParserSuite) TestHintError(c *C) {
 	parser := parser.New()
-	stmt, warns, err := parser.Parse("select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, warns, err := parser.Parse("select /*+ tidb_unknown(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 11 near "tidb_unknow\(T1,t2\)" `)
+	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 23 near "tidb_unknown\(T1,t2\) \*/" `)
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
-	stmt, warns, err = parser.Parse("select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, warns, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) tidb_unknow(T1,t2, 1) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 11 near "tidb_unknow\(T1,t2, 1\) TIDB_INLJ\(t1, T2\)" `)
+	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 40 near "tidb_unknow\(T1,t2, 1\) \*/" `)
 	stmt, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil) // Hints are ignored after the "FROM" keyword!
 	stmt, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
