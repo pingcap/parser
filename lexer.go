@@ -340,6 +340,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 	}
 
 	isOptimizerHint := false
+	currentCharIsStar := false
 	var optimizerHintBegin Pos
 
 	s.r.inc() // we see '/*' so far.
@@ -377,31 +378,33 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			isOptimizerHint = true
 		}
 
+	case '*': // '/**' if the next char is '/' it would close the comment.
+		currentCharIsStar = true
+
 	default:
 		break
 	}
 
 	// standard C-like comment. read until we see '*/' then drop it.
 	for {
-		if s.r.incAsLongAs(func(ch rune) bool { return ch != '*' }) == '*' {
-			var optimizerHint string
-			if isOptimizerHint {
-				optimizerHint = s.r.data(&optimizerHintBegin)
-			}
-
-			s.r.inc()
-			switch s.r.peek() {
+		if currentCharIsStar || s.r.incAsLongAs(func(ch rune) bool { return ch != '*' }) == '*' {
+			switch s.r.readByte() {
 			case '/':
-				s.r.inc()
 				// Meets */, means comment end.
 				if isOptimizerHint {
+					optimizerHint := s.r.data(&optimizerHintBegin)
+					optimizerHint = optimizerHint[:len(optimizerHint)-2] // remove the final '*/'
 					return hintComment, pos, strings.TrimSpace(optimizerHint)
 				} else {
 					return s.scan()
 				}
 			case 0:
 				break
+			case '*':
+				currentCharIsStar = true
+				continue
 			default:
+				currentCharIsStar = false
 				continue
 			}
 		}

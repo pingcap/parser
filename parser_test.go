@@ -722,6 +722,14 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{`/* 20180417 **/ show databases;`, true, "SHOW DATABASES"},
 		{`/** 20180417 */ show databases;`, true, "SHOW DATABASES"},
 		{`/** 20180417 ******/ show databases;`, true, "SHOW DATABASES"},
+		{`/**/show databases;`, true, "SHOW DATABASES"},
+		{`/*+*/show databases;`, true, "SHOW DATABASES"},
+		{`select/*+*/1;`, true, "SELECT 1"},
+		{`/*T*/show databases;`, true, "SHOW DATABASES"},
+		{`/*M*/show databases;`, true, "SHOW DATABASES"},
+		{`/*!*/show databases;`, true, "SHOW DATABASES"},
+		{`/*T!*/show databases;`, true, "SHOW DATABASES"},
+		{`/*M!*/show databases;`, true, "SHOW DATABASES"},
 
 		// for Binlog stmt
 		{`BINLOG '
