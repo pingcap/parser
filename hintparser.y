@@ -140,8 +140,6 @@ import (
 	TableOptimizerHintOpt   "optimizer hint"
 	HintTableList           "table list in optimizer hint"
 	HintTableListOpt        "optional table list in optimizer hint"
-	HintTableListGlobalQB   "table list with a query block applying to the entire hint"
-	HintTableListLocalQB    "table list with query blocks applying to each table individually"
 	HintIndexList           "table name with index list in optimizer hint"
 	IndexNameList           "index list in optimizer hint"
 	IndexNameListOpt        "optional index list in optimizer hint"
@@ -151,8 +149,7 @@ import (
 	HintStorageTypeAndTable "storage type and tables in optimizer hint"
 
 %type	<table>
-	HintTable   "Table in optimizer hint"
-	HintTableQB "Table in optimizer hint with query block"
+	HintTable "Table in optimizer hint"
 
 
 %start	Start
@@ -341,10 +338,6 @@ CommaOpt:
  *	[tbl_name@query_block_name [, tbl_name@query_block_name] ...]
  *
  */
-HintTableList:
-	HintTableListGlobalQB
-|	HintTableListLocalQB
-
 HintTableListOpt:
 	HintTableList
 |	QueryBlockOpt
@@ -354,35 +347,15 @@ HintTableListOpt:
 		}
 	}
 
-HintTableListGlobalQB:
-	HintTable
-	{
-		$$ = &ast.TableOptimizerHint{
-			Tables: []ast.HintTable{$1},
-		}
-	}
-|	hintSingleAtIdentifier HintTable
+HintTableList:
+	QueryBlockOpt HintTable
 	{
 		$$ = &ast.TableOptimizerHint{
 			Tables: []ast.HintTable{$2},
 			QBName: model.NewCIStr($1),
 		}
 	}
-|	HintTableListGlobalQB ',' HintTable
-	{
-		h := $1
-		h.Tables = append(h.Tables, $3)
-		$$ = h
-	}
-
-HintTableListLocalQB:
-	HintTableQB
-	{
-		$$ = &ast.TableOptimizerHint{
-			Tables: []ast.HintTable{$1},
-		}
-	}
-|	HintTableListLocalQB ',' HintTableQB
+|	HintTableList ',' HintTable
 	{
 		h := $1
 		h.Tables = append(h.Tables, $3)
@@ -390,29 +363,14 @@ HintTableListLocalQB:
 	}
 
 HintTable:
-	Identifier
-	{
-		$$ = ast.HintTable{
-			TableName: model.NewCIStr($1),
-		}
-	}
-|	Identifier '.' Identifier
-	{
-		$$ = ast.HintTable{
-			DBName:    model.NewCIStr($1),
-			TableName: model.NewCIStr($3),
-		}
-	}
-
-HintTableQB:
-	Identifier hintSingleAtIdentifier
+	Identifier QueryBlockOpt
 	{
 		$$ = ast.HintTable{
 			TableName: model.NewCIStr($1),
 			QBName:    model.NewCIStr($2),
 		}
 	}
-|	Identifier '.' Identifier hintSingleAtIdentifier
+|	Identifier '.' Identifier QueryBlockOpt
 	{
 		$$ = ast.HintTable{
 			DBName:    model.NewCIStr($1),
@@ -428,23 +386,11 @@ HintTableQB:
  *	tbl_name@query_block_name [index_name [, index_name] ...]
  */
 HintIndexList:
-	hintSingleAtIdentifier HintTable CommaOpt IndexNameListOpt
+	QueryBlockOpt HintTable CommaOpt IndexNameListOpt
 	{
 		h := $4
 		h.Tables = []ast.HintTable{$2}
 		h.QBName = model.NewCIStr($1)
-		$$ = h
-	}
-|	HintTableQB CommaOpt IndexNameListOpt
-	{
-		h := $3
-		h.Tables = []ast.HintTable{$1}
-		$$ = h
-	}
-|	HintTable CommaOpt IndexNameListOpt
-	{
-		h := $3
-		h.Tables = []ast.HintTable{$1}
 		$$ = h
 	}
 
@@ -470,7 +416,7 @@ IndexNameList:
 	}
 
 /**
- * Miscellaneous rules 
+ * Miscellaneous rules
  */
 SubqueryStrategiesOpt:
 	/* empty */
