@@ -329,6 +329,7 @@ const (
 	// Sequence function.
 	NextVal   = "nextval"
 	LastVal   = "lastval"
+	SetVal    = "setval"
 )
 
 // FuncCallExpr is for function expression.
