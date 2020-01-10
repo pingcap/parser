@@ -73,6 +73,9 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"MASTER_POS_WAIT(@log_name, @log_pos, @timeout, @channel_name)", "MASTER_POS_WAIT(@`log_name`, @`log_pos`, @`timeout`, @`channel_name`)"},
 		{"JSON_TYPE('[123]')", "JSON_TYPE('[123]')"},
 		{"bit_and(all c1)", "BIT_AND(`c1`)"},
+		{"nextval('seq')", "NEXTVAL('seq')"},
+		{"lastval('seq')", "LASTVAL('seq')"},
+		{"setval('seq')", "SETVAL('seq')"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
