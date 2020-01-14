@@ -6008,7 +6008,31 @@ SumExpr:
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
-|	"JSON_OBJECTAGG" '(' BuggyDefaultFalseDistinctOpt Expression ',' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
+|	"JSON_OBJECTAGG" '(' Expression ',' Expression ')' OptWindowingClause
+	{
+		if $7 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$3, $5}, Spec: *($7.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3, $5}}
+		}
+	}
+|	"JSON_OBJECTAGG" '(' "ALL" Expression ',' Expression ')' OptWindowingClause
+	{
+		if $8 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$4, $6}, Spec: *($8.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4, $6}}
+		}
+	}
+|	"JSON_OBJECTAGG" '(' Expression ',' "ALL" Expression ')' OptWindowingClause
+	{
+		if $8 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$3, $6}, Spec: *($8.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3, $6}}
+		}
+	}
+|	"JSON_OBJECTAGG" '(' "ALL" Expression ',' "ALL" Expression ')' OptWindowingClause
 	{
 		if $9 != nil {
 			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$4, $7}, Spec: *($9.(*ast.WindowSpec))}
