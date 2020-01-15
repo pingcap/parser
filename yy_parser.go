@@ -28,25 +28,25 @@ import (
 
 var (
 	// ErrSyntax returns for sql syntax error.
-	ErrSyntax = terror.ClassParser.New(mysql.ErrSyntax, mysql.MySQLErrName[mysql.ErrSyntax])
+	ErrSyntax = terror.New(terror.ClassParser, mysql.ErrSyntax, mysql.ParseErrName[mysql.ErrSyntax])
 	// ErrParse returns for sql parse error.
-	ErrParse = terror.ClassParser.New(mysql.ErrParse, mysql.MySQLErrName[mysql.ErrParse])
+	ErrParse = terror.New(terror.ClassParser, mysql.ErrParse, mysql.ParseErrName[mysql.ErrParse])
 	// ErrUnknownCharacterSet returns for no character set found error.
-	ErrUnknownCharacterSet = terror.ClassParser.New(mysql.ErrUnknownCharacterSet, mysql.MySQLErrName[mysql.ErrUnknownCharacterSet])
+	ErrUnknownCharacterSet = terror.New(terror.ClassParser, mysql.ErrUnknownCharacterSet, mysql.ParseErrName[mysql.ErrUnknownCharacterSet])
 	// ErrInvalidYearColumnLength returns for illegal column length for year type.
-	ErrInvalidYearColumnLength = terror.ClassParser.New(mysql.ErrInvalidYearColumnLength, mysql.MySQLErrName[mysql.ErrInvalidYearColumnLength])
+	ErrInvalidYearColumnLength = terror.New(terror.ClassParser, mysql.ErrInvalidYearColumnLength, mysql.ParseErrName[mysql.ErrInvalidYearColumnLength])
 	// ErrWrongArguments returns for illegal argument.
-	ErrWrongArguments = terror.ClassParser.New(mysql.ErrWrongArguments, mysql.MySQLErrName[mysql.ErrWrongArguments])
+	ErrWrongArguments = terror.New(terror.ClassParser, mysql.ErrWrongArguments, mysql.ParseErrName[mysql.ErrWrongArguments])
 	// ErrWrongFieldTerminators returns for illegal field terminators.
-	ErrWrongFieldTerminators = terror.ClassParser.New(mysql.ErrWrongFieldTerminators, mysql.MySQLErrName[mysql.ErrWrongFieldTerminators])
+	ErrWrongFieldTerminators = terror.New(terror.ClassParser, mysql.ErrWrongFieldTerminators, mysql.ParseErrName[mysql.ErrWrongFieldTerminators])
 	// ErrTooBigDisplayWidth returns for data display width exceed limit .
-	ErrTooBigDisplayWidth = terror.ClassParser.New(mysql.ErrTooBigDisplaywidth, mysql.MySQLErrName[mysql.ErrTooBigDisplaywidth])
+	ErrTooBigDisplayWidth = terror.New(terror.ClassParser, mysql.ErrTooBigDisplaywidth, mysql.ParseErrName[mysql.ErrTooBigDisplaywidth])
 	// ErrTooBigPrecision returns for data precision exceed limit.
-	ErrTooBigPrecision = terror.ClassParser.New(mysql.ErrTooBigPrecision, mysql.MySQLErrName[mysql.ErrTooBigPrecision])
+	ErrTooBigPrecision = terror.New(terror.ClassParser, mysql.ErrTooBigPrecision, mysql.ParseErrName[mysql.ErrTooBigPrecision])
 	// ErrUnknownAlterLock returns for no alter lock type found error.
-	ErrUnknownAlterLock = terror.ClassParser.New(mysql.ErrUnknownAlterLock, mysql.MySQLErrName[mysql.ErrUnknownAlterLock])
+	ErrUnknownAlterLock = terror.New(terror.ClassParser, mysql.ErrUnknownAlterLock, mysql.ParseErrName[mysql.ErrUnknownAlterLock])
 	// ErrUnknownAlterAlgorithm returns for no alter algorithm found error.
-	ErrUnknownAlterAlgorithm = terror.ClassParser.New(mysql.ErrUnknownAlterAlgorithm, mysql.MySQLErrName[mysql.ErrUnknownAlterAlgorithm])
+	ErrUnknownAlterAlgorithm = terror.New(terror.ClassParser, mysql.ErrUnknownAlterAlgorithm, mysql.ParseErrName[mysql.ErrUnknownAlterAlgorithm])
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
 	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
@@ -70,6 +70,12 @@ func init() {
 		mysql.ErrUnknownAlterLock:        mysql.ErrUnknownAlterLock,
 		mysql.ErrUnknownAlterAlgorithm:   mysql.ErrUnknownAlterAlgorithm,
 		mysql.ErrTooBigPrecision:         mysql.ErrTooBigPrecision,
+
+		mysql.ErrWarnOptimizerHintUnsupportedHint: mysql.ErrWarnOptimizerHintUnsupportedHint,
+		mysql.ErrWarnOptimizerHintInvalidToken:    mysql.ErrWarnOptimizerHintInvalidToken,
+		mysql.ErrWarnMemoryQuotaOverflow:          mysql.ErrWarnMemoryQuotaOverflow,
+		mysql.ErrWarnOptimizerHintParseError:      mysql.ErrWarnOptimizerHintParseError,
+		mysql.ErrWarnOptimizerHintInvalidInteger:  mysql.ErrWarnOptimizerHintInvalidInteger,
 	}
 	terror.ErrClassToMySQLCodes[terror.ClassParser] = parserMySQLErrCodes
 }

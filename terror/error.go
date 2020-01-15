@@ -1,4 +1,4 @@
-// Copyright 2015 PingCAP, Inc.
+// Copyright 2020 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,18 +16,12 @@ package terror
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
 	"github.com/pingcap/parser/mysql"
-	"go.uber.org/zap"
-)
-
-// Global error instances.
-var (
-	ErrCritical           = ClassGlobal.New(CodeExecResultIsEmpty, "critical error %v")
-	ErrResultUndetermined = ClassGlobal.New(CodeResultUndetermined, "execution result undetermined")
 )
 
 // ErrCode represents a specific error type in a error class.
@@ -60,6 +54,8 @@ type ErrClass int
 const (
 	ClassAutoid ErrClass = iota + 1
 	ClassDDL
+	ClassParser
+	ClassTypes
 	ClassDomain
 	ClassEvaluator
 	ClassExecutor
@@ -68,7 +64,6 @@ const (
 	ClassKV
 	ClassMeta
 	ClassOptimizer
-	ClassParser
 	ClassPerfSchema
 	ClassPrivilege
 	ClassSchema
@@ -77,7 +72,6 @@ const (
 	ClassVariable
 	ClassXEval
 	ClassTable
-	ClassTypes
 	ClassGlobal
 	ClassMockTikv
 	ClassJSON
@@ -130,7 +124,13 @@ func (ec ErrClass) EqualClass(err error) bool {
 	if e == nil {
 		return false
 	}
-	if te, ok := e.(*Error); ok {
+	if te, ok := e.(*BaseError); ok {
+		if !ok {
+			if c, cok := e.(BaseErrorConvertible); cok {
+				te = c.ToBaseError()
+				ok = true
+			}
+		}
 		return te.class == ec
 	}
 	return false
@@ -141,24 +141,25 @@ func (ec ErrClass) NotEqualClass(err error) bool {
 	return !ec.EqualClass(err)
 }
 
-// New creates an *Error with an error code and an error message.
+// NewBaseError creates an *Error with an error code and an error message.
 // Usually used to create base *Error.
-func (ec ErrClass) New(code ErrCode, message string) *Error {
-	return &Error{
+// DO NOT CALL ME DIRECTLY, Please use terror.New
+func (ec ErrClass) NewBaseError(code ErrCode, message string) *BaseError {
+	return &BaseError{
 		class:   ec,
 		code:    code,
 		message: message,
 	}
 }
 
-// NewStd calls New using the standard message for the error code
-func (ec ErrClass) NewStd(code ErrCode) *Error {
-	return ec.New(code, mysql.MySQLErrName[uint16(code)])
+// BaseErrorConvertible presents errors can be converted to terror.BaseError
+type BaseErrorConvertible interface {
+	ToBaseError() *BaseError
 }
 
 // Error implements error interface and adds integer Class and Code, so
 // errors with different message can be compared.
-type Error struct {
+type BaseError struct {
 	class   ErrClass
 	code    ErrCode
 	message string
@@ -168,17 +169,17 @@ type Error struct {
 }
 
 // Class returns ErrClass
-func (e *Error) Class() ErrClass {
+func (e *BaseError) Class() ErrClass {
 	return e.class
 }
 
 // Code returns ErrCode
-func (e *Error) Code() ErrCode {
+func (e *BaseError) Code() ErrCode {
 	return e.code
 }
 
 // MarshalJSON implements json.Marshaler interface.
-func (e *Error) MarshalJSON() ([]byte, error) {
+func (e *BaseError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Class ErrClass `json:"class"`
 		Code  ErrCode  `json:"code"`
@@ -186,12 +187,12 @@ func (e *Error) MarshalJSON() ([]byte, error) {
 	}{
 		Class: e.class,
 		Code:  e.code,
-		Msg:   e.getMsg(),
+		Msg:   e.GetMsg(),
 	})
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface.
-func (e *Error) UnmarshalJSON(data []byte) error {
+func (e *BaseError) UnmarshalJSON(data []byte) error {
 	err := &struct {
 		Class ErrClass `json:"class"`
 		Code  ErrCode  `json:"code"`
@@ -210,56 +211,32 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 
 // Location returns the location where the error is created,
 // implements juju/errors locationer interface.
-func (e *Error) Location() (file string, line int) {
+func (e *BaseError) Location() (file string, line int) {
 	return e.file, e.line
 }
 
 // Error implements error interface.
-func (e *Error) Error() string {
-	return fmt.Sprintf("[%s:%d]%s", e.class, e.code, e.getMsg())
+func (e *BaseError) Error() string {
+	return fmt.Sprintf("[%s:%d]%s", e.class, e.code, e.GetMsg())
 }
 
-func (e *Error) getMsg() string {
+func (e *BaseError) GetMsg() string {
 	if len(e.args) > 0 {
 		return fmt.Sprintf(e.message, e.args...)
 	}
 	return e.message
 }
 
-// GenWithStack generates a new *Error with the same class and code, and a new formatted message.
-func (e *Error) GenWithStack(format string, args ...interface{}) error {
-	err := *e
-	err.message = format
-	err.args = args
-	return errors.AddStack(&err)
+func (e *BaseError) SetArgs(args []interface{}) {
+	e.args = args
 }
 
-// GenWithStackByArgs generates a new *Error with the same class and code, and new arguments.
-func (e *Error) GenWithStackByArgs(args ...interface{}) error {
-	err := *e
-	err.args = args
-	return errors.AddStack(&err)
-}
-
-// FastGen generates a new *Error with the same class and code, and a new formatted message.
-// This will not call runtime.Caller to get file and line.
-func (e *Error) FastGen(format string, args ...interface{}) error {
-	err := *e
-	err.message = format
-	err.args = args
-	return errors.SuspendStack(&err)
-}
-
-// FastGen generates a new *Error with the same class and code, and a new arguments.
-// This will not call runtime.Caller to get file and line.
-func (e *Error) FastGenByArgs(args ...interface{}) error {
-	err := *e
-	err.args = args
-	return errors.SuspendStack(&err)
+func (e *BaseError) SetMessage(format string) {
+	e.message = format
 }
 
 // Equal checks if err is equal to e.
-func (e *Error) Equal(err error) bool {
+func (e *BaseError) Equal(err error) bool {
 	originErr := errors.Cause(err)
 	if originErr == nil {
 		return false
@@ -268,45 +245,19 @@ func (e *Error) Equal(err error) bool {
 	if error(e) == originErr {
 		return true
 	}
-	inErr, ok := originErr.(*Error)
+	inErr, ok := originErr.(*BaseError)
+	if !ok {
+		if cErr, convOK := originErr.(BaseErrorConvertible); convOK {
+			inErr = cErr.ToBaseError()
+			ok = true
+		}
+	}
 	return ok && e.class == inErr.class && e.code == inErr.code
 }
 
 // NotEqual checks if err is not equal to e.
-func (e *Error) NotEqual(err error) bool {
+func (e *BaseError) NotEqual(err error) bool {
 	return !e.Equal(err)
-}
-
-// ToSQLError convert Error to mysql.SQLError.
-func (e *Error) ToSQLError() *mysql.SQLError {
-	code := e.getMySQLErrorCode()
-	return mysql.NewErrf(code, "%s", e.getMsg())
-}
-
-var defaultMySQLErrorCode uint16
-
-func (e *Error) getMySQLErrorCode() uint16 {
-	codeMap, ok := ErrClassToMySQLCodes[e.class]
-	if !ok {
-		log.Warn("Unknown error class", zap.Int("class", int(e.class)))
-		return defaultMySQLErrorCode
-	}
-	code, ok := codeMap[e.code]
-	if !ok {
-		log.Debug("Unknown error code", zap.Int("class", int(e.class)), zap.Uint16("code", code))
-		return defaultMySQLErrorCode
-	}
-	return code
-}
-
-var (
-	// ErrClassToMySQLCodes is the map of ErrClass to code-map.
-	ErrClassToMySQLCodes map[ErrClass]map[ErrCode]uint16
-)
-
-func init() {
-	ErrClassToMySQLCodes = make(map[ErrClass]map[ErrCode]uint16)
-	defaultMySQLErrorCode = mysql.ErrUnknown
 }
 
 // ErrorEqual returns a boolean indicating whether err1 is equal to err2.
@@ -322,10 +273,10 @@ func ErrorEqual(err1, err2 error) bool {
 		return e1 == e2
 	}
 
-	te1, ok1 := e1.(*Error)
-	te2, ok2 := e2.(*Error)
+	te1, ok1 := e1.(BaseErrorConvertible)
+	te2, ok2 := e2.(BaseErrorConvertible)
 	if ok1 && ok2 {
-		return te1.class == te2.class && te1.code == te2.code
+		return te1.ToBaseError().class == te2.ToBaseError().class && te1.ToBaseError().code == te2.ToBaseError().code
 	}
 
 	return e1.Error() == e2.Error()
@@ -359,4 +310,98 @@ func Log(err error) {
 	if err != nil {
 		log.Error("encountered error", zap.Error(err))
 	}
+}
+
+var (
+	_ mysql.SQLErrorConvertible = &ParseError{}
+)
+
+// ParseError implements error interface and adds integer Class and Code, so
+// errors with different message can be compared.
+type ParseError struct {
+	*BaseError
+}
+
+// NewStd calls New using the standard message for the error code
+func NewStd(ec ErrClass, code ErrCode) *ParseError {
+	return &ParseError{ec.NewBaseError(code, mysql.ParseErrName[uint16(code)])}
+}
+
+// New creates an *Error with an error code and an error message.
+// Usually used to create base *Error.
+func New(ec ErrClass, code ErrCode, message string) *ParseError {
+	return &ParseError{ec.NewBaseError(code, message)}
+}
+
+// ToSQLError convert ParseError to mysql.SQLError.
+func (e *ParseError) ToSQLError() *mysql.SQLError {
+	terr := e.ToBaseError()
+	code := getMySQLErrorCode(terr)
+	return mysql.NewErrf(code, "%s", terr.GetMsg())
+}
+
+func (e *ParseError) ToBaseError() *BaseError {
+	return e.BaseError
+}
+
+// GenWithStack generates a new *Error with the same class and code, and a new formatted message.
+func (e *ParseError) GenWithStack(format string, args ...interface{}) error {
+	bErr := *e.BaseError
+	err := ParseError{BaseError: &bErr}
+	err.message = format
+	err.args = args
+	return errors.AddStack(&err)
+}
+
+// GenWithStackByArgs generates a new *Error with the same class and code, and new arguments.
+func (e *ParseError) GenWithStackByArgs(args ...interface{}) error {
+	bErr := *e.BaseError
+	err := ParseError{BaseError: &bErr}
+	err.SetArgs(args)
+	return errors.AddStack(&err)
+}
+
+// FastGen generates a new *Error with the same class and code, and a new formatted message.
+// This will not call runtime.Caller to get file and line.
+func (e *ParseError) FastGen(format string, args ...interface{}) error {
+	bErr := *e.BaseError
+	err := ParseError{BaseError: &bErr}
+	err.SetMessage(format)
+	err.SetArgs(args)
+	return errors.SuspendStack(&err)
+}
+
+// FastGen generates a new *Error with the same class and code, and a new arguments.
+// This will not call runtime.Caller to get file and line.
+func (e *ParseError) FastGenByArgs(args ...interface{}) error {
+	bErr := *e.BaseError
+	err := ParseError{BaseError: &bErr}
+	err.SetArgs(args)
+	return errors.SuspendStack(&err)
+}
+
+var defaultMySQLErrorCode uint16
+
+func getMySQLErrorCode(e *BaseError) uint16 {
+	codeMap, ok := ErrClassToMySQLCodes[e.Class()]
+	if !ok {
+		log.Warn("Unknown error class", zap.Int("class", int(e.Class())))
+		return defaultMySQLErrorCode
+	}
+	code, ok := codeMap[e.Code()]
+	if !ok {
+		log.Debug("Unknown error code", zap.Int("class", int(e.Class())), zap.Uint16("code", code))
+		return defaultMySQLErrorCode
+	}
+	return code
+}
+
+var (
+	// ErrClassToMySQLCodes is the map of ErrClass to code-map.
+	ErrClassToMySQLCodes map[ErrClass]map[ErrCode]uint16
+)
+
+func init() {
+	ErrClassToMySQLCodes = make(map[ErrClass]map[ErrCode]uint16)
+	defaultMySQLErrorCode = mysql.ErrUnknown
 }

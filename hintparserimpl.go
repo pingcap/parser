@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	ErrWarnOptimizerHintUnsupportedHint = terror.ClassParser.New(mysql.ErrWarnOptimizerHintUnsupportedHint, mysql.MySQLErrName[mysql.ErrWarnOptimizerHintUnsupportedHint])
-	ErrWarnOptimizerHintInvalidToken    = terror.ClassParser.New(mysql.ErrWarnOptimizerHintInvalidToken, mysql.MySQLErrName[mysql.ErrWarnOptimizerHintInvalidToken])
-	ErrWarnMemoryQuotaOverflow          = terror.ClassParser.New(mysql.ErrWarnMemoryQuotaOverflow, mysql.MySQLErrName[mysql.ErrWarnMemoryQuotaOverflow])
-	ErrWarnOptimizerHintParseError      = terror.ClassParser.New(mysql.ErrWarnOptimizerHintParseError, mysql.MySQLErrName[mysql.ErrWarnOptimizerHintParseError])
-	ErrWarnOptimizerHintInvalidInteger  = terror.ClassParser.New(mysql.ErrWarnOptimizerHintInvalidInteger, mysql.MySQLErrName[mysql.ErrWarnOptimizerHintInvalidInteger])
+	ErrWarnOptimizerHintUnsupportedHint = terror.New(terror.ClassParser, mysql.ErrWarnOptimizerHintUnsupportedHint, mysql.ParseErrName[mysql.ErrWarnOptimizerHintUnsupportedHint])
+	ErrWarnOptimizerHintInvalidToken    = terror.New(terror.ClassParser, mysql.ErrWarnOptimizerHintInvalidToken, mysql.ParseErrName[mysql.ErrWarnOptimizerHintInvalidToken])
+	ErrWarnMemoryQuotaOverflow          = terror.New(terror.ClassParser, mysql.ErrWarnMemoryQuotaOverflow, mysql.ParseErrName[mysql.ErrWarnMemoryQuotaOverflow])
+	ErrWarnOptimizerHintParseError      = terror.New(terror.ClassParser, mysql.ErrWarnOptimizerHintParseError, mysql.ParseErrName[mysql.ErrWarnOptimizerHintParseError])
+	ErrWarnOptimizerHintInvalidInteger  = terror.New(terror.ClassParser, mysql.ErrWarnOptimizerHintInvalidInteger, mysql.ParseErrName[mysql.ErrWarnOptimizerHintInvalidInteger])
 )
 
 // hintScanner implements the yyhintLexer interface

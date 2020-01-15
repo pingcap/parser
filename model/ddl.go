@@ -166,13 +166,13 @@ func NewDDLReorgMeta() *DDLReorgMeta {
 
 // Job is for a DDL operation.
 type Job struct {
-	ID         int64         `json:"id"`
-	Type       ActionType    `json:"type"`
-	SchemaID   int64         `json:"schema_id"`
-	TableID    int64         `json:"table_id"`
-	SchemaName string        `json:"schema_name"`
-	State      JobState      `json:"state"`
-	Error      *terror.Error `json:"err"`
+	ID         int64             `json:"id"`
+	Type       ActionType        `json:"type"`
+	SchemaID   int64             `json:"schema_id"`
+	TableID    int64             `json:"table_id"`
+	SchemaName string            `json:"schema_name"`
+	State      JobState          `json:"state"`
+	Error      *terror.BaseError `json:"err"`
 	// ErrorCount will be increased, every time we meet an error when running job.
 	ErrorCount int64 `json:"err_count"`
 	// RowCount means the number of rows that are processed.

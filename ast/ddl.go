@@ -2859,19 +2859,40 @@ func (n *TruncateTableStmt) Accept(v Visitor) (Node, bool) {
 }
 
 var (
-	ErrNoParts                              = terror.ClassDDL.NewStd(mysql.ErrNoParts)
-	ErrPartitionColumnList                  = terror.ClassDDL.NewStd(mysql.ErrPartitionColumnList)
-	ErrPartitionRequiresValues              = terror.ClassDDL.NewStd(mysql.ErrPartitionRequiresValues)
-	ErrPartitionsMustBeDefined              = terror.ClassDDL.NewStd(mysql.ErrPartitionsMustBeDefined)
-	ErrPartitionWrongNoPart                 = terror.ClassDDL.NewStd(mysql.ErrPartitionWrongNoPart)
-	ErrPartitionWrongNoSubpart              = terror.ClassDDL.NewStd(mysql.ErrPartitionWrongNoSubpart)
-	ErrPartitionWrongValues                 = terror.ClassDDL.NewStd(mysql.ErrPartitionWrongValues)
-	ErrRowSinglePartitionField              = terror.ClassDDL.NewStd(mysql.ErrRowSinglePartitionField)
-	ErrSubpartition                         = terror.ClassDDL.NewStd(mysql.ErrSubpartition)
-	ErrSystemVersioningWrongPartitions      = terror.ClassDDL.NewStd(mysql.ErrSystemVersioningWrongPartitions)
-	ErrTooManyValues                        = terror.ClassDDL.NewStd(mysql.ErrTooManyValues)
-	ErrWrongPartitionTypeExpectedSystemTime = terror.ClassDDL.NewStd(mysql.ErrWrongPartitionTypeExpectedSystemTime)
+	ErrNoParts                              = terror.NewStd(terror.ClassDDL, mysql.ErrNoParts)
+	ErrPartitionColumnList                  = terror.NewStd(terror.ClassDDL, mysql.ErrPartitionColumnList)
+	ErrPartitionRequiresValues              = terror.NewStd(terror.ClassDDL, mysql.ErrPartitionRequiresValues)
+	ErrPartitionsMustBeDefined              = terror.NewStd(terror.ClassDDL, mysql.ErrPartitionsMustBeDefined)
+	ErrPartitionWrongNoPart                 = terror.NewStd(terror.ClassDDL, mysql.ErrPartitionWrongNoPart)
+	ErrPartitionWrongNoSubpart              = terror.NewStd(terror.ClassDDL, mysql.ErrPartitionWrongNoSubpart)
+	ErrPartitionWrongValues                 = terror.NewStd(terror.ClassDDL, mysql.ErrPartitionWrongValues)
+	ErrRowSinglePartitionField              = terror.NewStd(terror.ClassDDL, mysql.ErrRowSinglePartitionField)
+	ErrSubpartition                         = terror.NewStd(terror.ClassDDL, mysql.ErrSubpartition)
+	ErrSystemVersioningWrongPartitions      = terror.NewStd(terror.ClassDDL, mysql.ErrSystemVersioningWrongPartitions)
+	ErrTooManyValues                        = terror.NewStd(terror.ClassDDL, mysql.ErrTooManyValues)
+	ErrWrongPartitionTypeExpectedSystemTime = terror.NewStd(terror.ClassDDL, mysql.ErrWrongPartitionTypeExpectedSystemTime)
 )
+
+func init() {
+	ddlCodeMap := map[terror.ErrCode]uint16{
+		mysql.ErrNoParts:                              mysql.ErrNoParts,
+		mysql.ErrPartitionColumnList:                  mysql.ErrPartitionColumnList,
+		mysql.ErrPartitionRequiresValues:              mysql.ErrPartitionRequiresValues,
+		mysql.ErrPartitionsMustBeDefined:              mysql.ErrPartitionsMustBeDefined,
+		mysql.ErrPartitionWrongNoPart:                 mysql.ErrPartitionWrongNoPart,
+		mysql.ErrPartitionWrongNoSubpart:              mysql.ErrPartitionWrongNoSubpart,
+		mysql.ErrPartitionWrongValues:                 mysql.ErrPartitionWrongValues,
+		mysql.ErrRowSinglePartitionField:              mysql.ErrRowSinglePartitionField,
+		mysql.ErrSubpartition:                         mysql.ErrSubpartition,
+		mysql.ErrSystemVersioningWrongPartitions:      mysql.ErrSystemVersioningWrongPartitions,
+		mysql.ErrTooManyValues:                        mysql.ErrTooManyValues,
+		mysql.ErrWrongPartitionTypeExpectedSystemTime: mysql.ErrWrongPartitionTypeExpectedSystemTime,
+
+		mysql.ErrUnknownCollation:         mysql.ErrUnknownCollation,
+		mysql.ErrCollationCharsetMismatch: mysql.ErrCollationCharsetMismatch,
+	}
+	terror.ErrClassToMySQLCodes[terror.ClassDDL] = ddlCodeMap
+}
 
 type SubPartitionDefinition struct {
 	Name    model.CIStr

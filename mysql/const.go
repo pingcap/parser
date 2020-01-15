@@ -21,10 +21,6 @@ import (
 	. "github.com/pingcap/parser/format"
 )
 
-func newInvalidModeErr(s string) error {
-	return NewErr(ErrWrongValueForVar, "sql_mode", s)
-}
-
 // Version information.
 var (
 	// TiDBReleaseVersion is initialized by (git describe --tags) in Makefile.
@@ -655,21 +651,6 @@ func FormatSQLModeStr(s string) string {
 		}
 	}
 	return strings.Join(nonEmptyParts, ",")
-}
-
-// GetSQLMode gets the sql mode for string literal. SQL_mode is a list of different modes separated by commas.
-// The input string must be formatted by 'FormatSQLModeStr'
-func GetSQLMode(s string) (SQLMode, error) {
-	strs := strings.Split(s, ",")
-	var sqlMode SQLMode
-	for i, length := 0, len(strs); i < length; i++ {
-		mode, ok := Str2SQLMode[strs[i]]
-		if !ok && strs[i] != "" {
-			return sqlMode, newInvalidModeErr(strs[i])
-		}
-		sqlMode = sqlMode | mode
-	}
-	return sqlMode, nil
 }
 
 // Str2SQLMode is the string represent of sql_mode to sql_mode map.
