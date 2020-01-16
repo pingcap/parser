@@ -10859,6 +10859,8 @@ yynewstate:
 	case 269:
 		{
 			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: yyS[yypt-0].ident}
+			yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
 		}
 	case 270:
 		{
