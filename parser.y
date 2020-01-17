@@ -3123,9 +3123,14 @@ DatabaseOption:
 	}
 |	DefaultKwdOpt "ENCRYPTION" EqOpt stringLit
 	{
+		if "Y" == $4 {
+			yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
+		} else if "N" != $4 {
+			yylex.AppendError(ErrWrongValue.GenWithStackByArgs("argument (should be Y or N)", $4))
+			return 1
+		}
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
-		yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 
 DatabaseOptionListOpt:

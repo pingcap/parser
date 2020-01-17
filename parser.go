@@ -10858,9 +10858,14 @@ yynewstate:
 		}
 	case 269:
 		{
+			if "Y" == yyS[yypt-0].ident {
+				yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
+				parser.lastErrorAsWarn()
+			} else if "N" != yyS[yypt-0].ident {
+				yylex.AppendError(ErrWrongValue.GenWithStackByArgs("argument (should be Y or N)", yyS[yypt-0].ident))
+				return 1
+			}
 			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: yyS[yypt-0].ident}
-			yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
-			parser.lastErrorAsWarn()
 		}
 	case 270:
 		{
