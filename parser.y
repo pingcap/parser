@@ -175,6 +175,7 @@ import (
 	longblobType		"LONGBLOB"
 	longtextType		"LONGTEXT"
 	lowPriority		"LOW_PRIORITY"
+	match			"MATCH"
 	maxValue		"MAXVALUE"
 	mediumblobType		"MEDIUMBLOB"
 	mediumIntType		"MEDIUMINT"
@@ -387,6 +388,7 @@ import (
 	only		"ONLY"
 	pageSym		"PAGE"
 	password	"PASSWORD"
+	partial		"PARTIAL"
 	partitions	"PARTITIONS"
 	pipesAsOr
 	plugins		"PLUGINS"
@@ -421,7 +423,9 @@ import (
 	session		"SESSION"
 	share		"SHARE"
 	shared		"SHARED"
+	shutdown	"SHUTDOWN"
 	signed		"SIGNED"
+	simple		"SIMPLE"
 	slave		"SLAVE"
 	slow		"SLOW"
 	snapshot	"SNAPSHOT"
@@ -470,6 +474,8 @@ import (
 	week		"WEEK"
 	yearType	"YEAR"
 	x509		"X509"
+	nowait          "NOWAIT"
+	enforced	"ENFORCED"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
@@ -495,7 +501,7 @@ import (
 	now			"NOW"
 	position		"POSITION"
 	recent			"RECENT"
-	std	            "STD"
+	std			"STD"
 	stddev			"STDDEV"
 	stddevPop		"STDDEV_POP"
 	stddevSamp		"STDDEV_SAMP"
@@ -563,6 +569,7 @@ import (
 	hintTiFlash "TIFLASH"
 	split		"SPLIT"
 	regions         "REGIONS"
+	region          "REGION"
 
 	builtinAddDate
 	builtinBitAnd
@@ -685,13 +692,13 @@ import (
 	ReplaceIntoStmt			"REPLACE INTO statement"
 	RecoverTableStmt                "recover table statement"
 	RevokeStmt			"Revoke statement"
-	RevokeRoleStmt      "Revoke role statement"
+	RevokeRoleStmt			"Revoke role statement"
 	RollbackStmt			"ROLLBACK statement"
-	SplitRegionStmt		"Split index region statement"
+	SplitRegionStmt			"Split index region statement"
 	SetStmt				"Set variable statement"
-	ChangeStmt				"Change statement"
-	SetRoleStmt				"Set active role statement"
-	SetDefaultRoleStmt			"Set default statement for some user"
+	ChangeStmt			"Change statement"
+	SetRoleStmt			"Set active role statement"
+	SetDefaultRoleStmt		"Set default statement for some user"
 	ShowStmt			"Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement			"statement"
 	TraceStmt			"TRACE statement"
@@ -701,6 +708,7 @@ import (
 	UpdateStmt			"UPDATE statement"
 	UnionStmt			"Union select state ment"
 	UseStmt				"USE statement"
+	ShutdownStmt			"SHUTDOWN statement"
 
 %type   <item>
 	AdminShowSlow			"Admin Show Slow statement"
@@ -755,6 +763,7 @@ import (
 	DefaultTrueDistinctOpt		"Distinct option which defaults to true"
 	BuggyDefaultFalseDistinctOpt	"Distinct option which accepts DISTINCT ALL and defaults to false"
 	RequireClause			"Encrypted connections options"
+	RequireClauseOpt	"optional Encrypted connections options"
 	EqOpt				"= or empty"
 	EscapedTableRef 		"escaped table reference"
 	ExplainFormatType		"explain format type"
@@ -852,8 +861,9 @@ import (
 	PrivLevel			"Privilege scope"
 	PrivType			"Privilege type"
 	ReferDef			"Reference definition"
-	OnDeleteOpt			"optional ON DELETE clause"
-	OnUpdateOpt			"optional ON UPDATE clause"
+	OnDelete			"ON DELETE clause"
+	OnUpdate			"ON UPDATE clause"
+	OnDeleteUpdateOpt		"optional ON DELETE and UPDATE clause"
 	OptGConcatSeparator		"optional GROUP_CONCAT SEPARATOR"
 	ReferOpt			"reference option"
 	RequireList			"require list"
@@ -890,6 +900,7 @@ import (
 	ShowProfileType			"Show profile type"
 	ShowProfileTypes		"Show profile types"
 	SplitOption			"Split Option"
+	SplitSyntaxOption		"Split syntax Option"
 	Starting			"Starting by"
 	StatementList			"statement list"
 	StatsPersistentVal		"stats_persistent value"
@@ -1020,6 +1031,11 @@ import (
 	HintTrueOrFalse		"True or false in optimizer hint"
 	HintQueryType		"Query type in optimizer hint"
 	HintMemoryQuota		"Memory quota in optimizer hint"
+	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
+	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
+	Match			"[MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]"
+	MatchOpt		"optional MATCH clause"
 
 %type	<ident>
 	AsOpt			"AS or EmptyString"
@@ -1108,6 +1124,7 @@ import (
 %left 	'*' '/' '%' div mod
 %left 	'^'
 %left 	'~' neg
+%precedence lowerThanNot
 %right 	not not2
 %right	collate
 
@@ -1327,6 +1344,18 @@ AlterTableSpec:
 			NewColumns:	[]*ast.ColumnDef{colDef},
 		}
 	}
+|	"ALTER" ColumnKeywordOpt ColumnName "SET" "DEFAULT" '(' Expression ')'
+	{
+		option := &ast.ColumnOption{Expr: $7}
+		colDef := &ast.ColumnDef{
+			Name: 	 $3.(*ast.ColumnName),
+			Options: []*ast.ColumnOption{option},
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:		ast.AlterTableAlterColumn,
+			NewColumns:	[]*ast.ColumnDef{colDef},
+		}
+	}
 |	"ALTER" ColumnKeywordOpt ColumnName "DROP" "DEFAULT"
 	{
 		colDef := &ast.ColumnDef{
@@ -1407,28 +1436,37 @@ AlterAlgorithm:
 	{
 		$$ = ast.AlterAlgorithmInstant
 	}
-
+|	identifier
+	{
+		yylex.AppendError(ErrUnknownAlterAlgorithm.GenWithStackByArgs($1))
+		return 1
+	}
 
 LockClauseOpt:
 	{}
 | 	LockClause {}
 
 LockClause:
-	"LOCK" eq "NONE"
+	"LOCK" EqOpt "NONE"
 	{
 		$$ = ast.LockTypeNone
 	}
-|	"LOCK" eq "DEFAULT"
+|	"LOCK" EqOpt "DEFAULT"
 	{
 		$$ = ast.LockTypeDefault
 	}
-|	"LOCK" eq "SHARED"
+|	"LOCK" EqOpt "SHARED"
 	{
 		$$ = ast.LockTypeShared
 	}
-|	"LOCK" eq "EXCLUSIVE"
+|	"LOCK" EqOpt "EXCLUSIVE"
 	{
 		$$ = ast.LockTypeExclusive
+	}
+|	"LOCK" EqOpt identifier
+	{
+		yylex.AppendError(ErrUnknownAlterLock.GenWithStackByArgs($3))
+		return 1
 	}
 
 KeyOrIndex: "KEY" | "INDEX"
@@ -1580,19 +1618,23 @@ RecoverTableStmt:
  *
  *******************************************************************/
 SplitRegionStmt:
-	"SPLIT" "TABLE" TableName SplitOption
+	"SPLIT" SplitSyntaxOption "TABLE" TableName PartitionNameListOpt SplitOption
 	{
 		$$ = &ast.SplitRegionStmt{
-			Table: $3.(*ast.TableName),
-			SplitOpt: $4.(*ast.SplitOption),
+			SplitSyntaxOpt: $2.(*ast.SplitSyntaxOption),
+			Table: $4.(*ast.TableName),
+			PartitionNames: $5.([]model.CIStr),
+			SplitOpt: $6.(*ast.SplitOption),
 		}
 	}
-|	"SPLIT" "TABLE" TableName "INDEX" Identifier SplitOption
+|	"SPLIT" SplitSyntaxOption "TABLE" TableName PartitionNameListOpt "INDEX" Identifier SplitOption
 	{
 		$$ = &ast.SplitRegionStmt{
-			Table: $3.(*ast.TableName),
-			IndexName: model.NewCIStr($5),
-			SplitOpt: $6.(*ast.SplitOption),
+			SplitSyntaxOpt: $2.(*ast.SplitSyntaxOption),
+			Table: $4.(*ast.TableName),
+			PartitionNames: $5.([]model.CIStr),
+			IndexName: model.NewCIStr($7),
+			SplitOpt: $8.(*ast.SplitOption),
 		}
 	}
 
@@ -1609,6 +1651,31 @@ SplitOption:
 	{
 		$$ = &ast.SplitOption{
 			ValueLists: $2.([][]ast.ExprNode),
+		}
+	}
+
+SplitSyntaxOption:
+	/* empty */
+	{
+		$$ = &ast.SplitSyntaxOption{}
+	}
+|	"REGION" "FOR"
+	{
+		$$ = &ast.SplitSyntaxOption{
+			HasRegionFor: true,
+		}
+	}
+|	"PARTITION"
+	{
+		$$ = &ast.SplitSyntaxOption{
+			HasPartition: true,
+		}
+	}
+|	"REGION" "FOR" "PARTITION"
+	{
+		$$ = &ast.SplitSyntaxOption{
+			HasRegionFor: true,
+			HasPartition: true,
 		}
 	}
 
@@ -1664,7 +1731,7 @@ MaxNumBuckets:
 
 /*******************************************************************************************/
 Assignment:
-	ColumnName eq Expression
+	ColumnName eq ExprOrDefault
 	{
 		$$ = &ast.Assignment{Column: $1.(*ast.ColumnName), Expr:$3}
 	}
@@ -1736,7 +1803,7 @@ ColumnDef:
 			yylex.AppendError(yylex.Errorf("Invalid column definition"))
 			return 1
 		}
-        $$ = colDef
+		$$ = colDef
 	}
 
 ColumnName:
@@ -1823,6 +1890,42 @@ PrimaryOpt:
 	{}
 | "PRIMARY"
 
+EnforcedOrNot:
+	"ENFORCED"
+	{
+		$$ = true
+	}
+|	"NOT" "ENFORCED"
+	{
+		$$ = false
+	}
+
+EnforcedOrNotOpt:
+	{
+		$$ = true
+	} %prec lowerThanNot
+|	EnforcedOrNot
+	{
+		$$ = $1
+	}
+
+EnforcedOrNotOrNotNullOpt:
+//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
+//
+//	  { [NOT] NULL | CHECK(...) [NOT] ENFORCED } ...
+	"NOT" "NULL"
+	{
+		$$ = 0
+	}
+|	EnforcedOrNotOpt
+	{
+		if ($1.(bool)) {
+			$$ = 1
+		} else {
+			$$ = 2
+		}
+	}
+
 ColumnOption:
 	"NOT" "NULL"
 	{
@@ -1863,11 +1966,30 @@ ColumnOption:
 	{
 		$$ =  &ast.ColumnOption{Tp: ast.ColumnOptionComment, Expr: ast.NewValueExpr($2)}
 	}
-|	"CHECK" '(' Expression ')'
+|	"CHECK" '(' Expression ')' EnforcedOrNotOrNotNullOpt
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/create-table.html
 		// The CHECK clause is parsed but ignored by all storage engines.
-		$$ = &ast.ColumnOption{}
+		// See the branch named `EnforcedOrNotOrNotNullOpt`.
+
+		optionCheck := &ast.ColumnOption{
+			Tp: ast.ColumnOptionCheck,
+			Expr: $3,
+			Enforced: true,
+		}
+		switch $5.(int) {
+		case 0:
+			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
+		case 1:
+			optionCheck.Enforced = true
+			$$ = optionCheck
+		case 2:
+			optionCheck.Enforced = false
+			$$ = optionCheck
+		default:
+		}
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 |	GeneratedAlways "AS" '(' Expression ')' VirtualOrStored
 	{
@@ -1912,11 +2034,19 @@ VirtualOrStored:
 ColumnOptionList:
 	ColumnOption
 	{
-		$$ = []*ast.ColumnOption{$1.(*ast.ColumnOption)}
+		if columnOption,ok := $1.(*ast.ColumnOption); ok {
+			$$ = []*ast.ColumnOption{columnOption}
+		} else {
+			$$ = $1
+		}
 	}
 |	ColumnOptionList ColumnOption
 	{
-		$$ = append($1.([]*ast.ColumnOption), $2.(*ast.ColumnOption))
+		if columnOption,ok := $2.(*ast.ColumnOption); ok {
+			$$ = append($1.([]*ast.ColumnOption), columnOption)
+		} else {
+			$$ = append($1.([]*ast.ColumnOption), $2.([]*ast.ColumnOption)...)
+		}
 	}
 
 ColumnOptionListOpt:
@@ -1934,6 +2064,7 @@ ConstraintElem:
 		c := &ast.Constraint{
 			Tp: ast.ConstraintPrimaryKey,
 			Keys: $6.([]*ast.IndexColName),
+			Name: $3.(string),
 		}
 		if $8 != nil {
 			c.Option = $8.(*ast.IndexOption)
@@ -2003,42 +2134,86 @@ ConstraintElem:
 			Refer:	$7.(*ast.ReferenceDef),
 		}
 	}
+|	"CHECK" '(' Expression ')' EnforcedOrNotOpt
+	{
+		$$ = &ast.Constraint{
+			Tp:		ast.ConstraintCheck,
+			Expr:		$3.(ast.ExprNode),
+			Enforced:	$5.(bool),
+		}
+		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
+
+Match:
+	"MATCH" "FULL"
+	{
+		$$ = ast.MatchFull
+	}
+|	"MATCH" "PARTIAL"
+	{
+		$$ = ast.MatchPartial
+	}
+|	"MATCH" "SIMPLE"
+	{
+		$$ = ast.MatchSimple
+	}
+
+MatchOpt:
+	{
+		$$ = ast.MatchNone
+	}
+|	Match
+	{
+		$$ = $1
+		yylex.AppendError(yylex.Errorf("The MATCH clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
+	}
 
 ReferDef:
-	"REFERENCES" TableName '(' IndexColNameList ')' OnDeleteOpt OnUpdateOpt
+	"REFERENCES" TableName '(' IndexColNameList ')' MatchOpt OnDeleteUpdateOpt
 	{
-		var onDeleteOpt *ast.OnDeleteOpt
-		if $6 != nil {
-			onDeleteOpt = $6.(*ast.OnDeleteOpt)
-		}
-		var onUpdateOpt *ast.OnUpdateOpt
-		if $7 != nil {
-			onUpdateOpt = $7.(*ast.OnUpdateOpt)
-		}
+		onDeleteUpdate := $7.([2]interface{})
 		$$ = &ast.ReferenceDef{
 			Table: $2.(*ast.TableName),
 			IndexColNames: $4.([]*ast.IndexColName),
-			OnDelete: onDeleteOpt,
-			OnUpdate: onUpdateOpt,
+			OnDelete: onDeleteUpdate[0].(*ast.OnDeleteOpt),
+			OnUpdate: onDeleteUpdate[1].(*ast.OnUpdateOpt),
+			Match: $6.(ast.MatchType),
 		}
 	}
 
-OnDeleteOpt:
-	{
-		$$ = &ast.OnDeleteOpt{}
-	} %prec lowerThanOn
-|	"ON" "DELETE" ReferOpt
+OnDelete:
+	"ON" "DELETE" ReferOpt
 	{
 		$$ = &ast.OnDeleteOpt{ReferOpt: $3.(ast.ReferOptionType)}
 	}
 
-OnUpdateOpt:
-	{
-		$$ = &ast.OnUpdateOpt{}
-	} %prec lowerThanOn
-|	"ON" "UPDATE" ReferOpt
+OnUpdate:
+	"ON" "UPDATE" ReferOpt
 	{
 		$$ = &ast.OnUpdateOpt{ReferOpt: $3.(ast.ReferOptionType)}
+	}
+
+OnDeleteUpdateOpt:
+	{
+		$$ = [2]interface{}{&ast.OnDeleteOpt{}, &ast.OnUpdateOpt{}}
+	} %prec lowerThanOn
+|	OnDelete  %prec lowerThanOn
+	{
+		$$ = [2]interface{}{$1, &ast.OnUpdateOpt{}}
+	}
+|	OnUpdate %prec lowerThanOn
+	{
+		$$ = [2]interface{}{&ast.OnDeleteOpt{}, $1}
+	}
+|	OnDelete OnUpdate
+	{
+		$$ = [2]interface{}{$1, $2}
+	}
+|	OnUpdate OnDelete
+	{
+		$$ = [2]interface{}{$2, $1}
 	}
 
 ReferOpt:
@@ -2057,6 +2232,12 @@ ReferOpt:
 |	"NO" "ACTION"
 	{
 		$$ = ast.ReferOptionNoAction
+	}
+|	"SET" "DEFAULT"
+	{
+		$$ = ast.ReferOptionSetDefault
+		yylex.AppendError(yylex.Errorf("The SET DEFAULT clause is parsed but ignored by all storage engines."))
+		parser.lastErrorAsWarn()
 	}
 
 /*
@@ -3574,9 +3755,9 @@ identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 UnReservedKeyword:
  "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
-| "DYNAMIC"| "END" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
+| "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
-| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
+| "ROLE" |"ROLLBACK" | "SESSION" | "SIGNED" | "SHUTDOWN" | "SNAPSHOT" | "START" | "STATUS" | "OPEN"| "SUBPARTITIONS" | "SUBPARTITION" | "TABLES" | "TABLESPACE" | "TEXT" | "THAN" | "TIME" %prec lowerThanStringLitToken
 | "TIMESTAMP" %prec lowerThanStringLitToken | "TRACE" | "TRANSACTION" | "TRUNCATE" | "UNBOUNDED" | "UNKNOWN" | "VALUE" | "WARNINGS" | "YEAR" | "MODE"  | "WEEK"  | "ANY" | "SOME" | "USER" | "IDENTIFIED"
 | "COLLATION" | "COMMENT" | "AVG_ROW_LENGTH" | "CONNECTION" | "CHECKSUM" | "COMPRESSION" | "KEY_BLOCK_SIZE" | "MASTER" | "MAX_ROWS"
 | "MIN_ROWS" | "NATIONAL" | "ROW_FORMAT" | "QUARTER" | "GRANTS" | "TRIGGERS" | "DELAY_KEY_WRITE" | "ISOLATION" | "JSON"
@@ -3586,12 +3767,13 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "REPLICA" | "LOCATION" | "LABELS"
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "NOWAIT" | "PARTIAL" | "SIMPLE" | "REPLICA" | "LOCATION" | "LABELS"
+
 
 TiDBKeyword:
  "ADMIN" | "AGG_TO_COP" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
 |"HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX" | "IGNORE_INDEX" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
-| "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS"
+| "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS" | "REGION"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
@@ -3709,7 +3891,7 @@ ExprOrDefault:
 	}
 
 ColumnSetValue:
-	ColumnName eq Expression
+	ColumnName eq ExprOrDefault
 	{
 		$$ = &ast.Assignment{
 			Column:	$1.(*ast.ColumnName),
@@ -5071,6 +5253,12 @@ RollbackStmt:
 		$$ = &ast.RollbackStmt{}
 	}
 
+ShutdownStmt:
+	"SHUTDOWN"
+	{
+		$$ = &ast.ShutdownStmt{}
+	}
+
 SelectStmtBasic:
 	"SELECT" SelectStmtOpts SelectStmtFieldList
 	{
@@ -6135,6 +6323,10 @@ SelectLockOpt:
 |	"FOR" "UPDATE"
 	{
 		$$ = ast.SelectLockForUpdate
+	}
+|       "FOR" "UPDATE" "NOWAIT"
+        {
+		$$ = ast.SelectLockForUpdateNoWait
 	}
 |	"LOCK" "IN" "SHARE" "MODE"
 	{
@@ -7479,6 +7671,7 @@ Statement:
 |	UseStmt
 |	UnlockTablesStmt
 |	LockTablesStmt
+|	ShutdownStmt
 
 TraceableStmt:
 	SelectStmt
@@ -7536,11 +7729,6 @@ TableElement:
 |	Constraint
 	{
 		$$ = $1.(*ast.Constraint)
-	}
-|	"CHECK" '(' Expression ')'
-	{
-		/* Nothing to do now */
-		$$ = nil
 	}
 
 TableElementList:
@@ -7843,8 +8031,6 @@ NumericType:
 		x.Flen = $2.(int)
 		if x.Flen == types.UnspecifiedLength || x.Flen == 0 {
 			x.Flen = 1
-		} else if x.Flen > mysql.MaxBitDisplayWidth {
-			yylex.AppendError(ErrTooBigDisplayWidth.GenWithStackByArgs(x.Flen))
 		}
 		$$ = x
 	}
@@ -8368,14 +8554,14 @@ CommaOpt:
  *  https://dev.mysql.com/doc/refman/5.7/en/account-management-sql.html
  ************************************************************************************/
 CreateUserStmt:
-	"CREATE" "USER" IfNotExists UserSpecList RequireClause ConnectionOptions PasswordOrLockOptions
+	"CREATE" "USER" IfNotExists UserSpecList RequireClauseOpt ConnectionOptions PasswordOrLockOptions
 	{
  		// See https://dev.mysql.com/doc/refman/5.7/en/create-user.html
 		$$ = &ast.CreateUserStmt{
 			IsCreateRole: false,
 			IfNotExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
-			TslOptions: $5.([]*ast.TslOption),
+			TLSOptions: $5.([]*ast.TLSOption),
 			ResourceOptions: $6.([]*ast.ResourceOption),
 			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
@@ -8394,11 +8580,14 @@ CreateRoleStmt:
 
 /* See http://dev.mysql.com/doc/refman/5.7/en/alter-user.html */
 AlterUserStmt:
-	"ALTER" "USER" IfExists UserSpecList
+	"ALTER" "USER" IfExists UserSpecList RequireClauseOpt ConnectionOptions PasswordOrLockOptions
 	{
 		$$ = &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			Specs: $4.([]*ast.UserSpec),
+			TLSOptions: $5.([]*ast.TLSOption),
+			ResourceOptions: $6.([]*ast.ResourceOption),
+			PasswordOrLockOptions: $7.([]*ast.PasswordOrLockOption),
 		}
 	}
 | 	"ALTER" "USER" IfExists "USER" '(' ')' "IDENTIFIED" "BY" AuthString
@@ -8443,6 +8632,8 @@ ConnectionOptions:
 |	"WITH" ConnectionOptionList
 	{
 		$$ = $2
+		yylex.AppendError(yylex.Errorf("TiDB does not support WITH ConnectionOptions now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 ConnectionOptionList:
@@ -8487,31 +8678,36 @@ ConnectionOption:
 		}
 	}
 
-RequireClause:
+RequireClauseOpt:
 	{
-		l := []*ast.TslOption{}
-		$$ = l
+		$$ = []*ast.TLSOption{}
 	}
-|	"REQUIRE" "NONE"
+| RequireClause
 	{
-		t := &ast.TslOption {
+		$$ = $1
+	}
+
+RequireClause:
+	"REQUIRE" "NONE"
+	{
+		t := &ast.TLSOption {
 			Type: ast.TslNone,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" "SSL"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.Ssl,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" "X509"
 	{
-		t := &ast.TslOption {
+		t := &ast.TLSOption {
 			Type: ast.X509,
 		}
-		$$ = []*ast.TslOption{t}
+		$$ = []*ast.TLSOption{t}
 	}
 |	"REQUIRE" RequireList
 	{
@@ -8521,33 +8717,39 @@ RequireClause:
 RequireList:
 	RequireListElement
 	{
-		$$ = []*ast.TslOption{$1.(*ast.TslOption)}
+		$$ = []*ast.TLSOption{$1.(*ast.TLSOption)}
 	}
-|	RequireListElement "AND" RequireList
+|	RequireList "AND" RequireListElement
 	{
-		l := $3.([]*ast.TslOption)
-		l = append(l, $1.(*ast.TslOption))
+		l := $1.([]*ast.TLSOption)
+		l = append(l, $3.(*ast.TLSOption))
+		$$ = l
+	}
+|	RequireList RequireListElement
+	{
+		l := $1.([]*ast.TLSOption)
+		l = append(l, $2.(*ast.TLSOption))
 		$$ = l
 	}
 
 RequireListElement:
 	"ISSUER" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Issuer,
 			Value: $2,
 		}
 	}
 |	"SUBJECT" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Subject,
 			Value: $2,
 		}
 	}
 |	"CIPHER" stringLit
 	{
-		$$ = &ast.TslOption {
+		$$ = &ast.TLSOption {
 			Type: ast.Cipher,
 			Value: $2,
 		}
@@ -8561,6 +8763,8 @@ PasswordOrLockOptions:
 |	PasswordOrLockOptionList
 	{
 		$$ = $1
+		yylex.AppendError(yylex.Errorf("TiDB does not support PASSWORD EXPIRE and ACCOUNT LOCK now, they would be parsed but ignored."))
+		parser.lastErrorAsWarn()
 	}
 
 PasswordOrLockOptionList:
@@ -8744,14 +8948,15 @@ DropBindingStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/grant.html
  *************************************************************************************/
 GrantStmt:
-	 "GRANT" PrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList WithGrantOptionOpt
+	 "GRANT" PrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList RequireClauseOpt WithGrantOptionOpt
 	 {
 		$$ = &ast.GrantStmt{
 			Privs: $2.([]*ast.PrivElem),
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level: $5.(*ast.GrantLevel),
 			Users: $7.([]*ast.UserSpec),
-			WithGrant: $8.(bool),
+			TLSOptions: $8.([]*ast.TLSOption),
+			WithGrant: $9.(bool),
 		}
 	 }
 
@@ -8905,11 +9110,11 @@ PrivType:
 	}
 |	"CREATE" "TEMPORARY" "TABLES"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateTMPTablePriv
 	}
 |	"LOCK" "TABLES"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.LockTablesPriv
 	}
 |	"CREATE" "VIEW"
 	{
@@ -8929,15 +9134,19 @@ PrivType:
 	}
 |	"CREATE" "ROUTINE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateRoutinePriv
 	}
 |	"ALTER" "ROUTINE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.AlterRoutinePriv
 	}
 |	"EVENT"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.EventPriv
+	}
+|	"SHUTDOWN"
+	{
+		$$ = mysql.ShutdownPriv
 	}
 
 ObjectType:

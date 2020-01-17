@@ -900,6 +900,7 @@ const (
 	ErrInvalidJSONPathArrayCell                                     = 3165
 	ErrBadUser                                                      = 3162
 	ErrRoleNotGranted                                               = 3530
+	ErrLockAcquireFailAndNoWaitSet                                  = 3572
 	ErrWindowNoSuchWindow                                           = 3579
 	ErrWindowCircularityInWindowGraph                               = 3580
 	ErrWindowNoChildPartitioning                                    = 3581
@@ -921,6 +922,7 @@ const (
 	ErrWindowNoGroupOrderUnused                                     = 3597
 	ErrWindowExplainJson                                            = 3598
 	ErrWindowFunctionIgnoresFrame                                   = 3599
+	ErrFKIncompatibleColumns                                        = 3780
 
 	// MariaDB errors.
 	ErrOnlyOneDefaultPartionAllowed         = 4030

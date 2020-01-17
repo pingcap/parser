@@ -423,6 +423,7 @@ const (
 	SelectLockNone SelectLockType = iota
 	SelectLockForUpdate
 	SelectLockInShareMode
+	SelectLockForUpdateNoWait
 )
 
 // String implements fmt.Stringer.
@@ -434,6 +435,8 @@ func (slt SelectLockType) String() string {
 		return "for update"
 	case SelectLockInShareMode:
 		return "in share mode"
+	case SelectLockForUpdateNoWait:
+		return "for update nowait"
 	}
 	return "unsupported select lock type"
 }
@@ -883,7 +886,7 @@ func (n *SelectStmt) Restore(ctx *RestoreCtx) error {
 	case SelectLockInShareMode:
 		ctx.WriteKeyWord(" LOCK ")
 		ctx.WriteKeyWord(n.LockTp.String())
-	case SelectLockForUpdate:
+	case SelectLockForUpdate, SelectLockForUpdateNoWait:
 		ctx.WritePlain(" ")
 		ctx.WriteKeyWord(n.LockTp.String())
 	}
@@ -2437,8 +2440,11 @@ func (n *FrameBound) Accept(v Visitor) (Node, bool) {
 type SplitRegionStmt struct {
 	dmlNode
 
-	Table     *TableName
-	IndexName model.CIStr
+	Table          *TableName
+	IndexName      model.CIStr
+	PartitionNames []model.CIStr
+
+	SplitSyntaxOpt *SplitSyntaxOption
 
 	SplitOpt *SplitOption
 }
@@ -2450,11 +2456,39 @@ type SplitOption struct {
 	ValueLists [][]ExprNode
 }
 
+type SplitSyntaxOption struct {
+	HasRegionFor bool
+	HasPartition bool
+}
+
 func (n *SplitRegionStmt) Restore(ctx *RestoreCtx) error {
-	ctx.WriteKeyWord("SPLIT TABLE ")
+	ctx.WriteKeyWord("SPLIT ")
+	if n.SplitSyntaxOpt != nil {
+		if n.SplitSyntaxOpt.HasRegionFor {
+			ctx.WriteKeyWord("REGION FOR ")
+		}
+		if n.SplitSyntaxOpt.HasPartition {
+			ctx.WriteKeyWord("PARTITION ")
+
+		}
+	}
+	ctx.WriteKeyWord("TABLE ")
+
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
 	}
+	if len(n.PartitionNames) > 0 {
+		ctx.WriteKeyWord(" PARTITION")
+		ctx.WritePlain("(")
+		for i, v := range n.PartitionNames {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteName(v.String())
+		}
+		ctx.WritePlain(")")
+	}
+
 	if len(n.IndexName.L) > 0 {
 		ctx.WriteKeyWord(" INDEX ")
 		ctx.WriteName(n.IndexName.String())
