@@ -9092,12 +9092,10 @@ TableOption:
 		yylex.AppendError(yylex.Errorf("The UNION option is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
-|	"ENCRYPTION" EqOpt stringLit
+|	"ENCRYPTION" EqOpt EncryptionOpt
 	{
 		// Parse it but will ignore it
-		$$ = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: $3}
-		yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
+		$$ = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: $3.(string)}
 	}
 
 StatsPersistentVal:
@@ -11146,6 +11144,7 @@ PerDB:
 EncryptionOpt:
 	stringLit
 	{
+		// Parse it but will ignore it
 		switch $1 {
 		case "Y", "y":
 			yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
