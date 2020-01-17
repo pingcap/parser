@@ -58,6 +58,10 @@ const (
 	ActionModifySchemaCharsetAndCollate ActionType = 26
 	ActionAddPrimaryKey                 ActionType = 32
 	ActionDropPrimaryKey                ActionType = 33
+	ActionLockTable                     ActionType = 27
+	ActionUnlockTable                   ActionType = 28
+	ActionSetTiFlashReplica             ActionType = 29
+	ActionUpdateTiFlashReplicaStatus    ActionType = 30
 )
 
 const (
@@ -95,6 +99,10 @@ var actionMap = map[ActionType]string{
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
 	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
 	ActionDropPrimaryKey:                "drop primary key",
+	ActionLockTable:                     "lock table",
+	ActionUnlockTable:                   "unlock table",
+	ActionSetTiFlashReplica:             "set tiflash replica",
+	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
 }
 
 // String return current ddl action in string
