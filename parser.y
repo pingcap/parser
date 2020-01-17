@@ -1131,6 +1131,7 @@ import (
 	MaxIndexNumOpt                         "MAX_IDXNUM clause"
 	PerTable                               "Max index number PER_TABLE"
 	PerDB                                  "Max index number PER_DB"
+	EncryptionOpt                          "Encryption option 'Y' or 'N'"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -3121,16 +3122,9 @@ DatabaseOption:
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4.(string)}
 	}
-|	DefaultKwdOpt "ENCRYPTION" EqOpt stringLit
+|	DefaultKwdOpt "ENCRYPTION" EqOpt EncryptionOpt
 	{
-		if "Y" == strings.ToUpper($4) {
-			yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
-			parser.lastErrorAsWarn()
-		} else if "N" != strings.ToUpper($4) {
-			yylex.AppendError(ErrWrongValue.GenWithStackByArgs("argument (should be Y or N)", $4))
-			return 1
-		}
-		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4.(string)}
 	}
 
 DatabaseOptionListOpt:
@@ -11147,5 +11141,21 @@ PerDB:
 |	"PER_DB" NUM
 	{
 		$$ = getUint64FromNUM($2)
+	}
+
+EncryptionOpt:
+	stringLit
+	{
+		switch $1 {
+		case "Y", "y":
+			yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
+			parser.lastErrorAsWarn()
+		case "N", "n":
+			break
+		default:
+			yylex.AppendError(ErrWrongValue.GenWithStackByArgs("argument (should be Y or N)", $1))
+			return 1
+		}
+		$$ = $1
 	}
 %%
