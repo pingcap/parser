@@ -215,7 +215,7 @@ func (tc *testExpressionsSuite) TestBinaryOperationExprWithFlags(c *C) {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
 	flags := format.DefaultRestoreFlags | format.RestoreSpacesAroundBinaryOperation
-	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags)
+	RunNodeRestoreTestWithFlags(c, testCases, "select %s", extractNodeFunc, flags, true)
 }
 
 func (tc *testExpressionsSuite) TestParenthesesExpr(c *C) {

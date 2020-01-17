@@ -126,10 +126,14 @@ type NodeRestoreTestCase struct {
 }
 
 func RunNodeRestoreTest(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node) {
-	RunNodeRestoreTestWithFlags(c, nodeTestCases, template, extractNodeFunc, DefaultRestoreFlags)
+	RunNodeRestoreTestWithFlags(c, nodeTestCases, template, extractNodeFunc, DefaultRestoreFlags, true)
 }
 
-func RunNodeRestoreTestWithFlags(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node, flags RestoreFlags) {
+func RunNodeRestoreTestWithoutCompareAST(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node) {
+	RunNodeRestoreTestWithFlags(c, nodeTestCases, template, extractNodeFunc, DefaultRestoreFlags, false)
+}
+
+func RunNodeRestoreTestWithFlags(c *C, nodeTestCases []NodeRestoreTestCase, template string, extractNodeFunc func(node Node) Node, flags RestoreFlags, compareAST bool) {
 	parser := parser.New()
 	parser.EnableWindowFunc(true)
 	for _, testCase := range nodeTestCases {
@@ -148,6 +152,8 @@ func RunNodeRestoreTestWithFlags(c *C, nodeTestCases []NodeRestoreTestCase, temp
 		c.Assert(err, IsNil, comment)
 		CleanNodeText(stmt)
 		CleanNodeText(stmt2)
-		c.Assert(stmt2, DeepEquals, stmt, comment)
+		if compareAST {
+			c.Assert(stmt2, DeepEquals, stmt, comment)
+		}
 	}
 }

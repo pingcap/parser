@@ -419,6 +419,7 @@ import (
 	national              "NATIONAL"
 	ncharType             "NCHAR"
 	never                 "NEVER"
+	next                  "NEXT"
 	no                    "NO"
 	nocache               "NOCACHE"
 	nocycle               "NOCYCLE"
@@ -1189,6 +1190,9 @@ import (
 %precedence sqlCache sqlNoCache
 %precedence lowerThanIntervalKeyword
 %precedence interval
+%precedence next
+%precedence lowerThanValueKeyword
+%precedence value
 %precedence lowerThanStringLitToken
 %precedence stringLit
 %precedence lowerThanSetKeyword
@@ -4685,7 +4689,7 @@ UnReservedKeyword:
 |	"TRUNCATE"
 |	"UNBOUNDED"
 |	"UNKNOWN"
-|	"VALUE"
+|	"VALUE" %prec lowerThanValueKeyword
 |	"WARNINGS"
 |	"YEAR"
 |	"MODE"
@@ -4863,6 +4867,7 @@ UnReservedKeyword:
 |	"MAX_IDXNUM"
 |	"PER_TABLE"
 |	"PER_DB"
+|	"NEXT"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5822,6 +5827,16 @@ FunctionCallNonKeyword:
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args:   []ast.ExprNode{$6, $4, direction},
+		}
+	}
+|	"NEXT" "VALUE" forKwd TableName
+	{
+		objNameExpr := &ast.ObjectNameExpr{
+			Name: $4.(*ast.TableName),
+		}
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr(ast.NextVal),
+			Args:   []ast.ExprNode{objNameExpr},
 		}
 	}
 

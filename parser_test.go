@@ -1811,6 +1811,11 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		// Test that quoted identifier can be a function name.
 		{"SELECT `uuid`()", true, "SELECT UUID()"},
+
+		// Test sequence function.
+		{"select nextval(seq)", true, "SELECT NEXTVAL(`seq`)"},
+		{"select lastval(seq)", true, "SELECT LASTVAL(`seq`)"},
+		{"select setval(seq, 100)", true, "SELECT SETVAL(`seq`, 100)"},
 	}
 	s.RunTest(c, table)
 

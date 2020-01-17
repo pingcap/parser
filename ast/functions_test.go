@@ -73,9 +73,9 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"MASTER_POS_WAIT(@log_name, @log_pos, @timeout, @channel_name)", "MASTER_POS_WAIT(@`log_name`, @`log_pos`, @`timeout`, @`channel_name`)"},
 		{"JSON_TYPE('[123]')", "JSON_TYPE('[123]')"},
 		{"bit_and(all c1)", "BIT_AND(`c1`)"},
-		{"nextval('seq')", "NEXTVAL('seq')"},
-		{"lastval('seq')", "LASTVAL('seq')"},
-		{"setval('seq')", "SETVAL('seq')"},
+		{"nextval(seq)", "NEXTVAL(`seq`)"},
+		{"lastval(seq)", "LASTVAL(`seq`)"},
+		{"setval(seq, 100)", "SETVAL(`seq`, 100)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
@@ -202,4 +202,16 @@ func (ts *testDMLSuite) TestWindowFuncExprRestore(c *C) {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
 	}
 	RunNodeRestoreTest(c, testCases, "select %s from t", extractNodeFunc)
+}
+
+func (ts *testDMLSuite) TestNextValueForSequence(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"next value for seq", "NEXTVAL(`seq`)"},
+		{"next value for sequence", "NEXTVAL(`sequence`)"},
+		{"NeXt vAluE for seQuEncE2", "NEXTVAL(`seQuEncE2`)"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTestWithoutCompareAST(c, testCases, "select %s", extractNodeFunc)
 }
