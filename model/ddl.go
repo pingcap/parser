@@ -56,6 +56,10 @@ const (
 	ActionDropView                      ActionType = 24
 	ActionRecoverTable                  ActionType = 25
 	ActionModifySchemaCharsetAndCollate ActionType = 26
+	ActionLockTable                     ActionType = 27
+	ActionUnlockTable                   ActionType = 28
+	ActionSetTiFlashReplica             ActionType = 29
+	ActionUpdateTiFlashReplicaStatus    ActionType = 30
 )
 
 // AddIndexStr is a string related to the operation of "add index".
@@ -88,6 +92,10 @@ var actionMap = map[ActionType]string{
 	ActionDropView:                      "drop view",
 	ActionRecoverTable:                  "recover table",
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
+	ActionLockTable:                     "lock table",
+	ActionUnlockTable:                   "unlock table",
+	ActionSetTiFlashReplica:             "set tiflash replica",
+	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
 }
 
 // String return current ddl action in string
