@@ -10858,10 +10858,10 @@ yynewstate:
 		}
 	case 269:
 		{
-			if "Y" == yyS[yypt-0].ident {
+			if "Y" == strings.ToUpper(yyS[yypt-0].ident) {
 				yylex.AppendError(yylex.Errorf("The ENCRYPTION clause is parsed but ignored by all storage engines."))
 				parser.lastErrorAsWarn()
-			} else if "N" != yyS[yypt-0].ident {
+			} else if "N" != strings.ToUpper(yyS[yypt-0].ident) {
 				yylex.AppendError(ErrWrongValue.GenWithStackByArgs("argument (should be Y or N)", yyS[yypt-0].ident))
 				return 1
 			}
