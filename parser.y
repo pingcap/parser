@@ -392,6 +392,7 @@ import (
 	labels                "LABELS"
 	language              "LANGUAGE"
 	last                  "LAST"
+	lastval               "LASTVAL"
 	less                  "LESS"
 	level                 "LEVEL"
 	list                  "LIST"
@@ -420,6 +421,7 @@ import (
 	ncharType             "NCHAR"
 	never                 "NEVER"
 	next                  "NEXT"
+	nextval               "NEXTVAL"
 	no                    "NO"
 	nocache               "NOCACHE"
 	nocycle               "NOCYCLE"
@@ -479,6 +481,7 @@ import (
 	serial                "SERIAL"
 	serializable          "SERIALIZABLE"
 	session               "SESSION"
+	setval                "SETVAL"
 	share                 "SHARE"
 	shared                "SHARED"
 	shutdown              "SHUTDOWN"
@@ -718,6 +721,8 @@ import (
 	DefaultValueExpr       "DefaultValueExpr(Now or Signed Literal)"
 	NowSymOptionFraction   "NowSym with optional fraction part"
 	CharsetNameOrDefault   "Character set name or default"
+	NextValueForSequence   "Default nextval expression"
+	FunctionNameSequence   "Function with sequence function call"
 
 %type	<statement>
 	AdminStmt            "Check table statement or show ddl statement"
@@ -983,8 +988,8 @@ import (
 	SelectStmtFromDualTable                "SELECT statement from dual table"
 	SelectStmtFromTable                    "SELECT statement from table"
 	SelectStmtGroup                        "SELECT statement optional GROUP BY clause"
-	SequenceOption                         "create sequence option"
-	SequenceOptionList                     "create sequence option list"
+	SequenceOption                         "Create sequence option"
+	SequenceOptionList                     "Create sequence option list"
 	SetRoleOpt                             "Set role options"
 	SetDefaultRoleOpt                      "Set default role options"
 	ShowTargetFilterable                   "Show target that can be filtered by WHERE or LIKE"
@@ -2867,6 +2872,7 @@ ReferOpt:
 DefaultValueExpr:
 	NowSymOptionFraction
 |	SignedLiteral
+|	NextValueForSequence
 
 NowSymOptionFraction:
 	NowSym
@@ -2880,6 +2886,28 @@ NowSymOptionFraction:
 |	NowSymFunc '(' NUM ')'
 	{
 		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr("CURRENT_TIMESTAMP"), Args: []ast.ExprNode{ast.NewValueExpr($3)}}
+	}
+
+NextValueForSequence:
+	"NEXT" "VALUE" forKwd TableName
+	{
+		objNameExpr := &ast.ObjectNameExpr{
+			Name: $4.(*ast.TableName),
+		}
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr(ast.NextVal),
+			Args:   []ast.ExprNode{objNameExpr},
+		}
+	}
+|	"NEXTVAL" '(' TableName ')'
+	{
+		objNameExpr := &ast.ObjectNameExpr{
+			Name: $3.(*ast.TableName),
+		}
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr(ast.NextVal),
+			Args:   []ast.ExprNode{objNameExpr},
+		}
 	}
 
 /*
@@ -4868,6 +4896,9 @@ UnReservedKeyword:
 |	"PER_TABLE"
 |	"PER_DB"
 |	"NEXT"
+|	"NEXTVAL"
+|	"LASTVAL"
+|	"SETVAL"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5829,16 +5860,7 @@ FunctionCallNonKeyword:
 			Args:   []ast.ExprNode{$6, $4, direction},
 		}
 	}
-|	"NEXT" "VALUE" forKwd TableName
-	{
-		objNameExpr := &ast.ObjectNameExpr{
-			Name: $4.(*ast.TableName),
-		}
-		$$ = &ast.FuncCallExpr{
-			FnName: model.NewCIStr(ast.NextVal),
-			Args:   []ast.ExprNode{objNameExpr},
-		}
-	}
+|	FunctionNameSequence
 
 GetFormatSelector:
 	"DATE"
@@ -5879,6 +5901,30 @@ TrimDirection:
 	{
 		$$ = ast.TrimTrailing
 	}
+
+FunctionNameSequence:
+	"LASTVAL" '(' TableName ')'
+	{
+		objNameExpr := &ast.ObjectNameExpr{
+			Name: $3.(*ast.TableName),
+		}
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr(ast.LastVal),
+			Args:   []ast.ExprNode{objNameExpr},
+		}
+	}
+|	"SETVAL" '(' TableName ',' SignedNum ')'
+	{
+		objNameExpr := &ast.ObjectNameExpr{
+			Name: $3.(*ast.TableName),
+		}
+		valueExpr := ast.NewValueExpr($5)
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr(ast.SetVal),
+			Args:   []ast.ExprNode{objNameExpr, valueExpr},
+		}
+	}
+|	NextValueForSequence
 
 SumExpr:
 	"AVG" '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause

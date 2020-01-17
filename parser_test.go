@@ -1816,6 +1816,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select nextval(seq)", true, "SELECT NEXTVAL(`seq`)"},
 		{"select lastval(seq)", true, "SELECT LASTVAL(`seq`)"},
 		{"select setval(seq, 100)", true, "SELECT SETVAL(`seq`, 100)"},
+		{"select next value for seq", true, "SELECT NEXTVAL(`seq`)"},
+		{"select next value for sequence", true, "SELECT NEXTVAL(`sequence`)"},
+		{"select NeXt vAluE for seQuEncE2", true, "SELECT NEXTVAL(`seQuEncE2`)"},
 	}
 	s.RunTest(c, table)
 
