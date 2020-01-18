@@ -10863,7 +10863,7 @@ yynewstate:
 		}
 	case 269:
 		{
-			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: yyS[yypt-0].ident}
 		}
 	case 270:
 		{
@@ -15647,7 +15647,7 @@ yynewstate:
 	case 1642:
 		{
 			// Parse it but will ignore it
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: yyS[yypt-0].ident}
 		}
 	case 1645:
 		{
@@ -17394,7 +17394,7 @@ yynewstate:
 				yylex.AppendError(ErrWrongValue.GenWithStackByArgs("argument (should be Y or N)", yyS[yypt-0].ident))
 				return 1
 			}
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 
 	}

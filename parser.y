@@ -1131,7 +1131,6 @@ import (
 	MaxIndexNumOpt                         "MAX_IDXNUM clause"
 	PerTable                               "Max index number PER_TABLE"
 	PerDB                                  "Max index number PER_DB"
-	EncryptionOpt                          "Encryption option 'Y' or 'N'"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1168,6 +1167,7 @@ import (
 	LinearOpt         "linear or empty"
 	FieldsOrColumns   "Fields or columns"
 	StorageMedia      "{DISK|MEMORY|DEFAULT}"
+	EncryptionOpt     "Encryption option 'Y' or 'N'"
 
 %type	<ident>
 	ODBCDateTimeType                "ODBC type keywords for date and time literals"
@@ -3124,7 +3124,7 @@ DatabaseOption:
 	}
 |	DefaultKwdOpt "ENCRYPTION" EqOpt EncryptionOpt
 	{
-		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4.(string)}
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
 	}
 
 DatabaseOptionListOpt:
@@ -9095,7 +9095,7 @@ TableOption:
 |	"ENCRYPTION" EqOpt EncryptionOpt
 	{
 		// Parse it but will ignore it
-		$$ = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: $3.(string)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: $3}
 	}
 
 StatsPersistentVal:
