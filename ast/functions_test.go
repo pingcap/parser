@@ -83,6 +83,7 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"next value for test.seq", "NEXTVAL(`test`.`seq`)"},
 		{"next value for sequence", "NEXTVAL(`sequence`)"},
 		{"NeXt vAluE for seQuEncE2", "NEXTVAL(`seQuEncE2`)"},
+		{"NeXt vAluE for test.seQuEncE2", "NEXTVAL(`test`.`seQuEncE2`)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr
