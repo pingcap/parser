@@ -2891,7 +2891,7 @@ NowSymOptionFraction:
 NextValueForSequence:
 	"NEXT" "VALUE" forKwd TableName
 	{
-		objNameExpr := &ast.ObjectNameExpr{
+		objNameExpr := &ast.TableNameExpr{
 			Name: $4.(*ast.TableName),
 		}
 		$$ = &ast.FuncCallExpr{
@@ -2901,7 +2901,7 @@ NextValueForSequence:
 	}
 |	"NEXTVAL" '(' TableName ')'
 	{
-		objNameExpr := &ast.ObjectNameExpr{
+		objNameExpr := &ast.TableNameExpr{
 			Name: $3.(*ast.TableName),
 		}
 		$$ = &ast.FuncCallExpr{
@@ -5905,7 +5905,7 @@ TrimDirection:
 FunctionNameSequence:
 	"LASTVAL" '(' TableName ')'
 	{
-		objNameExpr := &ast.ObjectNameExpr{
+		objNameExpr := &ast.TableNameExpr{
 			Name: $3.(*ast.TableName),
 		}
 		$$ = &ast.FuncCallExpr{
@@ -5915,7 +5915,7 @@ FunctionNameSequence:
 	}
 |	"SETVAL" '(' TableName ',' SignedNum ')'
 	{
-		objNameExpr := &ast.ObjectNameExpr{
+		objNameExpr := &ast.TableNameExpr{
 			Name: $3.(*ast.TableName),
 		}
 		valueExpr := ast.NewValueExpr($5)
