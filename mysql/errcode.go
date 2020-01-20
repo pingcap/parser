@@ -947,6 +947,7 @@ const (
 	ErrInfoSchemaExpired          = 8027
 	ErrInfoSchemaChanged          = 8028
 	ErrInvalidIncrementAndOffset  = 8060
+	ErrInvalidAutoRandom          = 8216
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout    = 9001
