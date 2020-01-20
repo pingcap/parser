@@ -255,6 +255,6 @@ var MySQLState = map[uint16]string{
 	ErrInvalidJSONData:                     "22032",
 	ErrInvalidJSONPathWildcard:             "42000",
 	ErrJSONUsedAsKey:                       "42000",
-	ErrJSONKeyNULL:                         "22032",
+	ErrJSONDocumentNULLKey:                 "22032",
 	ErrInvalidJSONPathArrayCell:            "42000",
 }
