@@ -2697,7 +2697,7 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 	case AlterTableAlterCheck:
 		ctx.WriteKeyWord("ALTER CHECK ")
 		ctx.WriteName(n.Constraint.Name)
-		if n.Constraint.Enforced == false {
+		if !n.Constraint.Enforced {
 			ctx.WriteKeyWord(" NOT")
 		}
 		ctx.WriteKeyWord(" ENFORCED")
