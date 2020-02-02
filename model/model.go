@@ -87,6 +87,8 @@ type ColumnInfo struct {
 	OriginDefaultValue  interface{}         `json:"origin_default"`
 	DefaultValue        interface{}         `json:"default"`
 	DefaultValueBit     []byte              `json:"default_bit"`
+	// DefaultIsExpr is indicates the default value string is expr.
+	DefaultIsExpr       bool                `json:"default_is_expr"`
 	GeneratedExprString string              `json:"generated_expr_string"`
 	GeneratedStored     bool                `json:"generated_stored"`
 	Dependences         map[string]struct{} `json:"dependences"`
