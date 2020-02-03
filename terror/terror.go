@@ -90,6 +90,7 @@ var (
 
 var errClass2Desc = make(map[ErrClass]string)
 
+// RegisterErrorClass registers new error class for terror.
 func RegisterErrorClass(classCode int, desc string) ErrClass {
 	errClass := ErrClass(classCode)
 	if _, exists := errClass2Desc[errClass]; exists {
