@@ -136,9 +136,6 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 		clsMap = make(map[ErrCode]struct{})
 		ErrClassToMySQLCodes[ec] = clsMap
 	}
-	if _, ok := clsMap[code]; ok {
-		panic(fmt.Sprintf("Not allow to register duplicate error code %d in %s error class", code, ec.String()))
-	}
 	clsMap[code] = struct{}{}
 	return &Error{
 		class:   ec,
