@@ -900,6 +900,7 @@ const (
 	ErrInvalidJSONPathWildcard                                      = 3149
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
+	ErrJSONDocumentNULLKey                                          = 3158
 	ErrBadUser                                                      = 3162
 	ErrUserAlreadyExists                                            = 3163
 	ErrInvalidJSONPathArrayCell                                     = 3165
@@ -1035,6 +1036,7 @@ const (
 	ErrWarnMemoryQuotaOverflow             = 8063
 	ErrWarnOptimizerHintParseError         = 8064
 	ErrWarnOptimizerHintInvalidInteger     = 8065
+	ErrUnsupportedSecondArgumentType       = 8066
 
 	// Error codes used by TiDB ddl package
 	ErrUnsupportedDDLOperation        = 8200

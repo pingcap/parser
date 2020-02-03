@@ -896,6 +896,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidJSONPathWildcard:                               "In this situation, path expressions may not contain the * and ** tokens.",
 	ErrInvalidJSONContainsPathType:                           "The second argument can only be either 'one' or 'all'.",
 	ErrJSONUsedAsKey:                                         "JSON column '%-.192s' cannot be used in key specification.",
+	ErrJSONDocumentNULLKey:                                   "JSON documents may not contain NULL member names.",
 	ErrBadUser:                                               "User %s does not exist.",
 	ErrUserAlreadyExists:                                     "User %s already exists.",
 	ErrInvalidJSONPathArrayCell:                              "A path expression is not a path to a cell in an array.",
@@ -1062,6 +1063,7 @@ var MySQLErrName = map[uint16]string{
 	ErrPrivilegeCheckFail:                  "privilege check fail", // this error message should begin lowercased to be compatible with the test
 	ErrInvalidWildCard:                     "Wildcard fields without any table name appears in wrong place",
 	ErrMixOfGroupFuncAndFieldsIncompatible: "In aggregated query without GROUP BY, expression #%d of SELECT list contains nonaggregated column '%s'; this is incompatible with sql_mode=only_full_group_by",
+	ErrUnsupportedSecondArgumentType:       "JSON_OBJECTAGG: unsupported second argument type %v",
 
 	// TiKV/PD errors.
 	ErrPDServerTimeout:    "PD server timeout",
