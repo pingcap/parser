@@ -1867,6 +1867,7 @@ const (
 	ShowAnalyzeStatus
 	ShowRegions
 	ShowBuiltins
+	ShowTableNextRowId
 )
 
 const (
