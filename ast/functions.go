@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/errors"
-	. "github.com/pingcap/parser/format"
+	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/types"
 )
@@ -325,6 +325,11 @@ const (
 
 	// TiDB internal function.
 	TiDBDecodeKey = "tidb_decode_key"
+
+	// Sequence function.
+	NextVal = "nextval"
+	LastVal = "lastval"
+	SetVal  = "setval"
 )
 
 // FuncCallExpr is for function expression.
@@ -337,7 +342,7 @@ type FuncCallExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
+func (n *FuncCallExpr) Restore(ctx *format.RestoreCtx) error {
 	var specialLiteral string
 	switch n.FnName.L {
 	case DateLiteral:
@@ -497,7 +502,7 @@ type FuncCastExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *FuncCastExpr) Restore(ctx *RestoreCtx) error {
+func (n *FuncCastExpr) Restore(ctx *format.RestoreCtx) error {
 	switch n.FunctionType {
 	case CastFunction:
 		ctx.WriteKeyWord("CAST")
@@ -598,7 +603,7 @@ type TrimDirectionExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *TrimDirectionExpr) Restore(ctx *RestoreCtx) error {
+func (n *TrimDirectionExpr) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(n.Direction.String())
 	return nil
 }
@@ -678,7 +683,7 @@ type AggregateFuncExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *AggregateFuncExpr) Restore(ctx *RestoreCtx) error {
+func (n *AggregateFuncExpr) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(n.F)
 	ctx.WritePlain("(")
 	if n.Distinct {
@@ -781,7 +786,7 @@ type WindowFuncExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *WindowFuncExpr) Restore(ctx *RestoreCtx) error {
+func (n *WindowFuncExpr) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(n.F)
 	ctx.WritePlain("(")
 	for i, v := range n.Args {
@@ -940,7 +945,7 @@ type TimeUnitExpr struct {
 }
 
 // Restore implements Node interface.
-func (n *TimeUnitExpr) Restore(ctx *RestoreCtx) error {
+func (n *TimeUnitExpr) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(n.Unit.String())
 	return nil
 }
@@ -993,7 +998,7 @@ func (selector GetFormatSelectorType) String() string {
 }
 
 // Restore implements Node interface.
-func (n *GetFormatSelectorExpr) Restore(ctx *RestoreCtx) error {
+func (n *GetFormatSelectorExpr) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(n.Selector.String())
 	return nil
 }
