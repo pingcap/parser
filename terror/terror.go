@@ -57,68 +57,51 @@ const (
 type ErrClass int
 
 // Error classes.
-const (
-	ClassAutoid ErrClass = iota + 1
-	ClassDDL
-	ClassDomain
-	ClassEvaluator
-	ClassExecutor
-	ClassExpression
-	ClassAdmin
-	ClassKV
-	ClassMeta
-	ClassOptimizer
-	ClassParser
-	ClassPerfSchema
-	ClassPrivilege
-	ClassSchema
-	ClassServer
-	ClassStructure
-	ClassVariable
-	ClassXEval
-	ClassTable
-	ClassTypes
-	ClassGlobal
-	ClassMockTikv
-	ClassJSON
-	ClassTiKV
-	ClassSession
-	ClassPlugin
-	ClassUtil
+var (
+	ClassAutoid     = RegisterErrorClass(1, "autoid")
+	ClassDDL        = RegisterErrorClass(2, "ddl")
+	ClassDomain     = RegisterErrorClass(3, "domain")
+	ClassEvaluator  = RegisterErrorClass(4, "evaluator")
+	ClassExecutor   = RegisterErrorClass(5, "executor")
+	ClassExpression = RegisterErrorClass(6, "expression")
+	ClassAdmin      = RegisterErrorClass(7, "admin")
+	ClassKV         = RegisterErrorClass(8, "kv")
+	ClassMeta       = RegisterErrorClass(9, "meta")
+	ClassOptimizer  = RegisterErrorClass(10, "planner")
+	ClassParser     = RegisterErrorClass(11, "parser")
+	ClassPerfSchema = RegisterErrorClass(12, "perfschema")
+	ClassPrivilege  = RegisterErrorClass(13, "privilege")
+	ClassSchema     = RegisterErrorClass(14, "schema")
+	ClassServer     = RegisterErrorClass(15, "server")
+	ClassStructure  = RegisterErrorClass(16, "structure")
+	ClassVariable   = RegisterErrorClass(17, "variable")
+	ClassXEval      = RegisterErrorClass(18, "xeval")
+	ClassTable      = RegisterErrorClass(19, "table")
+	ClassTypes      = RegisterErrorClass(20, "types")
+	ClassGlobal     = RegisterErrorClass(21, "global")
+	ClassMockTikv   = RegisterErrorClass(22, "mocktikv")
+	ClassJSON       = RegisterErrorClass(23, "json")
+	ClassTiKV       = RegisterErrorClass(24, "tikv")
+	ClassSession    = RegisterErrorClass(25, "session")
+	ClassPlugin     = RegisterErrorClass(26, "plugin")
+	ClassUtil       = RegisterErrorClass(27, "util")
 	// Add more as needed.
 )
 
-var errClz2Str = map[ErrClass]string{
-	ClassAutoid:     "autoid",
-	ClassDDL:        "ddl",
-	ClassDomain:     "domain",
-	ClassExecutor:   "executor",
-	ClassExpression: "expression",
-	ClassAdmin:      "admin",
-	ClassMeta:       "meta",
-	ClassKV:         "kv",
-	ClassOptimizer:  "planner",
-	ClassParser:     "parser",
-	ClassPerfSchema: "perfschema",
-	ClassPrivilege:  "privilege",
-	ClassSchema:     "schema",
-	ClassServer:     "server",
-	ClassStructure:  "structure",
-	ClassVariable:   "variable",
-	ClassTable:      "table",
-	ClassTypes:      "types",
-	ClassGlobal:     "global",
-	ClassMockTikv:   "mocktikv",
-	ClassJSON:       "json",
-	ClassTiKV:       "tikv",
-	ClassSession:    "session",
-	ClassPlugin:     "plugin",
-	ClassUtil:       "util",
+var errClass2Desc = make(map[ErrClass]string)
+
+func RegisterErrorClass(classCode int, desc string) ErrClass {
+	errClass := ErrClass(classCode)
+	if _, exists := errClass2Desc[errClass]; exists {
+		panic(fmt.Sprintf("duplicate register ClassCode %d - %s", classCode, desc))
+	}
+	errClass2Desc[errClass] = desc
+	return errClass
 }
 
 // String implements fmt.Stringer interface.
 func (ec ErrClass) String() string {
-	if s, exists := errClz2Str[ec]; exists {
+	if s, exists := errClass2Desc[ec]; exists {
 		return s
 	}
 	return strconv.Itoa(int(ec))
@@ -144,6 +127,18 @@ func (ec ErrClass) NotEqualClass(err error) bool {
 // New creates an *Error with an error code and an error message.
 // Usually used to create base *Error.
 func (ec ErrClass) New(code ErrCode, message string) *Error {
+	if ErrClassToMySQLCodes == nil {
+		ErrClassToMySQLCodes = make(map[ErrClass]map[ErrCode]struct{})
+	}
+	clsMap, ok := ErrClassToMySQLCodes[ec]
+	if !ok {
+		clsMap = make(map[ErrCode]struct{})
+		ErrClassToMySQLCodes[ec] = clsMap
+	}
+	if _, ok := clsMap[code]; ok {
+		panic(fmt.Sprintf("Not allow to register duplicate error code %d in %s error class", code, ec.String()))
+	}
+	clsMap[code] = struct{}{}
 	return &Error{
 		class:   ec,
 		code:    code,
@@ -291,21 +286,20 @@ func (e *Error) getMySQLErrorCode() uint16 {
 		log.Warn("Unknown error class", zap.Int("class", int(e.class)))
 		return defaultMySQLErrorCode
 	}
-	code, ok := codeMap[e.code]
+	_, ok = codeMap[e.code]
 	if !ok {
-		log.Debug("Unknown error code", zap.Int("class", int(e.class)), zap.Uint16("code", code))
+		log.Debug("Unknown error code", zap.Int("class", int(e.class)), zap.Int("code", int(e.code)))
 		return defaultMySQLErrorCode
 	}
-	return code
+	return uint16(e.code)
 }
 
 var (
-	// ErrClassToMySQLCodes is the map of ErrClass to code-map.
-	ErrClassToMySQLCodes map[ErrClass]map[ErrCode]uint16
+	// ErrClassToMySQLCodes is the map of ErrClass to code-set.
+	ErrClassToMySQLCodes map[ErrClass]map[ErrCode]struct{}
 )
 
 func init() {
-	ErrClassToMySQLCodes = make(map[ErrClass]map[ErrCode]uint16)
 	defaultMySQLErrorCode = mysql.ErrUnknown
 }
 
