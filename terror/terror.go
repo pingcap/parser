@@ -177,6 +177,11 @@ func (e *Error) Code() ErrCode {
 	return e.code
 }
 
+// Args returns the inner args
+func (e *Error) Args() []interface{} {
+	return e.args
+}
+
 // MarshalJSON implements json.Marshaler interface.
 func (e *Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
