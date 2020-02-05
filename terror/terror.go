@@ -24,12 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Global error instances.
-var (
-	ErrCritical           = ClassGlobal.New(CodeExecResultIsEmpty, "critical error %v")
-	ErrResultUndetermined = ClassGlobal.New(CodeResultUndetermined, "execution result undetermined")
-)
-
 // ErrCode represents a specific error type in a error class.
 // Same error code can be used in different error classes.
 type ErrCode int
@@ -127,10 +121,10 @@ func (ec ErrClass) NotEqualClass(err error) bool {
 
 // New creates an *Error with an error code and an error message.
 // Usually used to create base *Error.
+// Attention:
+// this method is not goroutine-safe and
+// usually be used in global variable initializer
 func (ec ErrClass) New(code ErrCode, message string) *Error {
-	if ErrClassToMySQLCodes == nil {
-		ErrClassToMySQLCodes = make(map[ErrClass]map[ErrCode]struct{})
-	}
 	clsMap, ok := ErrClassToMySQLCodes[ec]
 	if !ok {
 		clsMap = make(map[ErrCode]struct{})
@@ -294,7 +288,9 @@ func (e *Error) getMySQLErrorCode() uint16 {
 
 var (
 	// ErrClassToMySQLCodes is the map of ErrClass to code-set.
-	ErrClassToMySQLCodes map[ErrClass]map[ErrCode]struct{}
+	ErrClassToMySQLCodes  = make(map[ErrClass]map[ErrCode]struct{})
+	ErrCritical           = ClassGlobal.New(CodeExecResultIsEmpty, "critical error %v")
+	ErrResultUndetermined = ClassGlobal.New(CodeResultUndetermined, "execution result undetermined")
 )
 
 func init() {
