@@ -154,7 +154,7 @@ func (s *testTErrorSuite) TestErrorEqual(c *C) {
 	c.Assert(ErrorNotEqual(e1, e6), IsTrue)
 	code1 := ErrCode(9001)
 	code2 := ErrCode(9002)
-	te1 := ClassParser.New(code1, "abc")
+	te1 := ClassParser.Synthesize(code1, "abc")
 	te3 := ClassKV.New(code1, "abc")
 	te4 := ClassKV.New(code2, "abc")
 	c.Assert(ErrorEqual(te1, te3), IsFalse)

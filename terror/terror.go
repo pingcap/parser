@@ -119,7 +119,7 @@ func (ec ErrClass) NotEqualClass(err error) bool {
 	return !ec.EqualClass(err)
 }
 
-// New creates an *Error with an error code and an error message.
+// New defines an *Error with an error code and an error message.
 // Usually used to create base *Error.
 // Attention:
 // this method is not goroutine-safe and
@@ -139,8 +139,23 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 }
 
 // NewStd calls New using the standard message for the error code
+// Attention:
+// this method is not goroutine-safe and
+// usually be used in global variable initializer
 func (ec ErrClass) NewStd(code ErrCode) *Error {
 	return ec.New(code, mysql.MySQLErrName[uint16(code)])
+}
+
+// Synthesize synthesizes an *Error in the air
+// it didn't register error into ErrClassToMySQLCodes
+// so it's goroutine-safe
+// and often be used to create Error came from other systems like TiKV.
+func (ec ErrClass) Synthesize(code ErrCode, message string) *Error {
+	return &Error{
+		class:   ec,
+		code:    code,
+		message: message,
+	}
 }
 
 // Error implements error interface and adds integer Class and Code, so
