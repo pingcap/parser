@@ -801,9 +801,9 @@ AAAAAAAAAAAA5gm5Mg==
 		{"show table t1 index idx1", false, ""},
 
 		// for show table next_row_id.
-		//{"show table t1.t1 next_row_id", true, ""},
-		//{"show table t1 next_row_id", true, ""},
-		//{"show table next_row_id", false, ""},
+		{"show table t1.t1 next_row_id", true, "SHOW TABLE `t1`.`t1` NEXT_ROW_ID"},
+		{"show table t1 next_row_id", true, "SHOW TABLE `t1` NEXT_ROW_ID"},
+		{"show table next_row_id", false, ""},
 
 		// for transaction mode
 		{"begin pessimistic", true, "BEGIN PESSIMISTIC"},

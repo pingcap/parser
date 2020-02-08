@@ -2155,6 +2155,13 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 				return err
 			}
 			return nil
+		case ShowTableNextRowId:
+			ctx.WriteKeyWord("TABLE ")
+			if err := n.Table.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SplitIndexRegionStmt.Table")
+			}
+			ctx.WriteKeyWord(" NEXT_ROW_ID")
+			return nil
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
