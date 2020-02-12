@@ -548,6 +548,7 @@ import (
 	bindings              "BINDINGS"
 	warnings              "WARNINGS"
 	without               "WITHOUT"
+	weightString          "WEIGHT_STRING"
 	identSQLErrors        "ERRORS"
 	week                  "WEEK"
 	yearType              "YEAR"
@@ -4718,6 +4719,7 @@ UnReservedKeyword:
 |	"YEAR"
 |	"MODE"
 |	"WEEK"
+|	"WEIGHT_STRING"
 |	"ANY"
 |	"SOME"
 |	"USER"
@@ -5858,6 +5860,32 @@ FunctionCallNonKeyword:
 			Args:   []ast.ExprNode{$6, $4, direction},
 		}
 	}
+|	weightString '(' Expression ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{$3},
+		}
+	}
+|	weightString '(' Expression "AS" Char FieldLen ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{$3, ast.NewValueExpr("CHAR"), ast.NewValueExpr($6)},
+		}
+	}
+|	weightString '(' Expression "AS" "BINARY" FieldLen ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{$3, ast.NewValueExpr("BINARY"), ast.NewValueExpr($6)},
+		}
+	}
+/** The following syntax is defined in MySQL parser, but not described in MySQL reference manual, we do not support it for now.
+|   weightString '(' Expression ',' LengthNum, ',' LengthNum, ',' LengthNum ')'
+    {
+	}
+**/
 |	FunctionNameSequence
 
 GetFormatSelector:
