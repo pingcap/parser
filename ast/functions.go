@@ -426,9 +426,7 @@ func (n *FuncCallExpr) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.(WEIGHT_STRING).Args[0]")
 		}
 		if len(n.Args) == 3 {
-			ctx.WritePlain(" ")
-			ctx.WriteKeyWord("AS")
-			ctx.WritePlain(" ")
+			ctx.WriteKeyWord(" AS ")
 			ctx.WriteKeyWord(n.Args[1].(ValueExpr).GetValue().(string))
 			ctx.WritePlain("(")
 			if err := n.Args[2].Restore(ctx); err != nil {
