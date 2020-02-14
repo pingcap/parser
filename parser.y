@@ -5883,7 +5883,7 @@ FunctionCallNonKeyword:
 	}
 /** The following syntax is defined in MySQL parser, but not described in MySQL reference manual, we do not support it for now.
 |   weightString '(' Expression ',' LengthNum, ',' LengthNum, ',' LengthNum ')'
-    {
+	{
 	}
 **/
 |	FunctionNameSequence
