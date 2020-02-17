@@ -154,6 +154,7 @@ import (
 	integerType       "INTEGER"
 	interval          "INTERVAL"
 	into              "INTO"
+	outfile           "OUTFILE"
 	is                "IS"
 	insert            "INSERT"
 	intType           "INT"
@@ -993,6 +994,7 @@ import (
 	SelectStmtFromDualTable                "SELECT statement from dual table"
 	SelectStmtFromTable                    "SELECT statement from table"
 	SelectStmtGroup                        "SELECT statement optional GROUP BY clause"
+	SelectStmtIntoOption                   "SELECT statement into clause"
 	SequenceOption                         "Create sequence option"
 	SequenceOptionList                     "Create sequence option list"
 	SetRoleOpt                             "Set role options"
@@ -6638,7 +6640,7 @@ SelectStmtFromDualTable:
 	}
 
 SelectStmtFromTable:
-	SelectStmtBasic "FROM" TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
+	SelectStmtBasic "FROM" TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
 		st.From = $3.(*ast.TableRefsClause)
@@ -6658,6 +6660,9 @@ SelectStmtFromTable:
 		}
 		if $7 != nil {
 			st.WindowSpecs = ($7.([]ast.WindowSpec))
+		}
+		if $8 != nil {
+			st.SelectIntoOpt = $8.(*ast.SelectIntoOption)
 		}
 		$$ = st
 	}
@@ -7432,6 +7437,26 @@ SelectStmtGroup:
 		$$ = nil
 	}
 |	GroupByClause
+
+SelectStmtIntoOption:
+	{
+		$$ = nil
+	}
+|	"INTO" "OUTFILE" stringLit Fields Lines
+	{
+		x := &ast.SelectIntoOption{
+			Tp:       ast.SelectIntoOutfile,
+			FileName: $3,
+		}
+		if $4 != nil {
+			x.FieldsInfo = $4.(*ast.FieldsClause)
+		}
+		if $5 != nil {
+			x.LinesInfo = $5.(*ast.LinesClause)
+		}
+
+		$$ = x
+	}
 
 // See https://dev.mysql.com/doc/refman/5.7/en/subqueries.html
 SubSelect:
@@ -10783,6 +10808,9 @@ Fields:
 					enclosed = item.Value[0]
 				}
 				fieldsClause.Enclosed = enclosed
+				if item.OptEnclosed {
+					fieldsClause.OptEnclosed = true
+				}
 			case ast.Escaped:
 				var escaped byte
 				if len(item.Value) > 0 {
@@ -10827,8 +10855,9 @@ FieldItem:
 			return 1
 		}
 		$$ = &ast.FieldItem{
-			Type:  ast.Enclosed,
-			Value: str,
+			Type:        ast.Enclosed,
+			Value:       str,
+			OptEnclosed: true,
 		}
 	}
 |	"ENCLOSED" "BY" FieldTerminator
