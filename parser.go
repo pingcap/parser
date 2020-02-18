@@ -13623,7 +13623,7 @@ yynewstate:
 			st.From = yyS[yypt-5].item.(*ast.TableRefsClause)
 			lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 			if lastField.Expr != nil && lastField.AsName.O == "" {
-				lastEnd := parser.endOffset(&yyS[yypt-5])
+				lastEnd := parser.endOffset(&yyS[yypt-6])
 				lastField.SetText(parser.src[lastField.Offset:lastEnd])
 			}
 			if yyS[yypt-4].item != nil {
