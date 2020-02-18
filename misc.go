@@ -488,6 +488,7 @@ var tokenMap = map[string]int{
 	"OR":                         or,
 	"ORDER":                      order,
 	"OUTER":                      outer,
+	"OUTFILE":                    outfile,
 	"PACK_KEYS":                  packKeys,
 	"PAGE":                       pageSym,
 	"PARSER":                     parser,
@@ -859,6 +860,7 @@ var hintTokenMap = map[string]int{
 	"USE_INDEX":               hintUseIndex,
 	"USE_PLAN_CACHE":          hintUsePlanCache,
 	"USE_TOJA":                hintUseToja,
+	"TIME_RANGE":              hintTimeRange,
 
 	// TiDB hint aliases
 	"TIDB_HJ":   hintHashJoin,

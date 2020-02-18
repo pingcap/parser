@@ -497,7 +497,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DO 1 from t", false, ""},
 
 		// load data
-		{"load data local infile '/tmp/t.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES"},
 		{"load data infile '/tmp/t.csv' into table t", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
 		{"load data infile '/tmp/t.csv' into table t character set utf8", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
 		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
@@ -559,6 +559,20 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
 		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` LOCK IN SHARE MODE"},
 		{"SELECT * from t for update nowait", true, "SELECT * FROM `t` FOR UPDATE NOWAIT"},
+
+		// select into outfile
+		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
+		{"select a from t order by a into outfile '/tmp/abc'", true, "SELECT `a` FROM `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
+		{"select 1 into outfile '/tmp/1.csv'", true, "SELECT 1 INTO OUTFILE '/tmp/1.csv'"},
+		{"select 1 for update into outfile '/tmp/1.csv'", true, "SELECT 1 FOR UPDATE INTO OUTFILE '/tmp/1.csv'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ','", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ','"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ',' enclosed BY '\"'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '\"'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ',' optionally enclosed BY '\"'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' lines terminated BY '\n'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ',' optionally enclosed BY '\"' lines terminated BY '\r'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\r'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ',' enclosed BY '\"' lines terminated BY '\r'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ',' optionally enclosed BY '\"' lines starting by 'xy' terminated BY '\r'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES STARTING BY 'xy' TERMINATED BY '\r'"},
+		{"select a,b,a+b from t into outfile '/tmp/result.txt' fields terminated BY ',' enclosed BY '\"' lines starting by 'xy' terminated BY '\r'", true, "SELECT `a`,`b`,`a`+`b` FROM `t` INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES STARTING BY 'xy' TERMINATED BY '\r'"},
 
 		// from join
 		{"SELECT * from t1, t2, t3", true, "SELECT * FROM ((`t1`) JOIN `t2`) JOIN `t3`"},
@@ -3218,7 +3232,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 		hints = selectStmt.TableHints
 		c.Assert(len(hints), Equals, 1)
 		c.Assert(hints[0].HintName.L, Equals, "max_execution_time", Commentf("case", i))
-		c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
+		c.Assert(hints[0].HintData.(uint64), Equals, uint64(1000))
 	}
 
 	// Test USE_INDEX_MERGE
@@ -3256,12 +3270,12 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "read_from_storage")
-	c.Assert(hints[0].StoreType.L, Equals, "tiflash")
+	c.Assert(hints[0].HintData.(model.CIStr).L, Equals, "tiflash")
 	c.Assert(hints[0].Tables, HasLen, 2)
 	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
 	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 	c.Assert(hints[1].HintName.L, Equals, "read_from_storage")
-	c.Assert(hints[1].StoreType.L, Equals, "tikv")
+	c.Assert(hints[1].HintData.(model.CIStr).L, Equals, "tikv")
 	c.Assert(hints[1].Tables, HasLen, 1)
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 
@@ -3273,10 +3287,10 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "use_toja")
-	c.Assert(hints[0].HintFlag, IsTrue)
+	c.Assert(hints[0].HintData.(bool), IsTrue)
 
 	c.Assert(hints[1].HintName.L, Equals, "use_toja")
-	c.Assert(hints[1].HintFlag, IsFalse)
+	c.Assert(hints[1].HintData.(bool), IsFalse)
 
 	// Test ENABLE_PLAN_CACHE
 	stmt, _, err = parser.Parse("select /*+ ENABLE_PLAN_CACHE(true), enable_plan_cache(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3286,10 +3300,10 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "enable_plan_cache")
-	c.Assert(hints[0].HintFlag, IsTrue)
+	c.Assert(hints[0].HintData.(bool), IsTrue)
 
 	c.Assert(hints[1].HintName.L, Equals, "enable_plan_cache")
-	c.Assert(hints[1].HintFlag, IsFalse)
+	c.Assert(hints[1].HintData.(bool), IsFalse)
 
 	// Test USE_PLAN_CACHE
 	stmt, _, err = parser.Parse("select /*+ USE_PLAN_CACHE(), use_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3309,9 +3323,9 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "query_type")
-	c.Assert(hints[0].QueryType.L, Equals, "olap")
+	c.Assert(hints[0].HintData.(model.CIStr).L, Equals, "olap")
 	c.Assert(hints[1].HintName.L, Equals, "query_type")
-	c.Assert(hints[1].QueryType.L, Equals, "oltp")
+	c.Assert(hints[1].HintData.(model.CIStr).L, Equals, "oltp")
 
 	// Test MEMORY_QUOTA
 	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3321,9 +3335,9 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
+	c.Assert(hints[0].HintData.(int64), Equals, int64(1024*1024))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
+	c.Assert(hints[1].HintData.(int64), Equals, int64(1024*1024*1024))
 
 	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(18446744073709551612 MB), memory_quota(8689934592 GB) */ 1", "", "")
 	c.Assert(err, IsNil)
