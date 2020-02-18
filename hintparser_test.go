@@ -180,11 +180,11 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			output: []*ast.TableOptimizerHint{
 				{
 					HintName: model.NewCIStr("USE_TOJA"),
-					HintFlag: true,
+					HintData: true,
 				},
 				{
 					HintName: model.NewCIStr("ENABLE_PLAN_CACHE"),
-					HintFlag: false,
+					HintData: false,
 				},
 				{
 					HintName: model.NewCIStr("QUERY_TYPE"),
@@ -204,18 +204,18 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			input: "READ_FROM_STORAGE(@foo TIKV[a, b], TIFLASH[c, d]) HASH_AGG() READ_FROM_STORAGE(TIKV[e])",
 			output: []*ast.TableOptimizerHint{
 				{
-					HintName:  model.NewCIStr("READ_FROM_STORAGE"),
-					StoreType: model.NewCIStr("TIKV"),
-					QBName:    model.NewCIStr("foo"),
+					HintName: model.NewCIStr("READ_FROM_STORAGE"),
+					HintData: model.NewCIStr("TIKV"),
+					QBName:   model.NewCIStr("foo"),
 					Tables: []ast.HintTable{
 						{TableName: model.NewCIStr("a")},
 						{TableName: model.NewCIStr("b")},
 					},
 				},
 				{
-					HintName:  model.NewCIStr("READ_FROM_STORAGE"),
-					StoreType: model.NewCIStr("TIFLASH"),
-					QBName:    model.NewCIStr("foo"),
+					HintName: model.NewCIStr("READ_FROM_STORAGE"),
+					HintData: model.NewCIStr("TIFLASH"),
+					QBName:   model.NewCIStr("foo"),
 					Tables: []ast.HintTable{
 						{TableName: model.NewCIStr("c")},
 						{TableName: model.NewCIStr("d")},
@@ -225,8 +225,8 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 					HintName: model.NewCIStr("HASH_AGG"),
 				},
 				{
-					HintName:  model.NewCIStr("READ_FROM_STORAGE"),
-					StoreType: model.NewCIStr("TIKV"),
+					HintName: model.NewCIStr("READ_FROM_STORAGE"),
+					HintData: model.NewCIStr("TIKV"),
 					Tables: []ast.HintTable{
 						{TableName: model.NewCIStr("e")},
 					},

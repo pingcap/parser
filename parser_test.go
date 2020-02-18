@@ -3266,12 +3266,12 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "read_from_storage")
-	c.Assert(hints[0].StoreType.L, Equals, "tiflash")
+	c.Assert(hints[0].HintData.(model.CIStr).L, Equals, "tiflash")
 	c.Assert(hints[0].Tables, HasLen, 2)
 	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
 	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 	c.Assert(hints[1].HintName.L, Equals, "read_from_storage")
-	c.Assert(hints[1].StoreType.L, Equals, "tikv")
+	c.Assert(hints[1].HintData.(model.CIStr).L, Equals, "tikv")
 	c.Assert(hints[1].Tables, HasLen, 1)
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 
@@ -3283,10 +3283,10 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "use_toja")
-	c.Assert(hints[0].HintFlag, IsTrue)
+	c.Assert(hints[0].HintData.(bool), IsTrue)
 
 	c.Assert(hints[1].HintName.L, Equals, "use_toja")
-	c.Assert(hints[1].HintFlag, IsFalse)
+	c.Assert(hints[1].HintData.(bool), IsFalse)
 
 	// Test ENABLE_PLAN_CACHE
 	stmt, _, err = parser.Parse("select /*+ ENABLE_PLAN_CACHE(true), enable_plan_cache(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3296,10 +3296,10 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "enable_plan_cache")
-	c.Assert(hints[0].HintFlag, IsTrue)
+	c.Assert(hints[0].HintData.(bool), IsTrue)
 
 	c.Assert(hints[1].HintName.L, Equals, "enable_plan_cache")
-	c.Assert(hints[1].HintFlag, IsFalse)
+	c.Assert(hints[1].HintData.(bool), IsFalse)
 
 	// Test USE_PLAN_CACHE
 	stmt, _, err = parser.Parse("select /*+ USE_PLAN_CACHE(), use_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")

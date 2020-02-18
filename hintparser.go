@@ -1130,7 +1130,7 @@ yynewstate:
 	case 25:
 		{
 			h := yyS[yypt-1].hint
-			h.StoreType = model.NewCIStr(yyS[yypt-3].ident)
+			h.HintData = model.NewCIStr(yyS[yypt-3].ident)
 			parser.yyVAL.hint = h
 		}
 	case 26:
@@ -1208,11 +1208,11 @@ yynewstate:
 		}
 	case 50:
 		{
-			parser.yyVAL.hint = &ast.TableOptimizerHint{HintFlag: true}
+			parser.yyVAL.hint = &ast.TableOptimizerHint{HintData: true}
 		}
 	case 51:
 		{
-			parser.yyVAL.hint = &ast.TableOptimizerHint{HintFlag: false}
+			parser.yyVAL.hint = &ast.TableOptimizerHint{HintData: false}
 		}
 
 	}

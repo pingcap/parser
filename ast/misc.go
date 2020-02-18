@@ -2210,13 +2210,13 @@ type TableOptimizerHint struct {
 	// Time Range is used to hint the time range of inspection tables
 	// e.g: select /*+ time_range('','') */ * from information_schema.inspection_result.
 	// - TIME_RANGE          => model.HintTimeRange
+	// - READ_FROM_STORAGE   => model.CIStr
+	// - USE_TOJA            => bool
 	HintData interface{}
 	// QBName is the default effective query block of this hint.
-	QBName    model.CIStr
-	Tables    []HintTable
-	Indexes   []model.CIStr
-	StoreType model.CIStr
-	HintFlag  bool
+	QBName  model.CIStr
+	Tables  []HintTable
+	Indexes []model.CIStr
 }
 
 // HintTimeRange is the payload of `TIME_RANGE` hint
@@ -2284,7 +2284,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteName(index.String())
 		}
 	case "use_toja", "enable_plan_cache":
-		if n.HintFlag {
+		if n.HintData.(bool) {
 			ctx.WritePlain("TRUE")
 		} else {
 			ctx.WritePlain("FALSE")
@@ -2294,7 +2294,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	case "memory_quota":
 		ctx.WritePlainf("%d MB", n.HintData.(int64)/1024/1024)
 	case "read_from_storage":
-		ctx.WriteKeyWord(n.StoreType.String())
+		ctx.WriteKeyWord(n.HintData.(model.CIStr).String())
 		for i, table := range n.Tables {
 			if i == 0 {
 				ctx.WritePlain("[")

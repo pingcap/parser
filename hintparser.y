@@ -325,7 +325,7 @@ HintStorageTypeAndTable:
 	HintStorageType '[' HintTableList ']'
 	{
 		h := $3
-		h.StoreType = model.NewCIStr($1)
+		h.HintData = model.NewCIStr($1)
 		$$ = h
 	}
 
@@ -460,11 +460,11 @@ UnitOfBytes:
 HintTrueOrFalse:
 	"TRUE"
 	{
-		$$ = &ast.TableOptimizerHint{HintFlag: true}
+		$$ = &ast.TableOptimizerHint{HintData: true}
 	}
 |	"FALSE"
 	{
-		$$ = &ast.TableOptimizerHint{HintFlag: false}
+		$$ = &ast.TableOptimizerHint{HintData: false}
 	}
 
 JoinOrderOptimizerHintName:
