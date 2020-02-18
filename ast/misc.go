@@ -2306,6 +2306,11 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 				ctx.WritePlain(", ")
 			}
 		}
+	case "time_range":
+		hintData := n.HintData.(HintTimeRange)
+		ctx.WriteString(hintData.From)
+		ctx.WritePlain(", ")
+		ctx.WriteString(hintData.To)
 	}
 	ctx.WritePlain(")")
 	return nil
