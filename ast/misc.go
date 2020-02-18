@@ -2209,7 +2209,7 @@ type TableOptimizerHint struct {
 	//
 	// Time Range is used to hint the time range of inspection tables
 	// e.g: select /*+ time_range('','') */ * from information_schema.inspection_result.
-	// - TIME_RANGE          => model.HintTimeRange
+	// - TIME_RANGE          => ast.HintTimeRange
 	// - READ_FROM_STORAGE   => model.CIStr
 	// - USE_TOJA            => bool
 	HintData interface{}
