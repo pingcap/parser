@@ -6640,13 +6640,13 @@ SelectStmtFromDualTable:
 	}
 
 SelectStmtFromTable:
-	SelectStmtBasic "FROM" TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional SelectStmtIntoOption
+	SelectStmtBasic "FROM" TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
 	{
 		st := $1.(*ast.SelectStmt)
 		st.From = $3.(*ast.TableRefsClause)
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
-			lastEnd := parser.endOffset(&yyS[yypt-6])
+			lastEnd := parser.endOffset(&yyS[yypt-5])
 			lastField.SetText(parser.src[lastField.Offset:lastEnd])
 		}
 		if $4 != nil {
@@ -6661,14 +6661,11 @@ SelectStmtFromTable:
 		if $7 != nil {
 			st.WindowSpecs = ($7.([]ast.WindowSpec))
 		}
-		if $8 != nil {
-			st.SelectIntoOpt = $8.(*ast.SelectIntoOption)
-		}
 		$$ = st
 	}
 
 SelectStmt:
-	SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
+	SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
 		st.LockTp = $4.(ast.SelectLockType)
@@ -6677,10 +6674,12 @@ SelectStmt:
 			src := parser.src
 			var lastEnd int
 			if $2 != nil {
-				lastEnd = yyS[yypt-2].offset - 1
+				lastEnd = yyS[yypt-3].offset - 1
 			} else if $3 != nil {
-				lastEnd = yyS[yypt-1].offset - 1
+				lastEnd = yyS[yypt-2].offset - 1
 			} else if $4 != ast.SelectLockNone {
+				lastEnd = yyS[yypt-1].offset - 1
+			} else if $5 != nil {
 				lastEnd = yyS[yypt].offset - 1
 			} else {
 				lastEnd = len(src)
@@ -6696,9 +6695,12 @@ SelectStmt:
 		if $3 != nil {
 			st.Limit = $3.(*ast.Limit)
 		}
+		if $5 != nil {
+			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
+		}
 		$$ = st
 	}
-|	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt
+|	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
 		if $2 != nil {
@@ -6708,9 +6710,12 @@ SelectStmt:
 			st.Limit = $3.(*ast.Limit)
 		}
 		st.LockTp = $4.(ast.SelectLockType)
+		if $5 != nil {
+			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
+		}
 		$$ = st
 	}
-|	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt
+|	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
 		st.LockTp = $4.(ast.SelectLockType)
@@ -6719,6 +6724,9 @@ SelectStmt:
 		}
 		if $3 != nil {
 			st.Limit = $3.(*ast.Limit)
+		}
+		if $5 != nil {
+			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
 		$$ = st
 	}
