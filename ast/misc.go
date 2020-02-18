@@ -2199,7 +2199,7 @@ type TableOptimizerHint struct {
 	// It allows only table name or alias (if table has an alias)
 	HintName model.CIStr
 	// HintData is the payload of the hint. The actual type of this field
-	// is defined differently as according `HintName. Define as following:
+	// is defined differently as according `HintName`. Define as following:
 	//
 	// Statement Execution Time Optimizer Hints
 	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
