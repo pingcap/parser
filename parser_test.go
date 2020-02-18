@@ -3214,7 +3214,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 		hints = selectStmt.TableHints
 		c.Assert(len(hints), Equals, 1)
 		c.Assert(hints[0].HintName.L, Equals, "max_execution_time", Commentf("case", i))
-		c.Assert(hints[0].MaxExecutionTime, Equals, uint64(1000))
+		c.Assert(hints[0].HintData.(uint64), Equals, uint64(1000))
 	}
 
 	// Test USE_INDEX_MERGE
@@ -3305,9 +3305,9 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "query_type")
-	c.Assert(hints[0].QueryType.L, Equals, "olap")
+	c.Assert(hints[0].HintData.(model.CIStr).L, Equals, "olap")
 	c.Assert(hints[1].HintName.L, Equals, "query_type")
-	c.Assert(hints[1].QueryType.L, Equals, "oltp")
+	c.Assert(hints[1].HintData.(model.CIStr).L, Equals, "oltp")
 
 	// Test MEMORY_QUOTA
 	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
@@ -3317,9 +3317,9 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
+	c.Assert(hints[0].HintData.(int64), Equals, int64(1024*1024))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
+	c.Assert(hints[1].HintData.(int64), Equals, int64(1024*1024*1024))
 
 	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(18446744073709551612 MB), memory_quota(8689934592 GB) */ 1", "", "")
 	c.Assert(err, IsNil)

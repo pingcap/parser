@@ -2198,17 +2198,31 @@ type TableOptimizerHint struct {
 	// Table hints has no schema info
 	// It allows only table name or alias (if table has an alias)
 	HintName model.CIStr
+	// HintData is the payload of the hint. The actual type of this field
+	// is defined differently as according `HintName. Define as following:
+	//
+	// Statement Execution Time Optimizer Hints
+	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
+	// - MAX_EXECUTION_TIME  => uint64
+	// - MEMORY_QUOTA        => int64
+	// - QUERY_TYPE          => model.CIStr
+	//
+	// Time Range is used to hint the time range of inspection tables
+	// e.g: select /*+ time_range('','') */ * from information_schema.inspection_result.
+	// - TIME_RANGE          => model.HintTimeRange
+	HintData interface{}
 	// QBName is the default effective query block of this hint.
 	QBName    model.CIStr
 	Tables    []HintTable
 	Indexes   []model.CIStr
 	StoreType model.CIStr
-	// Statement Execution Time Optimizer Hints
-	// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html#optimizer-hints-execution-time
-	MaxExecutionTime uint64
-	MemoryQuota      int64
-	QueryType        model.CIStr
-	HintFlag         bool
+	HintFlag  bool
+}
+
+// HintTimeRange is the payload of `TIME_RANGE` hint
+type HintTimeRange struct {
+	From string
+	To   string
 }
 
 // HintTable is table in the hint. It may have query block info.
@@ -2252,7 +2266,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	// Hints with args except query block.
 	switch n.HintName.L {
 	case "max_execution_time":
-		ctx.WritePlainf("%d", n.MaxExecutionTime)
+		ctx.WritePlainf("%d", n.HintData.(uint64))
 	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "sm_join", "inl_join":
 		for i, table := range n.Tables {
 			if i != 0 {
@@ -2276,9 +2290,9 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlain("FALSE")
 		}
 	case "query_type":
-		ctx.WriteKeyWord(n.QueryType.String())
+		ctx.WriteKeyWord(n.HintData.(model.CIStr).String())
 	case "memory_quota":
-		ctx.WritePlainf("%d MB", n.MemoryQuota/1024/1024)
+		ctx.WritePlainf("%d MB", n.HintData.(int64)/1024/1024)
 	case "read_from_storage":
 		ctx.WriteKeyWord(n.StoreType.String())
 		for i, table := range n.Tables {

@@ -41,12 +41,12 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			input: "MEMORY_QUOTA(8 MB) MEMORY_QUOTA(6 GB)",
 			output: []*ast.TableOptimizerHint{
 				{
-					HintName:    model.NewCIStr("MEMORY_QUOTA"),
-					MemoryQuota: int64(8 * 1024 * 1024),
+					HintName: model.NewCIStr("MEMORY_QUOTA"),
+					HintData: int64(8 * 1024 * 1024),
 				},
 				{
-					HintName:    model.NewCIStr("MEMORY_QUOTA"),
-					MemoryQuota: int64(6 * 1024 * 1024 * 1024),
+					HintName: model.NewCIStr("MEMORY_QUOTA"),
+					HintData: int64(6 * 1024 * 1024 * 1024),
 				},
 			},
 		},
@@ -187,13 +187,13 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 					HintFlag: false,
 				},
 				{
-					HintName:  model.NewCIStr("QUERY_TYPE"),
-					QBName:    model.NewCIStr("qb1"),
-					QueryType: model.NewCIStr("OLAP"),
+					HintName: model.NewCIStr("QUERY_TYPE"),
+					QBName:   model.NewCIStr("qb1"),
+					HintData: model.NewCIStr("OLAP"),
 				},
 				{
-					HintName:  model.NewCIStr("QUERY_TYPE"),
-					QueryType: model.NewCIStr("OLTP"),
+					HintName: model.NewCIStr("QUERY_TYPE"),
+					HintData: model.NewCIStr("OLTP"),
 				},
 				{
 					HintName: model.NewCIStr("NO_INDEX_MERGE"),
@@ -253,6 +253,30 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			errs: []string{
 				`.*integer value is out of range.*`,
 				`.*Optimizer hint syntax error at line 1 .*`,
+			},
+		},
+		{
+			input: "time_range('2020-02-20 12:12:12',456)",
+			errs: []string{
+				`.*Optimizer hint syntax error at line 1 .*`,
+			},
+		},
+		{
+			input: "time_range(456,'2020-02-20 12:12:12')",
+			errs: []string{
+				`.*Optimizer hint syntax error at line 1 .*`,
+			},
+		},
+		{
+			input: "TIME_RANGE('2020-02-20 12:12:12','2020-02-20 13:12:12')",
+			output: []*ast.TableOptimizerHint{
+				{
+					HintName: model.NewCIStr("TIME_RANGE"),
+					HintData: ast.HintTimeRange{
+						From: "2020-02-20 12:12:12",
+						To:   "2020-02-20 13:12:12",
+					},
+				},
 			},
 		},
 	}
