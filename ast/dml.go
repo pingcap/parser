@@ -916,13 +916,6 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 		}
 	}
 
-	if n.SelectIntoOpt != nil {
-		ctx.WritePlain(" ")
-		if err := n.SelectIntoOpt.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SelectStmt.SelectIntoOpt")
-		}
-	}
-
 	switch n.LockTp {
 	case SelectLockInShareMode:
 		ctx.WriteKeyWord(" LOCK ")
@@ -930,6 +923,13 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	case SelectLockForUpdate, SelectLockForUpdateNoWait:
 		ctx.WritePlain(" ")
 		ctx.WriteKeyWord(n.LockTp.String())
+	}
+
+	if n.SelectIntoOpt != nil {
+		ctx.WritePlain(" ")
+		if err := n.SelectIntoOpt.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.SelectIntoOpt")
+		}
 	}
 	return nil
 }
