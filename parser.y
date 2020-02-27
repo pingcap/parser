@@ -2464,7 +2464,7 @@ CommitStmt:
 	}
 |	"COMMIT" CompletionTypeWithinTransaction
 	{
-		$$ = &ast.CommitStmt{CompletionType: uint8(0)}
+		$$ = &ast.CommitStmt{CompletionType: $2.(ast.CompletionType)}
 	}
 
 PrimaryOpt:
@@ -6612,29 +6612,37 @@ RollbackStmt:
 	}
 |	"ROLLBACK" CompletionTypeWithinTransaction
 	{
-		$$ = &ast.RollbackStmt{CompletionType: uint8(0)}
+		$$ = &ast.RollbackStmt{CompletionType: $2.(ast.CompletionType)}
 	}
 
 CompletionTypeWithinTransaction:
 	"AND" "CHAIN" "NO" "RELEASE"
 	{
-		$$ = uint8(1)
+		$$ = ast.CompletionTypeChain
 	}
 |	"AND" "NO" "CHAIN" "RELEASE"
 	{
-		$$ = uint8(2)
+		$$ = ast.CompletionTypeRelease
 	}
 |	"AND" "NO" "CHAIN" "NO" "RELEASE"
 	{
-		$$ = uint8(0)
+		$$ = ast.CompletionTypeDefault
+	}
+|	"AND" "CHAIN"
+	{
+		$$ = ast.CompletionTypeChain
+	}
+|	"AND" "NO" "CHAIN"
+	{
+		$$ = ast.CompletionTypeDefault
 	}
 |	"RELEASE"
 	{
-		$$ = uint8(2)
+		$$ = ast.CompletionTypeRelease
 	}
 |	"NO" "RELEASE"
 	{
-		$$ = uint8(0)
+		$$ = ast.CompletionTypeDefault
 	}
 
 ShutdownStmt:
