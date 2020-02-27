@@ -463,6 +463,8 @@ func (n *BinlogStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type CommitStmt struct {
 	stmtNode
+	// CompletionType overwrites system variable `completion_type` within transaction
+	CompletionType uint8
 }
 
 // Restore implements Node interface.
@@ -485,6 +487,8 @@ func (n *CommitStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type RollbackStmt struct {
 	stmtNode
+	// CompletionType overwrites system variable `completion_type` within transaction
+	CompletionType uint8
 }
 
 // Restore implements Node interface.

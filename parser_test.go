@@ -474,6 +474,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"START TRANSACTION", true, "START TRANSACTION"},
 		// 45
 		{"COMMIT", true, "COMMIT"},
+		{"COMMIT AND NO CHAIN NO RELEASE", true, "COMMIT"},
+		{"COMMIT AND NO CHAIN RELEASE", true, "COMMIT"},
+		{"COMMIT AND CHAIN NO RELEASE", true, "COMMIT"},
+		{"COMMIT AND CHAIN RELEASE", false, ""},
 		{"ROLLBACK", true, "ROLLBACK"},
 		{`BEGIN;
 			INSERT INTO foo VALUES (42, 3.14);

@@ -85,6 +85,7 @@ import (
 	by                "BY"
 	cascade           "CASCADE"
 	caseKwd           "CASE"
+	chain             "CHAIN"
 	change            "CHANGE"
 	character         "CHARACTER"
 	charType          "CHAR"
@@ -221,6 +222,7 @@ import (
 	realType          "REAL"
 	references        "REFERENCES"
 	regexpKwd         "REGEXP"
+	release           "RELEASE"
 	rename            "RENAME"
 	repeat            "REPEAT"
 	replace           "REPLACE"
@@ -836,6 +838,7 @@ import (
 	ColumnOptionList                       "column definition option list"
 	VirtualOrStored                        "indicate generated column is stored or not"
 	ColumnOptionListOpt                    "optional column definition option list"
+	CompletionTypeWithinTransaction        "overwrite system variable completion_type with transaction"
 	ConnectionOption                       "single connection options"
 	ConnectionOptionList                   "connection options for CREATE USER statement"
 	ConnectionOptions                      "optional connection options for CREATE USER statement"
@@ -2458,6 +2461,10 @@ CommitStmt:
 	"COMMIT"
 	{
 		$$ = &ast.CommitStmt{}
+	}
+|	"COMMIT" CompletionTypeWithinTransaction
+	{
+		$$ = &ast.CommitStmt{CompletionType: uint8(0)}
 	}
 
 PrimaryOpt:
@@ -6602,6 +6609,32 @@ RollbackStmt:
 	"ROLLBACK"
 	{
 		$$ = &ast.RollbackStmt{}
+	}
+|	"ROLLBACK" CompletionTypeWithinTransaction
+	{
+		$$ = &ast.RollbackStmt{CompletionType: uint8(0)}
+	}
+
+CompletionTypeWithinTransaction:
+	"AND" "CHAIN" "NO" "RELEASE"
+	{
+		$$ = uint8(1)
+	}
+|	"AND" "NO" "CHAIN" "RELEASE"
+	{
+		$$ = uint8(2)
+	}
+|	"AND" "NO" "CHAIN" "NO" "RELEASE"
+	{
+		$$ = uint8(0)
+	}
+|	"RELEASE"
+	{
+		$$ = uint8(2)
+	}
+|	"NO" "RELEASE"
+	{
+		$$ = uint8(0)
 	}
 
 ShutdownStmt:
