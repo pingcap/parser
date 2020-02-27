@@ -469,6 +469,18 @@ const (
 	CompletionTypeRelease
 )
 
+func (n CompletionType) Restore(ctx *format.RestoreCtx) error {
+	switch n {
+	case CompletionTypeDefault:
+		break
+	case CompletionTypeChain:
+		ctx.WriteKeyWord(" AND CHAIN")
+	case CompletionTypeRelease:
+		ctx.WriteKeyWord(" RELEASE")
+	}
+	return nil
+}
+
 // CommitStmt is a statement to commit the current transaction.
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type CommitStmt struct {
@@ -480,13 +492,8 @@ type CommitStmt struct {
 // Restore implements Node interface.
 func (n *CommitStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("COMMIT")
-	switch n.CompletionType {
-	case CompletionTypeDefault:
-		break
-	case CompletionTypeChain:
-		ctx.WriteKeyWord(" AND CHAIN")
-	case CompletionTypeRelease:
-		ctx.WriteKeyWord(" RELEASE")
+	if err := n.CompletionType.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore CommitStmt.CompletionType")
 	}
 	return nil
 }
@@ -512,6 +519,9 @@ type RollbackStmt struct {
 // Restore implements Node interface.
 func (n *RollbackStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("ROLLBACK")
+	if err := n.CompletionType.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore RollbackStmt.CompletionType")
+	}
 	return nil
 }
 
