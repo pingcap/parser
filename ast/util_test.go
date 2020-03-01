@@ -71,6 +71,17 @@ func (s *testCacheableSuite) TestCacheable(c *C) {
 	}
 	c.Assert(IsReadOnly(stmt), IsTrue)
 
+	stmt = &UnionStmt{}
+	c.Assert(IsReadOnly(stmt), IsTrue)
+
+	stmt = &UnionStmt{}
+	c.Assert(IsReadOnly(stmt), IsTrue)
+
+	stmt = &ShowStmt{}
+	c.Assert(IsReadOnly(stmt), IsTrue)
+
+	stmt = &ShowStmt{}
+	c.Assert(IsReadOnly(stmt), IsTrue)
 }
 
 // CleanNodeText set the text of node and all child node empty.
