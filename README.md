@@ -5,7 +5,7 @@
 [![GoDoc](https://godoc.org/github.com/pingcap/parser?status.svg)](https://godoc.org/github.com/pingcap/parser)
 [![codecov](https://codecov.io/gh/pingcap/parser/branch/master/graph/badge.svg)](https://codecov.io/gh/pingcap/parser)
 
-The goal of this project is to build a Golang parser that is fully compatible with syntax, easy to extend, and high performance. Currently, features supported by parser are as follows:
+The goal of this project is to build a Golang parser that is fully compatible with MySQL syntax, easy to extend, and high performance. Currently, features supported by parser are as follows:
 
 - Highly compatible with MySQL: it supports almost all features of MySQL. For the complete details, see [parser.y](https://github.com/pingcap/parser/blob/master/parser.y) and [hintparser.y](https://github.com/pingcap/parser/blob/master/hintparser.y).
 - Extensible: adding a new syntax requires only a few lines of Yacc and Golang code changes. As an example, see [PR-680](https://github.com/pingcap/parser/pull/680/files).
