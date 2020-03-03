@@ -733,6 +733,10 @@ AAAAAAAAAAAA5gm5Mg==
 		// for transaction mode
 		{"begin pessimistic", true, "BEGIN PESSIMISTIC"},
 		{"begin optimistic", true, "BEGIN OPTIMISTIC"},
+
+		// for alter instance.
+		{"ALTER INSTANCE RELOAD TLS", true, "ALTER INSTANCE RELOAD TLS"},
+		{"ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR", true, "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"},
 	}
 	s.RunTest(c, table)
 }
