@@ -466,6 +466,9 @@ func DefaultTypeForValue(value interface{}, tp *types.FieldType, charset string,
 		tp.Flen = len(x)
 		tp.Decimal = types.UnspecifiedLength
 		tp.Charset, tp.Collate = charset, collate
+		if mysql.HasBinaryFlag(tp.Flag) {
+			SetBinChsClnFlag(tp)
+		}
 	case float32:
 		tp.Tp = mysql.TypeFloat
 		s := strconv.FormatFloat(float64(x), 'f', -1, 32)
