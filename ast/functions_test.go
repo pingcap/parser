@@ -26,7 +26,7 @@ type testFunctionsSuite struct {
 }
 
 func (ts *testFunctionsSuite) TestFunctionsVisitorCover(c *C) {
-	valueExpr := NewValueExpr(42)
+	valueExpr := NewValueExpr(42, "utf8mb4", "utf8mb4_bin")
 	stmts := []Node{
 		&AggregateFuncExpr{Args: []ExprNode{valueExpr}},
 		&FuncCallExpr{Args: []ExprNode{valueExpr}},

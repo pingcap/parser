@@ -44,7 +44,7 @@ func (visitor1) Enter(in Node) (Node, bool) {
 }
 
 func (ts *testMiscSuite) TestMiscVisitorCover(c *C) {
-	valueExpr := NewValueExpr(42)
+	valueExpr := NewValueExpr(42, "utf8mb4", "utf8mb4_bin")
 	stmts := []Node{
 		&AdminStmt{},
 		&AlterUserStmt{},

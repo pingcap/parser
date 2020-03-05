@@ -88,7 +88,7 @@ func (tc *testExpressionsSuite) TestExpresionsVisitorCover(c *C) {
 			{&PositionExpr{}, 0, 0},
 			{&RowExpr{Values: []ExprNode{ce, ce}}, 2, 2},
 			{&UnaryOperationExpr{V: ce}, 1, 1},
-			{NewValueExpr(0), 0, 0},
+			{NewValueExpr(0, "utf8mb4", "utf8mb4_bin"), 0, 0},
 			{&ValuesExpr{Column: &ColumnNameExpr{Name: &ColumnName{}}}, 0, 0},
 			{&VariableExpr{Value: ce}, 1, 1},
 		}
