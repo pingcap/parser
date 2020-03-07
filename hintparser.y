@@ -486,6 +486,7 @@ UnsupportedTableLevelOptimizerHintName:
 
 SupportedTableLevelOptimizerHintName:
 	"MERGE_JOIN"
+|	"BC_JOIN"
 |	"INL_JOIN"
 |	"INL_HASH_JOIN"
 |	"SWAP_JOIN_INPUTS"
@@ -582,6 +583,7 @@ Identifier:
 |	"READ_CONSISTENT_REPLICA"
 |	"READ_FROM_STORAGE"
 |	"MERGE_JOIN"
+|	"BC_JOIN"
 |	"STREAM_AGG"
 |	"SWAP_JOIN_INPUTS"
 |	"USE_INDEX_MERGE"
