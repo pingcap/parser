@@ -78,7 +78,7 @@ import (
 
 	/* TiDB hint names */
 	hintAggToCop              "AGG_TO_COP"
-	hintEnablePlanCache       "ENABLE_PLAN_CACHE"
+	hintIgnorePlanCache       "IGNORE_PLAN_CACHE"
 	hintHashAgg               "HASH_AGG"
 	hintIgnoreIndex           "IGNORE_INDEX"
 	hintInlHashJoin           "INL_HASH_JOIN"
@@ -89,7 +89,7 @@ import (
 	hintQueryType             "QUERY_TYPE"
 	hintReadConsistentReplica "READ_CONSISTENT_REPLICA"
 	hintReadFromStorage       "READ_FROM_STORAGE"
-	hintSMJoin                "SM_JOIN"
+	hintSMJoin                "MERGE_JOIN"
 	hintBCJoin                "BC_JOIN"
 	hintStreamAgg             "STREAM_AGG"
 	hintSwapJoinInputs        "SWAP_JOIN_INPUTS"
@@ -98,6 +98,7 @@ import (
 	hintUsePlanCache          "USE_PLAN_CACHE"
 	hintUseToja               "USE_TOJA"
 	hintTimeRange             "TIME_RANGE"
+	hintUseCascades           "USE_CASCADES"
 
 	/* Other keywords */
 	hintOLAP            "OLAP"
@@ -484,7 +485,7 @@ UnsupportedTableLevelOptimizerHintName:
 |	"NO_MERGE"
 
 SupportedTableLevelOptimizerHintName:
-	"SM_JOIN"
+	"MERGE_JOIN"
 |	"BC_JOIN"
 |	"INL_JOIN"
 |	"INL_HASH_JOIN"
@@ -520,7 +521,7 @@ SubqueryStrategy:
 
 BooleanHintName:
 	"USE_TOJA"
-|	"ENABLE_PLAN_CACHE"
+|	"USE_CASCADES"
 
 NullaryHintName:
 	"USE_PLAN_CACHE"
@@ -529,6 +530,7 @@ NullaryHintName:
 |	"AGG_TO_COP"
 |	"NO_INDEX_MERGE"
 |	"READ_CONSISTENT_REPLICA"
+|	"IGNORE_PLAN_CACHE"
 
 HintQueryType:
 	"OLAP"
@@ -569,7 +571,7 @@ Identifier:
 |	"QB_NAME"
 /* TiDB hint names */
 |	"AGG_TO_COP"
-|	"ENABLE_PLAN_CACHE"
+|	"IGNORE_PLAN_CACHE"
 |	"HASH_AGG"
 |	"IGNORE_INDEX"
 |	"INL_HASH_JOIN"
@@ -580,7 +582,7 @@ Identifier:
 |	"QUERY_TYPE"
 |	"READ_CONSISTENT_REPLICA"
 |	"READ_FROM_STORAGE"
-|	"SM_JOIN"
+|	"MERGE_JOIN"
 |	"BC_JOIN"
 |	"STREAM_AGG"
 |	"SWAP_JOIN_INPUTS"
@@ -589,6 +591,7 @@ Identifier:
 |	"USE_PLAN_CACHE"
 |	"USE_TOJA"
 |	"TIME_RANGE"
+|	"USE_CASCADES"
 /* other keywords */
 |	"OLAP"
 |	"OLTP"
