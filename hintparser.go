@@ -104,6 +104,7 @@ const (
 	hintUseIndexMerge         = 57391
 	hintUsePlanCache          = 57393
 	hintUseToja               = 57394
+	hintBCJoin                = 57395
 
 	yyhintMaxDepth = 200
 	yyhintTabOfs   = -156
@@ -258,6 +259,7 @@ var (
 		"hintSetVar",
 		"hintSkipScan",
 		"hintSMJoin",
+		"hintBCJoin",
 		"hintStreamAgg",
 		"hintSwapJoinInputs",
 		"hintTimeRange",

@@ -90,6 +90,7 @@ import (
 	hintReadConsistentReplica "READ_CONSISTENT_REPLICA"
 	hintReadFromStorage       "READ_FROM_STORAGE"
 	hintSMJoin                "SM_JOIN"
+	hintBCJoin                "BC_JOIN"
 	hintStreamAgg             "STREAM_AGG"
 	hintSwapJoinInputs        "SWAP_JOIN_INPUTS"
 	hintUseIndexMerge         "USE_INDEX_MERGE"
