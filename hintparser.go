@@ -39,16 +39,17 @@ type yyhintXError struct {
 }
 
 const (
-	yyhintDefault             = 57409
+	yyhintDefault             = 57410
 	yyhintEOFCode             = 57344
 	yyhintErrCode             = 57345
 	hintAggToCop              = 57376
+	hintBCJoin                = 57389
 	hintBKA                   = 57354
 	hintBNL                   = 57356
-	hintDupsWeedOut           = 57405
-	hintFalse                 = 57401
-	hintFirstMatch            = 57406
-	hintGB                    = 57404
+	hintDupsWeedOut           = 57406
+	hintFalse                 = 57402
+	hintFirstMatch            = 57407
+	hintGB                    = 57405
 	hintHashAgg               = 57378
 	hintHashJoin              = 57358
 	hintIdentifier            = 57347
@@ -63,10 +64,10 @@ const (
 	hintJoinOrder             = 57351
 	hintJoinPrefix            = 57352
 	hintJoinSuffix            = 57353
-	hintLooseScan             = 57407
-	hintMB                    = 57403
+	hintLooseScan             = 57408
+	hintMB                    = 57404
 	hintMRR                   = 57364
-	hintMaterialization       = 57408
+	hintMaterialization       = 57409
 	hintMaxExecutionTime      = 57372
 	hintMemoryQuota           = 57383
 	hintMerge                 = 57360
@@ -81,8 +82,8 @@ const (
 	hintNoSemijoin            = 57371
 	hintNoSkipScan            = 57369
 	hintNoSwapJoinInputs      = 57384
-	hintOLAP                  = 57397
-	hintOLTP                  = 57398
+	hintOLAP                  = 57398
+	hintOLTP                  = 57399
 	hintQBName                = 57375
 	hintQueryType             = 57385
 	hintReadConsistentReplica = 57386
@@ -93,18 +94,18 @@ const (
 	hintSetVar                = 57373
 	hintSingleAtIdentifier    = 57348
 	hintSkipScan              = 57368
-	hintStreamAgg             = 57389
+	hintStreamAgg             = 57390
 	hintStringLit             = 57349
-	hintSwapJoinInputs        = 57390
-	hintTiFlash               = 57400
-	hintTiKV                  = 57399
-	hintTimeRange             = 57395
-	hintTrue                  = 57402
-	hintUseCascades           = 57396
-	hintUseIndex              = 57392
-	hintUseIndexMerge         = 57391
-	hintUsePlanCache          = 57393
-	hintUseToja               = 57394
+	hintSwapJoinInputs        = 57391
+	hintTiFlash               = 57401
+	hintTiKV                  = 57400
+	hintTimeRange             = 57396
+	hintTrue                  = 57403
+	hintUseCascades           = 57397
+	hintUseIndex              = 57393
+	hintUseIndexMerge         = 57392
+	hintUsePlanCache          = 57394
+	hintUseToja               = 57395
 
 	yyhintMaxDepth = 200
 	yyhintTabOfs   = -158
@@ -153,26 +154,26 @@ var (
 		57373: 38,  // hintSetVar (108x)
 		57368: 39,  // hintSkipScan (108x)
 		57388: 40,  // hintSMJoin (108x)
-		57389: 41,  // hintStreamAgg (108x)
-		57390: 42,  // hintSwapJoinInputs (108x)
-		57395: 43,  // hintTimeRange (108x)
-		57396: 44,  // hintUseCascades (108x)
-		57392: 45,  // hintUseIndex (108x)
-		57391: 46,  // hintUseIndexMerge (108x)
-		57393: 47,  // hintUsePlanCache (108x)
-		57394: 48,  // hintUseToja (108x)
-		57405: 49,  // hintDupsWeedOut (87x)
-		57406: 50,  // hintFirstMatch (87x)
-		57407: 51,  // hintLooseScan (87x)
-		57408: 52,  // hintMaterialization (87x)
-		57400: 53,  // hintTiFlash (87x)
-		57399: 54,  // hintTiKV (87x)
-		57401: 55,  // hintFalse (86x)
-		57397: 56,  // hintOLAP (86x)
-		57398: 57,  // hintOLTP (86x)
-		57402: 58,  // hintTrue (86x)
-		57404: 59,  // hintGB (85x)
-		57403: 60,  // hintMB (85x)
+		57390: 41,  // hintStreamAgg (108x)
+		57391: 42,  // hintSwapJoinInputs (108x)
+		57396: 43,  // hintTimeRange (108x)
+		57397: 44,  // hintUseCascades (108x)
+		57393: 45,  // hintUseIndex (108x)
+		57392: 46,  // hintUseIndexMerge (108x)
+		57394: 47,  // hintUsePlanCache (108x)
+		57395: 48,  // hintUseToja (108x)
+		57406: 49,  // hintDupsWeedOut (87x)
+		57407: 50,  // hintFirstMatch (87x)
+		57408: 51,  // hintLooseScan (87x)
+		57409: 52,  // hintMaterialization (87x)
+		57401: 53,  // hintTiFlash (87x)
+		57400: 54,  // hintTiKV (87x)
+		57402: 55,  // hintFalse (86x)
+		57398: 56,  // hintOLAP (86x)
+		57399: 57,  // hintOLTP (86x)
+		57403: 58,  // hintTrue (86x)
+		57405: 59,  // hintGB (85x)
+		57404: 60,  // hintMB (85x)
 		57347: 61,  // hintIdentifier (84x)
 		57348: 62,  // hintSingleAtIdentifier (76x)
 		93:    63,  // ']' (68x)
@@ -180,42 +181,43 @@ var (
 		61:    65,  // '=' (61x)
 		40:    66,  // '(' (55x)
 		57344: 67,  // $end (23x)
-		57427: 68,  // QueryBlockOpt (16x)
-		57421: 69,  // Identifier (11x)
+		57428: 68,  // QueryBlockOpt (16x)
+		57422: 69,  // Identifier (11x)
 		57346: 70,  // hintIntLit (6x)
 		57349: 71,  // hintStringLit (5x)
-		57417: 72,  // HintTable (4x)
-		57418: 73,  // HintTableList (4x)
+		57418: 72,  // HintTable (4x)
+		57419: 73,  // HintTableList (4x)
 		91:    74,  // '[' (3x)
-		57411: 75,  // CommaOpt (3x)
-		57410: 76,  // BooleanHintName (2x)
-		57412: 77,  // HintIndexList (2x)
-		57414: 78,  // HintStorageType (2x)
-		57415: 79,  // HintStorageTypeAndTable (2x)
-		57419: 80,  // HintTableListOpt (2x)
-		57424: 81,  // JoinOrderOptimizerHintName (2x)
-		57425: 82,  // NullaryHintName (2x)
-		57429: 83,  // StorageOptimizerHintOpt (2x)
-		57430: 84,  // SubqueryOptimizerHintName (2x)
-		57433: 85,  // SubqueryStrategy (2x)
-		57434: 86,  // SupportedIndexLevelOptimizerHintName (2x)
-		57435: 87,  // SupportedTableLevelOptimizerHintName (2x)
-		57436: 88,  // TableOptimizerHintOpt (2x)
-		57438: 89,  // UnsupportedIndexLevelOptimizerHintName (2x)
-		57439: 90,  // UnsupportedTableLevelOptimizerHintName (2x)
-		57413: 91,  // HintQueryType (1x)
-		57416: 92,  // HintStorageTypeAndTableList (1x)
-		57420: 93,  // HintTrueOrFalse (1x)
-		57422: 94,  // IndexNameList (1x)
-		57423: 95,  // IndexNameListOpt (1x)
-		57426: 96,  // OptimizerHintList (1x)
-		57428: 97,  // Start (1x)
-		57431: 98,  // SubqueryStrategies (1x)
-		57432: 99,  // SubqueryStrategiesOpt (1x)
-		57437: 100, // UnitOfBytes (1x)
-		57440: 101, // Value (1x)
-		57409: 102, // $default (0x)
+		57412: 75,  // CommaOpt (3x)
+		57411: 76,  // BooleanHintName (2x)
+		57413: 77,  // HintIndexList (2x)
+		57415: 78,  // HintStorageType (2x)
+		57416: 79,  // HintStorageTypeAndTable (2x)
+		57420: 80,  // HintTableListOpt (2x)
+		57425: 81,  // JoinOrderOptimizerHintName (2x)
+		57426: 82,  // NullaryHintName (2x)
+		57430: 83,  // StorageOptimizerHintOpt (2x)
+		57431: 84,  // SubqueryOptimizerHintName (2x)
+		57434: 85,  // SubqueryStrategy (2x)
+		57435: 86,  // SupportedIndexLevelOptimizerHintName (2x)
+		57436: 87,  // SupportedTableLevelOptimizerHintName (2x)
+		57437: 88,  // TableOptimizerHintOpt (2x)
+		57439: 89,  // UnsupportedIndexLevelOptimizerHintName (2x)
+		57440: 90,  // UnsupportedTableLevelOptimizerHintName (2x)
+		57414: 91,  // HintQueryType (1x)
+		57417: 92,  // HintStorageTypeAndTableList (1x)
+		57421: 93,  // HintTrueOrFalse (1x)
+		57423: 94,  // IndexNameList (1x)
+		57424: 95,  // IndexNameListOpt (1x)
+		57427: 96,  // OptimizerHintList (1x)
+		57429: 97,  // Start (1x)
+		57432: 98,  // SubqueryStrategies (1x)
+		57433: 99,  // SubqueryStrategiesOpt (1x)
+		57438: 100, // UnitOfBytes (1x)
+		57441: 101, // Value (1x)
+		57410: 102, // $default (0x)
 		57345: 103, // error (0x)
+		57389: 104, // hintBCJoin (0x)
 	}
 
 	yyhintSymNames = []string{
@@ -323,6 +325,7 @@ var (
 		"Value",
 		"$default",
 		"error",
+		"hintBCJoin",
 	}
 
 	yyhintReductions = []struct{ xsym, components int }{

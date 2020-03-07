@@ -857,6 +857,7 @@ var hintTokenMap = map[string]int{
 	"READ_CONSISTENT_REPLICA": hintReadConsistentReplica,
 	"READ_FROM_STORAGE":       hintReadFromStorage,
 	"MERGE_JOIN":              hintSMJoin,
+	"BC_JOIN":                 hintBCJoin,
 	"STREAM_AGG":              hintStreamAgg,
 	"SWAP_JOIN_INPUTS":        hintSwapJoinInputs,
 	"USE_INDEX_MERGE":         hintUseIndexMerge,
@@ -870,6 +871,7 @@ var hintTokenMap = map[string]int{
 	"TIDB_HJ":   hintHashJoin,
 	"TIDB_INLJ": hintInlJoin,
 	"TIDB_SMJ":  hintSMJoin,
+	"TIDB_BCJ":  hintBCJoin,
 
 	// Other keywords
 	"OLAP":            hintOLAP,
