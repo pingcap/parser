@@ -5000,3 +5000,19 @@ func (s *testParserSuite) TestIndexAdviseStmt(c *C) {
 
 	s.RunTest(c, table)
 }
+
+func (s *testParserSuite) TestExplainStmtText(c *C) {
+	parser := parser.New()
+	sqls := []string{
+		"explain select a from t",
+		"explain format = 'row' select a from t",
+		"explain format = traditional select a from t",
+		"explain analyze select a from t",
+	}
+	for _, sql := range sqls {
+		stmts, _, err := parser.Parse(sql, "", "")
+		c.Assert(err, IsNil)
+		explain := stmts[0].(*ast.ExplainStmt)
+		c.Assert(explain.Stmt.Text(), Equals, "select a from t")
+	}
+}

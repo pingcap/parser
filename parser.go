@@ -11688,6 +11688,8 @@ yynewstate:
 				Stmt:   yyS[yypt-0].statement,
 				Format: "row",
 			}
+			startOffset := parser.startOffset(&yyS[yypt])
+			yyS[yypt-0].statement.SetText(string(parser.src[startOffset:]))
 		}
 	case 400:
 		{
@@ -11709,6 +11711,8 @@ yynewstate:
 				Stmt:   yyS[yypt-0].statement,
 				Format: yyS[yypt-1].ident,
 			}
+			startOffset := parser.startOffset(&yyS[yypt])
+			yyS[yypt-0].statement.SetText(string(parser.src[startOffset:]))
 		}
 	case 403:
 		{
@@ -11723,6 +11727,8 @@ yynewstate:
 				Stmt:   yyS[yypt-0].statement,
 				Format: yyS[yypt-1].item.(string),
 			}
+			startOffset := parser.startOffset(&yyS[yypt])
+			yyS[yypt-0].statement.SetText(string(parser.src[startOffset:]))
 		}
 	case 405:
 		{
@@ -11731,6 +11737,8 @@ yynewstate:
 				Format:  "row",
 				Analyze: true,
 			}
+			startOffset := parser.startOffset(&yyS[yypt])
+			yyS[yypt-0].statement.SetText(string(parser.src[startOffset:]))
 		}
 	case 406:
 		{

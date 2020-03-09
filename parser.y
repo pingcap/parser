@@ -3974,6 +3974,8 @@ ExplainStmt:
 			Stmt:   $2,
 			Format: "row",
 		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		$2.SetText(string(parser.src[startOffset:]))
 	}
 |	ExplainSym "FOR" "CONNECTION" NUM
 	{
@@ -3995,6 +3997,8 @@ ExplainStmt:
 			Stmt:   $5,
 			Format: $4,
 		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		$5.SetText(string(parser.src[startOffset:]))
 	}
 |	ExplainSym "FORMAT" "=" ExplainFormatType "FOR" "CONNECTION" NUM
 	{
@@ -4009,6 +4013,8 @@ ExplainStmt:
 			Stmt:   $5,
 			Format: $4.(string),
 		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		$5.SetText(string(parser.src[startOffset:]))
 	}
 |	ExplainSym "ANALYZE" ExplainableStmt
 	{
@@ -4017,6 +4023,8 @@ ExplainStmt:
 			Format:  "row",
 			Analyze: true,
 		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		$3.SetText(string(parser.src[startOffset:]))
 	}
 
 ExplainFormatType:
