@@ -25,7 +25,7 @@ type CommentCodeVersion int
 
 const (
 	CommentCodeNoVersion  CommentCodeVersion = iota
-	CommentCodeAutoRandom CommentCodeVersion = 40000
+	CommentCodeAutoRandom CommentCodeVersion = 30100
 
 	CommentCodeCurrentVersion
 )
@@ -209,6 +209,7 @@ var tokenMap = map[string]int{
 	"CASCADED":                   cascaded,
 	"CASE":                       caseKwd,
 	"CAST":                       cast,
+	"CHAIN":                      chain,
 	"CHANGE":                     change,
 	"CHAR":                       charType,
 	"CHARACTER":                  character,
@@ -530,6 +531,7 @@ var tokenMap = map[string]int{
 	"REGEXP":                     regexpKwd,
 	"REGION":                     region,
 	"REGIONS":                    regions,
+	"RELEASE":                    release,
 	"RELOAD":                     reload,
 	"REMOVE":                     remove,
 	"RENAME":                     rename,

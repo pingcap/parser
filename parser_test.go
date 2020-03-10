@@ -474,7 +474,19 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"START TRANSACTION", true, "START TRANSACTION"},
 		// 45
 		{"COMMIT", true, "COMMIT"},
+		{"COMMIT AND NO CHAIN", true, "COMMIT"},
+		{"COMMIT NO RELEASE", true, "COMMIT"},
+		{"COMMIT AND NO CHAIN NO RELEASE", true, "COMMIT"},
+		{"COMMIT AND NO CHAIN RELEASE", true, "COMMIT RELEASE"},
+		{"COMMIT AND CHAIN NO RELEASE", true, "COMMIT AND CHAIN"},
+		{"COMMIT AND CHAIN RELEASE", false, ""},
 		{"ROLLBACK", true, "ROLLBACK"},
+		{"ROLLBACK AND NO CHAIN", true, "ROLLBACK"},
+		{"ROLLBACK NO RELEASE", true, "ROLLBACK"},
+		{"ROLLBACK AND NO CHAIN NO RELEASE", true, "ROLLBACK"},
+		{"ROLLBACK AND NO CHAIN RELEASE", true, "ROLLBACK RELEASE"},
+		{"ROLLBACK AND CHAIN NO RELEASE", true, "ROLLBACK AND CHAIN"},
+		{"ROLLBACK AND CHAIN RELEASE", false, ""},
 		{`BEGIN;
 			INSERT INTO foo VALUES (42, 3.14);
 			INSERT INTO foo VALUES (-1, 2.78);
@@ -1256,6 +1268,8 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"SELECT ROW_COUNT();", true, "SELECT ROW_COUNT()"},
 		{"SELECT SESSION_USER();", true, "SELECT SESSION_USER()"},
 		{"SELECT SYSTEM_USER();", true, "SELECT SYSTEM_USER()"},
+		{"SELECT FORMAT_BYTES(512);", true, "SELECT FORMAT_BYTES(512)"},
+		{"SELECT FORMAT_NANO_TIME(3501);", true, "SELECT FORMAT_NANO_TIME(3501)"},
 
 		{"SELECT SUBSTRING_INDEX('www.mysql.com', '.', 2);", true, "SELECT SUBSTRING_INDEX('www.mysql.com', '.', 2)"},
 		{"SELECT SUBSTRING_INDEX('www.mysql.com', '.', -2);", true, "SELECT SUBSTRING_INDEX('www.mysql.com', '.', -2)"},
@@ -1507,7 +1521,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select from_unixtime(1447430881.1234567, "%Y %D %M %h:%i:%s %x")`, true, "SELECT FROM_UNIXTIME(1447430881.1234567, '%Y %D %M %h:%i:%s %x')"},
 
 		// for issue 224
-		{`SELECT CAST('test collated returns' AS CHAR CHARACTER SET utf8) COLLATE utf8_bin;`, true, "SELECT CAST('test collated returns' AS CHAR CHARSET UTF8)"},
+		{`SELECT CAST('test collated returns' AS CHAR CHARACTER SET utf8) COLLATE utf8_bin;`, true, "SELECT CAST('test collated returns' AS CHAR CHARSET UTF8) COLLATE utf8_bin"},
 
 		// for string functions
 		// trim
@@ -3014,6 +3028,9 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("create table t (a text unicode, b mediumtext ascii, c int)", "", "")
 	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
+
+	_, _, err = parser.Parse("select 1 collate some_unknown_collation", "", "")
+	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: 'some_unknown_collation'")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
