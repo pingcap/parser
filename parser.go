@@ -13129,7 +13129,11 @@ yynewstate:
 		{
 			args := yyS[yypt-4].item.([]ast.ExprNode)
 			args = append(args, yyS[yypt-2].item.(ast.ExprNode))
-			parser.yyVAL.expr = &ast.AggregateFuncExpr{F: yyS[yypt-7].ident, Args: args, Distinct: yyS[yypt-5].item.(bool)}
+			if yyS[yypt-0].item != nil {
+				parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-7].ident, Args: args, Distinct: yyS[yypt-5].item.(bool), Spec: *(yyS[yypt-0].item.(*ast.WindowSpec))}
+			} else {
+				parser.yyVAL.expr = &ast.AggregateFuncExpr{F: yyS[yypt-7].ident, Args: args, Distinct: yyS[yypt-5].item.(bool)}
+			}
 		}
 	case 1093:
 		{
