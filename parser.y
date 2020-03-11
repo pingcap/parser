@@ -300,6 +300,7 @@ import (
 	any                     "ANY"
 	ascii                   "ASCII"
 	autoIncrement           "AUTO_INCREMENT"
+	autoIncrementCache      "AUTO_INCREMENT_CACHE"
 	autoRandom              "AUTO_RANDOM"
 	avg                     "AVG"
 	avgRowLength            "AVG_ROW_LENGTH"
@@ -4887,6 +4888,7 @@ UnReservedKeyword:
 |	"ADVISE"
 |	"ASCII"
 |	"AUTO_INCREMENT"
+|	"AUTO_INCREMENT_CACHE"
 |	"AFTER"
 |	"ALWAYS"
 |	"AVG"
@@ -9380,6 +9382,10 @@ TableOption:
 |	"AUTO_INCREMENT" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $3.(uint64)}
+	}
+|	"AUTO_INCREMENT_CACHE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrementCache, UintValue: $3.(uint64)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
