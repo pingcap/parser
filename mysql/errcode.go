@@ -1008,11 +1008,11 @@ const (
 	// ErrUnknownAllocatorType                = 8058
 	// ErrAutoRandReadFailed                  = 8059
 	// ErrInvalidIncrementAndOffset           = 8060
-	// ErrWarnOptimizerHintUnsupportedHint    = 8061
-	// ErrWarnOptimizerHintInvalidToken       = 8062
-	// ErrWarnMemoryQuotaOverflow             = 8063
-	// ErrWarnOptimizerHintParseError         = 8064
-	// ErrWarnOptimizerHintInvalidInteger     = 8065
+	ErrWarnOptimizerHintUnsupportedHint = 8061
+	ErrWarnOptimizerHintInvalidToken    = 8062
+	ErrWarnMemoryQuotaOverflow          = 8063
+	ErrWarnOptimizerHintParseError      = 8064
+	ErrWarnOptimizerHintInvalidInteger  = 8065
 	// ErrUnsupportedSecondArgumentType       = 8066
 	// ErrInvalidPluginID                     = 8101
 	// ErrInvalidPluginManifest               = 8102
