@@ -226,6 +226,7 @@ var tokenMap = map[string]int{
 	"COMPACT":                  compact,
 	"COMPRESSED":               compressed,
 	"COMPRESSION":              compression,
+	"CONFIG":                   config,
 	"CONNECTION":               connection,
 	"CONSISTENT":               consistent,
 	"CONSTRAINT":               constraint,
