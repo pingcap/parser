@@ -738,6 +738,7 @@ type IndexInfo struct {
 	Columns []*IndexColumn `json:"idx_cols"`   // Index columns.
 	Unique  bool           `json:"is_unique"`  // Whether the index is unique.
 	Primary bool           `json:"is_primary"` // Whether the index is primary key.
+	Invisible bool 	       `json:"is_invisible"` // Whether the index is invisible.
 	State   SchemaState    `json:"state"`
 	Comment string         `json:"comment"`    // Comment
 	Tp      IndexType      `json:"index_type"` // Index type: Btree, Hash or Rtree
