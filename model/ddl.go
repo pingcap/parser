@@ -116,6 +116,7 @@ var actionMap = map[ActionType]string{
 	ActionDropSequence:                  "drop sequence",
 	ActionAddColumns:                    "add multi-columns",
 	ActionDropColumns:                   "drop multi-columns",
+	ActionModifyTableAutoIncCache:       "modify auto increment cache",
 }
 
 // String return current ddl action in string
