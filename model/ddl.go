@@ -68,6 +68,7 @@ const (
 	ActionDropSequence                  ActionType = 36
 	ActionAddColumns                    ActionType = 37
 	ActionDropColumns                   ActionType = 38
+	ActionModifyTableAutoIncCache       ActionType = 39
 )
 
 const (
