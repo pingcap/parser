@@ -2210,6 +2210,7 @@ const (
 	BRIEOptionSendCreds
 	// backup options
 	BRIEOptionBackupTimeAgo
+	BRIEOptionBackupTS
 	BRIEOptionLastBackupTS
 	BRIEOptionLastBackupTSO
 	// restore options
@@ -2253,7 +2254,7 @@ func (kind BRIEOptionType) String() string {
 		return "CHECKSUM"
 	case BRIEOptionSendCreds:
 		return "SEND_CREDENTIALS_TO_TIKV"
-	case BRIEOptionBackupTimeAgo:
+	case BRIEOptionBackupTimeAgo, BRIEOptionBackupTS:
 		return "SNAPSHOT"
 	case BRIEOptionLastBackupTS:
 		return "INCREMENTAL UNTIL TIMESTAMP"

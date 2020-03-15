@@ -5043,6 +5043,7 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP 1234567890 TO 'noop://'", false, ""},
 
 		{"backup database * to 'noop://' rate_limit 500 MB/second snapshot 5 minute ago", true, "BACKUP DATABASE * TO 'noop://' RATE_LIMIT = 500 MB/SECOND SNAPSHOT = 300000000 MICROSECOND AGO"},
+		{"backup database * to 'noop://' snapshot = '1234567890'", true, "BACKUP DATABASE * TO 'noop://' SNAPSHOT = '1234567890'"},
 		{"restore table g from 'noop://' concurrency 40 checksum 0 online 1", true, "RESTORE TABLE `g` FROM 'noop://' CONCURRENCY = 40 CHECKSUM = 0 ONLINE = 1"},
 		{
 			// FIXME: should we really include the access key in the Restore() text???

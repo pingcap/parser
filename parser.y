@@ -4254,6 +4254,14 @@ BRIEOption:
 			UintValue: $3.(uint64) * uint64(unit),
 		}
 	}
+|	"SNAPSHOT" EqOpt stringLit
+	// not including this into BRIEStringOptionName to avoid shift/reduce conflict
+	{
+		$$ = &ast.BRIEOption{
+			Tp:       ast.BRIEOptionBackupTS,
+			StrValue: $3,
+		}
+	}
 |	"RATE_LIMIT" EqOpt LengthNum "MB" '/' "SECOND"
 	{
 		// TODO: check overflow?
