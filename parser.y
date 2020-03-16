@@ -7727,13 +7727,9 @@ SetStmt:
 		}
 		$$ = &ast.SetStmt{Variables: assigns}
 	}
-|	"SET" "CONFIG" "TIDB" VariableName EqOrAssignmentEq SetExpr
+|	"SET" "CONFIG" Identifier VariableName EqOrAssignmentEq SetExpr
 	{
-		$$ = &ast.SetConfigStmt{Type: "TiDB", Name: $4, Value: $6}
-	}
-|	"SET" "CONFIG" identifier VariableName EqOrAssignmentEq SetExpr
-	{
-		$$ = &ast.SetConfigStmt{Type: $3, Name: $4, Value: $6}
+		$$ = &ast.SetConfigStmt{Type: strings.ToLower($3), Name: $4, Value: $6}
 	}
 |	"SET" "CONFIG" stringLit VariableName EqOrAssignmentEq SetExpr
 	{

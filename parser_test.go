@@ -1026,10 +1026,10 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
 
 		// for set/show config
-		{"set config TIKV Log.Level='info'", true, "SET CONFIG TIKV Log.Level='info'"},
-		{"set config PD Log.Level='info'", true, "SET CONFIG PD Log.Level='info'"},
-		{"set config TIDB Log.Level='info'", true, "SET CONFIG TIDB Log.Level='info'"},
-		{"set config '127.0.0.1:3306' Log.Level='info'", true, "SET CONFIG '127.0.0.1:3306' Log.Level='info'"},
+		{"set config TIKV LOG.LEVEL='info'", true, "SET CONFIG TIKV LOG.LEVEL = 'info'"},
+		{"set config PD LOG.LEVEL='info'", true, "SET CONFIG PD LOG.LEVEL = 'info'"},
+		{"set config TIDB LOG.LEVEL='info'", true, "SET CONFIG TIDB LOG.LEVEL = 'info'"},
+		{"set config '127.0.0.1:3306' LOG.LEVEL='info'", true, "SET CONFIG '127.0.0.1:3306' LOG.LEVEL = 'info'"},
 		{"show config", true, "SHOW CONFIG"},
 		{"show config where type='tidb'", true, "SHOW CONFIG WHERE `type`='tidb'"},
 		{"show config where instance='127.0.0.1:3306'", true, "SHOW CONFIG WHERE `instance`='127.0.0.1:3306'"},

@@ -832,9 +832,11 @@ func (n *SetConfigStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.Type != "" {
 		ctx.WriteKeyWord(n.Type)
 	} else {
-		ctx.WritePlainf("'%s'", n.Instance)
+		ctx.WriteString(n.Instance)
 	}
-	ctx.WritePlainf(" %s=", n.Name)
+	ctx.WritePlain(" ")
+	ctx.WriteKeyWord(n.Name)
+	ctx.WritePlain(" = ")
 	return n.Value.Restore(ctx)
 }
 
