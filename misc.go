@@ -14,30 +14,10 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
-
-// CommentCodeVersion is used to track the highest version can be parsed in the comment with pattern /*T!00001 xxx */
-type CommentCodeVersion int
-
-const (
-	CommentCodeNoVersion  CommentCodeVersion = iota
-	CommentCodeAutoRandom CommentCodeVersion = 30100
-
-	CommentCodeCurrentVersion
-)
-
-func (ccv CommentCodeVersion) String() string {
-	return fmt.Sprintf("%05d", ccv)
-}
-
-// WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
-func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
-	return fmt.Sprintf("/*T!%05d %s */", ccv, str)
-}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -884,6 +864,23 @@ var hintTokenMap = map[string]int{
 	"FIRSTMATCH":      hintFirstMatch,
 	"LOOSESCAN":       hintLooseScan,
 	"MATERIALIZATION": hintMaterialization,
+}
+
+type FeaturesMap map[string]struct{}
+
+func (m FeaturesMap) containsAll(features []string) bool {
+	allFound := true
+	for _, f := range features {
+		_, found := m[f]
+		allFound = allFound && found
+	}
+	return allFound
+}
+
+// featureMap is a set of feature IDs supported by current parser.
+var featuresMap = FeaturesMap{
+	"supported_feature": {},
+	"auto_rand":         {},
 }
 
 func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
