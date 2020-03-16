@@ -58,6 +58,22 @@ const (
 	ServerPSOutParams              uint16 = 0x1000
 )
 
+// ServerStatus2Str is the map for server status to string.
+var ServerStatus2Str = map[uint16]string{
+	ServerStatusInTrans:            "in transaction",
+	ServerStatusAutocommit:         "autocommit",
+	ServerMoreResultsExists:        "more results exists",
+	ServerStatusNoGoodIndexUsed:    "no good index used",
+	ServerStatusNoIndexUsed:        "no index used",
+	ServerStatusCursorExists:       "cursor exists",
+	ServerStatusLastRowSend:        "last row send",
+	ServerStatusDBDropped:          "db dropped",
+	ServerStatusNoBackslashEscaped: "no backslash escaped",
+	ServerStatusMetadataChanged:    "metadata changed",
+	ServerStatusWasSlow:            "was slow",
+	ServerPSOutParams:              "ps out params",
+}
+
 // HasCursorExistsFlag return true if cursor exists indicated by server status.
 func HasCursorExistsFlag(serverStatus uint16) bool {
 	return serverStatus&ServerStatusCursorExists > 0
