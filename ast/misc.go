@@ -817,7 +817,7 @@ func (n *SetStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// SetConfigStmt ...
+// SetConfigStmt is the statement to set cluster configs.
 type SetConfigStmt struct {
 	stmtNode
 
