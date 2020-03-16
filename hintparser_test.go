@@ -122,7 +122,7 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			},
 		},
 		{
-			input: "HASH_JOIN() TIDB_HJ(@qb1) INL_JOIN(x, `y y`.z) merge_join(w@`First QB`)",
+			input: "HASH_JOIN() TIDB_HJ(@qb1) INL_JOIN(x, `y y`.z) MERGE_JOIN(w@`First QB`)",
 			output: []*ast.TableOptimizerHint{
 				{
 					HintName: model.NewCIStr("HASH_JOIN"),
