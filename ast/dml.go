@@ -1863,6 +1863,7 @@ const (
 	ShowIndex
 	ShowProcessList
 	ShowCreateDatabase
+	ShowConfig
 	ShowEvents
 	ShowStatsMeta
 	ShowStatsHistograms
@@ -1882,6 +1883,8 @@ const (
 	ShowRegions
 	ShowBuiltins
 	ShowTableNextRowId
+	ShowBackup
+	ShowRestore
 )
 
 const (
@@ -2085,6 +2088,8 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		switch n.Tp {
 		case ShowEngines:
 			ctx.WriteKeyWord("ENGINES")
+		case ShowConfig:
+			ctx.WriteKeyWord("CONFIG")
 		case ShowDatabases:
 			ctx.WriteKeyWord("DATABASES")
 		case ShowCharset:
@@ -2176,6 +2181,10 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 			}
 			ctx.WriteKeyWord(" NEXT_ROW_ID")
 			return nil
+		case ShowBackup:
+			ctx.WriteKeyWord("BACKUP")
+		case ShowRestore:
+			ctx.WriteKeyWord("RESTORE")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
