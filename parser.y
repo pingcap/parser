@@ -9385,7 +9385,7 @@ TableOption:
 	}
 |	"AUTO_ID_CACHE" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrementCache, UintValue: $3.(uint64)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
