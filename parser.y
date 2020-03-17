@@ -117,6 +117,7 @@ import (
 	dual 			"DUAL"
 	elseKwd			"ELSE"
 	enclosed		"ENCLOSED"
+	errorKwd		"ERROR"
 	escaped 		"ESCAPED"
 	exists			"EXISTS"
 	explain			"EXPLAIN"
@@ -477,6 +478,7 @@ import (
 	x509		"X509"
 	nowait          "NOWAIT"
 	enforced	"ENFORCED"
+	instance              "INSTANCE"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate			"ADDDATE"
@@ -526,6 +528,7 @@ import (
 	varSamp			"VAR_SAMP"
 	exprPushdownBlacklist		"EXPR_PUSHDOWN_BLACKLIST"
 	optRuleBlacklist		"OPT_RULE_BLACKLIST"
+	tls                   "TLS"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin		"ADMIN"
@@ -653,6 +656,7 @@ import (
 	AlterDatabaseStmt		"Alter database statement"
 	AlterTableStmt			"Alter table statement"
 	AlterUserStmt			"Alter user statement"
+	AlterInstanceStmt    "Alter instance statement"
 	AnalyzeTableStmt		"Analyze table statement"
 	BeginTransactionStmt		"BEGIN TRANSACTION statement"
 	BinlogStmt			"Binlog base64 statement"
@@ -779,6 +783,7 @@ import (
 	FieldAsNameOpt			"Field alias name opt"
 	FieldList			"field expression list"
 	FlushOption			"Flush option"
+	InstanceOption      "Instance option"
 	PluginNameList			"Plugin Name List"
 	TableRefsClause			"Table references clause"
 	FieldItem			"Field item for load data clause"
@@ -3772,12 +3777,11 @@ UnReservedKeyword:
 | "MICROSECOND" | "MINUTE" | "PLUGINS" | "PRECEDING" | "QUERY" | "QUERIES" | "SECOND" | "SEPARATOR" | "SHARE" | "SHARED" | "SLOW" | "MAX_CONNECTIONS_PER_HOUR" | "MAX_QUERIES_PER_HOUR" | "MAX_UPDATES_PER_HOUR"
 | "MAX_USER_CONNECTIONS" | "REPLICATION" | "CLIENT" | "SLAVE" | "RELOAD" | "TEMPORARY" | "ROUTINE" | "EVENT" | "ALGORITHM" | "DEFINER" | "INVOKER" | "MERGE" | "TEMPTABLE" | "UNDEFINED" | "SECURITY" | "CASCADED"
 | "RECOVER" | "CIPHER" | "SUBJECT" | "ISSUER" | "X509" | "NEVER" | "EXPIRE" | "ACCOUNT" | "INCREMENTAL" | "CPU" | "MEMORY" | "BLOCK" | "IO" | "CONTEXT" | "SWITCHES" | "PAGE" | "FAULTS" | "IPC" | "SWAPS" | "SOURCE"
-| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "NOWAIT" | "PARTIAL" | "SIMPLE" | "REPLICA" | "LOCATION" | "LABELS" | "AUTO_RANDOM"
-
+| "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "NOWAIT" | "PARTIAL" | "SIMPLE" | "REPLICA" | "LOCATION" | "LABELS" | "AUTO_RANDOM" | "INSTANCE"
 
 TiDBKeyword:
 "ADMIN" | "AGG_TO_COP" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
-|"HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX" | "IGNORE_INDEX" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
+| "HASH_JOIN" | "SM_JOIN" | "INL_JOIN" | "HASH_AGG" | "STREAM_AGG" | "USE_INDEX" | "IGNORE_INDEX" | "USE_INDEX_MERGE" | "NO_INDEX_MERGE" | "USE_TOJA" | "ENABLE_PLAN_CACHE" | "USE_PLAN_CACHE"
 | "READ_CONSISTENT_REPLICA" | "READ_FROM_STORAGE" | "QB_NAME" | "QUERY_TYPE" | "MEMORY_QUOTA" | "OLAP" | "OLTP" | "TIKV" | "TIFLASH" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS" | "REGION"
 
 NotKeywordToken:
@@ -3785,7 +3789,7 @@ NotKeywordToken:
 | "INPLACE" | "INSTANT" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
 | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" | "VARIANCE" | "VAR_POP" | "VAR_SAMP"
 | "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOKUDB_DEFAULT" | "TOKUDB_FAST" | "TOKUDB_LZMA" | "TOKUDB_QUICKLZ" | "TOKUDB_SNAPPY" | "TOKUDB_SMALL" | "TOKUDB_UNCOMPRESSED" | "TOKUDB_ZLIB" | "TOP" | "TRIM" | "NEXT_ROW_ID"
-| "EXPR_PUSHDOWN_BLACKLIST" | "OPT_RULE_BLACKLIST"
+| "EXPR_PUSHDOWN_BLACKLIST" | "OPT_RULE_BLACKLIST" | "TLS"
 
 /************************************************************************************
  *
@@ -7618,6 +7622,7 @@ Statement:
 |	AlterDatabaseStmt
 |	AlterTableStmt
 |	AlterUserStmt
+|	AlterInstanceStmt
 |	AnalyzeTableStmt
 |	BeginTransactionStmt
 |	BinlogStmt
@@ -8604,6 +8609,28 @@ AlterUserStmt:
 		$$ = &ast.AlterUserStmt{
 			IfExists: $3.(bool),
 			CurrentAuth: auth,
+		}
+	}
+
+/* See https://dev.mysql.com/doc/refman/8.0/en/alter-instance.html */
+AlterInstanceStmt:
+	"ALTER" "INSTANCE" InstanceOption
+	{
+		$$ = $3.(*ast.AlterInstanceStmt)
+	}
+
+InstanceOption:
+	"RELOAD" "TLS"
+	{
+		$$ = &ast.AlterInstanceStmt{
+			ReloadTLS: true,
+		}
+	}
+|	"RELOAD" "TLS" "NO" "ROLLBACK" "ON" "ERROR"
+	{
+		$$ = &ast.AlterInstanceStmt{
+			ReloadTLS:         true,
+			NoRollbackOnError: true,
 		}
 	}
 

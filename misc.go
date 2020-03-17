@@ -288,6 +288,7 @@ var tokenMap = map[string]int{
 	"ENGINE":                   engine,
 	"ENGINES":                  engines,
 	"ENUM":                     enum,
+	"ERROR":                    errorKwd,
 	"ESCAPE":                   escape,
 	"ESCAPED":                  escaped,
 	"EVENT":                    event,
@@ -654,6 +655,8 @@ var tokenMap = map[string]int{
 	"EXPR_PUSHDOWN_BLACKLIST":  exprPushdownBlacklist,
 	"OPT_RULE_BLACKLIST":       optRuleBlacklist,
 	"NOWAIT":                   nowait,
+	"TLS":                      tls,
+	"INSTANCE":                 instance,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details

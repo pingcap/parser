@@ -27,7 +27,14 @@ func IsReadOnly(node Node) bool {
 
 		node.Accept(&checker)
 		return checker.readOnly
-	case *ExplainStmt, *DoStmt:
+	case *ExplainStmt, *DoStmt, *ShowStmt:
+		return true
+	case *UnionStmt:
+		for _, sel := range node.(*UnionStmt).SelectList.Selects {
+			if !IsReadOnly(sel) {
+				return false
+			}
+		}
 		return true
 	default:
 		return false
