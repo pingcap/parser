@@ -360,7 +360,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			break
 		}
 		s.r.inc()
-		// in '/*T!', try to consume the 5 to 6 digit version string.
+		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
 		features := s.scanFeatureIDs()
 		if len(features) != 0 && featuresMap.containsAll(features) {
 			s.inBangComment = true
@@ -764,16 +764,16 @@ func (s *Scanner) scanVersionDigits(min, max int) {
 
 func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 	pos := s.r.pos()
-	var init, expectAlpha, alpha = 0, 1, 2
-	stat := init
+	const init, expectAlpha, alpha = 0, 1, 2
+	state := init
 	var b strings.Builder
 	for !s.r.eof() {
 		ch := s.r.peek()
 		s.r.inc()
-		switch stat {
+		switch state {
 		case init:
 			if ch == '[' {
-				stat = expectAlpha
+				state = expectAlpha
 				break
 			}
 			s.r.p = pos
@@ -781,7 +781,7 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 		case expectAlpha:
 			if isIdentChar(ch) {
 				b.WriteRune(ch)
-				stat = alpha
+				state = alpha
 				break
 			}
 			s.r.p = pos
@@ -789,12 +789,12 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 		case alpha:
 			if isIdentChar(ch) {
 				b.WriteRune(ch)
-				stat = alpha
+				state = alpha
 				break
 			} else if ch == ',' {
 				featureIDs = append(featureIDs, b.String())
 				b.Reset()
-				stat = expectAlpha
+				state = expectAlpha
 				fmt.Print(",")
 				break
 			} else if ch == ']' {

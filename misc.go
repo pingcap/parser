@@ -866,19 +866,19 @@ var hintTokenMap = map[string]int{
 	"MATERIALIZATION": hintMaterialization,
 }
 
-type FeaturesMap map[string]struct{}
+type featureMap map[string]struct{}
 
-func (m FeaturesMap) containsAll(features []string) bool {
-	allFound := true
+func (m featureMap) containsAll(features []string) bool {
 	for _, f := range features {
-		_, found := m[f]
-		allFound = allFound && found
+		if _, found := m[f]; !found {
+			return false
+		}
 	}
-	return allFound
+	return true
 }
 
 // featureMap is a set of feature IDs supported by current parser.
-var featuresMap = FeaturesMap{
+var featuresMap = featureMap{
 	"supported_feature": {},
 	"auto_rand":         {},
 }
