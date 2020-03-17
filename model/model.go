@@ -212,16 +212,16 @@ type TableInfo struct {
 	Charset string `json:"charset"`
 	Collate string `json:"collate"`
 	// Columns are listed in the order in which they appear in the schema.
-	Columns     []*ColumnInfo `json:"cols"`
-	Indices     []*IndexInfo  `json:"index_info"`
-	ForeignKeys []*FKInfo     `json:"fk_info"`
-	State       SchemaState   `json:"state"`
-	PKIsHandle  bool          `json:"pk_is_handle"`
-	Comment     string        `json:"comment"`
-	AutoIncID   int64         `json:"auto_inc_id"`
-	AutoIncCache int64        `json:"auto_inc_cache"`
-	MaxColumnID int64         `json:"max_col_id"`
-	MaxIndexID  int64         `json:"max_idx_id"`
+	Columns      []*ColumnInfo `json:"cols"`
+	Indices      []*IndexInfo  `json:"index_info"`
+	ForeignKeys  []*FKInfo     `json:"fk_info"`
+	State        SchemaState   `json:"state"`
+	PKIsHandle   bool          `json:"pk_is_handle"`
+	Comment      string        `json:"comment"`
+	AutoIncID    int64         `json:"auto_inc_id"`
+	AutoIncCache int64         `json:"auto_inc_cache"`
+	MaxColumnID  int64         `json:"max_col_id"`
+	MaxIndexID   int64         `json:"max_idx_id"`
 	// UpdateTS is used to record the timestamp of updating the table's schema information.
 	// These changing schema operations don't include 'truncate table' and 'rename table'.
 	UpdateTS uint64 `json:"update_timestamp"`
