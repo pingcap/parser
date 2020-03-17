@@ -898,6 +898,7 @@ const (
 	ErrInvalidJSONContainsPathType                                  = 3150
 	ErrJSONUsedAsKey                                                = 3152
 	ErrInvalidJSONPathArrayCell                                     = 3165
+	ErrSecureTransportRequired                                      = 3159
 	ErrBadUser                                                      = 3162
 	ErrRoleNotGranted                                               = 3530
 	ErrLockAcquireFailAndNoWaitSet                                  = 3572
