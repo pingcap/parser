@@ -58,50 +58,49 @@ const (
 	ServerPSOutParams              uint16 = 0x1000
 )
 
+// ascServerStatus is a slice of all defined server status in ascending order.
+var ascServerStatus = []uint16{
+	ServerStatusInTrans,
+	ServerStatusAutocommit,
+	ServerMoreResultsExists,
+	ServerStatusNoGoodIndexUsed,
+	ServerStatusNoIndexUsed,
+	ServerStatusCursorExists,
+	ServerStatusLastRowSend,
+	ServerStatusDBDropped,
+	ServerStatusNoBackslashEscaped,
+	ServerStatusMetadataChanged,
+	ServerStatusWasSlow,
+	ServerPSOutParams,
+}
+
+// mapServerStatus2Str is the map for server status to string.
+var mapServerStatus2Str = map[uint16]string{
+	ServerStatusInTrans:            "in transaction",
+	ServerStatusAutocommit:         "autocommit",
+	ServerMoreResultsExists:        "more results exists",
+	ServerStatusNoGoodIndexUsed:    "no goods index used",
+	ServerStatusNoIndexUsed:        "no index used",
+	ServerStatusCursorExists:       "cursor exists",
+	ServerStatusLastRowSend:        "last row send",
+	ServerStatusDBDropped:          "db dropped",
+	ServerStatusNoBackslashEscaped: "no backslash escaped",
+	ServerStatusMetadataChanged:    "metadata changed",
+	ServerStatusWasSlow:            "was slow",
+	ServerPSOutParams:              "ps out params",
+}
+
 // ServerStatus2Str convert server status to string.
 // Param state is a bit-field. (e.g. 0x0003 = "in transaction; autocommit").
 func ServerStatus2Str(state uint16) string {
 	// l collect server status strings.
 	var l []string
-	// status is a slice of all defined server status in ascending order.
-	var status []uint16
-	status = append(
-		status,
-		ServerStatusInTrans,
-		ServerStatusAutocommit,
-		ServerMoreResultsExists,
-		ServerStatusNoGoodIndexUsed,
-		ServerStatusNoIndexUsed,
-		ServerStatusCursorExists,
-		ServerStatusLastRowSend,
-		ServerStatusDBDropped,
-		ServerStatusNoBackslashEscaped,
-		ServerStatusMetadataChanged,
-		ServerStatusWasSlow,
-		ServerPSOutParams,
-	)
-	// mapServerStatus is the map for server status to string.
-	var mapServerStatus = map[uint16]string{
-		ServerStatusInTrans:            "in transaction",
-		ServerStatusAutocommit:         "autocommit",
-		ServerMoreResultsExists:        "more results exists",
-		ServerStatusNoGoodIndexUsed:    "no goods index used",
-		ServerStatusNoIndexUsed:        "no index used",
-		ServerStatusCursorExists:       "cursor exists",
-		ServerStatusLastRowSend:        "last row send",
-		ServerStatusDBDropped:          "db dropped",
-		ServerStatusNoBackslashEscaped: "no backslash escaped",
-		ServerStatusMetadataChanged:    "metadata changed",
-		ServerStatusWasSlow:            "was slow",
-		ServerPSOutParams:              "ps out params",
-	}
-
 	// check each defined server status, if match, append to collector.
-	for _, s := range status {
+	for _, s := range ascServerStatus {
 		if state&s == 0 {
 			continue
 		}
-		l = append(l, mapServerStatus[s])
+		l = append(l, mapServerStatus2Str[s])
 	}
 	return strings.Join(l, "; ")
 }
