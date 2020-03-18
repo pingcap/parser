@@ -52,3 +52,11 @@ func (s *testConstSuite) TestPrivAllConsistency(c *C) {
 
 	c.Assert(len(Priv2Str), Equals, len(Priv2UserCol))
 }
+
+func (s *testConstSuite) TestServerStatusConvert(c *C) {
+	c.Assert(ServerStatus2Str(0), Equals, "")
+	c.Assert(ServerStatus2Str(0x0001), Equals, "in transaction")
+	c.Assert(ServerStatus2Str(0x0002), Equals, "autocommit")
+	c.Assert(ServerStatus2Str(0x0003), Equals, "in transaction; autocommit")
+	c.Assert(ServerStatus2Str(0x0004), Equals, "")
+}
