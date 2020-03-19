@@ -756,6 +756,7 @@ func (s *Scanner) scanVersionDigits(min, max int) {
 			s.r.inc()
 		} else if i < min {
 			s.r.p = pos
+			return
 		} else {
 			break
 		}
