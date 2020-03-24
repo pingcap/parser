@@ -845,7 +845,7 @@ var hintTokenMap = map[string]int{
 
 	// TiDB hint names
 	"AGG_TO_COP":              hintAggToCop,
-	"DISABLE_PLAN_CACHE":      hintDisablePlanCache,
+	"IGNORE_PLAN_CACHE":       hintIgnorePlanCache,
 	"HASH_AGG":                hintHashAgg,
 	"IGNORE_INDEX":            hintIgnoreIndex,
 	"INL_HASH_JOIN":           hintInlHashJoin,

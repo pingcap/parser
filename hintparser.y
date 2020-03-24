@@ -78,7 +78,7 @@ import (
 
 	/* TiDB hint names */
 	hintAggToCop              "AGG_TO_COP"
-	hintDisablePlanCache      "DISABLE_PLAN_CACHE"
+	hintIgnorePlanCache       "IGNORE_PLAN_CACHE"
 	hintHashAgg               "HASH_AGG"
 	hintIgnoreIndex           "IGNORE_INDEX"
 	hintInlHashJoin           "INL_HASH_JOIN"
@@ -528,7 +528,7 @@ NullaryHintName:
 |	"AGG_TO_COP"
 |	"NO_INDEX_MERGE"
 |	"READ_CONSISTENT_REPLICA"
-|	"DISABLE_PLAN_CACHE"
+|	"IGNORE_PLAN_CACHE"
 
 HintQueryType:
 	"OLAP"
@@ -569,7 +569,7 @@ Identifier:
 |	"QB_NAME"
 /* TiDB hint names */
 |	"AGG_TO_COP"
-|	"DISABLE_PLAN_CACHE"
+|	"IGNORE_PLAN_CACHE"
 |	"HASH_AGG"
 |	"IGNORE_INDEX"
 |	"INL_HASH_JOIN"

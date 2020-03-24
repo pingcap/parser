@@ -3318,16 +3318,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].HintName.L, Equals, "use_toja")
 	c.Assert(hints[1].HintData.(bool), IsFalse)
 
-	// Test DISABLE_PLAN_CACHE
-	stmt, _, err = parser.Parse("select /*+ DISABLE_PLAN_CACHE(), disable_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// Test IGNORE_PLAN_CACHE
+	stmt, _, err = parser.Parse("select /*+ IGNORE_PLAN_CACHE(), ignore_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
-	c.Assert(hints[0].HintName.L, Equals, "disable_plan_cache")
+	c.Assert(hints[0].HintName.L, Equals, "ignore_plan_cache")
 
-	c.Assert(hints[1].HintName.L, Equals, "disable_plan_cache")
+	c.Assert(hints[1].HintName.L, Equals, "ignore_plan_cache")
 
 	// Test USE_CASCADES
 	stmt, _, err = parser.Parse("select /*+ USE_CASCADES(true), use_cascades(false) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
