@@ -866,23 +866,6 @@ var hintTokenMap = map[string]int{
 	"MATERIALIZATION": hintMaterialization,
 }
 
-type featureMap map[string]struct{}
-
-func (m featureMap) containsAll(features []string) bool {
-	for _, f := range features {
-		if _, found := m[f]; !found {
-			return false
-		}
-	}
-	return true
-}
-
-// featureMap is a set of feature IDs supported by current parser.
-var featuresMap = featureMap{
-	"supported_feature": {},
-	"auto_rand":         {},
-}
-
 func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 	// An identifier before or after '.' means it is part of a qualified identifier.
 	// We do not parse it as keyword.
@@ -939,4 +922,39 @@ func handleIdent(lval *yySymType) int {
 	}
 	lval.ident = cs
 	return underscoreCS
+}
+
+// SpecialCommentsController controls whether special comments like `/*T![xxx] yyy */`
+// can be parsed as `yyy`. To add such rules, please use SpecialCommentsController.Register().
+// For example:
+//     SpecialCommentsController.Register("30100");
+// Now the parser will treat
+//   select a, /*T![30100] mysterious_keyword */ from t;
+// and
+//   select a, mysterious_keyword from t;
+// equally.
+// Similar special comments without registration are ignored by parser.
+var SpecialCommentsController = specialCommentsCtrl{
+	supportedFeatures: map[string]struct{}{},
+}
+
+type specialCommentsCtrl struct {
+	supportedFeatures map[string]struct{}
+}
+
+func (s *specialCommentsCtrl) Register(featureID string) {
+	s.supportedFeatures[featureID] = struct{}{}
+}
+
+func (s *specialCommentsCtrl) Unregister(featureID string) {
+	delete(s.supportedFeatures, featureID)
+}
+
+func (s *specialCommentsCtrl) ContainsAll(featureIDs []string) bool {
+	for _, f := range featureIDs {
+		if _, found := s.supportedFeatures[f]; !found {
+			return false
+		}
+	}
+	return true
 }

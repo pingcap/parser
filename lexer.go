@@ -362,7 +362,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		s.r.inc()
 		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
 		features := s.scanFeatureIDs()
-		if len(features) != 0 && featuresMap.containsAll(features) {
+		if len(features) != 0 && SpecialCommentsController.ContainsAll(features) {
 			s.inBangComment = true
 			return s.scan()
 		}
@@ -765,7 +765,7 @@ func (s *Scanner) scanVersionDigits(min, max int) {
 
 func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 	pos := s.r.pos()
-	const init, expectAlpha, alpha = 0, 1, 2
+	const init, expectChar, obtainChar = 0, 1, 2
 	state := init
 	var b strings.Builder
 	for !s.r.eof() {
@@ -774,28 +774,28 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 		switch state {
 		case init:
 			if ch == '[' {
-				state = expectAlpha
+				state = expectChar
 				break
 			}
 			s.r.p = pos
 			return nil
-		case expectAlpha:
+		case expectChar:
 			if isIdentChar(ch) {
 				b.WriteRune(ch)
-				state = alpha
+				state = obtainChar
 				break
 			}
 			s.r.p = pos
 			return nil
-		case alpha:
+		case obtainChar:
 			if isIdentChar(ch) {
 				b.WriteRune(ch)
-				state = alpha
+				state = obtainChar
 				break
 			} else if ch == ',' {
 				featureIDs = append(featureIDs, b.String())
 				b.Reset()
-				state = expectAlpha
+				state = expectChar
 				fmt.Print(",")
 				break
 			} else if ch == ']' {
