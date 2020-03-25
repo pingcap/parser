@@ -796,7 +796,6 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 				featureIDs = append(featureIDs, b.String())
 				b.Reset()
 				state = expectChar
-				fmt.Print(",")
 				break
 			} else if ch == ']' {
 				featureIDs = append(featureIDs, b.String())
