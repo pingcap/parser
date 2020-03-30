@@ -1614,6 +1614,7 @@ const (
 	AdminFlushBindings
 	AdminCaptureBindings
 	AdminEvolveBindings
+	AdminReloadBindings
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1820,6 +1821,8 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("CAPTURE BINDINGS")
 	case AdminEvolveBindings:
 		ctx.WriteKeyWord("EVOLVE BINDINGS")
+	case AdminReloadBindings:
+		ctx.WriteKeyWord("RELOAD BINDINGS")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -2528,7 +2531,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	}
 	// Hints without args except query block.
 	switch n.HintName.L {
-	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name":
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name", "ignore_plan_cache":
 		ctx.WritePlain(")")
 		return nil
 	}
@@ -2555,7 +2558,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 			}
 			ctx.WriteName(index.String())
 		}
-	case "use_toja", "enable_plan_cache", "use_cascades":
+	case "use_toja", "use_cascades":
 		if n.HintData.(bool) {
 			ctx.WritePlain("TRUE")
 		} else {
