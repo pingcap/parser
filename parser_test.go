@@ -694,6 +694,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin flush bindings", true, "ADMIN FLUSH BINDINGS"},
 		{"admin capture bindings", true, "ADMIN CAPTURE BINDINGS"},
 		{"admin evolve bindings", true, "ADMIN EVOLVE BINDINGS"},
+		{"admin reload bindings", true, "ADMIN RELOAD BINDINGS"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -2029,6 +2030,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (c int) SECONDARY_ENGINE 'null'", true, "CREATE TABLE `t` (`c` INT) SECONDARY_ENGINE = 'null'"},
 		{`create table testTableCompression (c VARCHAR(15000)) compression="ZLIB";`, true, "CREATE TABLE `testTableCompression` (`c` VARCHAR(15000)) COMPRESSION = 'ZLIB'"},
 		{`create table t1 (c1 int) compression="zlib";`, true, "CREATE TABLE `t1` (`c1` INT) COMPRESSION = 'zlib'"},
+		{`create table t1 (c1 int) collate=binary;`, true, "CREATE TABLE `t1` (`c1` INT) DEFAULT COLLATE = BINARY"},
+		{`create table t1 (c1 int) default charset=binary collate=binary;`, true, "CREATE TABLE `t1` (`c1` INT) DEFAULT CHARACTER SET = BINARY DEFAULT COLLATE = BINARY"},
 
 		// for table option `UNION`
 		{"ALTER TABLE t_n UNION ( ), KEY_BLOCK_SIZE = 1", true, "ALTER TABLE `t_n` UNION = (), KEY_BLOCK_SIZE = 1"},
@@ -2263,6 +2266,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER SCHEMA t DEFAULT CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
 		{"ALTER SCHEMA DEFAULT CHARACTER SET = 'utf8'", true, "ALTER DATABASE CHARACTER SET = utf8"},
 		{"ALTER SCHEMA t DEFAULT CHARSET = 'UTF8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
+
+		{"ALTER DATABASE t COLLATE = binary", true, "ALTER DATABASE `t` COLLATE = binary"},
+		{"ALTER DATABASE t CHARSET=binary COLLATE = binary", true, "ALTER DATABASE `t` CHARACTER SET = binary COLLATE = binary"},
 
 		{"ALTER DATABASE t COLLATE = 'utf8_bin'", true, "ALTER DATABASE `t` COLLATE = utf8_bin"},
 		{"ALTER DATABASE COLLATE = 'utf8_bin'", true, "ALTER DATABASE COLLATE = utf8_bin"},

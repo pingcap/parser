@@ -8241,6 +8241,10 @@ CollationName:
 		}
 		$$ = info.Name
 	}
+|	binaryType
+	{
+		$$ = charset.CollationBin
+	}
 
 VariableAssignmentList:
 	{
@@ -8519,6 +8523,12 @@ AdminStmt:
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminEvolveBindings,
+		}
+	}
+|	"ADMIN" "RELOAD" "BINDINGS"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminReloadBindings,
 		}
 	}
 
