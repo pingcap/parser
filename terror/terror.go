@@ -130,7 +130,9 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 		clsMap = make(map[ErrCode]struct{})
 		ErrClassToMySQLCodes[ec] = clsMap
 	}
-	clsMap[code] = struct{}{}
+	if _, ok := clsMap[code]; !ok {
+		clsMap[code] = struct{}{}
+	}
 	return &Error{
 		class:   ec,
 		code:    code,
