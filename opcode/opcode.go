@@ -167,7 +167,7 @@ var ops = [...]struct {
 		isKeyword: false,
 	},
 	IntDiv: {
-		name:      "intdev",
+		name:      "intdiv",
 		literal:   "DIV",
 		isKeyword: true,
 	},
