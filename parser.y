@@ -1794,8 +1794,6 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableWithValidation,
 		}
-		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	"WITHOUT" "VALIDATION"
 	{
@@ -1803,8 +1801,6 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableWithoutValidation,
 		}
-		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 // Added in MySQL 8.0.13, see: https://dev.mysql.com/doc/refman/8.0/en/keywords.html for details
 |	"SECONDARY_LOAD"
