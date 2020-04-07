@@ -11383,14 +11383,13 @@ LoadStatsStmt:
  *	[table_options]
  ********************************************************************************************/
 CreateSequenceStmt:
-	"CREATE" OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
+	"CREATE" "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
 	{
 		$$ = &ast.CreateSequenceStmt{
-			IsTemporary: $2.(bool),
-			IfNotExists: $4.(bool),
-			Name:        $5.(*ast.TableName),
-			SeqOptions:  $6.([]*ast.SequenceOption),
-			TblOptions:  $7.([]*ast.TableOption),
+			IfNotExists: $3.(bool),
+			Name:        $4.(*ast.TableName),
+			SeqOptions:  $5.([]*ast.SequenceOption),
+			TblOptions:  $6.([]*ast.TableOption),
 		}
 	}
 
@@ -11491,12 +11490,11 @@ SignedNum:
 	}
 
 DropSequenceStmt:
-	"DROP" OptTemporary "SEQUENCE" IfExists TableNameList
+	"DROP" "SEQUENCE" IfExists TableNameList
 	{
 		$$ = &ast.DropSequenceStmt{
-			IsTemporary: $2.(bool),
-			IfExists:    $4.(bool),
-			Sequences:   $5.([]*ast.TableName),
+			IfExists:  $3.(bool),
+			Sequences: $4.([]*ast.TableName),
 		}
 	}
 

@@ -1094,18 +1094,13 @@ func (n *DropTableStmt) Accept(v Visitor) (Node, bool) {
 type DropSequenceStmt struct {
 	ddlNode
 
-	IfExists    bool
-	Sequences   []*TableName
-	IsTemporary bool
+	IfExists  bool
+	Sequences []*TableName
 }
 
 // Restore implements Node interface.
 func (n *DropSequenceStmt) Restore(ctx *format.RestoreCtx) error {
-	if n.IsTemporary {
-		ctx.WriteKeyWord("DROP TEMPORARY SEQUENCE ")
-	} else {
-		ctx.WriteKeyWord("DROP SEQUENCE ")
-	}
+	ctx.WriteKeyWord("DROP SEQUENCE ")
 	if n.IfExists {
 		ctx.WriteKeyWord("IF EXISTS ")
 	}
@@ -1331,8 +1326,6 @@ type CreateSequenceStmt struct {
 	ddlNode
 
 	// TODO : support or replace if need : care for it will conflict on temporaryOpt.
-	OrReplace   bool
-	IsTemporary bool
 	IfNotExists bool
 	Name        *TableName
 	SeqOptions  []*SequenceOption
@@ -1342,12 +1335,6 @@ type CreateSequenceStmt struct {
 // Restore implements Node interface.
 func (n *CreateSequenceStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("CREATE ")
-	if n.OrReplace {
-		ctx.WriteKeyWord("OR REPLACE ")
-	}
-	if n.IsTemporary {
-		ctx.WriteKeyWord("TEMPORARY ")
-	}
 	ctx.WriteKeyWord("SEQUENCE ")
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXISTS ")
