@@ -2029,8 +2029,6 @@ const (
 	SequenceCache
 	SequenceNoCycle
 	SequenceCycle
-	SequenceNoOrder
-	SequenceOrder
 )
 
 // SequenceOption is used for parsing sequence option from SQL.
@@ -2066,10 +2064,6 @@ func (n *SequenceOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("NOCYCLE")
 	case SequenceCycle:
 		ctx.WriteKeyWord("CYCLE")
-	case SequenceNoOrder:
-		ctx.WriteKeyWord("NOORDER")
-	case SequenceOrder:
-		ctx.WriteKeyWord("ORDER")
 	default:
 		return errors.Errorf("invalid SequenceOption: %d", n.Tp)
 	}

@@ -2891,17 +2891,14 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create sequence if not exists seq cycle", true, "CREATE SEQUENCE IF NOT EXISTS `seq` CYCLE"},
 		{"create sequence if not exists seq nocycle", true, "CREATE SEQUENCE IF NOT EXISTS `seq` NOCYCLE"},
 		{"create sequence if not exists seq no cycle", true, "CREATE SEQUENCE IF NOT EXISTS `seq` NOCYCLE"},
-		{"create sequence if not exists seq order", true, "CREATE SEQUENCE IF NOT EXISTS `seq` ORDER"},
-		{"create sequence if not exists seq noorder", true, "CREATE SEQUENCE IF NOT EXISTS `seq` NOORDER"},
-		{"create sequence if not exists seq no order", true, "CREATE SEQUENCE IF NOT EXISTS `seq` NOORDER"},
 		{"create sequence seq increment 1 start with 0 minvalue 0 maxvalue 1000", true, "CREATE SEQUENCE `seq` INCREMENT BY 1 START WITH 0 MINVALUE 0 MAXVALUE 1000"},
 		{"create sequence seq increment 1 start with 0 minvalue 0 maxvalue 1000", true, "CREATE SEQUENCE `seq` INCREMENT BY 1 START WITH 0 MINVALUE 0 MAXVALUE 1000"},
 		// TODO : support or replace if need : care for it will conflict on temporary.
 		{"create temporary sequence seq increment 10 start with 0 minvalue 0 maxvalue 1000", true, "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY 10 START WITH 0 MINVALUE 0 MAXVALUE 1000"},
 		{"create temporary sequence if not exists seq cache 1 increment 1 start with -1 minvalue 0 maxvalue 1000", true, "CREATE TEMPORARY SEQUENCE IF NOT EXISTS `seq` CACHE 1 INCREMENT BY 1 START WITH -1 MINVALUE 0 MAXVALUE 1000"},
-		{"create temporary sequence sEq order start with 0 minvalue 0 maxvalue 1000", true, "CREATE TEMPORARY SEQUENCE `sEq` ORDER START WITH 0 MINVALUE 0 MAXVALUE 1000"},
+		{"create temporary sequence sEq start with 0 minvalue 0 maxvalue 1000", true, "CREATE TEMPORARY SEQUENCE `sEq` START WITH 0 MINVALUE 0 MAXVALUE 1000"},
 		{"create sequence if not exists seq increment 1 start with 0 minvalue -2 maxvalue 1000", true, "CREATE SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1 START WITH 0 MINVALUE -2 MAXVALUE 1000"},
-		{"create sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle noorder", true, "CREATE SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE NOORDER"},
+		{"create sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle", true, "CREATE SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE"},
 
 		// test sequence is not a reserved keyword
 		{"create table sequence (a int)", true, "CREATE TABLE `sequence` (`a` INT)"},

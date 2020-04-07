@@ -447,7 +447,6 @@ import (
 	nomaxvalue              "NOMAXVALUE"
 	nominvalue              "NOMINVALUE"
 	none                    "NONE"
-	noorder                 "NOORDER"
 	nowait                  "NOWAIT"
 	nulls                   "NULLS"
 	offset                  "OFFSET"
@@ -5148,7 +5147,6 @@ UnReservedKeyword:
 |	"CACHE"
 |	"CYCLE"
 |	"NOCYCLE"
-|	"NOORDER"
 |	"SEQUENCE"
 |	"MAX_MINUTES"
 |	"MAX_IDXNUM"
@@ -11382,7 +11380,6 @@ LoadStatsStmt:
  *	[ START [ WITH | = ] start ]
  *	[ CACHE [=] cache | NOCACHE | NO CACHE]
  *	[ CYCLE | NOCYCLE | NO CYCLE]
- *	[ ORDER | NOORDER | NO ORDER]
  *	[table_options]
  ********************************************************************************************/
 CreateSequenceStmt:
@@ -11477,24 +11474,6 @@ SequenceOption:
 |	"NO" "CYCLE"
 	{
 		$$ = &ast.SequenceOption{Tp: ast.SequenceNoCycle}
-	}
-|	"ORDER"
-	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceOrder}
-		yylex.AppendError(yylex.Errorf("TiDB Sequence doesn't support ORDER option, ORDER will be parsed but ignored."))
-		parser.lastErrorAsWarn()
-	}
-|	"NOORDER"
-	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceNoOrder}
-		yylex.AppendError(yylex.Errorf("TiDB Sequence doesn't support ORDER option, NOORDER will be parsed but ignored."))
-		parser.lastErrorAsWarn()
-	}
-|	"NO" "ORDER"
-	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceNoOrder}
-		yylex.AppendError(yylex.Errorf("TiDB Sequence doesn't support ORDER option, NO ORDER will be parsed but ignored."))
-		parser.lastErrorAsWarn()
 	}
 
 SignedNum:

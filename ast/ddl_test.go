@@ -554,16 +554,13 @@ func (ts *testDDLSuite) TestSequenceRestore(c *C) {
 		{"create sequence if not exists seq cycle", "CREATE SEQUENCE IF NOT EXISTS `seq` CYCLE"},
 		{"create sequence if not exists seq nocycle", "CREATE SEQUENCE IF NOT EXISTS `seq` NOCYCLE"},
 		{"create sequence if not exists seq no cycle", "CREATE SEQUENCE IF NOT EXISTS `seq` NOCYCLE"},
-		{"create sequence if not exists seq order", "CREATE SEQUENCE IF NOT EXISTS `seq` ORDER"},
-		{"create sequence if not exists seq noorder", "CREATE SEQUENCE IF NOT EXISTS `seq` NOORDER"},
-		{"create sequence if not exists seq no order", "CREATE SEQUENCE IF NOT EXISTS `seq` NOORDER"},
 		{"create temporary sequence seq increment 1 minvalue 0 maxvalue 1000", "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY 1 MINVALUE 0 MAXVALUE 1000"},
 		{"create temporary sequence seq minvalue 0 maxvalue 1000 increment 1", "CREATE TEMPORARY SEQUENCE `seq` MINVALUE 0 MAXVALUE 1000 INCREMENT BY 1"},
-		{"create temporary sequence seq cache = 1 order minvalue 0 maxvalue -1000", "CREATE TEMPORARY SEQUENCE `seq` CACHE 1 ORDER MINVALUE 0 MAXVALUE -1000"},
+		{"create temporary sequence seq cache = 1 minvalue 0 maxvalue -1000", "CREATE TEMPORARY SEQUENCE `seq` CACHE 1 MINVALUE 0 MAXVALUE -1000"},
 		{"create temporary sequence seq increment -1 minvalue 0 maxvalue -1000", "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY -1 MINVALUE 0 MAXVALUE -1000"},
 		{"create temporary sequence seq nocycle nocache maxvalue 1000 cache 1", "CREATE TEMPORARY SEQUENCE `seq` NOCYCLE NOCACHE MAXVALUE 1000 CACHE 1"},
 		{"create temporary sequence seq increment -1 no minvalue no maxvalue cache = 1", "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY -1 NO MINVALUE NO MAXVALUE CACHE 1"},
-		{"create temporary sequence if not exists seq increment 1 minvalue 0 nomaxvalue cache 100 nocycle noorder", "CREATE TEMPORARY SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1 MINVALUE 0 NO MAXVALUE CACHE 100 NOCYCLE NOORDER"},
+		{"create temporary sequence if not exists seq increment 1 minvalue 0 nomaxvalue cache 100 nocycle", "CREATE TEMPORARY SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1 MINVALUE 0 NO MAXVALUE CACHE 100 NOCYCLE"},
 
 		// test drop sequence
 		{"drop sequence seq", "DROP SEQUENCE `seq`"},
