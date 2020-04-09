@@ -16,8 +16,8 @@ package terror
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"runtime"
+	"strconv"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
