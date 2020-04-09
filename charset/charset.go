@@ -170,6 +170,9 @@ func GetCollations() []*Collation {
 }
 
 func GetCollationByName(name string) (*Collation, error) {
+	if name == "" {
+		name = mysql.DefaultCollationName
+	}
 	collation, ok := collationsNameMap[strings.ToLower(name)]
 	if !ok {
 		return nil, ErrUnknownCollation.GenWithStackByArgs(name)

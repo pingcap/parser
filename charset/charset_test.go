@@ -161,6 +161,10 @@ func (s *testCharsetSuite) TestGetCollationByName(c *C) {
 
 	_, err := GetCollationByName("non_exist")
 	c.Assert(err, ErrorMatches, "\\[ddl:1273\\]Unknown collation: 'non_exist'")
+
+	collation, err := GetCollationByName("")
+	c.Assert(err, IsNil)
+	c.Assert(collation.CharsetName, Equals, "utf8mb4")
 }
 
 func BenchmarkGetCharsetDesc(b *testing.B) {
