@@ -363,10 +363,13 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		s.r.inc()
 		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
 		features := s.scanFeatureIDs()
+		fmt.Println("features:", features)
 		if SpecialCommentsController.ContainsAll(features) {
 			s.inBangComment = true
+			fmt.Println("It's in")
 			return s.scan()
 		}
+		fmt.Println("It's out")
 
 	case 'M': // '/*M' maybe MariaDB-specific comments
 		// no special treatment for now.
