@@ -363,8 +363,8 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		s.r.inc()
 		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
 		features := s.scanFeatureIDs()
-		s.inBangComment = true
 		if SpecialCommentsController.ContainsAll(features) {
+			s.inBangComment = true
 			return s.scan()
 		}
 
