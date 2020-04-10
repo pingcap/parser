@@ -63,6 +63,7 @@ const (
 	ActionUpdateTiFlashReplicaStatus    ActionType = 31
 	ActionAddPrimaryKey                 ActionType = 32
 	ActionDropPrimaryKey                ActionType = 33
+	ActionModifyTableAutoIdCache        ActionType = 34
 )
 
 const (
@@ -105,6 +106,7 @@ var actionMap = map[ActionType]string{
 	ActionRepairTable:                   "repair table",
 	ActionSetTiFlashReplica:             "set tiflash replica",
 	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
+	ActionModifyTableAutoIdCache:        "modify auto id cache",
 }
 
 // String return current ddl action in string
