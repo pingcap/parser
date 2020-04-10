@@ -16,7 +16,6 @@ package terror
 import (
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"strconv"
 
 	"github.com/pingcap/errors"
@@ -361,8 +360,6 @@ func Call(fn func() error) {
 // Log logs the error if it is not nil.
 func Log(err error) {
 	if err != nil {
-		var buf [4096]byte
-		sz := runtime.Stack(buf[:], false)
-		log.Error("encountered error", zap.Error(err), zap.String("stack", string(buf[:sz])))
+		log.Error("encountered error", zap.Error(errors.Trace(err)))
 	}
 }
