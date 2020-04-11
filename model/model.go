@@ -219,6 +219,7 @@ type TableInfo struct {
 	PKIsHandle  bool          `json:"pk_is_handle"`
 	Comment     string        `json:"comment"`
 	AutoIncID   int64         `json:"auto_inc_id"`
+	AutoIdCache int64         `json:"auto_id_cache"`
 	MaxColumnID int64         `json:"max_col_id"`
 	MaxIndexID  int64         `json:"max_idx_id"`
 	// UpdateTS is used to record the timestamp of updating the table's schema information.
@@ -615,7 +616,6 @@ const (
 type SequenceInfo struct {
 	Start      int64  `json:"sequence_start"`
 	Cache      bool   `json:"sequence_cache"`
-	Order      bool   `json:"sequence_order"`
 	Cycle      bool   `json:"sequence_cycle"`
 	MinValue   int64  `json:"sequence_min_value"`
 	MaxValue   int64  `json:"sequence_max_value"`
@@ -732,15 +732,16 @@ const (
 // It corresponds to the statement `CREATE INDEX Name ON Table (Column);`
 // See https://dev.mysql.com/doc/refman/5.7/en/create-index.html
 type IndexInfo struct {
-	ID      int64          `json:"id"`
-	Name    CIStr          `json:"idx_name"`   // Index name.
-	Table   CIStr          `json:"tbl_name"`   // Table name.
-	Columns []*IndexColumn `json:"idx_cols"`   // Index columns.
-	Unique  bool           `json:"is_unique"`  // Whether the index is unique.
-	Primary bool           `json:"is_primary"` // Whether the index is primary key.
-	State   SchemaState    `json:"state"`
-	Comment string         `json:"comment"`    // Comment
-	Tp      IndexType      `json:"index_type"` // Index type: Btree, Hash or Rtree
+	ID        int64          `json:"id"`
+	Name      CIStr          `json:"idx_name"` // Index name.
+	Table     CIStr          `json:"tbl_name"` // Table name.
+	Columns   []*IndexColumn `json:"idx_cols"` // Index columns.
+	State     SchemaState    `json:"state"`
+	Comment   string         `json:"comment"`      // Comment
+	Tp        IndexType      `json:"index_type"`   // Index type: Btree, Hash or Rtree
+	Unique    bool           `json:"is_unique"`    // Whether the index is unique.
+	Primary   bool           `json:"is_primary"`   // Whether the index is primary key.
+	Invisible bool           `json:"is_invisible"` // Whether the index is invisible.
 }
 
 // Clone clones IndexInfo.

@@ -122,7 +122,7 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			},
 		},
 		{
-			input: "HASH_JOIN() TIDB_HJ(@qb1) INL_JOIN(x, `y y`.z) sm_join(w@`First QB`)",
+			input: "HASH_JOIN() TIDB_HJ(@qb1) INL_JOIN(x, `y y`.z) MERGE_JOIN(w@`First QB`)",
 			output: []*ast.TableOptimizerHint{
 				{
 					HintName: model.NewCIStr("HASH_JOIN"),
@@ -139,7 +139,7 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 					},
 				},
 				{
-					HintName: model.NewCIStr("sm_join"),
+					HintName: model.NewCIStr("MERGE_JOIN"),
 					Tables: []ast.HintTable{
 						{TableName: model.NewCIStr("w"), QBName: model.NewCIStr("First QB")},
 					},
@@ -176,15 +176,18 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			},
 		},
 		{
-			input: "USE_TOJA(TRUE) ENABLE_PLAN_CACHE(FALSE) QUERY_TYPE(@qb1 OLAP) QUERY_TYPE(OLTP) NO_INDEX_MERGE()",
+			input: "USE_TOJA(TRUE) IGNORE_PLAN_CACHE() USE_CASCADES(TRUE) QUERY_TYPE(@qb1 OLAP) QUERY_TYPE(OLTP) NO_INDEX_MERGE()",
 			output: []*ast.TableOptimizerHint{
 				{
 					HintName: model.NewCIStr("USE_TOJA"),
 					HintData: true,
 				},
 				{
-					HintName: model.NewCIStr("ENABLE_PLAN_CACHE"),
-					HintData: false,
+					HintName: model.NewCIStr("IGNORE_PLAN_CACHE"),
+				},
+				{
+					HintName: model.NewCIStr("USE_CASCADES"),
+					HintData: true,
 				},
 				{
 					HintName: model.NewCIStr("QUERY_TYPE"),

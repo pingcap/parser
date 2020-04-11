@@ -817,6 +817,43 @@ func (n *SetStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// SetConfigStmt is the statement to set cluster configs.
+type SetConfigStmt struct {
+	stmtNode
+
+	Type     string // TiDB, TiKV, PD
+	Instance string // '127.0.0.1:3306'
+	Name     string // the variable name
+	Value    ExprNode
+}
+
+func (n *SetConfigStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("SET CONFIG ")
+	if n.Type != "" {
+		ctx.WriteKeyWord(n.Type)
+	} else {
+		ctx.WriteString(n.Instance)
+	}
+	ctx.WritePlain(" ")
+	ctx.WriteKeyWord(n.Name)
+	ctx.WritePlain(" = ")
+	return n.Value.Restore(ctx)
+}
+
+func (n *SetConfigStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*SetConfigStmt)
+	if node, ok := n.Value.Accept(v); !ok {
+		return n, false
+	} else {
+		n.Value = node.(ExprNode)
+	}
+	return v.Leave(n)
+}
+
 /*
 // SetCharsetStmt is a statement to assign values to character and collation variables.
 // See https://dev.mysql.com/doc/refman/5.7/en/set-statement.html
@@ -1577,6 +1614,7 @@ const (
 	AdminFlushBindings
 	AdminCaptureBindings
 	AdminEvolveBindings
+	AdminReloadBindings
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1783,6 +1821,8 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("CAPTURE BINDINGS")
 	case AdminEvolveBindings:
 		ctx.WriteKeyWord("EVOLVE BINDINGS")
+	case AdminReloadBindings:
+		ctx.WriteKeyWord("RELOAD BINDINGS")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -2196,6 +2236,209 @@ func (n *ShutdownStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type BRIEKind uint8
+type BRIEOptionType uint16
+
+const (
+	BRIEKindBackup BRIEKind = iota
+	BRIEKindRestore
+
+	// common BRIE options
+	BRIEOptionRateLimit BRIEOptionType = iota + 1
+	BRIEOptionConcurrency
+	BRIEOptionChecksum
+	BRIEOptionSendCreds
+	// backup options
+	BRIEOptionBackupTimeAgo
+	BRIEOptionBackupTS
+	BRIEOptionBackupTSO
+	BRIEOptionLastBackupTS
+	BRIEOptionLastBackupTSO
+	// restore options
+	BRIEOptionOnline
+	// S3 storage options
+	BRIEOptionS3Endpoint
+	BRIEOptionS3Region
+	BRIEOptionS3StorageClass
+	BRIEOptionS3SSE
+	BRIEOptionS3ACL
+	BRIEOptionS3AccessKey
+	BRIEOptionS3SecretAccessKey
+	BRIEOptionS3Provider
+	BRIEOptionS3ForcePathStyle
+	BRIEOptionS3UseAccelerateEndpoint
+	// GCS storage options
+	BRIEOptionGCSEndpoint
+	BRIEOptionGCSStorageClass
+	BRIEOptionGCSPredefinedACL
+	BRIEOptionGCSCredentialsFile
+)
+
+func (kind BRIEKind) String() string {
+	switch kind {
+	case BRIEKindBackup:
+		return "BACKUP"
+	case BRIEKindRestore:
+		return "RESTORE"
+	default:
+		return ""
+	}
+}
+
+func (kind BRIEOptionType) String() string {
+	switch kind {
+	case BRIEOptionRateLimit:
+		return "RATE_LIMIT"
+	case BRIEOptionConcurrency:
+		return "CONCURRENCY"
+	case BRIEOptionChecksum:
+		return "CHECKSUM"
+	case BRIEOptionSendCreds:
+		return "SEND_CREDENTIALS_TO_TIKV"
+	case BRIEOptionBackupTimeAgo, BRIEOptionBackupTS, BRIEOptionBackupTSO:
+		return "SNAPSHOT"
+	case BRIEOptionLastBackupTS:
+		return "INCREMENTAL UNTIL TIMESTAMP"
+	case BRIEOptionLastBackupTSO:
+		return "INCREMENTAL UNTIL TIMESTAMP_ORACLE"
+	case BRIEOptionOnline:
+		return "ONLINE"
+	case BRIEOptionS3Endpoint:
+		return "S3_ENDPOINT"
+	case BRIEOptionS3Region:
+		return "S3_REGION"
+	case BRIEOptionS3StorageClass:
+		return "S3_STORAGE_CLASS"
+	case BRIEOptionS3SSE:
+		return "S3_SSE"
+	case BRIEOptionS3ACL:
+		return "S3_ACL"
+	case BRIEOptionS3AccessKey:
+		return "S3_ACCESS_KEY"
+	case BRIEOptionS3SecretAccessKey:
+		return "S3_SECRET_ACCESS_KEY"
+	case BRIEOptionS3Provider:
+		return "S3_PROVIDER"
+	case BRIEOptionS3ForcePathStyle:
+		return "S3_FORCE_PATH_STYLE"
+	case BRIEOptionS3UseAccelerateEndpoint:
+		return "S3_USE_ACCELERATE_ENDPOINT"
+	case BRIEOptionGCSEndpoint:
+		return "GCS_ENDPOINT"
+	case BRIEOptionGCSStorageClass:
+		return "GCS_STORAGE_CLASS"
+	case BRIEOptionGCSPredefinedACL:
+		return "GCS_PREDEFINED_ACL"
+	case BRIEOptionGCSCredentialsFile:
+		return "GCS_CREDENTIALS_FILE"
+	default:
+		return ""
+	}
+}
+
+type BRIEOption struct {
+	Tp        BRIEOptionType
+	StrValue  string
+	UintValue uint64
+}
+
+// BRIEStmt is a statement for backup, restore, import and export.
+type BRIEStmt struct {
+	stmtNode
+
+	Kind        BRIEKind
+	Schemas     []string
+	Tables      []*TableName
+	Storage     string
+	Options     []*BRIEOption
+	Incremental *BRIEOption
+}
+
+func (n *BRIEStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*BRIEStmt)
+	for i, val := range n.Tables {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Tables[i] = node.(*TableName)
+	}
+	return v.Leave(n)
+}
+
+func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord(n.Kind.String())
+
+	switch {
+	case len(n.Tables) != 0:
+		ctx.WriteKeyWord(" TABLE ")
+		for index, table := range n.Tables {
+			if index != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := table.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore BRIEStmt.Tables[%d]", index)
+			}
+		}
+	case len(n.Schemas) != 0:
+		ctx.WriteKeyWord(" DATABASE ")
+		for index, schema := range n.Schemas {
+			if index != 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteName(schema)
+		}
+	default:
+		ctx.WriteKeyWord(" DATABASE")
+		ctx.WritePlain(" *")
+	}
+
+	if n.Incremental != nil {
+		switch n.Incremental.Tp {
+		case BRIEOptionLastBackupTS:
+			ctx.WriteKeyWord(" INCREMENTAL UNTIL TIMESTAMP ")
+			ctx.WriteString(n.Incremental.StrValue)
+		case BRIEOptionLastBackupTSO:
+			ctx.WriteKeyWord(" INCREMENTAL UNTIL TIMESTAMP_ORACLE")
+			ctx.WritePlainf(" %d", n.Incremental.UintValue)
+		}
+	}
+
+	switch n.Kind {
+	case BRIEKindBackup:
+		ctx.WriteKeyWord(" TO ")
+	case BRIEKindRestore:
+		ctx.WriteKeyWord(" FROM ")
+	}
+	ctx.WriteString(n.Storage)
+
+	for _, opt := range n.Options {
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(opt.Tp.String())
+		ctx.WritePlain(" = ")
+		switch opt.Tp {
+		case BRIEOptionConcurrency, BRIEOptionChecksum, BRIEOptionSendCreds, BRIEOptionOnline, BRIEOptionS3ForcePathStyle, BRIEOptionS3UseAccelerateEndpoint, BRIEOptionBackupTSO:
+			ctx.WritePlainf("%d", opt.UintValue)
+		case BRIEOptionBackupTimeAgo:
+			ctx.WritePlainf("%d ", opt.UintValue/1000)
+			ctx.WriteKeyWord("MICROSECOND AGO")
+		case BRIEOptionRateLimit:
+			ctx.WritePlainf("%d ", opt.UintValue/1048576)
+			ctx.WriteKeyWord("MB")
+			ctx.WritePlain("/")
+			ctx.WriteKeyWord("SECOND")
+		default:
+			ctx.WriteString(opt.StrValue)
+		}
+	}
+
+	return nil
+}
+
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
@@ -2288,7 +2531,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	}
 	// Hints without args except query block.
 	switch n.HintName.L {
-	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name":
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name", "ignore_plan_cache":
 		ctx.WritePlain(")")
 		return nil
 	}
@@ -2299,7 +2542,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	switch n.HintName.L {
 	case "max_execution_time":
 		ctx.WritePlainf("%d", n.HintData.(uint64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "sm_join", "inl_join":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
@@ -2315,7 +2558,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 			}
 			ctx.WriteName(index.String())
 		}
-	case "use_toja", "enable_plan_cache":
+	case "use_toja", "use_cascades":
 		if n.HintData.(bool) {
 			ctx.WritePlain("TRUE")
 		} else {

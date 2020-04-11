@@ -294,7 +294,9 @@ func (testModelSuite) TestString(c *C) {
 		{ActionAddIndex, "add index"},
 		{ActionDropIndex, "drop index"},
 		{ActionAddColumn, "add column"},
+		{ActionAddColumns, "add multi-columns"},
 		{ActionDropColumn, "drop column"},
+		{ActionDropColumns, "drop multi-columns"},
 		{ActionModifySchemaCharsetAndCollate, "modify schema charset and collate"},
 	}
 
