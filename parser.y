@@ -299,6 +299,7 @@ import (
 	always                  "ALWAYS"
 	any                     "ANY"
 	ascii                   "ASCII"
+	autoIdCache             "AUTO_ID_CACHE"
 	autoIncrement           "AUTO_INCREMENT"
 	autoRandom              "AUTO_RANDOM"
 	avg                     "AVG"
@@ -1793,8 +1794,6 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableWithValidation,
 		}
-		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	"WITHOUT" "VALIDATION"
 	{
@@ -1802,8 +1801,6 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableWithoutValidation,
 		}
-		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 // Added in MySQL 8.0.13, see: https://dev.mysql.com/doc/refman/8.0/en/keywords.html for details
 |	"SECONDARY_LOAD"
@@ -4890,6 +4887,7 @@ UnReservedKeyword:
 	"ACTION"
 |	"ADVISE"
 |	"ASCII"
+|	"AUTO_ID_CACHE"
 |	"AUTO_INCREMENT"
 |	"AFTER"
 |	"ALWAYS"
@@ -9385,6 +9383,10 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $3.(uint64)}
 	}
+|	"AUTO_ID_CACHE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
+	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAvgRowLength, UintValue: $3.(uint64)}
@@ -11498,7 +11500,7 @@ DropSequenceStmt:
 		}
 	}
 
-/*******************************************************************
+/********************************************************************
  * Index Advisor Statement
  *
  * INDEX ADVISE
