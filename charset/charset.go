@@ -58,7 +58,7 @@ var charsetInfos = []*Charset{
 	{CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
 	{CharsetLatin1, CollationLatin1, make(map[string]*Collation), "cp1252 West European", 1},
 	{CharsetBin, CollationBin, make(map[string]*Collation), "Binary pseudo charset", 1},
-	{CharsetGBK, CollationGBKChineseCi, make(map[string]*Collation), " GBK Simplified Chinese", 1},
+	{CharsetGBK, CollationGBKChineseCi, make(map[string]*Collation), "GBK Simplified Chinese", 1},
 }
 
 // All the names supported collations should be in the following table.
