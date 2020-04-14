@@ -1157,7 +1157,7 @@ import (
 	OptCharset                             "Optional Character setting"
 	OptCollate                             "Optional Collate setting"
 	IgnoreLines                            "Ignore num(int) lines"
-	Int64Num                               "A number that can be converted to signed 64 bits integer"
+	Int64Num                               "a number that can be safely converted to int64"
 	NUM                                    "A number"
 	NumList                                "Some numbers"
 	LengthNum                              "Field length num(uint64)"
