@@ -14,10 +14,30 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
+
+// CommentCodeVersion is used to track the highest version can be parsed in the comment with pattern /*T!00001 xxx */
+type CommentCodeVersion int
+
+const (
+	CommentCodeNoVersion  CommentCodeVersion = iota
+	CommentCodeAutoRandom CommentCodeVersion = 40000
+
+	CommentCodeCurrentVersion
+)
+
+func (ccv CommentCodeVersion) String() string {
+	return fmt.Sprintf("%05d", ccv)
+}
+
+// WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
+func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
+	return fmt.Sprintf("/*T!%05d %s */", ccv, str)
+}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -82,13 +102,14 @@ func init() {
 	// set root trie node's token to invalid, so when input match nothing
 	// in the trie, invalid will be the default return token.
 	ruleTable.token = invalid
-	initTokenByte('*', int('*'))
 	initTokenByte('/', int('/'))
 	initTokenByte('+', int('+'))
 	initTokenByte('>', int('>'))
 	initTokenByte('<', int('<'))
 	initTokenByte('(', int('('))
 	initTokenByte(')', int(')'))
+	initTokenByte('[', int('['))
+	initTokenByte(']', int(']'))
 	initTokenByte(';', int(';'))
 	initTokenByte(',', int(','))
 	initTokenByte('&', int('&'))
@@ -119,6 +140,7 @@ func init() {
 
 	initTokenFunc("@", startWithAt)
 	initTokenFunc("/", startWithSlash)
+	initTokenFunc("*", startWithStar)
 	initTokenFunc("-", startWithDash)
 	initTokenFunc("#", startWithSharp)
 	initTokenFunc("Xx", startWithXx)
@@ -357,7 +379,6 @@ var tokenMap = map[string]int{
 	"MATCH":                    match,
 	"MAX":                      max,
 	"MAX_CONNECTIONS_PER_HOUR": maxConnectionsPerHour,
-	"MAX_EXECUTION_TIME":       maxExecutionTime,
 	"MAX_QUERIES_PER_HOUR":     maxQueriesPerHour,
 	"MAX_ROWS":                 maxRows,
 	"MAX_UPDATES_PER_HOUR":     maxUpdatesPerHour,
@@ -527,9 +548,7 @@ var tokenMap = map[string]int{
 	"THAN":                     than,
 	"THEN":                     then,
 	"TIDB":                     tidb,
-	"TIDB_HJ":                  tidbHJ,
-	"TIDB_INLJ":                tidbINLJ,
-	"TIDB_SMJ":                 tidbSMJ,
+	"TIFLASH":                  tiFlash,
 	"TIME":                     timeType,
 	"TIMESTAMP":                timestampType,
 	"TIMESTAMPADD":             timestampAdd,
@@ -547,6 +566,7 @@ var tokenMap = map[string]int{
 	"TOKUDB_UNCOMPRESSED":      tokudbUncompressed,
 	"TOKUDB_ZLIB":              tokudbZlib,
 	"TOP":                      top,
+	"TOPN":                     topn,
 	"TRACE":                    trace,
 	"TRADITIONAL":              traditional,
 	"TRAILING":                 trailing,
@@ -663,6 +683,90 @@ var aliases = map[string]string{
 	"SCHEMAS": "DATABASES",
 	"DEC":     "DECIMAL",
 	"SUBSTR":  "SUBSTRING",
+}
+
+// hintedTokens is a set of tokens which recognizes a hint.
+// According to https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html,
+// only SELECT, INSERT, REPLACE, UPDATE and DELETE accept optimizer hints.
+// additionally we support CREATE and PARTITION for hints at table creation.
+var hintedTokens = map[int]struct{}{
+	selectKwd: {},
+	insert:    {},
+	replace:   {},
+	update:    {},
+	deleteKwd: {},
+	create:    {},
+	partition: {},
+}
+
+var hintTokenMap = map[string]int{
+	// MySQL 8.0 hint names
+	"JOIN_FIXED_ORDER":      hintJoinFixedOrder,
+	"JOIN_ORDER":            hintJoinOrder,
+	"JOIN_PREFIX":           hintJoinPrefix,
+	"JOIN_SUFFIX":           hintJoinSuffix,
+	"BKA":                   hintBKA,
+	"NO_BKA":                hintNoBKA,
+	"BNL":                   hintBNL,
+	"NO_BNL":                hintNoBNL,
+	"HASH_JOIN":             hintHashJoin,
+	"NO_HASH_JOIN":          hintNoHashJoin,
+	"MERGE":                 hintMerge,
+	"NO_MERGE":              hintNoMerge,
+	"INDEX_MERGE":           hintIndexMerge,
+	"NO_INDEX_MERGE":        hintNoIndexMerge,
+	"MRR":                   hintMRR,
+	"NO_MRR":                hintNoMRR,
+	"NO_ICP":                hintNoICP,
+	"NO_RANGE_OPTIMIZATION": hintNoRangeOptimization,
+	"SKIP_SCAN":             hintSkipScan,
+	"NO_SKIP_SCAN":          hintNoSkipScan,
+	"SEMIJOIN":              hintSemijoin,
+	"NO_SEMIJOIN":           hintNoSemijoin,
+	"MAX_EXECUTION_TIME":    hintMaxExecutionTime,
+	"SET_VAR":               hintSetVar,
+	"RESOURCE_GROUP":        hintResourceGroup,
+	"QB_NAME":               hintQBName,
+
+	// TiDB hint names
+	"AGG_TO_COP":              hintAggToCop,
+	"ENABLE_PLAN_CACHE":       hintEnablePlanCache,
+	"HASH_AGG":                hintHashAgg,
+	"IGNORE_INDEX":            hintIgnoreIndex,
+	"INL_HASH_JOIN":           hintInlHashJoin,
+	"INL_JOIN":                hintInlJoin,
+	"INL_MERGE_JOIN":          hintInlMergeJoin,
+	"MEMORY_QUOTA":            hintMemoryQuota,
+	"NO_SWAP_JOIN_INPUTS":     hintNoSwapJoinInputs,
+	"QUERY_TYPE":              hintQueryType,
+	"READ_CONSISTENT_REPLICA": hintReadConsistentReplica,
+	"READ_FROM_STORAGE":       hintReadFromStorage,
+	"SM_JOIN":                 hintSMJoin,
+	"STREAM_AGG":              hintStreamAgg,
+	"SWAP_JOIN_INPUTS":        hintSwapJoinInputs,
+	"USE_INDEX_MERGE":         hintUseIndexMerge,
+	"USE_INDEX":               hintUseIndex,
+	"USE_PLAN_CACHE":          hintUsePlanCache,
+	"USE_TOJA":                hintUseToja,
+
+	// TiDB hint aliases
+	"TIDB_HJ":   hintHashJoin,
+	"TIDB_INLJ": hintInlJoin,
+	"TIDB_SMJ":  hintSMJoin,
+
+	// Other keywords
+	"OLAP":            hintOLAP,
+	"OLTP":            hintOLTP,
+	"TIKV":            hintTiKV,
+	"TIFLASH":         hintTiFlash,
+	"FALSE":           hintFalse,
+	"TRUE":            hintTrue,
+	"MB":              hintMB,
+	"GB":              hintGB,
+	"DUPSWEEDOUT":     hintDupsWeedOut,
+	"FIRSTMATCH":      hintFirstMatch,
+	"LOOSESCAN":       hintLooseScan,
+	"MATERIALIZATION": hintMaterialization,
 }
 
 func (s *Scanner) isTokenIdentifier(lit string, offset int) int {

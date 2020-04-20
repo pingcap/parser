@@ -54,8 +54,7 @@ import (
 	singleAtIdentifier			"identifier with single leading at"
 	doubleAtIdentifier			"identifier with double leading at"
 	invalid					"a special token never used by parser, used by lexer to indicate error"
-	hintBegin				"hintBegin is a virtual token for optimizer hint grammar"
-	hintEnd					"hintEnd is a virtual token for optimizer hint grammar"
+	hintComment        			"an optimizer hint"
 	andand					"&&"
 	pipes					"||"
 
@@ -497,7 +496,6 @@ import (
 	internal		"INTERNAL"
 	min			"MIN"
 	max			"MAX"
-	maxExecutionTime	"MAX_EXECUTION_TIME"
 	now			"NOW"
 	position		"POSITION"
 	recent			"RECENT"
@@ -528,30 +526,29 @@ import (
 	tls                   "TLS"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
-	admin		"ADMIN"
-	buckets		"BUCKETS"
-	cancel		"CANCEL"
-	ddl		"DDL"
-	drainer		"DRAINER"
-	jobs		"JOBS"
-	job		"JOB"
-	nodeID		"NODE_ID"
-	nodeState	"NODE_STATE"
-	optimistic	"OPTIMISTIC"
-	pessimistic	"PESSIMISTIC"
-	pump		"PUMP"
-	stats		"STATS"
-	statsMeta       "STATS_META"
-	statsHistograms "STATS_HISTOGRAMS"
-	statsBuckets    "STATS_BUCKETS"
-	statsHealthy    "STATS_HEALTHY"
-	tidb		"TIDB"
-	tidbHJ		"TIDB_HJ"
-	tidbSMJ		"TIDB_SMJ"
-	tidbINLJ	"TIDB_INLJ"
-	split		"SPLIT"
-	regions         "REGIONS"
-	region          "REGION"
+	admin              "ADMIN"
+	buckets            "BUCKETS"
+	cancel             "CANCEL"
+	ddl                "DDL"
+	drainer            "DRAINER"
+	jobs               "JOBS"
+	job                "JOB"
+	nodeID             "NODE_ID"
+	nodeState          "NODE_STATE"
+	optimistic         "OPTIMISTIC"
+	pessimistic        "PESSIMISTIC"
+	pump               "PUMP"
+	stats              "STATS"
+	statsMeta          "STATS_META"
+	statsHistograms    "STATS_HISTOGRAMS"
+	statsBuckets       "STATS_BUCKETS"
+	statsHealthy       "STATS_HEALTHY"
+	tidb               "TIDB"
+	tiFlash            "TIFLASH"
+	topn               "TOPN"
+	split              "SPLIT"
+	regions            "REGIONS"
+	region             "REGION"
 
 	builtinAddDate
 	builtinBitAnd
@@ -1001,10 +998,7 @@ import (
 	NUM			"A number"
 	NumList			"Some numbers"
 	LengthNum		"Field length num(uint64)"
-	HintTableList		"Table list in optimizer hint"
-	TableOptimizerHintOpt	"Table level optimizer hint"
 	TableOptimizerHints	"Table level optimizer hints"
-	TableOptimizerHintList	"Table level optimizer hint list"
 	EnforcedOrNot		"{ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOpt	"Optional {ENFORCED|NOT ENFORCED}"
 	EnforcedOrNotOrNotNullOpt	"{[ENFORCED|NOT ENFORCED|NOT NULL]}"
@@ -3723,12 +3717,12 @@ UnReservedKeyword:
 | "TRADITIONAL" | "SQL_BUFFER_RESULT" | "DIRECTORY" | "HISTORY" | "LIST" | "NODEGROUP" | "SYSTEM_TIME" | "NOWAIT" | "PARTIAL" | "SIMPLE" | "INSTANCE"
 
 TiDBKeyword:
- "ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB" | "TIDB_HJ"
-| "TIDB_SMJ" | "TIDB_INLJ" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS" | "REGION"
+"ADMIN" | "BUCKETS" | "CANCEL" | "DDL" | "DRAINER" | "JOBS" | "JOB" | "NODE_ID" | "NODE_STATE" | "PUMP" | "STATS" | "STATS_META" | "STATS_HISTOGRAMS" | "STATS_BUCKETS" | "STATS_HEALTHY" | "TIDB"
+| "TIFLASH" | "TOPN" | "SPLIT" | "OPTIMISTIC" | "PESSIMISTIC" | "REGIONS" | "REGION"
 
 NotKeywordToken:
  "ADDDATE" | "BIT_AND" | "BIT_OR" | "BIT_XOR" | "CAST" | "COPY" | "COUNT" | "CURTIME" | "DATE_ADD" | "DATE_SUB" | "EXTRACT" | "GET_FORMAT" | "GROUP_CONCAT"
-| "INPLACE" | "INSTANT" | "INTERNAL" |"MIN" | "MAX" | "MAX_EXECUTION_TIME" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
+| "INPLACE" | "INSTANT" | "INTERNAL" |"MIN" | "MAX" | "NOW" | "RECENT" | "POSITION" | "SUBDATE" | "SUBSTRING" | "SUM"
 | "STD" | "STDDEV" | "STDDEV_POP" | "STDDEV_SAMP" | "VARIANCE" | "VAR_POP" | "VAR_SAMP"
 | "TIMESTAMPADD" | "TIMESTAMPDIFF" | "TOKUDB_DEFAULT" | "TOKUDB_FAST" | "TOKUDB_LZMA" | "TOKUDB_QUICKLZ" | "TOKUDB_SNAPPY" | "TOKUDB_SMALL" | "TOKUDB_UNCOMPRESSED" | "TOKUDB_ZLIB" | "TOP" | "TRIM" | "NEXT_ROW_ID"
 | "EXPR_PUSHDOWN_BLACKLIST" | "OPT_RULE_BLACKLIST" | "TLS"
@@ -5948,53 +5942,14 @@ TableOptimizerHints:
 	{
 		$$ = nil
 	}
-|	hintBegin TableOptimizerHintList hintEnd
+|	hintComment
 	{
-		$$ = $2
-	}
-|	hintBegin error hintEnd
-	{
-		yyerrok()
-		parser.lastErrorAsWarn()
-		$$ = nil
-	}
-
-HintTableList:
-	Identifier
-	{
-		$$ = []model.CIStr{model.NewCIStr($1)}
-	}
-|	HintTableList ',' Identifier
-	{
-		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
-	}
-
-TableOptimizerHintList:
-	TableOptimizerHintOpt
-	{
-		$$ = []*ast.TableOptimizerHint{$1.(*ast.TableOptimizerHint)}
-	}
-|	TableOptimizerHintList TableOptimizerHintOpt
-	{
-		$$ = append($1.([]*ast.TableOptimizerHint), $2.(*ast.TableOptimizerHint))
-	}
-
-TableOptimizerHintOpt:
-	tidbSMJ '(' HintTableList ')'
-	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
-	}
-|	tidbINLJ '(' HintTableList ')'
-	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
-	}
-|	tidbHJ '(' HintTableList ')'
-	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), Tables: $3.([]model.CIStr)}
-	}
-|	maxExecutionTime '(' NUM ')'
-	{
-		$$ = &ast.TableOptimizerHint{HintName: model.NewCIStr($1), MaxExecutionTime: getUint64FromNUM($3)}
+		hints, warns := parser.parseHint($1)
+		for _, w := range warns {
+			yylex.AppendError(w)
+			parser.lastErrorAsWarn()
+		}
+		$$ = hints
 	}
 
 SelectStmtCalcFoundRows:
