@@ -962,4 +962,5 @@ const (
 	ErrGCTooEarly         = 9006
 	ErrWriteConflict      = 9007
 	ErrTiKVStoreLimit     = 9008
+	ErrTiKVStaleCommand   = 9010
 )
