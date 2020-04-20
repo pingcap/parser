@@ -14,30 +14,10 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
-
-// CommentCodeVersion is used to track the highest version can be parsed in the comment with pattern /*T!00001 xxx */
-type CommentCodeVersion int
-
-const (
-	CommentCodeNoVersion  CommentCodeVersion = iota
-	CommentCodeAutoRandom CommentCodeVersion = 30100
-
-	CommentCodeCurrentVersion
-)
-
-func (ccv CommentCodeVersion) String() string {
-	return fmt.Sprintf("%05d", ccv)
-}
-
-// WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
-func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
-	return fmt.Sprintf("/*T!%05d %s */", ccv, str)
-}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -176,6 +156,7 @@ var tokenMap = map[string]int{
 	"ASC":                        asc,
 	"ASCII":                      ascii,
 	"AUTO_INCREMENT":             autoIncrement,
+	"AUTO_ID_CACHE":              autoIdCache,
 	"AUTO_RANDOM":                autoRandom,
 	"AVG_ROW_LENGTH":             avgRowLength,
 	"AVG":                        avg,
@@ -469,7 +450,6 @@ var tokenMap = map[string]int{
 	"NOMAXVALUE":                 nomaxvalue,
 	"NOMINVALUE":                 nominvalue,
 	"NONE":                       none,
-	"NOORDER":                    noorder,
 	"NOT":                        not,
 	"NOW":                        now,
 	"NOWAIT":                     nowait,
@@ -942,4 +922,39 @@ func handleIdent(lval *yySymType) int {
 	}
 	lval.ident = cs
 	return underscoreCS
+}
+
+// SpecialCommentsController controls whether special comments like `/*T![xxx] yyy */`
+// can be parsed as `yyy`. To add such rules, please use SpecialCommentsController.Register().
+// For example:
+//     SpecialCommentsController.Register("30100");
+// Now the parser will treat
+//   select a, /*T![30100] mysterious_keyword */ from t;
+// and
+//   select a, mysterious_keyword from t;
+// equally.
+// Similar special comments without registration are ignored by parser.
+var SpecialCommentsController = specialCommentsCtrl{
+	supportedFeatures: map[string]struct{}{},
+}
+
+type specialCommentsCtrl struct {
+	supportedFeatures map[string]struct{}
+}
+
+func (s *specialCommentsCtrl) Register(featureID string) {
+	s.supportedFeatures[featureID] = struct{}{}
+}
+
+func (s *specialCommentsCtrl) Unregister(featureID string) {
+	delete(s.supportedFeatures, featureID)
+}
+
+func (s *specialCommentsCtrl) ContainsAll(featureIDs []string) bool {
+	for _, f := range featureIDs {
+		if _, found := s.supportedFeatures[f]; !found {
+			return false
+		}
+	}
+	return true
 }
