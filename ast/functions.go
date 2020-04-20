@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/format"
@@ -328,6 +329,9 @@ const (
 
 	// TiDB internal function.
 	TiDBDecodeKey = "tidb_decode_key"
+
+	// MVCC information fetching function.
+	GetMvccInfo = "get_mvcc_info"
 
 	// Sequence function.
 	NextVal = "nextval"
@@ -696,6 +700,8 @@ type AggregateFuncExpr struct {
 	// For example, column c1 values are "1", "2", "2",  "sum(c1)" is "5",
 	// but "sum(distinct c1)" is "3".
 	Distinct bool
+	// Order is only used in GROUP_CONCAT
+	Order *OrderByClause
 }
 
 // Restore implements Node interface.
@@ -713,6 +719,12 @@ func (n *AggregateFuncExpr) Restore(ctx *format.RestoreCtx) error {
 			}
 			if err := n.Args[i].Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore AggregateFuncExpr.Args[%d]", i)
+			}
+		}
+		if n.Order != nil {
+			ctx.WritePlain(" ")
+			if err := n.Order.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occur while restore AggregateFuncExpr.Args Order")
 			}
 		}
 		ctx.WriteKeyWord(" SEPARATOR ")
@@ -751,6 +763,13 @@ func (n *AggregateFuncExpr) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Args[i] = node.(ExprNode)
+	}
+	if n.Order != nil {
+		node, ok := n.Order.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Order = node.(*OrderByClause)
 	}
 	return v.Leave(n)
 }
@@ -950,6 +969,30 @@ func (unit TimeUnitType) String() string {
 		return "YEAR_MONTH"
 	default:
 		return ""
+	}
+}
+
+// Duration represented by this unit.
+// Returns error if the time unit is not a fixed time interval (such as MONTH)
+// or a composite unit (such as MINUTE_SECOND).
+func (unit TimeUnitType) Duration() (time.Duration, error) {
+	switch unit {
+	case TimeUnitMicrosecond:
+		return time.Microsecond, nil
+	case TimeUnitSecond:
+		return time.Second, nil
+	case TimeUnitMinute:
+		return time.Minute, nil
+	case TimeUnitHour:
+		return time.Hour, nil
+	case TimeUnitDay:
+		return time.Hour * 24, nil
+	case TimeUnitWeek:
+		return time.Hour * 24 * 7, nil
+	case TimeUnitMonth, TimeUnitQuarter, TimeUnitYear:
+		return 0, errors.Errorf("%s is not a constant time interval and cannot be used here", unit)
+	default:
+		return 0, errors.Errorf("%s is a composite time unit and is not supported yet", unit)
 	}
 }
 
