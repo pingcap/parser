@@ -753,6 +753,7 @@ import (
 	CharsetNameOrDefault   "Character set name or default"
 	NextValueForSequence   "Default nextval expression"
 	FunctionNameSequence   "Function with sequence function call"
+	WindowFuncCall         "WINDOW function call"
 
 %type	<statement>
 	AdminStmt            "Check table statement or show ddl statement"
@@ -822,6 +823,8 @@ import (
 	UnionStmt            "Union select state ment"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
+	CreateViewSelectOpt  "Select/Union statement in CREATE VIEW ... AS SELECT"
+	UnionSelect          "Union (select) item"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -869,7 +872,6 @@ import (
 	CreateSequenceOptionListOpt            "create sequence list opt"
 	CreateTableOptionListOpt               "create table option list opt"
 	CreateTableSelectOpt                   "Select/Union statement in CREATE TABLE ... SELECT"
-	CreateViewSelectOpt                    "Select/Union statement in CREATE VIEW ... AS SELECT"
 	DatabaseOption                         "CREATE Database specification"
 	DatabaseOptionList                     "CREATE Database specification list"
 	DatabaseOptionListOpt                  "CREATE Database specification list opt"
@@ -1058,7 +1060,6 @@ import (
 	TrimDirection                          "Trim string direction"
 	UnionOpt                               "Union Option(empty/ALL/DISTINCT)"
 	UnionClauseList                        "Union select clause list"
-	UnionSelect                            "Union (select) item"
 	Username                               "Username"
 	UsernameList                           "UsernameList"
 	UserSpec                               "Username and auth option"
@@ -1105,7 +1106,6 @@ import (
 	WindowFrameBound                       "WINDOW frame bound"
 	WindowFrameExtent                      "WINDOW frame extent"
 	WindowFrameStart                       "WINDOW frame start"
-	WindowFuncCall                         "WINDOW function call"
 	WindowName                             "WINDOW name"
 	WindowNameOrSpec                       "WINDOW name or spec"
 	WindowSpec                             "WINDOW spec"
@@ -1885,18 +1885,12 @@ AllOrPartitionNameList:
 		$$ = nil
 	}
 |	PartitionNameList %prec lowerThanComma
-	{
-		$$ = $1
-	}
 
 WithValidationOpt:
 	{
 		$$ = true
 	}
 |	WithValidation
-	{
-		$$ = $1
-	}
 
 WithValidation:
 	"WITH" "VALIDATION"
@@ -1986,9 +1980,6 @@ AlterTableSpecListOpt:
 		$$ = make([]*ast.AlterTableSpec, 0, 1)
 	}
 |	AlterTableSpecList
-	{
-		$$ = $1
-	}
 
 AlterTableSpecList:
 	AlterTableSpec
@@ -2025,9 +2016,6 @@ ConstraintKeywordOpt:
 
 Symbol:
 	Identifier
-	{
-		$$ = $1
-	}
 
 /**************************************RenameTableStmt***************************************
  * See http://dev.mysql.com/doc/refman/5.7/en/rename-table.html
@@ -2443,9 +2431,6 @@ ColumnNameListOpt:
 		$$ = []*ast.ColumnName{}
 	}
 |	ColumnNameList
-	{
-		$$ = $1.([]*ast.ColumnName)
-	}
 
 ColumnNameOrUserVarListOpt:
 	/* EMPTY */
@@ -2453,9 +2438,6 @@ ColumnNameOrUserVarListOpt:
 		$$ = []*ast.ColumnNameOrUserVar{}
 	}
 |	ColumnNameOrUserVariableList
-	{
-		$$ = $1.([]*ast.ColumnNameOrUserVar)
-	}
 
 ColumnNameOrUserVariableList:
 	ColumnNameOrUserVariable
@@ -2517,9 +2499,6 @@ EnforcedOrNotOpt:
 		$$ = true
 	}
 |	EnforcedOrNot
-	{
-		$$ = $1
-	}
 
 EnforcedOrNotOrNotNullOpt:
 	//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
@@ -2705,9 +2684,6 @@ ColumnOptionListOpt:
 		$$ = []*ast.ColumnOption{}
 	}
 |	ColumnOptionList
-	{
-		$$ = $1.([]*ast.ColumnOption)
-	}
 
 ConstraintElem:
 	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
@@ -3177,9 +3153,6 @@ CreateDatabaseStmt:
 
 DBName:
 	Identifier
-	{
-		$$ = $1
-	}
 
 DatabaseOption:
 	DefaultKwdOpt CharsetKw EqOpt CharsetName
@@ -3304,9 +3277,6 @@ PartitionKeyAlgorithmOpt:
 
 PartitionMethod:
 	SubPartitionMethod
-	{
-		$$ = $1
-	}
 |	"RANGE" '(' Expression ')'
 	{
 		$$ = &ast.PartitionMethod{
@@ -3362,9 +3332,6 @@ LinearOpt:
 		$$ = ""
 	}
 |	"LINEAR"
-	{
-		$$ = $1
-	}
 
 SubPartitionOpt:
 	{
@@ -3600,20 +3567,14 @@ CreateTableSelectOpt:
 
 CreateViewSelectOpt:
 	SelectStmt
-	{
-		$$ = $1.(*ast.SelectStmt)
-	}
 |	UnionStmt
-	{
-		$$ = $1.(*ast.UnionStmt)
-	}
 |	'(' SelectStmt ')'
 	{
-		$$ = $2.(*ast.SelectStmt)
+		$$ = $2
 	}
 |	'(' UnionStmt ')'
 	{
-		$$ = $2.(*ast.UnionStmt)
+		$$ = $2
 	}
 
 LikeTableWithOrWithoutParen:
@@ -3715,9 +3676,6 @@ ViewSQLSecurity:
 
 ViewName:
 	TableName
-	{
-		$$ = $1.(*ast.TableName)
-	}
 
 ViewFieldList:
 	/* Empty */
@@ -4364,9 +4322,6 @@ MaxValueOrExpression:
 		$$ = &ast.MaxValueExpr{}
 	}
 |	Expression
-	{
-		$$ = $1
-	}
 
 FulltextSearchModifierOpt:
 	/* empty */
@@ -4429,9 +4384,6 @@ FuncDatetimePrecListOpt:
 		$$ = []ast.ExprNode{}
 	}
 |	FuncDatetimePrecList
-	{
-		$$ = $1
-	}
 
 FuncDatetimePrecList:
 	intLit
@@ -4661,23 +4613,14 @@ FieldAsNameOpt:
 		$$ = ""
 	}
 |	FieldAsName
-	{
-		$$ = $1
-	}
 
 FieldAsName:
 	Identifier
-	{
-		$$ = $1
-	}
 |	"AS" Identifier
 	{
 		$$ = $2
 	}
 |	stringLit
-	{
-		$$ = $1
-	}
 |	"AS" stringLit
 	{
 		$$ = $2
@@ -4750,10 +4693,6 @@ IndexName:
 		$$ = ""
 	}
 |	Identifier
-	{
-		//"index name"
-		$$ = $1
-	}
 
 IndexOptionList:
 	{
@@ -4854,9 +4793,6 @@ IndexTypeOpt:
 		$$ = nil
 	}
 |	IndexType
-	{
-		$$ = $1
-	}
 
 IndexType:
 	"USING" IndexTypeName
@@ -5480,9 +5416,6 @@ Literal:
 		$$ = ast.NewValueExpr($1, parser.charset, parser.collation)
 	}
 |	StringLiteral %prec lowerThanStringLitToken
-	{
-		$$ = $1
-	}
 |	"UNDERSCORE_CHARSET" stringLit
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
@@ -5594,9 +5527,6 @@ OrderByOptional:
 		$$ = nil
 	}
 |	OrderBy
-	{
-		$$ = $1
-	}
 
 BitExpr:
 	BitExpr '|' BitExpr %prec '|'
@@ -5711,9 +5641,6 @@ SimpleExpr:
 		$$ = &ast.SetCollationExpr{Expr: $1, Collate: $3}
 	}
 |	WindowFuncCall
-	{
-		$$ = $1.(*ast.WindowFuncExpr)
-	}
 |	Literal
 |	paramMarker
 	{
@@ -6457,9 +6384,6 @@ FuncDatetimePrec:
 
 TimeUnit:
 	TimestampUnit
-	{
-		$$ = $1
-	}
 |	"SECOND_MICROSECOND"
 	{
 		$$ = ast.TimeUnitSecondMicrosecond
@@ -6580,9 +6504,6 @@ ExpressionOpt:
 		$$ = nil
 	}
 |	Expression
-	{
-		$$ = $1
-	}
 
 WhenClauseList:
 	WhenClause
@@ -6856,7 +6777,7 @@ PrepareSQL:
 	}
 |	UserVariable
 	{
-		$$ = $1.(interface{})
+		$$ = $1
 	}
 
 /*
@@ -7128,9 +7049,6 @@ OptExistingWindowName:
 		$$ = model.CIStr{}
 	}
 |	WindowName
-	{
-		$$ = $1.(model.CIStr)
-	}
 
 OptPartitionClause:
 	{
@@ -7185,9 +7103,6 @@ WindowFrameExtent:
 		}
 	}
 |	WindowFrameBetween
-	{
-		$$ = $1.(ast.FrameExtent)
-	}
 
 WindowFrameStart:
 	"UNBOUNDED" "PRECEDING"
@@ -7219,9 +7134,6 @@ WindowFrameBetween:
 
 WindowFrameBound:
 	WindowFrameStart
-	{
-		$$ = $1.(ast.FrameBound)
-	}
 |	"UNBOUNDED" "FOLLOWING"
 	{
 		$$ = ast.FrameBound{Type: ast.Following, UnBounded: true}
@@ -7261,9 +7173,6 @@ WindowNameOrSpec:
 		$$ = ast.WindowSpec{Name: $1.(model.CIStr), OnlyAlias: true}
 	}
 |	WindowSpec
-	{
-		$$ = $1.(ast.WindowSpec)
-	}
 
 WindowFuncCall:
 	"ROW_NUMBER" '(' ')' WindowingClause
@@ -7399,9 +7308,6 @@ TableRefs:
 
 EscapedTableRef:
 	TableRef %prec lowerThanSetKeyword
-	{
-		$$ = $1
-	}
 |	'{' Identifier TableRef '}'
 	{
 		/*
@@ -7413,13 +7319,7 @@ EscapedTableRef:
 
 TableRef:
 	TableFactor
-	{
-		$$ = $1
-	}
 |	JoinTable
-	{
-		$$ = $1
-	}
 
 TableFactor:
 	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
@@ -7460,9 +7360,6 @@ TableAsNameOpt:
 		$$ = model.CIStr{}
 	}
 |	TableAsName
-	{
-		$$ = $1
-	}
 
 TableAsName:
 	Identifier
@@ -7549,13 +7446,9 @@ IndexHintList:
 
 IndexHintListOpt:
 	{
-		var hintList []*ast.IndexHint
-		$$ = hintList
+		$$ = []*ast.IndexHint{}
 	}
 |	IndexHintList
-	{
-		$$ = $1
-	}
 
 JoinTable:
 	/* Use %prec to evaluate production TableRef before cross join */
@@ -7945,9 +7838,6 @@ UnionClauseList:
 
 UnionSelect:
 	SelectStmt
-	{
-		$$ = $1.(interface{})
-	}
 |	'(' SelectStmt ')'
 	{
 		st := $2.(*ast.SelectStmt)
@@ -8062,9 +7952,6 @@ SetRoleOpt:
 		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAllExcept, RoleList: $3.([]*auth.RoleIdentity)}
 	}
 |	SetDefaultRoleOpt
-	{
-		$$ = $1
-	}
 |	"DEFAULT"
 	{
 		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleDefault, RoleList: nil}
@@ -8347,9 +8234,6 @@ UsernameList:
 
 PasswordOpt:
 	stringLit
-	{
-		$$ = $1
-	}
 |	"PASSWORD" '(' AuthString ')'
 	{
 		$$ = $3
@@ -8357,19 +8241,10 @@ PasswordOpt:
 
 AuthString:
 	stringLit
-	{
-		$$ = $1
-	}
 
 RoleNameString:
 	stringLit
-	{
-		$$ = $1
-	}
 |	identifier
-	{
-		$$ = $1
-	}
 
 Rolename:
 	RoleNameString
@@ -8774,9 +8649,6 @@ ShowProfileTypesOpt:
 		$$ = nil
 	}
 |	ShowProfileTypes
-	{
-		$$ = $1
-	}
 
 ShowProfileTypes:
 	ShowProfileType
@@ -9200,9 +9072,6 @@ TableNameListOpt:
 		$$ = []*ast.TableName{}
 	}
 |	TableNameList
-	{
-		$$ = $1
-	}
 
 WithReadLockOpt:
 	{
@@ -9340,13 +9209,7 @@ Constraint:
 
 TableElement:
 	ColumnDef
-	{
-		$$ = $1.(*ast.ColumnDef)
-	}
 |	Constraint
-	{
-		$$ = $1.(*ast.Constraint)
-	}
 
 TableElementList:
 	TableElement
@@ -9397,9 +9260,6 @@ TableElementListOpt:
 
 TableOption:
 	PartDefOption
-	{
-		$$ = $1
-	}
 |	DefaultKwdOpt CharsetKw EqOpt CharsetName
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionCharset, StrValue: $4,
@@ -9649,17 +9509,8 @@ RowFormat:
 /*************************************Type Begin***************************************/
 Type:
 	NumericType
-	{
-		$$ = $1
-	}
 |	StringType
-	{
-		$$ = $1
-	}
 |	DateAndTimeType
-	{
-		$$ = $1
-	}
 
 NumericType:
 	IntegerType OptFieldLen FieldOpts
@@ -9926,7 +9777,7 @@ StringType:
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
 		x.Flag |= mysql.BinaryFlag
-		$$ = $1.(*types.FieldType)
+		$$ = x
 	}
 |	TextType OptCharsetWithOptBinary
 	{
@@ -10060,9 +9911,6 @@ TextType:
 
 OptCharsetWithOptBinary:
 	OptBinary
-	{
-		$$ = $1
-	}
 |	"ASCII"
 	{
 		$$ = &ast.OptBinary{
@@ -10148,9 +9996,6 @@ OptFieldLen:
 		$$ = types.UnspecifiedLength
 	}
 |	FieldLen
-	{
-		$$ = $1.(int)
-	}
 
 FieldOpt:
 	"UNSIGNED"
@@ -10184,9 +10029,6 @@ FloatOpt:
 		$$ = &ast.FloatOpt{Flen: $1.(int), Decimal: types.UnspecifiedLength}
 	}
 |	Precision
-	{
-		$$ = $1.(*ast.FloatOpt)
-	}
 
 Precision:
 	'(' LengthNum ',' LengthNum ')'
@@ -10260,13 +10102,7 @@ StringList:
 
 StringName:
 	stringLit
-	{
-		$$ = $1
-	}
 |	Identifier
-	{
-		$$ = $1
-	}
 
 /***********************************************************************************
  * Update Statement
@@ -10335,9 +10171,6 @@ WhereClauseOptional:
 		$$ = nil
 	}
 |	WhereClause
-	{
-		$$ = $1
-	}
 
 CommaOpt:
 	{}
@@ -10500,9 +10333,6 @@ RequireClauseOpt:
 		$$ = []*ast.TLSOption{}
 	}
 |	RequireClause
-	{
-		$$ = $1
-	}
 
 RequireClause:
 	"REQUIRE" "NONE"
@@ -10683,9 +10513,6 @@ AuthOption:
 
 HashString:
 	stringLit
-	{
-		$$ = $1
-	}
 
 RoleSpec:
 	Rolename
@@ -11225,9 +11052,6 @@ FieldItem:
 
 FieldTerminator:
 	stringLit
-	{
-		$$ = $1
-	}
 |	hexLit
 	{
 		$$ = $1.(ast.BinaryLiteral).ToString()
@@ -11510,12 +11334,9 @@ SequenceOption:
 
 SignedNum:
 	Int64Num
-	{
-		$$ = $1.(int64)
-	}
 |	'+' Int64Num
 	{
-		$$ = $2.(int64)
+		$$ = $2
 	}
 |	'-' Int64Num
 	{

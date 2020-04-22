@@ -10288,17 +10288,9 @@ yynewstate:
 		{
 			parser.yyVAL.item = nil
 		}
-	case 61:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 62:
 		{
 			parser.yyVAL.item = true
-		}
-	case 63:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 64:
 		{
@@ -10367,10 +10359,6 @@ yynewstate:
 		{
 			parser.yyVAL.item = make([]*ast.AlterTableSpec, 0, 1)
 		}
-	case 83:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 84:
 		{
 			parser.yyVAL.item = []*ast.AlterTableSpec{yyS[yypt-0].item.(*ast.AlterTableSpec)}
@@ -10398,10 +10386,6 @@ yynewstate:
 	case 90:
 		{
 			parser.yyVAL.item = yyS[yypt-0].ident
-		}
-	case 91:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 92:
 		{
@@ -10739,17 +10723,9 @@ yynewstate:
 		{
 			parser.yyVAL.item = []*ast.ColumnName{}
 		}
-	case 154:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.([]*ast.ColumnName)
-		}
 	case 155:
 		{
 			parser.yyVAL.item = []*ast.ColumnNameOrUserVar{}
-		}
-	case 156:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.([]*ast.ColumnNameOrUserVar)
 		}
 	case 157:
 		{
@@ -10794,10 +10770,6 @@ yynewstate:
 	case 169:
 		{
 			parser.yyVAL.item = true
-		}
-	case 170:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 171:
 		{
@@ -10960,10 +10932,6 @@ yynewstate:
 	case 203:
 		{
 			parser.yyVAL.item = []*ast.ColumnOption{}
-		}
-	case 204:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.([]*ast.ColumnOption)
 		}
 	case 205:
 		{
@@ -11309,10 +11277,6 @@ yynewstate:
 				Options:     yyS[yypt-0].item.([]*ast.DatabaseOption),
 			}
 		}
-	case 269:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
 	case 270:
 		{
 			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionCharset, Value: yyS[yypt-0].ident}
@@ -11397,10 +11361,6 @@ yynewstate:
 				Expr:   yyS[yypt-1].expr.(ast.ExprNode),
 			}
 		}
-	case 287:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 288:
 		{
 			parser.yyVAL.item = &ast.PartitionMethod{
@@ -11453,10 +11413,6 @@ yynewstate:
 	case 295:
 		{
 			parser.yyVAL.ident = ""
-		}
-	case 296:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 297:
 		{
@@ -11661,21 +11617,13 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.CreateTableStmt{Select: yyS[yypt-0].expr}
 		}
-	case 341:
-		{
-			parser.yyVAL.item = yyS[yypt-0].statement.(*ast.SelectStmt)
-		}
-	case 342:
-		{
-			parser.yyVAL.item = yyS[yypt-0].statement.(*ast.UnionStmt)
-		}
 	case 343:
 		{
-			parser.yyVAL.item = yyS[yypt-1].statement.(*ast.SelectStmt)
+			parser.yyVAL.statement = yyS[yypt-1].statement
 		}
 	case 344:
 		{
-			parser.yyVAL.item = yyS[yypt-1].statement.(*ast.UnionStmt)
+			parser.yyVAL.statement = yyS[yypt-1].statement
 		}
 	case 345:
 		{
@@ -11688,7 +11636,7 @@ yynewstate:
 	case 347:
 		{
 			startOffset := parser.startOffset(&yyS[yypt-1])
-			selStmt := yyS[yypt-1].item.(ast.StmtNode)
+			selStmt := yyS[yypt-1].statement.(ast.StmtNode)
 			selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 			x := &ast.CreateViewStmt{
 				OrReplace: yyS[yypt-9].item.(bool),
@@ -11753,10 +11701,6 @@ yynewstate:
 	case 358:
 		{
 			parser.yyVAL.item = model.SecurityInvoker
-		}
-	case 359:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(*ast.TableName)
 		}
 	case 360:
 		{
@@ -12288,10 +12232,6 @@ yynewstate:
 		{
 			parser.yyVAL.expr = &ast.MaxValueExpr{}
 		}
-	case 459:
-		{
-			parser.yyVAL.expr = yyS[yypt-0].expr
-		}
 	case 460:
 		{
 			parser.yyVAL.item = ast.FulltextSearchModifierNaturalLanguageMode
@@ -12335,10 +12275,6 @@ yynewstate:
 	case 475:
 		{
 			parser.yyVAL.item = []ast.ExprNode{}
-		}
-	case 476:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 477:
 		{
@@ -12536,19 +12472,7 @@ yynewstate:
 		{
 			parser.yyVAL.ident = ""
 		}
-	case 520:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
-	case 521:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
 	case 522:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
-	case 523:
 		{
 			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
@@ -12613,11 +12537,6 @@ yynewstate:
 	case 536:
 		{
 			parser.yyVAL.ident = ""
-		}
-	case 537:
-		{
-			//"index name"
-			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 538:
 		{
@@ -12692,10 +12611,6 @@ yynewstate:
 	case 548:
 		{
 			parser.yyVAL.item = nil
-		}
-	case 549:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 550:
 		{
@@ -12877,10 +12792,6 @@ yynewstate:
 		{
 			parser.yyVAL.expr = ast.NewValueExpr(yyS[yypt-0].item, parser.charset, parser.collation)
 		}
-	case 974:
-		{
-			parser.yyVAL.expr = yyS[yypt-0].expr
-		}
 	case 975:
 		{
 			// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
@@ -12975,10 +12886,6 @@ yynewstate:
 	case 990:
 		{
 			parser.yyVAL.item = nil
-		}
-	case 991:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 992:
 		{
@@ -13081,10 +12988,6 @@ yynewstate:
 	case 1015:
 		{
 			parser.yyVAL.expr = &ast.SetCollationExpr{Expr: yyS[yypt-2].expr, Collate: yyS[yypt-0].ident}
-		}
-	case 1016:
-		{
-			parser.yyVAL.expr = yyS[yypt-0].item.(*ast.WindowFuncExpr)
 		}
 	case 1018:
 		{
@@ -13733,10 +13636,6 @@ yynewstate:
 			expr := ast.NewValueExpr(yyS[yypt-1].item, parser.charset, parser.collation)
 			parser.yyVAL.item = expr
 		}
-	case 1171:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 1172:
 		{
 			parser.yyVAL.item = ast.TimeUnitSecondMicrosecond
@@ -13852,10 +13751,6 @@ yynewstate:
 	case 1200:
 		{
 			parser.yyVAL.expr = nil
-		}
-	case 1201:
-		{
-			parser.yyVAL.expr = yyS[yypt-0].expr
 		}
 	case 1202:
 		{
@@ -14093,7 +13988,7 @@ yynewstate:
 		}
 	case 1237:
 		{
-			parser.yyVAL.item = yyS[yypt-0].expr.(interface{})
+			parser.yyVAL.item = yyS[yypt-0].expr
 		}
 	case 1238:
 		{
@@ -14318,10 +14213,6 @@ yynewstate:
 		{
 			parser.yyVAL.item = model.CIStr{}
 		}
-	case 1271:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(model.CIStr)
-		}
 	case 1272:
 		{
 			parser.yyVAL.item = nil
@@ -14368,10 +14259,6 @@ yynewstate:
 				End:   ast.FrameBound{Type: ast.CurrentRow},
 			}
 		}
-	case 1282:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(ast.FrameExtent)
-		}
 	case 1283:
 		{
 			parser.yyVAL.item = ast.FrameBound{Type: ast.Preceding, UnBounded: true}
@@ -14395,10 +14282,6 @@ yynewstate:
 	case 1288:
 		{
 			parser.yyVAL.item = ast.FrameExtent{Start: yyS[yypt-2].item.(ast.FrameBound), End: yyS[yypt-0].item.(ast.FrameBound)}
-		}
-	case 1289:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(ast.FrameBound)
 		}
 	case 1290:
 		{
@@ -14433,33 +14316,29 @@ yynewstate:
 		{
 			parser.yyVAL.item = ast.WindowSpec{Name: yyS[yypt-0].item.(model.CIStr), OnlyAlias: true}
 		}
-	case 1298:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(ast.WindowSpec)
-		}
 	case 1299:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1300:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1301:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1302:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1303:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-3].ident, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1304:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-4].ident, Args: []ast.ExprNode{yyS[yypt-2].expr}, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-4].ident, Args: []ast.ExprNode{yyS[yypt-2].expr}, Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1305:
 		{
@@ -14467,7 +14346,7 @@ yynewstate:
 			if yyS[yypt-3].item != nil {
 				args = append(args, yyS[yypt-3].item.([]ast.ExprNode)...)
 			}
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-6].ident, Args: args, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-6].ident, Args: args, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1306:
 		{
@@ -14475,19 +14354,19 @@ yynewstate:
 			if yyS[yypt-3].item != nil {
 				args = append(args, yyS[yypt-3].item.([]ast.ExprNode)...)
 			}
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-6].ident, Args: args, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-6].ident, Args: args, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1307:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-5].ident, Args: []ast.ExprNode{yyS[yypt-3].expr}, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-5].ident, Args: []ast.ExprNode{yyS[yypt-3].expr}, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1308:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-5].ident, Args: []ast.ExprNode{yyS[yypt-3].expr}, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-5].ident, Args: []ast.ExprNode{yyS[yypt-3].expr}, IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1309:
 		{
-			parser.yyVAL.item = &ast.WindowFuncExpr{F: yyS[yypt-8].ident, Args: []ast.ExprNode{yyS[yypt-6].expr, yyS[yypt-4].expr}, FromLast: yyS[yypt-2].item.(bool), IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
+			parser.yyVAL.expr = &ast.WindowFuncExpr{F: yyS[yypt-8].ident, Args: []ast.ExprNode{yyS[yypt-6].expr, yyS[yypt-4].expr}, FromLast: yyS[yypt-2].item.(bool), IgnoreNull: yyS[yypt-1].item.(bool), Spec: yyS[yypt-0].item.(ast.WindowSpec)}
 		}
 	case 1310:
 		{
@@ -14559,10 +14438,6 @@ yynewstate:
 			/* from a, b is default cross join */
 			parser.yyVAL.item = &ast.Join{Left: yyS[yypt-2].item.(ast.ResultSetNode), Right: yyS[yypt-0].item.(ast.ResultSetNode), Tp: ast.CrossJoin}
 		}
-	case 1324:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 1325:
 		{
 			/*
@@ -14570,14 +14445,6 @@ yynewstate:
 			 * Use an Identifier for OJ
 			 */
 			parser.yyVAL.item = yyS[yypt-1].item
-		}
-	case 1326:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
-	case 1327:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1328:
 		{
@@ -14612,10 +14479,6 @@ yynewstate:
 	case 1334:
 		{
 			parser.yyVAL.item = model.CIStr{}
-		}
-	case 1335:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1336:
 		{
@@ -14692,12 +14555,7 @@ yynewstate:
 		}
 	case 1353:
 		{
-			var hintList []*ast.IndexHint
-			parser.yyVAL.item = hintList
-		}
-	case 1354:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
+			parser.yyVAL.item = []*ast.IndexHint{}
 		}
 	case 1355:
 		{
@@ -15019,7 +14877,7 @@ yynewstate:
 		}
 	case 1410:
 		{
-			selectList := &ast.UnionSelectList{Selects: []*ast.SelectStmt{yyS[yypt-0].item.(*ast.SelectStmt)}}
+			selectList := &ast.UnionSelectList{Selects: []*ast.SelectStmt{yyS[yypt-0].statement.(*ast.SelectStmt)}}
 			parser.yyVAL.item = &ast.UnionStmt{
 				SelectList: selectList,
 			}
@@ -15027,7 +14885,7 @@ yynewstate:
 	case 1411:
 		{
 			union := yyS[yypt-3].item.(*ast.UnionStmt)
-			st := yyS[yypt-0].item.(*ast.SelectStmt)
+			st := yyS[yypt-0].statement.(*ast.SelectStmt)
 			st.IsAfterUnionDistinct = yyS[yypt-1].item.(bool)
 			lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
 			endOffset := parser.endOffset(&yyS[yypt-2])
@@ -15035,17 +14893,13 @@ yynewstate:
 			union.SelectList.Selects = append(union.SelectList.Selects, st)
 			parser.yyVAL.item = union
 		}
-	case 1412:
-		{
-			parser.yyVAL.item = yyS[yypt-0].statement.(interface{})
-		}
 	case 1413:
 		{
 			st := yyS[yypt-1].statement.(*ast.SelectStmt)
 			st.IsInBraces = true
 			endOffset := parser.endOffset(&yyS[yypt])
 			parser.setLastSelectFieldText(st, endOffset)
-			parser.yyVAL.item = yyS[yypt-1].statement
+			parser.yyVAL.statement = yyS[yypt-1].statement
 		}
 	case 1415:
 		{
@@ -15134,10 +14988,6 @@ yynewstate:
 	case 1430:
 		{
 			parser.yyVAL.item = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAllExcept, RoleList: yyS[yypt-0].item.([]*auth.RoleIdentity)}
-		}
-	case 1431:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1432:
 		{
@@ -15378,25 +15228,9 @@ yynewstate:
 		{
 			parser.yyVAL.item = append(yyS[yypt-2].item.([]*auth.UserIdentity), yyS[yypt-0].item.(*auth.UserIdentity))
 		}
-	case 1481:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
 	case 1482:
 		{
 			parser.yyVAL.ident = yyS[yypt-1].ident
-		}
-	case 1483:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
-	case 1484:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
-	case 1485:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1486:
 		{
@@ -15781,10 +15615,6 @@ yynewstate:
 	case 1540:
 		{
 			parser.yyVAL.item = nil
-		}
-	case 1541:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1542:
 		{
@@ -16173,10 +16003,6 @@ yynewstate:
 		{
 			parser.yyVAL.item = []*ast.TableName{}
 		}
-	case 1623:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 1624:
 		{
 			parser.yyVAL.item = false
@@ -16218,14 +16044,6 @@ yynewstate:
 				cst.Name = yyS[yypt-1].item.(string)
 			}
 			parser.yyVAL.item = cst
-		}
-	case 1711:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(*ast.ColumnDef)
-		}
-	case 1712:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(*ast.Constraint)
 		}
 	case 1713:
 		{
@@ -16269,10 +16087,6 @@ yynewstate:
 				Cols:        columnDefs,
 				Constraints: constraints,
 			}
-		}
-	case 1717:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1718:
 		{
@@ -16499,18 +16313,6 @@ yynewstate:
 	case 1768:
 		{
 			parser.yyVAL.item = ast.TokuDBRowFormatUncompressed
-		}
-	case 1769:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
-	case 1770:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
-	case 1771:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1772:
 		{
@@ -16759,7 +16561,7 @@ yynewstate:
 			x.Charset = charset.CharsetBin
 			x.Collate = charset.CharsetBin
 			x.Flag |= mysql.BinaryFlag
-			parser.yyVAL.item = yyS[yypt-0].item.(*types.FieldType)
+			parser.yyVAL.item = x
 		}
 	case 1810:
 		{
@@ -16857,10 +16659,6 @@ yynewstate:
 			x := types.NewFieldType(mysql.TypeLongBlob)
 			parser.yyVAL.item = x
 		}
-	case 1844:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
-		}
 	case 1845:
 		{
 			parser.yyVAL.item = &ast.OptBinary{
@@ -16940,10 +16738,6 @@ yynewstate:
 		{
 			parser.yyVAL.item = types.UnspecifiedLength
 		}
-	case 1855:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(int)
-		}
 	case 1856:
 		{
 			parser.yyVAL.item = &ast.TypeOpt{IsUnsigned: true}
@@ -16971,10 +16765,6 @@ yynewstate:
 	case 1862:
 		{
 			parser.yyVAL.item = &ast.FloatOpt{Flen: yyS[yypt-0].item.(int), Decimal: types.UnspecifiedLength}
-		}
-	case 1863:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(*ast.FloatOpt)
 		}
 	case 1864:
 		{
@@ -17033,14 +16823,6 @@ yynewstate:
 		{
 			parser.yyVAL.item = append(yyS[yypt-2].item.([]string), yyS[yypt-0].ident)
 		}
-	case 1879:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
-	case 1880:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
 	case 1881:
 		{
 			var refs *ast.Join
@@ -17096,10 +16878,6 @@ yynewstate:
 	case 1885:
 		{
 			parser.yyVAL.item = nil
-		}
-	case 1886:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1889:
 		{
@@ -17230,10 +17008,6 @@ yynewstate:
 	case 1907:
 		{
 			parser.yyVAL.item = []*ast.TLSOption{}
-		}
-	case 1908:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 1909:
 		{
@@ -17396,10 +17170,6 @@ yynewstate:
 			parser.yyVAL.item = &ast.AuthOption{
 				HashString: yyS[yypt-0].ident,
 			}
-		}
-	case 1937:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1938:
 		{
@@ -17870,10 +17640,6 @@ yynewstate:
 				Value: str,
 			}
 		}
-	case 2015:
-		{
-			parser.yyVAL.ident = yyS[yypt-0].ident
-		}
 	case 2016:
 		{
 			parser.yyVAL.ident = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
@@ -18092,13 +17858,9 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.SequenceOption{Tp: ast.SequenceNoCycle}
 		}
-	case 2067:
-		{
-			parser.yyVAL.item = yyS[yypt-0].item.(int64)
-		}
 	case 2068:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(int64)
+			parser.yyVAL.item = yyS[yypt-0].item
 		}
 	case 2069:
 		{
