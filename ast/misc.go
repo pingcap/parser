@@ -2242,12 +2242,14 @@ type BRIEOptionType uint16
 const (
 	BRIEKindBackup BRIEKind = iota
 	BRIEKindRestore
+	BRIEKindImport
 
 	// common BRIE options
 	BRIEOptionRateLimit BRIEOptionType = iota + 1
 	BRIEOptionConcurrency
 	BRIEOptionChecksum
 	BRIEOptionSendCreds
+	BRIEOptionCheckpoint
 	// backup options
 	BRIEOptionBackupTimeAgo
 	BRIEOptionBackupTS
@@ -2256,6 +2258,23 @@ const (
 	BRIEOptionLastBackupTSO
 	// restore options
 	BRIEOptionOnline
+	// import options
+	BRIEOptionAnalyze
+	BRIEOptionBackend
+	BRIEOptionOnDuplicate
+	BRIEOptionSkipSchemaFiles
+	BRIEOptionStrictFormat
+	BRIEOptionTiKVImporter
+	// CSV options
+	BRIEOptionCSVBackslashEscape
+	BRIEOptionCSVDelimiter
+	BRIEOptionCSVHeader
+	BRIEOptionCSVNotNull
+	BRIEOptionCSVNull
+	BRIEOptionCSVSeparator
+	BRIEOptionCSVTrimLastSeparators
+
+	BRIECSVHeaderIsColumns = ^uint64(0)
 )
 
 func (kind BRIEKind) String() string {
@@ -2264,6 +2283,8 @@ func (kind BRIEKind) String() string {
 		return "BACKUP"
 	case BRIEKindRestore:
 		return "RESTORE"
+	case BRIEKindImport:
+		return "IMPORT"
 	default:
 		return ""
 	}
@@ -2285,6 +2306,34 @@ func (kind BRIEOptionType) String() string {
 		return "LAST_BACKUP"
 	case BRIEOptionOnline:
 		return "ONLINE"
+	case BRIEOptionCheckpoint:
+		return "CHECKPOINT"
+	case BRIEOptionAnalyze:
+		return "ANALYZE"
+	case BRIEOptionBackend:
+		return "BACKEND"
+	case BRIEOptionOnDuplicate:
+		return "ON_DUPLICATE"
+	case BRIEOptionSkipSchemaFiles:
+		return "SKIP_SCHEMA_FILES"
+	case BRIEOptionStrictFormat:
+		return "STRICT_FORMAT"
+	case BRIEOptionTiKVImporter:
+		return "TIKV_IMPORTER"
+	case BRIEOptionCSVBackslashEscape:
+		return "CSV_BACKSLASH_ESCAPE"
+	case BRIEOptionCSVDelimiter:
+		return "CSV_DELIMITER"
+	case BRIEOptionCSVHeader:
+		return "CSV_HEADER"
+	case BRIEOptionCSVNotNull:
+		return "CSV_NOT_NULL"
+	case BRIEOptionCSVNull:
+		return "CSV_NULL"
+	case BRIEOptionCSVSeparator:
+		return "CSV_SEPARATOR"
+	case BRIEOptionCSVTrimLastSeparators:
+		return "CSV_TRIM_LAST_SEPARATORS"
 	default:
 		return ""
 	}
@@ -2353,7 +2402,7 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 	switch n.Kind {
 	case BRIEKindBackup:
 		ctx.WriteKeyWord(" TO ")
-	case BRIEKindRestore:
+	case BRIEKindRestore, BRIEKindImport:
 		ctx.WriteKeyWord(" FROM ")
 	}
 	ctx.WriteString(n.Storage)
@@ -2363,8 +2412,8 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord(opt.Tp.String())
 		ctx.WritePlain(" = ")
 		switch opt.Tp {
-		case BRIEOptionConcurrency, BRIEOptionChecksum, BRIEOptionSendCreds, BRIEOptionOnline, BRIEOptionBackupTSO, BRIEOptionLastBackupTSO:
-			ctx.WritePlainf("%d", opt.UintValue)
+		case BRIEOptionBackupTS, BRIEOptionLastBackupTS, BRIEOptionBackend, BRIEOptionOnDuplicate, BRIEOptionTiKVImporter, BRIEOptionCSVDelimiter, BRIEOptionCSVNull, BRIEOptionCSVSeparator:
+			ctx.WriteString(opt.StrValue)
 		case BRIEOptionBackupTimeAgo:
 			ctx.WritePlainf("%d ", opt.UintValue/1000)
 			ctx.WriteKeyWord("MICROSECOND AGO")
@@ -2373,8 +2422,14 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("MB")
 			ctx.WritePlain("/")
 			ctx.WriteKeyWord("SECOND")
+		case BRIEOptionCSVHeader:
+			if opt.UintValue == BRIECSVHeaderIsColumns {
+				ctx.WriteKeyWord("COLUMNS")
+			} else {
+				ctx.WritePlainf("%d", opt.UintValue)
+			}
 		default:
-			ctx.WriteString(opt.StrValue)
+			ctx.WritePlainf("%d", opt.UintValue)
 		}
 	}
 

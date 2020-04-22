@@ -303,6 +303,7 @@ import (
 	autoRandom            "AUTO_RANDOM"
 	avg                   "AVG"
 	avgRowLength          "AVG_ROW_LENGTH"
+	backend               "BACKEND"
 	backup                "BACKUP"
 	backups               "BACKUPS"
 	begin                 "BEGIN"
@@ -319,6 +320,7 @@ import (
 	capture               "CAPTURE"
 	cascaded              "CASCADED"
 	charsetKwd            "CHARSET"
+	checkpoint            "CHECKPOINT"
 	checksum              "CHECKSUM"
 	cipher                "CIPHER"
 	cleanup               "CLEANUP"
@@ -338,6 +340,13 @@ import (
 	consistent            "CONSISTENT"
 	context               "CONTEXT"
 	cpu                   "CPU"
+	csvBackslashEscape    "CSV_BACKSLASH_ESCAPE"
+	csvDelimiter          "CSV_DELIMITER"
+	csvHeader             "CSV_HEADER"
+	csvNotNull            "CSV_NOT_NULL"
+	csvNull               "CSV_NULL"
+	csvSeparator          "CSV_SEPARATOR"
+	csvTrimLastSeparators "CSV_TRIM_LAST_SEPARATORS"
 	current               "CURRENT"
 	cycle                 "CYCLE"
 	data                  "DATA"
@@ -390,6 +399,7 @@ import (
 	identified            "IDENTIFIED"
 	identSQLErrors        "ERRORS"
 	importKwd             "IMPORT"
+	imports               "IMPORTS"
 	increment             "INCREMENT"
 	incremental           "INCREMENTAL"
 	indexes               "INDEXES"
@@ -448,6 +458,7 @@ import (
 	nowait                "NOWAIT"
 	nulls                 "NULLS"
 	offset                "OFFSET"
+	onDuplicate           "ON_DUPLICATE"
 	online                "ONLINE"
 	only                  "ONLY"
 	open                  "OPEN"
@@ -509,6 +520,7 @@ import (
 	shutdown              "SHUTDOWN"
 	signed                "SIGNED"
 	simple                "SIMPLE"
+	skipSchemaFiles       "SKIP_SCHEMA_FILES"
 	slave                 "SLAVE"
 	slow                  "SLOW"
 	snapshot              "SNAPSHOT"
@@ -531,6 +543,7 @@ import (
 	statsSamplePages      "STATS_SAMPLE_PAGES"
 	status                "STATUS"
 	storage               "STORAGE"
+	strictFormat          "STRICT_FORMAT"
 	subject               "SUBJECT"
 	subpartition          "SUBPARTITION"
 	subpartitions         "SUBPARTITIONS"
@@ -545,6 +558,7 @@ import (
 	temptable             "TEMPTABLE"
 	textType              "TEXT"
 	than                  "THAN"
+	tikvImporter          "TIKV_IMPORTER"
 	timestampType         "TIMESTAMP"
 	timeType              "TIME"
 	tp                    "TYPE"
@@ -827,6 +841,7 @@ import (
 	AssignmentListOpt                      "assignment list opt"
 	AuthOption                             "User auth option"
 	AuthString                             "Password string value"
+	Boolean                                "Boolean (0, 1, false, true)"
 	OptionalBraces                         "optional braces"
 	CastType                               "Cast function target type"
 	CharsetName                            "Character set name"
@@ -1164,6 +1179,9 @@ import (
 	BRIEOption                             "Single BRIE option"
 	BRIEOptions                            "List of BRIE options"
 	BRIEIntegerOptionName                  "Name of a BRIE option which takes an integer as input"
+	BRIEBooleanOptionName                  "Name of a BRIE option which takes a boolean as input"
+	BRIEStringOptionName                   "Name of a BRIE option which takes a string as input"
+	BRIEKeywordOptionName                  "Name of a BRIE option which takes a case-insensitive string as input"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1215,6 +1233,7 @@ import (
 	FunctionNameDateArithMultiForms "Date arith function call names (adddate or subdate)"
 	VariableName                    "A simple Identifier like xx or the xx.xx form"
 	ConfigItemName                  "A config item like aa or aa.bb or aa.bb-cc.dd"
+	StringNameOrBRIEOptionKeyword   "string literal or identifier or keyword used for BRIE options"
 
 %precedence empty
 %precedence sqlBufferResult
@@ -4048,12 +4067,14 @@ ExplainFormatType:
 	}
 
 /*******************************************************************
- * Backup / restore statements
+ * Backup / restore / import statements
  *
  *	BACKUP DATABASE [ * | db1, db2, db3 ] TO 'scheme://location' [ options... ]
  *	BACKUP TABLE [ db1.tbl1, db2.tbl2 ] TO 'scheme://location' [ options... ]
  *	RESTORE DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
  *	RESTORE TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
+ *	IMPORT DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
+ *	IMPORT TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
  */
 BRIEStmt:
 	"BACKUP" BRIETables "TO" stringLit BRIEOptions
@@ -4068,6 +4089,14 @@ BRIEStmt:
 	{
 		stmt := $2.(*ast.BRIEStmt)
 		stmt.Kind = ast.BRIEKindRestore
+		stmt.Storage = $4
+		stmt.Options = $5.([]*ast.BRIEOption)
+		$$ = stmt
+	}
+|	"IMPORT" BRIETables "FROM" stringLit BRIEOptions
+	{
+		stmt := $2.(*ast.BRIEStmt)
+		stmt.Kind = ast.BRIEKindImport
 		stmt.Storage = $4
 		stmt.Options = $5.([]*ast.BRIEOption)
 		$$ = stmt
@@ -4112,7 +4141,9 @@ BRIEIntegerOptionName:
 	{
 		$$ = ast.BRIEOptionConcurrency
 	}
-|	"CHECKSUM"
+
+BRIEBooleanOptionName:
+	"CHECKSUM"
 	{
 		$$ = ast.BRIEOptionChecksum
 	}
@@ -4124,6 +4155,66 @@ BRIEIntegerOptionName:
 	{
 		$$ = ast.BRIEOptionOnline
 	}
+|	"CHECKPOINT"
+	{
+		$$ = ast.BRIEOptionCheckpoint
+	}
+|	"ANALYZE"
+	{
+		$$ = ast.BRIEOptionAnalyze
+	}
+|	"SKIP_SCHEMA_FILES"
+	{
+		$$ = ast.BRIEOptionSkipSchemaFiles
+	}
+|	"STRICT_FORMAT"
+	{
+		$$ = ast.BRIEOptionStrictFormat
+	}
+|	"CSV_NOT_NULL"
+	{
+		$$ = ast.BRIEOptionCSVNotNull
+	}
+|	"CSV_BACKSLASH_ESCAPE"
+	{
+		$$ = ast.BRIEOptionCSVBackslashEscape
+	}
+|	"CSV_TRIM_LAST_SEPARATORS"
+	{
+		$$ = ast.BRIEOptionCSVTrimLastSeparators
+	}
+
+BRIEStringOptionName:
+	"TIKV_IMPORTER"
+	{
+		$$ = ast.BRIEOptionTiKVImporter
+	}
+|	"CSV_SEPARATOR"
+	{
+		$$ = ast.BRIEOptionCSVSeparator
+	}
+|	"CSV_DELIMITER"
+	{
+		$$ = ast.BRIEOptionCSVDelimiter
+	}
+|	"CSV_NULL"
+	{
+		$$ = ast.BRIEOptionCSVNull
+	}
+
+BRIEKeywordOptionName:
+	"BACKEND"
+	{
+		$$ = ast.BRIEOptionBackend
+	}
+|	"ON_DUPLICATE"
+	{
+		$$ = ast.BRIEOptionOnDuplicate
+	}
+|	"ON" "DUPLICATE"
+	{
+		$$ = ast.BRIEOptionOnDuplicate
+	}
 
 BRIEOption:
 	BRIEIntegerOptionName EqOpt LengthNum
@@ -4131,6 +4222,31 @@ BRIEOption:
 		$$ = &ast.BRIEOption{
 			Tp:        $1.(ast.BRIEOptionType),
 			UintValue: $3.(uint64),
+		}
+	}
+|	BRIEBooleanOptionName EqOpt Boolean
+	{
+		value := uint64(0)
+		if $3.(bool) {
+			value = 1
+		}
+		$$ = &ast.BRIEOption{
+			Tp:        $1.(ast.BRIEOptionType),
+			UintValue: value,
+		}
+	}
+|	BRIEStringOptionName EqOpt stringLit
+	{
+		$$ = &ast.BRIEOption{
+			Tp:       $1.(ast.BRIEOptionType),
+			StrValue: $3,
+		}
+	}
+|	BRIEKeywordOptionName EqOpt StringNameOrBRIEOptionKeyword
+	{
+		$$ = &ast.BRIEOption{
+			Tp:       $1.(ast.BRIEOptionType),
+			StrValue: strings.ToLower($3),
 		}
 	}
 |	"SNAPSHOT" EqOpt LengthNum TimestampUnit "AGO"
@@ -4184,6 +4300,20 @@ BRIEOption:
 			UintValue: $3.(uint64) * 1048576,
 		}
 	}
+|	"CSV_HEADER" EqOpt FieldsOrColumns
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionCSVHeader,
+			UintValue: ast.BRIECSVHeaderIsColumns,
+		}
+	}
+|	"CSV_HEADER" EqOpt LengthNum
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionCSVHeader,
+			UintValue: $3.(uint64),
+		}
+	}
 
 LengthNum:
 	NUM
@@ -4204,6 +4334,20 @@ Int64Num:
 
 NUM:
 	intLit
+
+Boolean:
+	NUM
+	{
+		$$ = $1.(int64) != 0
+	}
+|	"FALSE"
+	{
+		$$ = false
+	}
+|	"TRUE"
+	{
+		$$ = true
+	}
 
 Expression:
 	singleAtIdentifier assignmentEq Expression %prec assignmentEq
@@ -5032,6 +5176,7 @@ UnReservedKeyword:
 |	"COLUMN_FORMAT"
 |	"REPAIR"
 |	"IMPORT"
+|	"IMPORTS"
 |	"DISCARD"
 |	"TABLE_CHECKSUM"
 |	"UNICODE"
@@ -5085,6 +5230,19 @@ UnReservedKeyword:
 |	"RESTORES"
 |	"SEND_CREDENTIALS_TO_TIKV"
 |	"LAST_BACKUP"
+|	"CHECKPOINT"
+|	"SKIP_SCHEMA_FILES"
+|	"STRICT_FORMAT"
+|	"BACKEND"
+|	"CSV_BACKSLASH_ESCAPE"
+|	"CSV_NOT_NULL"
+|	"CSV_TRIM_LAST_SEPARATORS"
+|	"CSV_DELIMITER"
+|	"CSV_HEADER"
+|	"CSV_NULL"
+|	"CSV_SEPARATOR"
+|	"ON_DUPLICATE"
+|	"TIKV_IMPORTER"
 
 TiDBKeyword:
 	"ADMIN"
@@ -8932,6 +9090,10 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowRestores}
 	}
+|	"IMPORTS"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowImports}
+	}
 
 ShowLikeOrWhereOpt:
 	{
@@ -10163,6 +10325,13 @@ StringName:
 	{
 		$$ = $1
 	}
+
+StringNameOrBRIEOptionKeyword:
+	stringLit
+|	Identifier
+|	"ERROR"
+|	"IGNORE"
+|	"REPLACE"
 
 /***********************************************************************************
  * Update Statement
