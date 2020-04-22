@@ -279,9 +279,9 @@ func (s *testParserSuite) TestSpecialComments(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(stmts, HasLen, 2)
 	c.Assert(stmts[0], FitsTypeOf, &ast.SetStmt{})
-	c.Assert(stmts[0].Text(), Equals, "SET x = 1;")
+	c.Assert(stmts[0].Text(), Equals, "/*! SET x = 1;")
 	c.Assert(stmts[1], FitsTypeOf, &ast.SelectStmt{})
-	c.Assert(stmts[1].Text(), Equals, "/*! SET x = 1; SELECT 2 */")
+	c.Assert(stmts[1].Text(), Equals, " SELECT 2 */")
 	// ^ not sure if correct approach; having multiple statements in MySQL is a syntax error.
 
 	// 3. Make sure invalid text won't cause infinite loop
@@ -660,6 +660,14 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{`/* 20180417 **/ show databases;`, true, "SHOW DATABASES"},
 		{`/** 20180417 */ show databases;`, true, "SHOW DATABASES"},
 		{`/** 20180417 ******/ show databases;`, true, "SHOW DATABASES"},
+		{`/**/show databases;`, true, "SHOW DATABASES"},
+		{`/*+*/show databases;`, true, "SHOW DATABASES"},
+		{`select/*+*/1;`, true, "SELECT 1"},
+		{`/*T*/show databases;`, true, "SHOW DATABASES"},
+		{`/*M*/show databases;`, true, "SHOW DATABASES"},
+		{`/*!*/show databases;`, true, "SHOW DATABASES"},
+		{`/*T!*/show databases;`, true, "SHOW DATABASES"},
+		{`/*M!*/show databases;`, true, "SHOW DATABASES"},
 
 		// for Binlog stmt
 		{`BINLOG '
@@ -2188,24 +2196,29 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a bigint auto_random primary key, b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT AUTO_RANDOM PRIMARY KEY,`b` VARCHAR(255))"},
 		{"create table t (a bigint primary key auto_random(4), b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(4),`b` VARCHAR(255))"},
 		{"create table t (a bigint primary key auto_random(3) primary key unique, b varchar(255))", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(3) PRIMARY KEY UNIQUE KEY,`b` VARCHAR(255))"},
+
+		// for auto_id_cache
+		{"create table t (a int) auto_id_cache=1", true, "CREATE TABLE `t` (`a` INT) AUTO_ID_CACHE = 1"},
+		{"create table t (a int auto_increment key) auto_id_cache 10", true, "CREATE TABLE `t` (`a` INT AUTO_INCREMENT PRIMARY KEY) AUTO_ID_CACHE = 10"},
+		{"create table t (a bigint, b varchar(255)) auto_id_cache 50", true, "CREATE TABLE `t` (`a` BIGINT,`b` VARCHAR(255)) AUTO_ID_CACHE = 50"},
 	}
 	s.RunTest(c, table)
 }
 
 func (s *testParserSuite) TestHintError(c *C) {
 	parser := parser.New()
-	stmt, warns, err := parser.Parse("select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, warns, err := parser.Parse("select /*+ tidb_unknown(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0].Error(), Equals, "line 1 column 32 near \"tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
+	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 23 near "tidb_unknown\(T1,t2\) \*/" `)
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
-	stmt, warns, err = parser.Parse("select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, warns, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) tidb_unknow(T1,t2, 1) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0].Error(), Equals, "line 1 column 53 near \"tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
+	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 40 near "tidb_unknow\(T1,t2, 1\) \*/" `)
 	stmt, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
-	c.Assert(err, NotNil)
+	c.Assert(err, IsNil) // Hints are ignored after the "FROM" keyword!
 	stmt, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
@@ -2513,18 +2526,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].QueryType.L, Equals, "oltp")
 
 	// Test MEMORY_QUOTA
-	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB), memory_quota(1 NO_SUCH_UNIT) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(1 MB), memory_quota(1 GB) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
-	c.Assert(hints, HasLen, 3)
+	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "memory_quota")
 	c.Assert(hints[0].MemoryQuota, Equals, int64(1024*1024))
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
 	c.Assert(hints[1].MemoryQuota, Equals, int64(1024*1024*1024))
-	c.Assert(hints[2].HintName.L, Equals, "memory_quota")
-	c.Assert(hints[2].MemoryQuota, Equals, int64(-1))
 
 	// Test HASH_AGG
 	stmt, _, err = parser.Parse("select /*+ HASH_AGG(), hash_agg() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
