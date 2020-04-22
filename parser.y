@@ -263,7 +263,6 @@ import (
 	union             "UNION"
 	unlock            "UNLOCK"
 	unsigned          "UNSIGNED"
-	until             "UNTIL"
 	update            "UPDATE"
 	usage             "USAGE"
 	use               "USE"
@@ -406,6 +405,7 @@ import (
 	labels                "LABELS"
 	language              "LANGUAGE"
 	last                  "LAST"
+	lastBackup            "LAST_BACKUP"
 	lastval               "LASTVAL"
 	less                  "LESS"
 	level                 "LEVEL"
@@ -543,7 +543,6 @@ import (
 	temptable             "TEMPTABLE"
 	textType              "TEXT"
 	than                  "THAN"
-	timestampOracle       "TIMESTAMP_ORACLE"
 	timestampType         "TIMESTAMP"
 	timeType              "TIME"
 	tp                    "TYPE"
@@ -1160,7 +1159,6 @@ import (
 	PerDB                                  "Max index number PER_DB"
 	BRIETables                             "List of tables or databases for BRIE statements"
 	DBNameList                             "List of database names"
-	BackupTypeSpec                         "Backup type (FULL or INCREMENTAL)"
 	BRIEOption                             "Single BRIE option"
 	BRIEOptions                            "List of BRIE options"
 	BRIEIntegerOptionName                  "Name of a BRIE option which takes an integer as input"
@@ -4050,32 +4048,26 @@ ExplainFormatType:
 /*******************************************************************
  * Backup / restore statements
  *
- *	BACKUP DATABASE [ * | db1, db2, db3 ] [ FULL ] TO 'scheme://location' [ options... ]
- *	BACKUP TABLE [ db1.tbl1, db2.tbl2 ] [ FULL ] TO 'scheme://location' [ options... ]
- *	RESTORE DATABASE [ * | db1, db2, db3 ] [ FULL ] FROM 'scheme://location' [ options... ]
- *	RESTORE TABLE [ db1.tbl1, db2.tbl2 ] [ FULL ] FROM 'scheme://location' [ options... ]
+ *	BACKUP DATABASE [ * | db1, db2, db3 ] TO 'scheme://location' [ options... ]
+ *	BACKUP TABLE [ db1.tbl1, db2.tbl2 ] TO 'scheme://location' [ options... ]
+ *	RESTORE DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
+ *	RESTORE TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
  */
 BRIEStmt:
-	"BACKUP" BRIETables BackupTypeSpec "TO" stringLit BRIEOptions
+	"BACKUP" BRIETables "TO" stringLit BRIEOptions
 	{
 		stmt := $2.(*ast.BRIEStmt)
 		stmt.Kind = ast.BRIEKindBackup
-		stmt.Storage = $5
-		stmt.Options = $6.([]*ast.BRIEOption)
-		if $3 != nil {
-			stmt.Incremental = $3.(*ast.BRIEOption)
-		}
+		stmt.Storage = $4
+		stmt.Options = $5.([]*ast.BRIEOption)
 		$$ = stmt
 	}
-|	"RESTORE" BRIETables BackupTypeSpec "FROM" stringLit BRIEOptions
+|	"RESTORE" BRIETables "FROM" stringLit BRIEOptions
 	{
 		stmt := $2.(*ast.BRIEStmt)
 		stmt.Kind = ast.BRIEKindRestore
-		stmt.Storage = $5
-		stmt.Options = $6.([]*ast.BRIEOption)
-		if $3 != nil {
-			stmt.Incremental = $3.(*ast.BRIEOption)
-		}
+		stmt.Storage = $4
+		stmt.Options = $5.([]*ast.BRIEOption)
 		$$ = stmt
 	}
 
@@ -4101,30 +4093,6 @@ DBNameList:
 |	DBNameList ',' DBName
 	{
 		$$ = append($1.([]string), $3.(string))
-	}
-
-BackupTypeSpec:
-	%prec empty
-	{
-		$$ = nil
-	}
-|	"FULL"
-	{
-		$$ = nil
-	}
-|	"INCREMENTAL" "UNTIL" "TIMESTAMP" stringLit
-	{
-		$$ = &ast.BRIEOption{
-			Tp:       ast.BRIEOptionLastBackupTS,
-			StrValue: $4,
-		}
-	}
-|	"INCREMENTAL" "UNTIL" "TIMESTAMP_ORACLE" LengthNum
-	{
-		$$ = &ast.BRIEOption{
-			Tp:        ast.BRIEOptionLastBackupTSO,
-			UintValue: $4.(uint64),
-		}
 	}
 
 BRIEOptions:
@@ -4189,6 +4157,20 @@ BRIEOption:
 	{
 		$$ = &ast.BRIEOption{
 			Tp:        ast.BRIEOptionBackupTSO,
+			UintValue: $3.(uint64),
+		}
+	}
+|	"LAST_BACKUP" EqOpt stringLit
+	{
+		$$ = &ast.BRIEOption{
+			Tp:       ast.BRIEOptionLastBackupTS,
+			StrValue: $3,
+		}
+	}
+|	"LAST_BACKUP" EqOpt LengthNum
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionLastBackupTSO,
 			UintValue: $3.(uint64),
 		}
 	}
@@ -5098,7 +5080,7 @@ UnReservedKeyword:
 |	"RATE_LIMIT"
 |	"RESTORE"
 |	"SEND_CREDENTIALS_TO_TIKV"
-|	"TIMESTAMP_ORACLE"
+|	"LAST_BACKUP"
 
 TiDBKeyword:
 	"ADMIN"

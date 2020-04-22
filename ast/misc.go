@@ -2281,10 +2281,8 @@ func (kind BRIEOptionType) String() string {
 		return "SEND_CREDENTIALS_TO_TIKV"
 	case BRIEOptionBackupTimeAgo, BRIEOptionBackupTS, BRIEOptionBackupTSO:
 		return "SNAPSHOT"
-	case BRIEOptionLastBackupTS:
-		return "INCREMENTAL UNTIL TIMESTAMP"
-	case BRIEOptionLastBackupTSO:
-		return "INCREMENTAL UNTIL TIMESTAMP_ORACLE"
+	case BRIEOptionLastBackupTS, BRIEOptionLastBackupTSO:
+		return "LAST_BACKUP"
 	case BRIEOptionOnline:
 		return "ONLINE"
 	default:
@@ -2302,12 +2300,11 @@ type BRIEOption struct {
 type BRIEStmt struct {
 	stmtNode
 
-	Kind        BRIEKind
-	Schemas     []string
-	Tables      []*TableName
-	Storage     string
-	Options     []*BRIEOption
-	Incremental *BRIEOption
+	Kind    BRIEKind
+	Schemas []string
+	Tables  []*TableName
+	Storage string
+	Options []*BRIEOption
 }
 
 func (n *BRIEStmt) Accept(v Visitor) (Node, bool) {
@@ -2353,17 +2350,6 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlain(" *")
 	}
 
-	if n.Incremental != nil {
-		switch n.Incremental.Tp {
-		case BRIEOptionLastBackupTS:
-			ctx.WriteKeyWord(" INCREMENTAL UNTIL TIMESTAMP ")
-			ctx.WriteString(n.Incremental.StrValue)
-		case BRIEOptionLastBackupTSO:
-			ctx.WriteKeyWord(" INCREMENTAL UNTIL TIMESTAMP_ORACLE")
-			ctx.WritePlainf(" %d", n.Incremental.UintValue)
-		}
-	}
-
 	switch n.Kind {
 	case BRIEKindBackup:
 		ctx.WriteKeyWord(" TO ")
@@ -2377,7 +2363,7 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord(opt.Tp.String())
 		ctx.WritePlain(" = ")
 		switch opt.Tp {
-		case BRIEOptionConcurrency, BRIEOptionChecksum, BRIEOptionSendCreds, BRIEOptionOnline, BRIEOptionBackupTSO:
+		case BRIEOptionConcurrency, BRIEOptionChecksum, BRIEOptionSendCreds, BRIEOptionOnline, BRIEOptionBackupTSO, BRIEOptionLastBackupTSO:
 			ctx.WritePlainf("%d", opt.UintValue)
 		case BRIEOptionBackupTimeAgo:
 			ctx.WritePlainf("%d ", opt.UintValue/1000)

@@ -5077,8 +5077,8 @@ func (s *testParserSuite) TestBRIE(c *C) {
 	table := []testCase{
 		{"BACKUP DATABASE a TO 'local:///tmp/archive01/'", true, "BACKUP DATABASE `a` TO 'local:///tmp/archive01/'"},
 		{"BACKUP SCHEMA a TO 'local:///tmp/archive01/'", true, "BACKUP DATABASE `a` TO 'local:///tmp/archive01/'"},
-		{"BACKUP DATABASE a,b,c FULL TO 'noop://'", true, "BACKUP DATABASE `a`, `b`, `c` TO 'noop://'"},
-		{"BACKUP DATABASE a.b FULL TO 'noop://'", false, ""},
+		{"BACKUP DATABASE a,b,c TO 'noop://'", true, "BACKUP DATABASE `a`, `b`, `c` TO 'noop://'"},
+		{"BACKUP DATABASE a.b TO 'noop://'", false, ""},
 		{"BACKUP DATABASE * TO 'noop://'", true, "BACKUP DATABASE * TO 'noop://'"},
 		{"BACKUP DATABASE *, a TO 'noop://'", false, ""},
 		{"BACKUP DATABASE a, * TO 'noop://'", false, ""},
@@ -5091,10 +5091,8 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"BACKUP TABLE TO 'noop://'", false, ""},
 		{"RESTORE DATABASE * FROM 's3://bucket/path/'", true, "RESTORE DATABASE * FROM 's3://bucket/path/'"},
 
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP '2020-02-02 14:14:14' TO 'noop://'", true, "BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP '2020-02-02 14:14:14' TO 'noop://'"},
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP_ORACLE 1234567890 TO 'noop://'", true, "BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP_ORACLE 1234567890 TO 'noop://'"},
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP_ORACLE '2020-02-02 14:14:14' TO 'noop://'", false, ""},
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP 1234567890 TO 'noop://'", false, ""},
+		{"BACKUP DATABASE * TO 'noop://' LAST_BACKUP = '2020-02-02 14:14:14'", true, "BACKUP DATABASE * TO 'noop://' LAST_BACKUP = '2020-02-02 14:14:14'"},
+		{"BACKUP DATABASE * TO 'noop://' LAST_BACKUP = 1234567890", true, "BACKUP DATABASE * TO 'noop://' LAST_BACKUP = 1234567890"},
 
 		{"backup database * to 'noop://' rate_limit 500 MB/second snapshot 5 minute ago", true, "BACKUP DATABASE * TO 'noop://' RATE_LIMIT = 500 MB/SECOND SNAPSHOT = 300000000 MICROSECOND AGO"},
 		{"backup database * to 'noop://' snapshot = '2020-03-18 18:13:54'", true, "BACKUP DATABASE * TO 'noop://' SNAPSHOT = '2020-03-18 18:13:54'"},
