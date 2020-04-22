@@ -279,6 +279,7 @@ import (
 	algorithm	"ALGORITHM"
 	any 		"ANY"
 	ascii		"ASCII"
+	autoIdCache     "AUTO_ID_CACHE"
 	autoIncrement	"AUTO_INCREMENT"
 	autoRandom	"AUTO_RANDOM"
 	avgRowLength	"AVG_ROW_LENGTH"
@@ -3729,7 +3730,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
+ "ACTION" | "ASCII" | "AUTO_ID_CACHE" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
@@ -7556,6 +7557,10 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $3.(uint64)}
 	}
+|	"AUTO_ID_CACHE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
+	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAvgRowLength, UintValue: $3.(uint64)}
@@ -9322,7 +9327,7 @@ KillOrKillTiDB:
 		$$ = true
 	}
 
-/*******************************************************************************************/
+/****************************************************************************************/
 
 LoadStatsStmt:
 	"LOAD" "STATS" stringLit
