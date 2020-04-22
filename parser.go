@@ -9791,11 +9791,11 @@ yynewstate:
 		{
 			op := &ast.AlterTableSpec{
 				Tp: ast.AlterTableOption,
-				Options: []*ast.TableOption{{Tp: ast.TableOptionCharset, StrValue: yyS[yypt-1].item.(string),
+				Options: []*ast.TableOption{{Tp: ast.TableOptionCharset, StrValue: yyS[yypt-1].ident,
 					UintValue: ast.TableOptionCharsetWithConvertTo}},
 			}
-			if yyS[yypt-0].item != "" {
-				op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: yyS[yypt-0].item.(string)})
+			if yyS[yypt-0].ident != "" {
+				op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: yyS[yypt-0].ident})
 			}
 			parser.yyVAL.item = op
 		}
@@ -9806,8 +9806,8 @@ yynewstate:
 				Options: []*ast.TableOption{{Tp: ast.TableOptionCharset, Default: true,
 					UintValue: ast.TableOptionCharsetWithConvertTo}},
 			}
-			if yyS[yypt-0].item != "" {
-				op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: yyS[yypt-0].item.(string)})
+			if yyS[yypt-0].ident != "" {
+				op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: yyS[yypt-0].ident})
 			}
 			parser.yyVAL.item = op
 		}
@@ -10064,7 +10064,7 @@ yynewstate:
 			parser.yyVAL.item = &ast.AlterTableSpec{
 				IfExists: yyS[yypt-1].item.(bool),
 				Tp:       ast.AlterTableDropForeignKey,
-				Name:     yyS[yypt-0].item.(string),
+				Name:     yyS[yypt-0].ident,
 			}
 		}
 	case 35:
@@ -10397,11 +10397,11 @@ yynewstate:
 		}
 	case 90:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(string)
+			parser.yyVAL.item = yyS[yypt-0].ident
 		}
 	case 91:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 92:
 		{
@@ -10449,16 +10449,16 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.FlashBackTableStmt{
 				Table:   yyS[yypt-1].item.(*ast.TableName),
-				NewName: yyS[yypt-0].item.(string),
+				NewName: yyS[yypt-0].ident,
 			}
 		}
 	case 100:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 101:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 102:
 		{
@@ -10901,11 +10901,11 @@ yynewstate:
 		}
 	case 186:
 		{
-			parser.yyVAL.item = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: yyS[yypt-0].ident}
 		}
 	case 187:
 		{
-			parser.yyVAL.item = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: yyS[yypt-0].ident}
 		}
 	case 188:
 		{
@@ -10919,15 +10919,15 @@ yynewstate:
 		}
 	case 193:
 		{
-			parser.yyVAL.item = "DEFAULT"
+			parser.yyVAL.ident = "DEFAULT"
 		}
 	case 194:
 		{
-			parser.yyVAL.item = "FIXED"
+			parser.yyVAL.ident = "FIXED"
 		}
 	case 195:
 		{
-			parser.yyVAL.item = "DYNAMIC"
+			parser.yyVAL.ident = "DYNAMIC"
 		}
 	case 198:
 		{
@@ -10988,7 +10988,7 @@ yynewstate:
 			c := &ast.Constraint{
 				Tp:   ast.ConstraintFulltext,
 				Keys: yyS[yypt-2].item.([]*ast.IndexPartSpecification),
-				Name: yyS[yypt-4].item.(string),
+				Name: yyS[yypt-4].ident,
 			}
 			if yyS[yypt-0].item != nil {
 				c.Option = yyS[yypt-0].item.(*ast.IndexOption)
@@ -11038,7 +11038,7 @@ yynewstate:
 				IfNotExists: yyS[yypt-5].item.(bool),
 				Tp:          ast.ConstraintForeignKey,
 				Keys:        yyS[yypt-2].item.([]*ast.IndexPartSpecification),
-				Name:        yyS[yypt-4].item.(string),
+				Name:        yyS[yypt-4].ident,
 				Refer:       yyS[yypt-0].item.(*ast.ReferenceDef),
 			}
 		}
@@ -11288,7 +11288,7 @@ yynewstate:
 	case 266:
 		{
 			parser.yyVAL.statement = &ast.AlterDatabaseStmt{
-				Name:                 yyS[yypt-1].item.(string),
+				Name:                 yyS[yypt-1].ident,
 				AlterDefaultDatabase: false,
 				Options:              yyS[yypt-0].item.([]*ast.DatabaseOption),
 			}
@@ -11305,21 +11305,21 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.CreateDatabaseStmt{
 				IfNotExists: yyS[yypt-2].item.(bool),
-				Name:        yyS[yypt-1].item.(string),
+				Name:        yyS[yypt-1].ident,
 				Options:     yyS[yypt-0].item.([]*ast.DatabaseOption),
 			}
 		}
 	case 269:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 270:
 		{
-			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionCharset, Value: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionCharset, Value: yyS[yypt-0].ident}
 		}
 	case 271:
 		{
-			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: yyS[yypt-0].ident}
 		}
 	case 272:
 		{
@@ -11558,15 +11558,15 @@ yynewstate:
 		}
 	case 316:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: yyS[yypt-0].ident}
 		}
 	case 317:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: yyS[yypt-0].ident}
 		}
 	case 318:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionInsertMethod, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionInsertMethod, StrValue: yyS[yypt-0].ident}
 		}
 	case 319:
 		{
@@ -11860,7 +11860,7 @@ yynewstate:
 		}
 	case 372:
 		{
-			parser.yyVAL.statement = &ast.DropDatabaseStmt{IfExists: yyS[yypt-1].item.(bool), Name: yyS[yypt-0].item.(string)}
+			parser.yyVAL.statement = &ast.DropDatabaseStmt{IfExists: yyS[yypt-1].item.(bool), Name: yyS[yypt-0].ident}
 		}
 	case 373:
 		{
@@ -11997,7 +11997,7 @@ yynewstate:
 	case 403:
 		{
 			parser.yyVAL.statement = &ast.ExplainForStmt{
-				Format:       yyS[yypt-3].item.(string),
+				Format:       yyS[yypt-3].ident,
 				ConnectionID: getUint64FromNUM(yyS[yypt-0].item),
 			}
 		}
@@ -12005,7 +12005,7 @@ yynewstate:
 		{
 			parser.yyVAL.statement = &ast.ExplainStmt{
 				Stmt:   yyS[yypt-0].statement,
-				Format: yyS[yypt-1].item.(string),
+				Format: yyS[yypt-1].ident,
 			}
 		}
 	case 405:
@@ -12018,11 +12018,11 @@ yynewstate:
 		}
 	case 406:
 		{
-			parser.yyVAL.item = "row"
+			parser.yyVAL.ident = "row"
 		}
 	case 407:
 		{
-			parser.yyVAL.item = "json"
+			parser.yyVAL.ident = "json"
 		}
 	case 408:
 		{
@@ -12060,11 +12060,11 @@ yynewstate:
 		}
 	case 413:
 		{
-			parser.yyVAL.item = []string{yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = []string{yyS[yypt-0].ident}
 		}
 	case 414:
 		{
-			parser.yyVAL.item = append(yyS[yypt-2].item.([]string), yyS[yypt-0].item.(string))
+			parser.yyVAL.item = append(yyS[yypt-2].item.([]string), yyS[yypt-0].ident)
 		}
 	case 415:
 		{
@@ -12476,7 +12476,7 @@ yynewstate:
 		}
 	case 507:
 		{
-			escape := yyS[yypt-0].item.(string)
+			escape := yyS[yypt-0].ident
 			if len(escape) > 1 {
 				yylex.AppendError(ErrWrongArguments.GenWithStackByArgs("ESCAPE"))
 				return 1
@@ -12496,11 +12496,11 @@ yynewstate:
 		}
 	case 512:
 		{
-			parser.yyVAL.item = "\\"
+			parser.yyVAL.ident = "\\"
 		}
 	case 513:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 514:
 		{
@@ -12519,7 +12519,7 @@ yynewstate:
 	case 517:
 		{
 			expr := yyS[yypt-1].expr
-			asName := yyS[yypt-0].item.(string)
+			asName := yyS[yypt-0].ident
 			parser.yyVAL.item = &ast.SelectField{Expr: expr, AsName: model.NewCIStr(asName)}
 		}
 	case 518:
@@ -12529,32 +12529,32 @@ yynewstate:
 			 * See https://dev.mysql.com/doc/refman/5.7/en/expressions.html
 			 */
 			expr := yyS[yypt-2].expr
-			asName := yyS[yypt-0].item.(string)
+			asName := yyS[yypt-0].ident
 			parser.yyVAL.item = &ast.SelectField{Expr: expr, AsName: model.NewCIStr(asName)}
 		}
 	case 519:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 520:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 521:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 522:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 523:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 524:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 525:
 		{
@@ -12612,12 +12612,12 @@ yynewstate:
 		}
 	case 536:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 537:
 		{
 			//"index name"
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 538:
 		{
@@ -12679,11 +12679,11 @@ yynewstate:
 		}
 	case 545:
 		{
-			parser.yyVAL.item = []interface{}{yyS[yypt-0].item, nil}
+			parser.yyVAL.item = []interface{}{yyS[yypt-0].ident, nil}
 		}
 	case 546:
 		{
-			parser.yyVAL.item = []interface{}{yyS[yypt-2].item, yyS[yypt-0].item}
+			parser.yyVAL.item = []interface{}{yyS[yypt-2].ident, yyS[yypt-0].item}
 		}
 	case 547:
 		{
@@ -13080,7 +13080,7 @@ yynewstate:
 		}
 	case 1015:
 		{
-			parser.yyVAL.expr = &ast.SetCollationExpr{Expr: yyS[yypt-2].expr, Collate: yyS[yypt-0].item.(string)}
+			parser.yyVAL.expr = &ast.SetCollationExpr{Expr: yyS[yypt-2].expr, Collate: yyS[yypt-0].ident}
 		}
 	case 1016:
 		{
@@ -13198,7 +13198,7 @@ yynewstate:
 	case 1036:
 		{
 			// See https://dev.mysql.com/doc/refman/5.7/en/cast-functions.html#function_convert
-			charset1 := ast.NewValueExpr(yyS[yypt-1].item, parser.charset, parser.collation)
+			charset1 := ast.NewValueExpr(yyS[yypt-1].ident, parser.charset, parser.collation)
 			parser.yyVAL.expr = &ast.FuncCallExpr{
 				FnName: model.NewCIStr(yyS[yypt-5].ident),
 				Args:   []ast.ExprNode{yyS[yypt-3].expr, charset1},
@@ -13278,7 +13278,7 @@ yynewstate:
 		}
 	case 1098:
 		{
-			charset1 := ast.NewValueExpr(yyS[yypt-1].item, parser.charset, parser.collation)
+			charset1 := ast.NewValueExpr(yyS[yypt-1].ident, parser.charset, parser.collation)
 			args := yyS[yypt-3].item.([]ast.ExprNode)
 			parser.yyVAL.expr = &ast.FuncCallExpr{
 				FnName: model.NewCIStr(ast.CharFunc),
@@ -14075,11 +14075,11 @@ yynewstate:
 		{
 			var sqlText string
 			var sqlVar *ast.VariableExpr
-			switch yyS[yypt-0].item.(type) {
+			switch x := yyS[yypt-0].item.(type) {
 			case string:
-				sqlText = yyS[yypt-0].item.(string)
+				sqlText = x
 			case *ast.VariableExpr:
-				sqlVar = yyS[yypt-0].item.(*ast.VariableExpr)
+				sqlVar = x
 			}
 			parser.yyVAL.statement = &ast.PrepareStmt{
 				Name:    yyS[yypt-2].ident,
@@ -15069,11 +15069,11 @@ yynewstate:
 		}
 	case 1418:
 		{
-			parser.yyVAL.statement = &ast.SetPwdStmt{Password: yyS[yypt-0].item.(string)}
+			parser.yyVAL.statement = &ast.SetPwdStmt{Password: yyS[yypt-0].ident}
 		}
 	case 1419:
 		{
-			parser.yyVAL.statement = &ast.SetPwdStmt{User: yyS[yypt-2].item.(*auth.UserIdentity), Password: yyS[yypt-0].item.(string)}
+			parser.yyVAL.statement = &ast.SetPwdStmt{User: yyS[yypt-2].item.(*auth.UserIdentity), Password: yyS[yypt-0].ident}
 		}
 	case 1420:
 		{
@@ -15255,22 +15255,22 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.VariableAssignment{
 				Name:  ast.SetNames,
-				Value: ast.NewValueExpr(yyS[yypt-0].item.(string), parser.charset, parser.collation),
+				Value: ast.NewValueExpr(yyS[yypt-0].ident, parser.charset, parser.collation),
 			}
 		}
 	case 1458:
 		{
 			parser.yyVAL.item = &ast.VariableAssignment{
 				Name:  ast.SetNames,
-				Value: ast.NewValueExpr(yyS[yypt-2].item.(string), parser.charset, parser.collation),
+				Value: ast.NewValueExpr(yyS[yypt-2].ident, parser.charset, parser.collation),
 			}
 		}
 	case 1459:
 		{
 			parser.yyVAL.item = &ast.VariableAssignment{
 				Name:        ast.SetNames,
-				Value:       ast.NewValueExpr(yyS[yypt-2].item.(string), parser.charset, parser.collation),
-				ExtendValue: ast.NewValueExpr(yyS[yypt-0].item.(string), parser.charset, parser.collation),
+				Value:       ast.NewValueExpr(yyS[yypt-2].ident, parser.charset, parser.collation),
+				ExtendValue: ast.NewValueExpr(yyS[yypt-0].ident, parser.charset, parser.collation),
 			}
 		}
 	case 1460:
@@ -15284,7 +15284,7 @@ yynewstate:
 		}
 	case 1462:
 		{
-			parser.yyVAL.expr = ast.NewValueExpr(yyS[yypt-0].item.(string), parser.charset, parser.collation)
+			parser.yyVAL.expr = ast.NewValueExpr(yyS[yypt-0].ident, parser.charset, parser.collation)
 		}
 	case 1463:
 		{
@@ -15293,31 +15293,31 @@ yynewstate:
 	case 1464:
 		{
 			// Validate input charset name to keep the same behavior as parser of MySQL.
-			name, _, err := charset.GetCharsetInfo(yyS[yypt-0].item.(string))
+			name, _, err := charset.GetCharsetInfo(yyS[yypt-0].ident)
 			if err != nil {
-				yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs(yyS[yypt-0].item))
+				yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs(yyS[yypt-0].ident))
 				return 1
 			}
 			// Use charset name returned from charset.GetCharsetInfo(),
 			// to keep lower case of input for generated column restore.
-			parser.yyVAL.item = name
+			parser.yyVAL.ident = name
 		}
 	case 1465:
 		{
-			parser.yyVAL.item = charset.CharsetBin
+			parser.yyVAL.ident = charset.CharsetBin
 		}
 	case 1466:
 		{
-			info, err := charset.GetCollationByName(yyS[yypt-0].item.(string))
+			info, err := charset.GetCollationByName(yyS[yypt-0].ident)
 			if err != nil {
 				yylex.AppendError(err)
 				return 1
 			}
-			parser.yyVAL.item = info.Name
+			parser.yyVAL.ident = info.Name
 		}
 	case 1467:
 		{
-			parser.yyVAL.item = charset.CollationBin
+			parser.yyVAL.ident = charset.CollationBin
 		}
 	case 1468:
 		{
@@ -15356,15 +15356,15 @@ yynewstate:
 		}
 	case 1475:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-0].item.(string), Hostname: "%"}
+			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-0].ident, Hostname: "%"}
 		}
 	case 1476:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-2].item.(string), Hostname: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-2].ident, Hostname: yyS[yypt-0].ident}
 		}
 	case 1477:
 		{
-			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-1].item.(string), Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@")}
+			parser.yyVAL.item = &auth.UserIdentity{Username: yyS[yypt-1].ident, Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@")}
 		}
 	case 1478:
 		{
@@ -15380,35 +15380,35 @@ yynewstate:
 		}
 	case 1481:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1482:
 		{
-			parser.yyVAL.item = yyS[yypt-1].item.(string)
+			parser.yyVAL.ident = yyS[yypt-1].ident
 		}
 	case 1483:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1484:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1485:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1486:
 		{
-			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-0].item.(string), Hostname: "%"}
+			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-0].ident, Hostname: "%"}
 		}
 	case 1487:
 		{
-			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-2].item.(string), Hostname: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-2].ident, Hostname: yyS[yypt-0].ident}
 		}
 	case 1488:
 		{
-			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-1].item.(string), Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@")}
+			parser.yyVAL.item = &auth.RoleIdentity{Username: yyS[yypt-1].ident, Hostname: strings.TrimPrefix(yyS[yypt-0].ident, "@")}
 		}
 	case 1489:
 		{
@@ -15661,7 +15661,7 @@ yynewstate:
 			parser.yyVAL.statement = &ast.ShowStmt{
 				Tp:          ast.ShowCreateDatabase,
 				IfNotExists: yyS[yypt-1].item.(bool),
-				DBName:      yyS[yypt-0].item.(string),
+				DBName:      yyS[yypt-0].ident,
 			}
 		}
 	case 1527:
@@ -15869,7 +15869,7 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:     ast.ShowTables,
-				DBName: yyS[yypt-0].item.(string),
+				DBName: yyS[yypt-0].ident,
 				Full:   yyS[yypt-2].item.(bool),
 			}
 		}
@@ -15877,14 +15877,14 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:     ast.ShowOpenTables,
-				DBName: yyS[yypt-0].item.(string),
+				DBName: yyS[yypt-0].ident,
 			}
 		}
 	case 1568:
 		{
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:     ast.ShowTableStatus,
-				DBName: yyS[yypt-0].item.(string),
+				DBName: yyS[yypt-0].ident,
 			}
 		}
 	case 1569:
@@ -15907,7 +15907,7 @@ yynewstate:
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:     ast.ShowColumns,
 				Table:  yyS[yypt-1].item.(*ast.TableName),
-				DBName: yyS[yypt-0].item.(string),
+				DBName: yyS[yypt-0].ident,
 				Full:   yyS[yypt-3].item.(bool),
 			}
 		}
@@ -15916,7 +15916,7 @@ yynewstate:
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:       ast.ShowColumns,
 				Table:    yyS[yypt-1].item.(*ast.TableName),
-				DBName:   yyS[yypt-0].item.(string),
+				DBName:   yyS[yypt-0].ident,
 				Full:     yyS[yypt-3].item.(bool),
 				Extended: true,
 			}
@@ -15960,7 +15960,7 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:     ast.ShowTriggers,
-				DBName: yyS[yypt-0].item.(string),
+				DBName: yyS[yypt-0].ident,
 			}
 		}
 	case 1580:
@@ -15995,7 +15995,7 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.ShowStmt{
 				Tp:     ast.ShowEvents,
-				DBName: yyS[yypt-0].item.(string),
+				DBName: yyS[yypt-0].ident,
 			}
 		}
 	case 1585:
@@ -16069,11 +16069,11 @@ yynewstate:
 		}
 	case 1601:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 1602:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(string)
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1603:
 		{
@@ -16276,12 +16276,12 @@ yynewstate:
 		}
 	case 1718:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionCharset, StrValue: yyS[yypt-0].item.(string),
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionCharset, StrValue: yyS[yypt-0].ident,
 				UintValue: ast.TableOptionCharsetWithoutConvertTo}
 		}
 	case 1719:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: yyS[yypt-0].item.(string),
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: yyS[yypt-0].ident,
 				UintValue: ast.TableOptionCharsetWithoutConvertTo}
 		}
 	case 1720:
@@ -16405,7 +16405,7 @@ yynewstate:
 		{
 			// Parse it but will ignore it
 			// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: yyS[yypt-0].ident}
 			yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
 			parser.lastErrorAsWarn()
 		}
@@ -16774,14 +16774,14 @@ yynewstate:
 		{
 			x := types.NewFieldType(mysql.TypeEnum)
 			x.Elems = yyS[yypt-2].item.([]string)
-			x.Charset = yyS[yypt-0].item.(string)
+			x.Charset = yyS[yypt-0].ident
 			parser.yyVAL.item = x
 		}
 	case 1812:
 		{
 			x := types.NewFieldType(mysql.TypeSet)
 			x.Elems = yyS[yypt-2].item.([]string)
-			x.Charset = yyS[yypt-0].item.(string)
+			x.Charset = yyS[yypt-0].ident
 			parser.yyVAL.item = x
 		}
 	case 1813:
@@ -16999,31 +16999,31 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.OptBinary{
 				IsBinary: true,
-				Charset:  yyS[yypt-0].item.(string),
+				Charset:  yyS[yypt-0].ident,
 			}
 		}
 	case 1869:
 		{
 			parser.yyVAL.item = &ast.OptBinary{
 				IsBinary: yyS[yypt-0].item.(bool),
-				Charset:  yyS[yypt-1].item.(string),
+				Charset:  yyS[yypt-1].ident,
 			}
 		}
 	case 1870:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 1871:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(string)
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1875:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 1876:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(string)
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1877:
 		{
@@ -17035,11 +17035,11 @@ yynewstate:
 		}
 	case 1879:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1880:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1881:
 		{
@@ -17087,7 +17087,7 @@ yynewstate:
 		}
 	case 1883:
 		{
-			parser.yyVAL.statement = &ast.UseStmt{DBName: yyS[yypt-0].item.(string)}
+			parser.yyVAL.statement = &ast.UseStmt{DBName: yyS[yypt-0].ident}
 		}
 	case 1884:
 		{
@@ -17135,7 +17135,7 @@ yynewstate:
 	case 1892:
 		{
 			auth := &ast.AuthOption{
-				AuthString:   yyS[yypt-0].item.(string),
+				AuthString:   yyS[yypt-0].ident,
 				ByAuthString: true,
 			}
 			parser.yyVAL.statement = &ast.AlterUserStmt{
@@ -17370,7 +17370,7 @@ yynewstate:
 	case 1932:
 		{
 			parser.yyVAL.item = &ast.AuthOption{
-				AuthString:   yyS[yypt-0].item.(string),
+				AuthString:   yyS[yypt-0].ident,
 				ByAuthString: true,
 			}
 		}
@@ -17381,25 +17381,25 @@ yynewstate:
 	case 1934:
 		{
 			parser.yyVAL.item = &ast.AuthOption{
-				AuthString:   yyS[yypt-0].item.(string),
+				AuthString:   yyS[yypt-0].ident,
 				ByAuthString: true,
 			}
 		}
 	case 1935:
 		{
 			parser.yyVAL.item = &ast.AuthOption{
-				HashString: yyS[yypt-0].item.(string),
+				HashString: yyS[yypt-0].ident,
 			}
 		}
 	case 1936:
 		{
 			parser.yyVAL.item = &ast.AuthOption{
-				HashString: yyS[yypt-0].item.(string),
+				HashString: yyS[yypt-0].ident,
 			}
 		}
 	case 1937:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 1938:
 		{
@@ -17830,12 +17830,12 @@ yynewstate:
 		{
 			parser.yyVAL.item = &ast.FieldItem{
 				Type:  ast.Terminated,
-				Value: yyS[yypt-0].item.(string),
+				Value: yyS[yypt-0].ident,
 			}
 		}
 	case 2012:
 		{
-			str := yyS[yypt-0].item.(string)
+			str := yyS[yypt-0].ident
 			if str != "\\" && len(str) > 1 {
 				yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
 				return 1
@@ -17848,7 +17848,7 @@ yynewstate:
 		}
 	case 2013:
 		{
-			str := yyS[yypt-0].item.(string)
+			str := yyS[yypt-0].ident
 			if str != "\\" && len(str) > 1 {
 				yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
 				return 1
@@ -17860,7 +17860,7 @@ yynewstate:
 		}
 	case 2014:
 		{
-			str := yyS[yypt-0].item.(string)
+			str := yyS[yypt-0].ident
 			if str != "\\" && len(str) > 1 {
 				yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
 				return 1
@@ -17872,15 +17872,15 @@ yynewstate:
 		}
 	case 2015:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 2016:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
+			parser.yyVAL.ident = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
 		}
 	case 2017:
 		{
-			parser.yyVAL.item = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
+			parser.yyVAL.ident = yyS[yypt-0].item.(ast.BinaryLiteral).ToString()
 		}
 	case 2018:
 		{
@@ -17888,23 +17888,23 @@ yynewstate:
 		}
 	case 2019:
 		{
-			parser.yyVAL.item = &ast.LinesClause{Starting: yyS[yypt-1].item.(string), Terminated: yyS[yypt-0].item.(string)}
+			parser.yyVAL.item = &ast.LinesClause{Starting: yyS[yypt-1].ident, Terminated: yyS[yypt-0].ident}
 		}
 	case 2020:
 		{
-			parser.yyVAL.item = ""
+			parser.yyVAL.ident = ""
 		}
 	case 2021:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 2022:
 		{
-			parser.yyVAL.item = "\n"
+			parser.yyVAL.ident = "\n"
 		}
 	case 2023:
 		{
-			parser.yyVAL.item = yyS[yypt-0].ident
+			parser.yyVAL.ident = yyS[yypt-0].ident
 		}
 	case 2024:
 		{
