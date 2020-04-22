@@ -949,9 +949,11 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show builtins
 		{"show builtins", true, "SHOW BUILTINS"},
 		// for show backup & restore
-		{"show backup", true, "SHOW BACKUP"},
-		{"show restore like 'r0001'", true, "SHOW RESTORE LIKE 'r0001'"},
-		{"show backup where start_time > now() - interval 10 hour", true, "SHOW BACKUP WHERE `start_time`>DATE_SUB(NOW(), INTERVAL 10 HOUR)"},
+		{"show backups", true, "SHOW BACKUPS"},
+		{"show restores like 'r0001'", true, "SHOW RESTORES LIKE 'r0001'"},
+		{"show backups where start_time > now() - interval 10 hour", true, "SHOW BACKUPS WHERE `start_time`>DATE_SUB(NOW(), INTERVAL 10 HOUR)"},
+		{"show backup", false, ""},
+		{"show restore", false, ""},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},

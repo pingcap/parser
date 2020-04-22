@@ -304,6 +304,7 @@ import (
 	avg                   "AVG"
 	avgRowLength          "AVG_ROW_LENGTH"
 	backup                "BACKUP"
+	backups               "BACKUPS"
 	begin                 "BEGIN"
 	binding               "BINDING"
 	bindings              "BINDINGS"
@@ -483,6 +484,7 @@ import (
 	replication           "REPLICATION"
 	respect               "RESPECT"
 	restore               "RESTORE"
+	restores              "RESTORES"
 	reverse               "REVERSE"
 	role                  "ROLE"
 	rollback              "ROLLBACK"
@@ -5074,11 +5076,13 @@ UnReservedKeyword:
 |	"SETVAL"
 |	"AGO"
 |	"BACKUP"
+|	"BACKUPS"
 |	"CONCURRENCY"
 |	"MB"
 |	"ONLINE"
 |	"RATE_LIMIT"
 |	"RESTORE"
+|	"RESTORES"
 |	"SEND_CREDENTIALS_TO_TIKV"
 |	"LAST_BACKUP"
 
@@ -8920,13 +8924,13 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowAnalyzeStatus}
 	}
-|	"BACKUP"
+|	"BACKUPS"
 	{
-		$$ = &ast.ShowStmt{Tp: ast.ShowBackup}
+		$$ = &ast.ShowStmt{Tp: ast.ShowBackups}
 	}
-|	"RESTORE"
+|	"RESTORES"
 	{
-		$$ = &ast.ShowStmt{Tp: ast.ShowRestore}
+		$$ = &ast.ShowStmt{Tp: ast.ShowRestores}
 	}
 
 ShowLikeOrWhereOpt:
