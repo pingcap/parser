@@ -5102,19 +5102,19 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"restore table g from 'noop://' concurrency 40 checksum 0 online 1", true, "RESTORE TABLE `g` FROM 'noop://' CONCURRENCY = 40 CHECKSUM = 0 ONLINE = 1"},
 		{
 			// FIXME: should we really include the access key in the Restore() text???
-			"backup table x to 's3://bucket/path/' s3_endpoint = 'https://test-cluster-s3.local' s3_access_key = 'aaaaaaaaa' s3_secret_access_key = 'bbbbbbbb' s3_force_path_style = 1",
+			"backup table x to 's3://bucket/path/?endpoint=https://test-cluster-s3.local&access-key=aaaaaaaaa&secret-access-key=bbbbbbbb&force-path-style=1'",
 			true,
-			"BACKUP TABLE `x` TO 's3://bucket/path/' S3_ENDPOINT = 'https://test-cluster-s3.local' S3_ACCESS_KEY = 'aaaaaaaaa' S3_SECRET_ACCESS_KEY = 'bbbbbbbb' S3_FORCE_PATH_STYLE = 1",
+			"BACKUP TABLE `x` TO 's3://bucket/path/?endpoint=https://test-cluster-s3.local&access-key=aaaaaaaaa&secret-access-key=bbbbbbbb&force-path-style=1'",
 		},
 		{
-			"backup database * to 's3://bucket/path/' send_credentials_to_tikv = 1 s3_provider = 'alibaba' s3_region = 'us-west-9' s3_storage_class = 'glacier' s3_sse = 'AES256' s3_acl = 'authenticated-read' s3_use_accelerate_endpoint = 1",
+			"backup database * to 's3://bucket/path/?provider=alibaba&region=us-west-9&storage-class=glacier&sse=AES256&acl=authenticated-read&use-accelerate-endpoint=1' send_credentials_to_tikv = 1",
 			true,
-			"BACKUP DATABASE * TO 's3://bucket/path/' SEND_CREDENTIALS_TO_TIKV = 1 S3_PROVIDER = 'alibaba' S3_REGION = 'us-west-9' S3_STORAGE_CLASS = 'glacier' S3_SSE = 'AES256' S3_ACL = 'authenticated-read' S3_USE_ACCELERATE_ENDPOINT = 1",
+			"BACKUP DATABASE * TO 's3://bucket/path/?provider=alibaba&region=us-west-9&storage-class=glacier&sse=AES256&acl=authenticated-read&use-accelerate-endpoint=1' SEND_CREDENTIALS_TO_TIKV = 1",
 		},
 		{
-			"restore database * from 'gcs://bucket/path/' gcs_endpoint 'https://test-cluster.gcs.local' gcs_storage_class 'coldline' gcs_predefined_acl 'OWNER' gcs_credentials_file '/data/private/creds.json'",
+			"restore database * from 'gcs://bucket/path/?endpoint=https://test-cluster.gcs.local&storage-class=coldline&predefined-acl=OWNER&credentials-file=/data/private/creds.json'",
 			true,
-			"RESTORE DATABASE * FROM 'gcs://bucket/path/' GCS_ENDPOINT = 'https://test-cluster.gcs.local' GCS_STORAGE_CLASS = 'coldline' GCS_PREDEFINED_ACL = 'OWNER' GCS_CREDENTIALS_FILE = '/data/private/creds.json'",
+			"RESTORE DATABASE * FROM 'gcs://bucket/path/?endpoint=https://test-cluster.gcs.local&storage-class=coldline&predefined-acl=OWNER&credentials-file=/data/private/creds.json'",
 		},
 	}
 

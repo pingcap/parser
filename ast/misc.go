@@ -2256,22 +2256,6 @@ const (
 	BRIEOptionLastBackupTSO
 	// restore options
 	BRIEOptionOnline
-	// S3 storage options
-	BRIEOptionS3Endpoint
-	BRIEOptionS3Region
-	BRIEOptionS3StorageClass
-	BRIEOptionS3SSE
-	BRIEOptionS3ACL
-	BRIEOptionS3AccessKey
-	BRIEOptionS3SecretAccessKey
-	BRIEOptionS3Provider
-	BRIEOptionS3ForcePathStyle
-	BRIEOptionS3UseAccelerateEndpoint
-	// GCS storage options
-	BRIEOptionGCSEndpoint
-	BRIEOptionGCSStorageClass
-	BRIEOptionGCSPredefinedACL
-	BRIEOptionGCSCredentialsFile
 )
 
 func (kind BRIEKind) String() string {
@@ -2303,34 +2287,6 @@ func (kind BRIEOptionType) String() string {
 		return "INCREMENTAL UNTIL TIMESTAMP_ORACLE"
 	case BRIEOptionOnline:
 		return "ONLINE"
-	case BRIEOptionS3Endpoint:
-		return "S3_ENDPOINT"
-	case BRIEOptionS3Region:
-		return "S3_REGION"
-	case BRIEOptionS3StorageClass:
-		return "S3_STORAGE_CLASS"
-	case BRIEOptionS3SSE:
-		return "S3_SSE"
-	case BRIEOptionS3ACL:
-		return "S3_ACL"
-	case BRIEOptionS3AccessKey:
-		return "S3_ACCESS_KEY"
-	case BRIEOptionS3SecretAccessKey:
-		return "S3_SECRET_ACCESS_KEY"
-	case BRIEOptionS3Provider:
-		return "S3_PROVIDER"
-	case BRIEOptionS3ForcePathStyle:
-		return "S3_FORCE_PATH_STYLE"
-	case BRIEOptionS3UseAccelerateEndpoint:
-		return "S3_USE_ACCELERATE_ENDPOINT"
-	case BRIEOptionGCSEndpoint:
-		return "GCS_ENDPOINT"
-	case BRIEOptionGCSStorageClass:
-		return "GCS_STORAGE_CLASS"
-	case BRIEOptionGCSPredefinedACL:
-		return "GCS_PREDEFINED_ACL"
-	case BRIEOptionGCSCredentialsFile:
-		return "GCS_CREDENTIALS_FILE"
 	default:
 		return ""
 	}
@@ -2421,7 +2377,7 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord(opt.Tp.String())
 		ctx.WritePlain(" = ")
 		switch opt.Tp {
-		case BRIEOptionConcurrency, BRIEOptionChecksum, BRIEOptionSendCreds, BRIEOptionOnline, BRIEOptionS3ForcePathStyle, BRIEOptionS3UseAccelerateEndpoint, BRIEOptionBackupTSO:
+		case BRIEOptionConcurrency, BRIEOptionChecksum, BRIEOptionSendCreds, BRIEOptionOnline, BRIEOptionBackupTSO:
 			ctx.WritePlainf("%d", opt.UintValue)
 		case BRIEOptionBackupTimeAgo:
 			ctx.WritePlainf("%d ", opt.UintValue/1000)
