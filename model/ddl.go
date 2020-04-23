@@ -56,6 +56,8 @@ const (
 	ActionDropView                      ActionType = 24
 	ActionRecoverTable                  ActionType = 25
 	ActionModifySchemaCharsetAndCollate ActionType = 26
+	ActionLockTable                     ActionType = 27
+	ActionUnlockTable                   ActionType = 28
 	ActionAddPrimaryKey                 ActionType = 32
 	ActionDropPrimaryKey                ActionType = 33
 )
@@ -93,6 +95,8 @@ var actionMap = map[ActionType]string{
 	ActionDropView:                      "drop view",
 	ActionRecoverTable:                  "recover table",
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
+	ActionLockTable:                     "lock table",
+	ActionUnlockTable:                   "unlock table",
 	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
 	ActionDropPrimaryKey:                "drop primary key",
 }
