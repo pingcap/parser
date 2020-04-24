@@ -80,8 +80,8 @@ const (
 	assignmentEq               = 57983
 	autoIdCache                = 57585
 	autoIncrement              = 57586
-	autoRandBase               = 57588
 	autoRandom                 = 57587
+	autoRandomBase             = 57588
 	avg                        = 57589
 	avgRowLength               = 57590
 	backup                     = 57591
@@ -761,7 +761,7 @@ var (
 		57731: 23,   // nodegroup (1360x)
 		57621: 24,   // connection (1354x)
 		57585: 25,   // autoIdCache (1348x)
-		57588: 26,   // autoRandBase (1348x)
+		57588: 26,   // autoRandomBase (1348x)
 		57590: 27,   // avgRowLength (1348x)
 		57619: 28,   // compression (1348x)
 		57633: 29,   // delayKeyWrite (1348x)
@@ -1962,7 +1962,7 @@ var (
 		"nodegroup",
 		"connection",
 		"autoIdCache",
-		"autoRandBase",
+		"autoRandomBase",
 		"avgRowLength",
 		"compression",
 		"delayKeyWrite",
@@ -16304,7 +16304,7 @@ yynewstate:
 		}
 	case 1723:
 		{
-			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionAutoRandBase, UintValue: yyS[yypt-0].item.(uint64)}
+			parser.yyVAL.item = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: yyS[yypt-0].item.(uint64)}
 		}
 	case 1724:
 		{
