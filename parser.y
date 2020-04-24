@@ -301,6 +301,7 @@ import (
 	autoIdCache           "AUTO_ID_CACHE"
 	autoIncrement         "AUTO_INCREMENT"
 	autoRandom            "AUTO_RANDOM"
+	autoRandomBase        "AUTO_RANDOM_BASE"
 	avg                   "AVG"
 	avgRowLength          "AVG_ROW_LENGTH"
 	backend               "BACKEND"
@@ -5181,6 +5182,7 @@ UnReservedKeyword:
 |	"TABLE_CHECKSUM"
 |	"UNICODE"
 |	"AUTO_RANDOM"
+|	"AUTO_RANDOM_BASE"
 |	"SQL_TSI_DAY"
 |	"SQL_TSI_HOUR"
 |	"SQL_TSI_MINUTE"
@@ -9472,9 +9474,9 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
 	}
-|	"AUTO_RANDOM" EqOpt LengthNum
+|	"AUTO_RANDOM_BASE" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandom, UintValue: $3.(uint64)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $3.(uint64)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
