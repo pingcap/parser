@@ -1413,6 +1413,7 @@ const (
 	TableOptionCollate
 	TableOptionAutoIdCache
 	TableOptionAutoIncrement
+	TableOptionAutoRandomBase
 	TableOptionComment
 	TableOptionAvgRowLength
 	TableOptionCheckSum
@@ -1495,6 +1496,10 @@ func (n *TableOption) Restore(ctx *RestoreCtx) error {
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionAutoIdCache:
 		ctx.WriteKeyWord("AUTO_ID_CACHE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionAutoRandomBase:
+		ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionComment:
