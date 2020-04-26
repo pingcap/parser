@@ -64,7 +64,6 @@ func (ft *FieldType) Equal(other *FieldType) bool {
 	// because flen for them is only used to distinguish float and double.
 	partialEqual := ft.Tp == other.Tp &&
 		(ft.Flen == other.Flen || ft.EvalType() == ETReal) &&
-		ft.Flen == other.Flen &&
 		ft.Decimal == other.Decimal &&
 		ft.Charset == other.Charset &&
 		ft.Collate == other.Collate &&
