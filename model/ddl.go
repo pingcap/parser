@@ -60,6 +60,7 @@ const (
 	ActionUnlockTable                   ActionType = 28
 	ActionAddPrimaryKey                 ActionType = 32
 	ActionDropPrimaryKey                ActionType = 33
+	ActionModifyTableAutoIdCache        ActionType = 34
 )
 
 const (
@@ -99,6 +100,7 @@ var actionMap = map[ActionType]string{
 	ActionUnlockTable:                   "unlock table",
 	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
 	ActionDropPrimaryKey:                "drop primary key",
+	ActionModifyTableAutoIdCache:        "modify auto id cache",
 }
 
 // String return current ddl action in string
