@@ -2296,6 +2296,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t encryption = 'y';", true, "ALTER TABLE `t` ENCRYPTION = 'y'"},
 		{"alter table t encryption 'y';", true, "ALTER TABLE `t` ENCRYPTION = 'y'"},
 
+		// for rename database/schema statement
+		{"RENAME database d TO d1", true, "RENAME DATABASE `d` TO `d1`"},
+		{"RENAME database d d1", false, "RENAME DATABASE `d` TO `d1`"},
+		{"RENAME schema d TO d1", true, "RENAME DATABASE `d` TO `d1`"},
+		{"RENAME schema d d1", false, "RENAME DATABASE `d` TO `d1`"},
+
 		// for alter database/schema/table
 		{"ALTER DATABASE t CHARACTER SET = 'utf8'", true, "ALTER DATABASE `t` CHARACTER SET = utf8"},
 		{"ALTER DATABASE CHARACTER SET = 'utf8'", true, "ALTER DATABASE CHARACTER SET = utf8"},
