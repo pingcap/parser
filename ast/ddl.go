@@ -195,7 +195,7 @@ func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// RenameDatabaseStmt is a statement to drop a database and all tables in the database.
+// RenameDatabaseStmt is a statement to rename a database.
 // It supports in MySQL 5.1.7 and removed in MySQL 5.1.23.
 type RenameDatabaseStmt struct {
 	ddlNode
