@@ -34,6 +34,7 @@ var (
 	_ DDLNode = &DropIndexStmt{}
 	_ DDLNode = &DropTableStmt{}
 	_ DDLNode = &DropSequenceStmt{}
+	_ DDLNode = &RenameDatabaseStmt{}
 	_ DDLNode = &RenameTableStmt{}
 	_ DDLNode = &TruncateTableStmt{}
 	_ DDLNode = &RepairTableStmt{}
@@ -191,6 +192,34 @@ func (n *DropDatabaseStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropDatabaseStmt)
+	return v.Leave(n)
+}
+
+// RenameDatabaseStmt is a statement to drop a database and all tables in the database.
+// It supports in MySQL 5.1.7 and removed in MySQL 5.1.23.
+type RenameDatabaseStmt struct {
+	ddlNode
+
+	OldDB string
+	NewDB string
+}
+
+// Restore implements Node interface.
+func (n *RenameDatabaseStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("RENAME DATABASE ")
+	ctx.WriteName(n.OldDB)
+	ctx.WriteKeyWord(" TO ")
+	ctx.WriteName(n.NewDB)
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *RenameDatabaseStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*RenameDatabaseStmt)
 	return v.Leave(n)
 }
 
