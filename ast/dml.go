@@ -1376,6 +1376,15 @@ type InsertStmt struct {
 
 // Restore implements Node interface.
 func (n *InsertStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.TableHints != nil && len(n.TableHints) != 0 {
+		ctx.WritePlain("/*+ ")
+		for i, tableHint := range n.TableHints {
+			if err := tableHint.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore UpdateStmt.TableHints[%d]", i)
+			}
+		}
+		ctx.WritePlain("*/ ")
+	}
 	if n.IsReplace {
 		ctx.WriteKeyWord("REPLACE ")
 	} else {
