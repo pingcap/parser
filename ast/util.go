@@ -13,9 +13,7 @@
 
 package ast
 
-import (
-	"math"
-)
+import "math"
 
 // UnspecifiedSize is unspecified size.
 const (
