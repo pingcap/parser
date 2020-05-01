@@ -1370,6 +1370,8 @@ type InsertStmt struct {
 	Priority    mysql.PriorityEnum
 	OnDuplicate []*Assignment
 	Select      ResultSetNode
+	// TableHints represents the table level Optimizer Hint for join type
+	TableHints []*TableOptimizerHint
 }
 
 // Restore implements Node interface.
