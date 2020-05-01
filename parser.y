@@ -5278,19 +5278,17 @@ InsertIntoStmt:
 	"INSERT" TableOptimizerHints PriorityOpt IgnoreOptional IntoOpt TableName InsertValues OnDuplicateKeyUpdate
 	{
 		x := $7.(*ast.InsertStmt)
-		x.Priority = $2.(mysql.PriorityEnum)
-		x.IgnoreErr = $3.(bool)
+		x.Priority = $3.(mysql.PriorityEnum)
+		x.IgnoreErr = $4.(bool)
 		// Wraps many layers here so that it can be processed the same way as select statement.
 		ts := &ast.TableSource{Source: $6.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
 		if $8 != nil {
 			x.OnDuplicate = $8.([]*ast.Assignment)
 		}
-		ast.Debug("here2")
-		if $5 != nil {
-			ast.Debug("hint2")
-        	x.TableHints = $5.([]*ast.TableOptimizerHint)
-        }
+		if $2 != nil {
+			x.TableHints = $2.([]*ast.TableOptimizerHint)
+		}
 		$$ = x
 	}
 

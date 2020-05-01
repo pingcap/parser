@@ -14,7 +14,6 @@
 package ast
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -77,8 +76,4 @@ func (checker *readOnlyChecker) Enter(in Node) (out Node, skipChildren bool) {
 // Leave implements Visitor interface.
 func (checker *readOnlyChecker) Leave(in Node) (out Node, ok bool) {
 	return in, checker.readOnly
-}
-
-func Debug(s string) {
-	fmt.Println(s)
 }
