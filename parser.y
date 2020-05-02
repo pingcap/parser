@@ -5315,7 +5315,12 @@ InsertValues:
 	}
 |	'(' ColumnNameListOpt ')' '(' SelectStmt ')'
 	{
-		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $5.(*ast.SelectStmt)}
+		x := &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $5.(*ast.SelectStmt)}
+		st := $5.(*ast.SelectStmt)
+		if st.SelectStmtOpts.TableHints != nil {
+			x.TableHints = st.SelectStmtOpts.TableHints
+		}
+		$$ = x
 	}
 |	'(' ColumnNameListOpt ')' UnionStmt
 	{
@@ -5327,11 +5332,21 @@ InsertValues:
 	}
 |	'(' SelectStmt ')'
 	{
-		$$ = &ast.InsertStmt{Select: $2.(*ast.SelectStmt)}
+		x := &ast.InsertStmt{Select: $2.(*ast.SelectStmt)}
+		st := $2.(*ast.SelectStmt)
+		if st.SelectStmtOpts.TableHints != nil {
+			x.TableHints = st.SelectStmtOpts.TableHints
+		}
+		$$ = x
 	}
 |	SelectStmt
 	{
-		$$ = &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
+		x := &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
+		st := $1.(*ast.SelectStmt)
+		if st.SelectStmtOpts.TableHints != nil {
+			x.TableHints = st.SelectStmtOpts.TableHints
+		}
+		$$ = x
 	}
 |	UnionStmt
 	{

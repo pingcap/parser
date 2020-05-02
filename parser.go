@@ -12776,7 +12776,12 @@ yynewstate:
 		}
 	case 950:
 		{
-			parser.yyVAL.item = &ast.InsertStmt{Columns: yyS[yypt-4].item.([]*ast.ColumnName), Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
+			x := &ast.InsertStmt{Columns: yyS[yypt-4].item.([]*ast.ColumnName), Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
+			st := yyS[yypt-1].statement.(*ast.SelectStmt)
+			if st.SelectStmtOpts.TableHints != nil {
+				x.TableHints = st.SelectStmtOpts.TableHints
+			}
+			parser.yyVAL.item = x
 		}
 	case 951:
 		{
@@ -12788,11 +12793,21 @@ yynewstate:
 		}
 	case 953:
 		{
-			parser.yyVAL.item = &ast.InsertStmt{Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
+			x := &ast.InsertStmt{Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
+			st := yyS[yypt-1].statement.(*ast.SelectStmt)
+			if st.SelectStmtOpts.TableHints != nil {
+				x.TableHints = st.SelectStmtOpts.TableHints
+			}
+			parser.yyVAL.item = x
 		}
 	case 954:
 		{
-			parser.yyVAL.item = &ast.InsertStmt{Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
+			x := &ast.InsertStmt{Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
+			st := yyS[yypt-0].statement.(*ast.SelectStmt)
+			if st.SelectStmtOpts.TableHints != nil {
+				x.TableHints = st.SelectStmtOpts.TableHints
+			}
+			parser.yyVAL.item = x
 		}
 	case 955:
 		{
