@@ -12768,7 +12768,7 @@ yynewstate:
 	case 949:
 		{
 			x := &ast.InsertStmt{Columns: yyS[yypt-2].item.([]*ast.ColumnName), Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
-			st := yyS[yypt-2].item.(*ast.SelectStmt)
+			st := yyS[yypt-0].statement.(*ast.SelectStmt)
 			if st.SelectStmtOpts.TableHints != nil {
 				x.TableHints = st.SelectStmtOpts.TableHints
 			}
