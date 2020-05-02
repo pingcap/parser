@@ -4633,6 +4633,17 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 	s.RunTest(c, table)
 }
 
+func (s *testParserSuite) TestSpatialDataType(c *C) {
+	table := []testCase{
+		{"CREATE SPATIAL INDEX g ON geom (g);", true, "CREATE SPATIAL INDEX `g` ON `geom` (`g`)"},
+		{"CREATE TABLE geom (p POINT NOT NULL);", true, "CREATE TABLE `geom` (`p` POINT NOT NULL)"},
+		{"CREATE TABLE geom (g GEOMETRY NOT NULL SRID 4326);", true, "CREATE TABLE `geom` (`g` GEOMETRY NOT NULL SRID 4326)"},
+		{"ALTER TABLE geom ADD SPATIAL INDEX (g);", true, "ALTER TABLE `geom` ADD SPATIAL(`g`)"},
+		{"ALTER TABLE geom ADD SPATIAL KEY (g);", true, "ALTER TABLE `geom` ADD SPATIAL(`g`)"},
+	}
+	s.RunTest(c, table)
+}
+
 type windowFrameBoundChecker struct {
 	fb     *ast.FrameBound
 	exprRc int
