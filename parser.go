@@ -12767,7 +12767,12 @@ yynewstate:
 		}
 	case 949:
 		{
-			parser.yyVAL.item = &ast.InsertStmt{Columns: yyS[yypt-2].item.([]*ast.ColumnName), Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
+			x := &ast.InsertStmt{Columns: yyS[yypt-2].item.([]*ast.ColumnName), Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
+			st := yyS[yypt-2].item.(*ast.SelectStmt)
+			if st.SelectStmtOpts.TableHints != nil {
+				x.TableHints = st.SelectStmtOpts.TableHints
+			}
+			parser.yyVAL.item = x
 		}
 	case 950:
 		{
