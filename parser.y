@@ -384,6 +384,8 @@ import (
 	gcsEndpoint             "GCS_ENDPOINT"
 	gcsPredefinedACL        "GCS_PREDEFINED_ACL"
 	gcsStorageClass         "GCS_STORAGE_CLASS"
+	geometryType            "GEOMETRY"
+	geometryCollectionType  "GEOMETRYCOLLECTION"
 	global                  "GLOBAL"
 	grants                  "GRANTS"
 	hash                    "HASH"
@@ -412,6 +414,7 @@ import (
 	lastval                 "LASTVAL"
 	less                    "LESS"
 	level                   "LEVEL"
+	lineStringType          "LINESTRING"
 	list                    "LIST"
 	local                   "LOCAL"
 	location                "LOCATION"
@@ -434,6 +437,9 @@ import (
 	mode                    "MODE"
 	modify                  "MODIFY"
 	month                   "MONTH"
+	multiPointType          "MULTIPOINT"
+	multiLineStringType     "MULTILINESTRING"
+	multiPolygonType        "MULTIPOLYGON"
 	names                   "NAMES"
 	national                "NATIONAL"
 	ncharType               "NCHAR"
@@ -463,6 +469,8 @@ import (
 	per_table               "PER_TABLE"
 	pipesAsOr
 	plugins                 "PLUGINS"
+	pointType               "POINT"
+	polygonType             "POLYGON"
 	preceding               "PRECEDING"
 	prepare                 "PREPARE"
 	privileges              "PRIVILEGES"
@@ -537,6 +545,7 @@ import (
 	sqlTsiSecond            "SQL_TSI_SECOND"
 	sqlTsiWeek              "SQL_TSI_WEEK"
 	sqlTsiYear              "SQL_TSI_YEAR"
+	srid                    "SRID"
 	start                   "START"
 	statsAutoRecalc         "STATS_AUTO_RECALC"
 	statsPersistent         "STATS_PERSISTENT"
@@ -1145,6 +1154,7 @@ import (
 	BlobType                               "Blob types"
 	TextType                               "Text types"
 	DateAndTimeType                        "Date and Time types"
+	SpatialType                            "Spatial types"
 	OptFieldLen                            "Field length or empty"
 	FieldLen                               "Field length"
 	FieldOpts                              "Field type definition option list"
@@ -2647,6 +2657,10 @@ ColumnOption:
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionAutoRandom, AutoRandomBitLength: $2.(int)}
 	}
+|	"SRID" intLit
+	{
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionSRID, Expr: ast.NewValueExpr($2, parser.charset, parser.collation)}
+	}
 
 StorageMedia:
 	"DEFAULT"
@@ -2765,6 +2779,24 @@ ConstraintElem:
 	{
 		c := &ast.Constraint{
 			Tp:   ast.ConstraintUniq,
+			Keys: $5.([]*ast.IndexPartSpecification),
+		}
+		if $7 != nil {
+			c.Option = $7.(*ast.IndexOption)
+		}
+		c.Name = $3.([]interface{})[0].(string)
+		if indexType := $3.([]interface{})[1]; indexType != nil {
+			if c.Option == nil {
+				c.Option = &ast.IndexOption{}
+			}
+			c.Option.Tp = indexType.(model.IndexType)
+		}
+		$$ = c
+	}
+|	"SPATIAL" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
+	{
+		c := &ast.Constraint{
+			Tp:   ast.ConstraintSpatial,
 			Keys: $5.([]*ast.IndexPartSpecification),
 		}
 		if $7 != nil {
@@ -5173,6 +5205,15 @@ UnReservedKeyword:
 |	"S3_USE_ACCELERATE_ENDPOINT"
 |	"SEND_CREDENTIALS_TO_TIKV"
 |	"TIMESTAMP_ORACLE"
+|	"GEOMETRY"
+|	"POINT"
+|	"LINESTRING"
+|	"POLYGON"
+|	"MULTIPOINT"
+|	"MULTILINESTRING"
+|	"MULTIPOLYGON"
+|	"GEOMETRYCOLLECTION"
+|	"SRID"
 
 TiDBKeyword:
 	"ADMIN"
@@ -9611,6 +9652,10 @@ Type:
 	{
 		$$ = $1
 	}
+|	SpatialType
+	{
+		$$ = $1
+	}
 
 NumericType:
 	IntegerType OptFieldLen FieldOpts
@@ -10085,6 +10130,48 @@ DateAndTimeType:
 			yylex.AppendError(ErrInvalidYearColumnLength.GenWithStackByArgs())
 			return -1
 		}
+		$$ = x
+	}
+
+SpatialType:
+	"GEOMETRY"
+	{
+		x := types.NewFieldType(mysql.TypeGeometry)
+		$$ = x
+	}
+|	"POINT"
+	{
+		x := types.NewFieldType(mysql.TypePoint)
+		$$ = x
+	}
+|	"LINESTRING"
+	{
+		x := types.NewFieldType(mysql.TypeLineString)
+		$$ = x
+	}
+|	"POLYGON"
+	{
+		x := types.NewFieldType(mysql.TypePolygon)
+		$$ = x
+	}
+|	"MULTIPOINT"
+	{
+		x := types.NewFieldType(mysql.TypeMultiPoint)
+		$$ = x
+	}
+|	"MULTILINESTRING"
+	{
+		x := types.NewFieldType(mysql.TypeMultiLineString)
+		$$ = x
+	}
+|	"MULTIPOLYGON"
+	{
+		x := types.NewFieldType(mysql.TypeMultiPolygon)
+		$$ = x
+	}
+|	"GEOMETRYCOLLECTION"
+	{
+		x := types.NewFieldType(mysql.TypeGeometryCollection)
 		$$ = x
 	}
 
