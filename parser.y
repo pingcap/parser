@@ -5309,9 +5309,9 @@ InsertValues:
 		x := &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.SelectStmt)}
 		st := $4.(*ast.SelectStmt)
 		if st.SelectStmtOpts.TableHints != nil {
-        	x.TableHints = st.SelectStmtOpts.TableHints
-        }
-        $$ = x
+			x.TableHints = st.SelectStmtOpts.TableHints
+		}
+		$$ = x
 	}
 |	'(' ColumnNameListOpt ')' '(' SelectStmt ')'
 	{
