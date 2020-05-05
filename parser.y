@@ -5286,7 +5286,7 @@ InsertIntoStmt:
 		if $8 != nil {
 			x.OnDuplicate = $8.([]*ast.Assignment)
 		}
-		if x.TableHints == nil && $2 != nil {
+		if $2 != nil {
 			x.TableHints = $2.([]*ast.TableOptimizerHint)
 		}
 		$$ = x
@@ -5306,21 +5306,11 @@ InsertValues:
 	}
 |	'(' ColumnNameListOpt ')' SelectStmt
 	{
-		x := &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.SelectStmt)}
-		st := $4.(*ast.SelectStmt)
-		if st.SelectStmtOpts.TableHints != nil {
-			x.TableHints = st.SelectStmtOpts.TableHints
-		}
-		$$ = x
+		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.SelectStmt)}
 	}
 |	'(' ColumnNameListOpt ')' '(' SelectStmt ')'
 	{
-		x := &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $5.(*ast.SelectStmt)}
-		st := $5.(*ast.SelectStmt)
-		if st.SelectStmtOpts.TableHints != nil {
-			x.TableHints = st.SelectStmtOpts.TableHints
-		}
-		$$ = x
+		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $5.(*ast.SelectStmt)}
 	}
 |	'(' ColumnNameListOpt ')' UnionStmt
 	{
@@ -5332,21 +5322,11 @@ InsertValues:
 	}
 |	'(' SelectStmt ')'
 	{
-		x := &ast.InsertStmt{Select: $2.(*ast.SelectStmt)}
-		st := $2.(*ast.SelectStmt)
-		if st.SelectStmtOpts.TableHints != nil {
-			x.TableHints = st.SelectStmtOpts.TableHints
-		}
-		$$ = x
+		$$ = &ast.InsertStmt{Select: $2.(*ast.SelectStmt)}
 	}
 |	SelectStmt
 	{
-		x := &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
-		st := $1.(*ast.SelectStmt)
-		if st.SelectStmtOpts.TableHints != nil {
-			x.TableHints = st.SelectStmtOpts.TableHints
-		}
-		$$ = x
+		$$ = &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
 	}
 |	UnionStmt
 	{

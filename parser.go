@@ -12753,7 +12753,7 @@ yynewstate:
 			if yyS[yypt-0].item != nil {
 				x.OnDuplicate = yyS[yypt-0].item.([]*ast.Assignment)
 			}
-			if x.TableHints == nil && yyS[yypt-6].item != nil {
+			if yyS[yypt-6].item != nil {
 				x.TableHints = yyS[yypt-6].item.([]*ast.TableOptimizerHint)
 			}
 			parser.yyVAL.statement = x
@@ -12767,21 +12767,11 @@ yynewstate:
 		}
 	case 949:
 		{
-			x := &ast.InsertStmt{Columns: yyS[yypt-2].item.([]*ast.ColumnName), Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
-			st := yyS[yypt-0].statement.(*ast.SelectStmt)
-			if st.SelectStmtOpts.TableHints != nil {
-				x.TableHints = st.SelectStmtOpts.TableHints
-			}
-			parser.yyVAL.item = x
+			parser.yyVAL.item = &ast.InsertStmt{Columns: yyS[yypt-2].item.([]*ast.ColumnName), Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
 		}
 	case 950:
 		{
-			x := &ast.InsertStmt{Columns: yyS[yypt-4].item.([]*ast.ColumnName), Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
-			st := yyS[yypt-1].statement.(*ast.SelectStmt)
-			if st.SelectStmtOpts.TableHints != nil {
-				x.TableHints = st.SelectStmtOpts.TableHints
-			}
-			parser.yyVAL.item = x
+			parser.yyVAL.item = &ast.InsertStmt{Columns: yyS[yypt-4].item.([]*ast.ColumnName), Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
 		}
 	case 951:
 		{
@@ -12793,21 +12783,11 @@ yynewstate:
 		}
 	case 953:
 		{
-			x := &ast.InsertStmt{Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
-			st := yyS[yypt-1].statement.(*ast.SelectStmt)
-			if st.SelectStmtOpts.TableHints != nil {
-				x.TableHints = st.SelectStmtOpts.TableHints
-			}
-			parser.yyVAL.item = x
+			parser.yyVAL.item = &ast.InsertStmt{Select: yyS[yypt-1].statement.(*ast.SelectStmt)}
 		}
 	case 954:
 		{
-			x := &ast.InsertStmt{Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
-			st := yyS[yypt-0].statement.(*ast.SelectStmt)
-			if st.SelectStmtOpts.TableHints != nil {
-				x.TableHints = st.SelectStmtOpts.TableHints
-			}
-			parser.yyVAL.item = x
+			parser.yyVAL.item = &ast.InsertStmt{Select: yyS[yypt-0].statement.(*ast.SelectStmt)}
 		}
 	case 955:
 		{
