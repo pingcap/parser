@@ -2965,10 +2965,10 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err, IsNil)
 	stmt, _, err = parser.Parse("insert into t select /*+ memory_quota(1 MB) */ * from t;", "", "")
 	c.Assert(err, IsNil)
-	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 1)
+	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
 	stmt, _, err = parser.Parse("insert /*+ memory_quota(1 MB) */ into t select * from t;", "", "")
 	c.Assert(err, IsNil)
-	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 1)
+	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
 }
 
 func (s *testParserSuite) TestErrorMsg(c *C) {
