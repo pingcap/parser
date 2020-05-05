@@ -5286,7 +5286,7 @@ InsertIntoStmt:
 		if $8 != nil {
 			x.OnDuplicate = $8.([]*ast.Assignment)
 		}
-		if $2 != nil {
+		if x.TableHints == nil && $2 != nil {
 			x.TableHints = $2.([]*ast.TableOptimizerHint)
 		}
 		$$ = x

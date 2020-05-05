@@ -12753,7 +12753,7 @@ yynewstate:
 			if yyS[yypt-0].item != nil {
 				x.OnDuplicate = yyS[yypt-0].item.([]*ast.Assignment)
 			}
-			if yyS[yypt-6].item != nil {
+			if x.TableHints == nil && yyS[yypt-6].item != nil {
 				x.TableHints = yyS[yypt-6].item.([]*ast.TableOptimizerHint)
 			}
 			parser.yyVAL.statement = x
