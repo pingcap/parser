@@ -24,6 +24,17 @@ import (
 	"github.com/pingcap/parser/terror"
 )
 
+// IsTypeGeometry returns a boolean indicating whether the tp is a geometry type.
+func IsTypeGeometry(tp byte) bool {
+	switch tp {
+	case mysql.TypeGeometry, mysql.TypePoint, mysql.TypeLineString, mysql.TypePolygon,
+		mysql.TypeMultiPoint, mysql.TypeMultiLineString, mysql.TypeMultiPolygon, mysql.TypeGeometryCollection:
+		return true
+	default:
+		return false
+	}
+}
+
 // IsTypeBlob returns a boolean indicating whether the tp is a blob type.
 func IsTypeBlob(tp byte) bool {
 	switch tp {
