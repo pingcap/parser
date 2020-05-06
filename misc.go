@@ -840,7 +840,6 @@ var hintTokenMap = map[string]int{
 	"READ_FROM_STORAGE":       hintReadFromStorage,
 	"BC_JOIN":                 hintBCJoin,
 	"MERGE_JOIN":              hintSMJoin,
-	"BC_JOIN":                 hintBCJoin,
 	"STREAM_AGG":              hintStreamAgg,
 	"SWAP_JOIN_INPUTS":        hintSwapJoinInputs,
 	"USE_INDEX_MERGE":         hintUseIndexMerge,
