@@ -1860,7 +1860,7 @@ AlterTableSpec:
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:         ast.AlterTableIndexInvisible,
-			KeyName:    model.NewCIStr($3),
+			IndexName:  model.NewCIStr($3),
 			Visibility: $4.(ast.IndexVisibility),
 		}
 	}
