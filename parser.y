@@ -90,7 +90,6 @@ import (
 	character         "CHARACTER"
 	charType          "CHAR"
 	check             "CHECK"
-	config            "CONFIG"
 	collate           "COLLATE"
 	column            "COLUMN"
 	constraint        "CONSTRAINT"
@@ -263,7 +262,6 @@ import (
 	union             "UNION"
 	unlock            "UNLOCK"
 	unsigned          "UNSIGNED"
-	until             "UNTIL"
 	update            "UPDATE"
 	usage             "USAGE"
 	use               "USE"
@@ -289,300 +287,304 @@ import (
 	natural           "NATURAL"
 
 	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
-	account                 "ACCOUNT"
-	action                  "ACTION"
-	advise                  "ADVISE"
-	after                   "AFTER"
-	against                 "AGAINST"
-	ago                     "AGO"
-	algorithm               "ALGORITHM"
-	always                  "ALWAYS"
-	any                     "ANY"
-	ascii                   "ASCII"
-	autoIncrement           "AUTO_INCREMENT"
-	autoRandom              "AUTO_RANDOM"
-	avg                     "AVG"
-	avgRowLength            "AVG_ROW_LENGTH"
-	backup                  "BACKUP"
-	begin                   "BEGIN"
-	binding                 "BINDING"
-	bindings                "BINDINGS"
-	binlog                  "BINLOG"
-	bitType                 "BIT"
-	block                   "BLOCK"
-	booleanType             "BOOLEAN"
-	boolType                "BOOL"
-	btree                   "BTREE"
-	byteType                "BYTE"
-	cache                   "CACHE"
-	capture                 "CAPTURE"
-	cascaded                "CASCADED"
-	charsetKwd              "CHARSET"
-	checksum                "CHECKSUM"
-	cipher                  "CIPHER"
-	cleanup                 "CLEANUP"
-	client                  "CLIENT"
-	coalesce                "COALESCE"
-	collation               "COLLATION"
-	columnFormat            "COLUMN_FORMAT"
-	columns                 "COLUMNS"
-	comment                 "COMMENT"
-	commit                  "COMMIT"
-	committed               "COMMITTED"
-	compact                 "COMPACT"
-	compressed              "COMPRESSED"
-	compression             "COMPRESSION"
-	concurrency             "CONCURRENCY"
-	connection              "CONNECTION"
-	consistent              "CONSISTENT"
-	context                 "CONTEXT"
-	cpu                     "CPU"
-	current                 "CURRENT"
-	cycle                   "CYCLE"
-	data                    "DATA"
-	datetimeType            "DATETIME"
-	dateType                "DATE"
-	day                     "DAY"
-	deallocate              "DEALLOCATE"
-	definer                 "DEFINER"
-	delayKeyWrite           "DELAY_KEY_WRITE"
-	directory               "DIRECTORY"
-	disable                 "DISABLE"
-	discard                 "DISCARD"
-	disk                    "DISK"
-	do                      "DO"
-	duplicate               "DUPLICATE"
-	dynamic                 "DYNAMIC"
-	enable                  "ENABLE"
-	encryption              "ENCRYPTION"
-	end                     "END"
-	enforced                "ENFORCED"
-	engine                  "ENGINE"
-	engines                 "ENGINES"
-	enum                    "ENUM"
-	escape                  "ESCAPE"
-	event                   "EVENT"
-	events                  "EVENTS"
-	evolve                  "EVOLVE"
-	exchange                "EXCHANGE"
-	exclusive               "EXCLUSIVE"
-	execute                 "EXECUTE"
-	expansion               "EXPANSION"
-	expire                  "EXPIRE"
-	extended                "EXTENDED"
-	faultsSym               "FAULTS"
-	fields                  "FIELDS"
-	file                    "FILE"
-	first                   "FIRST"
-	fixed                   "FIXED"
-	flush                   "FLUSH"
-	following               "FOLLOWING"
-	format                  "FORMAT"
-	full                    "FULL"
-	function                "FUNCTION"
-	gcsCredentialsFile      "GCS_CREDENTIALS_FILE"
-	gcsEndpoint             "GCS_ENDPOINT"
-	gcsPredefinedACL        "GCS_PREDEFINED_ACL"
-	gcsStorageClass         "GCS_STORAGE_CLASS"
-	global                  "GLOBAL"
-	grants                  "GRANTS"
-	hash                    "HASH"
-	history                 "HISTORY"
-	hosts                   "HOSTS"
-	hour                    "HOUR"
-	identified              "IDENTIFIED"
-	identSQLErrors          "ERRORS"
-	importKwd               "IMPORT"
-	increment               "INCREMENT"
-	incremental             "INCREMENTAL"
-	indexes                 "INDEXES"
-	insertMethod            "INSERT_METHOD"
-	instance                "INSTANCE"
-	invisible               "INVISIBLE"
-	invoker                 "INVOKER"
-	io                      "IO"
-	ipc                     "IPC"
-	isolation               "ISOLATION"
-	issuer                  "ISSUER"
-	jsonType                "JSON"
-	keyBlockSize            "KEY_BLOCK_SIZE"
-	labels                  "LABELS"
-	language                "LANGUAGE"
-	last                    "LAST"
-	lastval                 "LASTVAL"
-	less                    "LESS"
-	level                   "LEVEL"
-	list                    "LIST"
-	local                   "LOCAL"
-	location                "LOCATION"
-	logs                    "LOGS"
-	master                  "MASTER"
-	max_idxnum              "MAX_IDXNUM"
-	max_minutes             "MAX_MINUTES"
-	maxConnectionsPerHour   "MAX_CONNECTIONS_PER_HOUR"
-	maxQueriesPerHour       "MAX_QUERIES_PER_HOUR"
-	maxRows                 "MAX_ROWS"
-	maxUpdatesPerHour       "MAX_UPDATES_PER_HOUR"
-	maxUserConnections      "MAX_USER_CONNECTIONS"
-	mb                      "MB"
-	memory                  "MEMORY"
-	merge                   "MERGE"
-	microsecond             "MICROSECOND"
-	minRows                 "MIN_ROWS"
-	minute                  "MINUTE"
-	minValue                "MINVALUE"
-	mode                    "MODE"
-	modify                  "MODIFY"
-	month                   "MONTH"
-	names                   "NAMES"
-	national                "NATIONAL"
-	ncharType               "NCHAR"
-	never                   "NEVER"
-	next                    "NEXT"
-	nextval                 "NEXTVAL"
-	no                      "NO"
-	nocache                 "NOCACHE"
-	nocycle                 "NOCYCLE"
-	nodegroup               "NODEGROUP"
-	nomaxvalue              "NOMAXVALUE"
-	nominvalue              "NOMINVALUE"
-	none                    "NONE"
-	noorder                 "NOORDER"
-	nowait                  "NOWAIT"
-	nulls                   "NULLS"
-	offset                  "OFFSET"
-	online                  "ONLINE"
-	only                    "ONLY"
-	open                    "OPEN"
-	pageSym                 "PAGE"
-	partial                 "PARTIAL"
-	partitioning            "PARTITIONING"
-	partitions              "PARTITIONS"
-	password                "PASSWORD"
-	per_db                  "PER_DB"
-	per_table               "PER_TABLE"
+	account               "ACCOUNT"
+	action                "ACTION"
+	advise                "ADVISE"
+	after                 "AFTER"
+	against               "AGAINST"
+	ago                   "AGO"
+	algorithm             "ALGORITHM"
+	always                "ALWAYS"
+	any                   "ANY"
+	ascii                 "ASCII"
+	autoIdCache           "AUTO_ID_CACHE"
+	autoIncrement         "AUTO_INCREMENT"
+	autoRandom            "AUTO_RANDOM"
+	autoRandomBase        "AUTO_RANDOM_BASE"
+	avg                   "AVG"
+	avgRowLength          "AVG_ROW_LENGTH"
+	backend               "BACKEND"
+	backup                "BACKUP"
+	backups               "BACKUPS"
+	begin                 "BEGIN"
+	binding               "BINDING"
+	bindings              "BINDINGS"
+	binlog                "BINLOG"
+	bitType               "BIT"
+	block                 "BLOCK"
+	booleanType           "BOOLEAN"
+	boolType              "BOOL"
+	btree                 "BTREE"
+	byteType              "BYTE"
+	cache                 "CACHE"
+	capture               "CAPTURE"
+	cascaded              "CASCADED"
+	charsetKwd            "CHARSET"
+	checkpoint            "CHECKPOINT"
+	checksum              "CHECKSUM"
+	cipher                "CIPHER"
+	cleanup               "CLEANUP"
+	client                "CLIENT"
+	coalesce              "COALESCE"
+	collation             "COLLATION"
+	columnFormat          "COLUMN_FORMAT"
+	columns               "COLUMNS"
+	config                "CONFIG"
+	comment               "COMMENT"
+	commit                "COMMIT"
+	committed             "COMMITTED"
+	compact               "COMPACT"
+	compressed            "COMPRESSED"
+	compression           "COMPRESSION"
+	concurrency           "CONCURRENCY"
+	connection            "CONNECTION"
+	consistent            "CONSISTENT"
+	context               "CONTEXT"
+	cpu                   "CPU"
+	csvBackslashEscape    "CSV_BACKSLASH_ESCAPE"
+	csvDelimiter          "CSV_DELIMITER"
+	csvHeader             "CSV_HEADER"
+	csvNotNull            "CSV_NOT_NULL"
+	csvNull               "CSV_NULL"
+	csvSeparator          "CSV_SEPARATOR"
+	csvTrimLastSeparators "CSV_TRIM_LAST_SEPARATORS"
+	current               "CURRENT"
+	cycle                 "CYCLE"
+	data                  "DATA"
+	datetimeType          "DATETIME"
+	dateType              "DATE"
+	day                   "DAY"
+	deallocate            "DEALLOCATE"
+	definer               "DEFINER"
+	delayKeyWrite         "DELAY_KEY_WRITE"
+	directory             "DIRECTORY"
+	disable               "DISABLE"
+	discard               "DISCARD"
+	disk                  "DISK"
+	do                    "DO"
+	duplicate             "DUPLICATE"
+	dynamic               "DYNAMIC"
+	enable                "ENABLE"
+	encryption            "ENCRYPTION"
+	end                   "END"
+	enforced              "ENFORCED"
+	engine                "ENGINE"
+	engines               "ENGINES"
+	enum                  "ENUM"
+	escape                "ESCAPE"
+	event                 "EVENT"
+	events                "EVENTS"
+	evolve                "EVOLVE"
+	exchange              "EXCHANGE"
+	exclusive             "EXCLUSIVE"
+	execute               "EXECUTE"
+	expansion             "EXPANSION"
+	expire                "EXPIRE"
+	extended              "EXTENDED"
+	faultsSym             "FAULTS"
+	fields                "FIELDS"
+	file                  "FILE"
+	first                 "FIRST"
+	fixed                 "FIXED"
+	flush                 "FLUSH"
+	following             "FOLLOWING"
+	format                "FORMAT"
+	full                  "FULL"
+	function              "FUNCTION"
+	global                "GLOBAL"
+	grants                "GRANTS"
+	hash                  "HASH"
+	history               "HISTORY"
+	hosts                 "HOSTS"
+	hour                  "HOUR"
+	identified            "IDENTIFIED"
+	identSQLErrors        "ERRORS"
+	importKwd             "IMPORT"
+	imports               "IMPORTS"
+	increment             "INCREMENT"
+	incremental           "INCREMENTAL"
+	indexes               "INDEXES"
+	insertMethod          "INSERT_METHOD"
+	instance              "INSTANCE"
+	invisible             "INVISIBLE"
+	invoker               "INVOKER"
+	io                    "IO"
+	ipc                   "IPC"
+	isolation             "ISOLATION"
+	issuer                "ISSUER"
+	jsonType              "JSON"
+	keyBlockSize          "KEY_BLOCK_SIZE"
+	labels                "LABELS"
+	language              "LANGUAGE"
+	last                  "LAST"
+	lastBackup            "LAST_BACKUP"
+	lastval               "LASTVAL"
+	less                  "LESS"
+	level                 "LEVEL"
+	list                  "LIST"
+	local                 "LOCAL"
+	location              "LOCATION"
+	logs                  "LOGS"
+	master                "MASTER"
+	max_idxnum            "MAX_IDXNUM"
+	max_minutes           "MAX_MINUTES"
+	maxConnectionsPerHour "MAX_CONNECTIONS_PER_HOUR"
+	maxQueriesPerHour     "MAX_QUERIES_PER_HOUR"
+	maxRows               "MAX_ROWS"
+	maxUpdatesPerHour     "MAX_UPDATES_PER_HOUR"
+	maxUserConnections    "MAX_USER_CONNECTIONS"
+	mb                    "MB"
+	memory                "MEMORY"
+	merge                 "MERGE"
+	microsecond           "MICROSECOND"
+	minRows               "MIN_ROWS"
+	minute                "MINUTE"
+	minValue              "MINVALUE"
+	mode                  "MODE"
+	modify                "MODIFY"
+	month                 "MONTH"
+	names                 "NAMES"
+	national              "NATIONAL"
+	ncharType             "NCHAR"
+	never                 "NEVER"
+	next                  "NEXT"
+	nextval               "NEXTVAL"
+	no                    "NO"
+	nocache               "NOCACHE"
+	nocycle               "NOCYCLE"
+	nodegroup             "NODEGROUP"
+	nomaxvalue            "NOMAXVALUE"
+	nominvalue            "NOMINVALUE"
+	none                  "NONE"
+	nowait                "NOWAIT"
+	nulls                 "NULLS"
+	offset                "OFFSET"
+	onDuplicate           "ON_DUPLICATE"
+	online                "ONLINE"
+	only                  "ONLY"
+	open                  "OPEN"
+	pageSym               "PAGE"
+	partial               "PARTIAL"
+	partitioning          "PARTITIONING"
+	partitions            "PARTITIONS"
+	password              "PASSWORD"
+	per_db                "PER_DB"
+	per_table             "PER_TABLE"
 	pipesAsOr
-	plugins                 "PLUGINS"
-	preceding               "PRECEDING"
-	prepare                 "PREPARE"
-	privileges              "PRIVILEGES"
-	process                 "PROCESS"
-	processlist             "PROCESSLIST"
-	profile                 "PROFILE"
-	profiles                "PROFILES"
-	quarter                 "QUARTER"
-	queries                 "QUERIES"
-	query                   "QUERY"
-	quick                   "QUICK"
-	rateLimit               "RATE_LIMIT"
-	rebuild                 "REBUILD"
-	recover                 "RECOVER"
-	redundant               "REDUNDANT"
-	reload                  "RELOAD"
-	remove                  "REMOVE"
-	reorganize              "REORGANIZE"
-	repair                  "REPAIR"
-	repeatable              "REPEATABLE"
-	replica                 "REPLICA"
-	replication             "REPLICATION"
-	respect                 "RESPECT"
-	restore                 "RESTORE"
-	reverse                 "REVERSE"
-	role                    "ROLE"
-	rollback                "ROLLBACK"
-	routine                 "ROUTINE"
-	rowCount                "ROW_COUNT"
-	rowFormat               "ROW_FORMAT"
-	rtree                   "RTREE"
-	s3AccessKey             "S3_ACCESS_KEY"
-	s3ACL                   "S3_ACL"
-	s3Endpoint              "S3_ENDPOINT"
-	s3ForcePathStyle        "S3_FORCE_PATH_STYLE"
-	s3Provider              "S3_PROVIDER"
-	s3Region                "S3_REGION"
-	s3SecretAccessKey       "S3_SECRET_ACCESS_KEY"
-	s3SSE                   "S3_SSE"
-	s3StorageClass          "S3_STORAGE_CLASS"
-	s3UseAccelerateEndpoint "S3_USE_ACCELERATE_ENDPOINT"
-	second                  "SECOND"
-	secondaryEngine         "SECONDARY_ENGINE"
-	secondaryLoad           "SECONDARY_LOAD"
-	secondaryUnload         "SECONDARY_UNLOAD"
-	security                "SECURITY"
-	sendCredentialsToTiKV   "SEND_CREDENTIALS_TO_TIKV"
-	separator               "SEPARATOR"
-	sequence                "SEQUENCE"
-	serial                  "SERIAL"
-	serializable            "SERIALIZABLE"
-	session                 "SESSION"
-	setval                  "SETVAL"
-	share                   "SHARE"
-	shared                  "SHARED"
-	shutdown                "SHUTDOWN"
-	signed                  "SIGNED"
-	simple                  "SIMPLE"
-	slave                   "SLAVE"
-	slow                    "SLOW"
-	snapshot                "SNAPSHOT"
-	some                    "SOME"
-	source                  "SOURCE"
-	sqlBufferResult         "SQL_BUFFER_RESULT"
-	sqlCache                "SQL_CACHE"
-	sqlNoCache              "SQL_NO_CACHE"
-	sqlTsiDay               "SQL_TSI_DAY"
-	sqlTsiHour              "SQL_TSI_HOUR"
-	sqlTsiMinute            "SQL_TSI_MINUTE"
-	sqlTsiMonth             "SQL_TSI_MONTH"
-	sqlTsiQuarter           "SQL_TSI_QUARTER"
-	sqlTsiSecond            "SQL_TSI_SECOND"
-	sqlTsiWeek              "SQL_TSI_WEEK"
-	sqlTsiYear              "SQL_TSI_YEAR"
-	start                   "START"
-	statsAutoRecalc         "STATS_AUTO_RECALC"
-	statsPersistent         "STATS_PERSISTENT"
-	statsSamplePages        "STATS_SAMPLE_PAGES"
-	status                  "STATUS"
-	storage                 "STORAGE"
-	subject                 "SUBJECT"
-	subpartition            "SUBPARTITION"
-	subpartitions           "SUBPARTITIONS"
-	super                   "SUPER"
-	swaps                   "SWAPS"
-	switchesSym             "SWITCHES"
-	systemTime              "SYSTEM_TIME"
-	tableChecksum           "TABLE_CHECKSUM"
-	tables                  "TABLES"
-	tablespace              "TABLESPACE"
-	temporary               "TEMPORARY"
-	temptable               "TEMPTABLE"
-	textType                "TEXT"
-	than                    "THAN"
-	timestampOracle         "TIMESTAMP_ORACLE"
-	timestampType           "TIMESTAMP"
-	timeType                "TIME"
-	tp                      "TYPE"
-	trace                   "TRACE"
-	traditional             "TRADITIONAL"
-	transaction             "TRANSACTION"
-	triggers                "TRIGGERS"
-	truncate                "TRUNCATE"
-	unbounded               "UNBOUNDED"
-	uncommitted             "UNCOMMITTED"
-	undefined               "UNDEFINED"
-	unicodeSym              "UNICODE"
-	unknown                 "UNKNOWN"
-	user                    "USER"
-	validation              "VALIDATION"
-	value                   "VALUE"
-	variables               "VARIABLES"
-	view                    "VIEW"
-	visible                 "VISIBLE"
-	warnings                "WARNINGS"
-	week                    "WEEK"
-	weightString            "WEIGHT_STRING"
-	without                 "WITHOUT"
-	x509                    "X509"
-	yearType                "YEAR"
+	plugins               "PLUGINS"
+	preceding             "PRECEDING"
+	prepare               "PREPARE"
+	privileges            "PRIVILEGES"
+	process               "PROCESS"
+	processlist           "PROCESSLIST"
+	profile               "PROFILE"
+	profiles              "PROFILES"
+	quarter               "QUARTER"
+	queries               "QUERIES"
+	query                 "QUERY"
+	quick                 "QUICK"
+	rateLimit             "RATE_LIMIT"
+	rebuild               "REBUILD"
+	recover               "RECOVER"
+	redundant             "REDUNDANT"
+	reload                "RELOAD"
+	remove                "REMOVE"
+	reorganize            "REORGANIZE"
+	repair                "REPAIR"
+	repeatable            "REPEATABLE"
+	replica               "REPLICA"
+	replication           "REPLICATION"
+	respect               "RESPECT"
+	restore               "RESTORE"
+	restores              "RESTORES"
+	reverse               "REVERSE"
+	role                  "ROLE"
+	rollback              "ROLLBACK"
+	routine               "ROUTINE"
+	rowCount              "ROW_COUNT"
+	rowFormat             "ROW_FORMAT"
+	rtree                 "RTREE"
+	second                "SECOND"
+	secondaryEngine       "SECONDARY_ENGINE"
+	secondaryLoad         "SECONDARY_LOAD"
+	secondaryUnload       "SECONDARY_UNLOAD"
+	security              "SECURITY"
+	sendCredentialsToTiKV "SEND_CREDENTIALS_TO_TIKV"
+	separator             "SEPARATOR"
+	sequence              "SEQUENCE"
+	serial                "SERIAL"
+	serializable          "SERIALIZABLE"
+	session               "SESSION"
+	setval                "SETVAL"
+	share                 "SHARE"
+	shared                "SHARED"
+	shutdown              "SHUTDOWN"
+	signed                "SIGNED"
+	simple                "SIMPLE"
+	skipSchemaFiles       "SKIP_SCHEMA_FILES"
+	slave                 "SLAVE"
+	slow                  "SLOW"
+	snapshot              "SNAPSHOT"
+	some                  "SOME"
+	source                "SOURCE"
+	sqlBufferResult       "SQL_BUFFER_RESULT"
+	sqlCache              "SQL_CACHE"
+	sqlNoCache            "SQL_NO_CACHE"
+	sqlTsiDay             "SQL_TSI_DAY"
+	sqlTsiHour            "SQL_TSI_HOUR"
+	sqlTsiMinute          "SQL_TSI_MINUTE"
+	sqlTsiMonth           "SQL_TSI_MONTH"
+	sqlTsiQuarter         "SQL_TSI_QUARTER"
+	sqlTsiSecond          "SQL_TSI_SECOND"
+	sqlTsiWeek            "SQL_TSI_WEEK"
+	sqlTsiYear            "SQL_TSI_YEAR"
+	start                 "START"
+	statsAutoRecalc       "STATS_AUTO_RECALC"
+	statsPersistent       "STATS_PERSISTENT"
+	statsSamplePages      "STATS_SAMPLE_PAGES"
+	status                "STATUS"
+	storage               "STORAGE"
+	strictFormat          "STRICT_FORMAT"
+	subject               "SUBJECT"
+	subpartition          "SUBPARTITION"
+	subpartitions         "SUBPARTITIONS"
+	super                 "SUPER"
+	swaps                 "SWAPS"
+	switchesSym           "SWITCHES"
+	systemTime            "SYSTEM_TIME"
+	tableChecksum         "TABLE_CHECKSUM"
+	tables                "TABLES"
+	tablespace            "TABLESPACE"
+	temporary             "TEMPORARY"
+	temptable             "TEMPTABLE"
+	textType              "TEXT"
+	than                  "THAN"
+	tikvImporter          "TIKV_IMPORTER"
+	timestampType         "TIMESTAMP"
+	timeType              "TIME"
+	tp                    "TYPE"
+	trace                 "TRACE"
+	traditional           "TRADITIONAL"
+	transaction           "TRANSACTION"
+	triggers              "TRIGGERS"
+	truncate              "TRUNCATE"
+	unbounded             "UNBOUNDED"
+	uncommitted           "UNCOMMITTED"
+	undefined             "UNDEFINED"
+	unicodeSym            "UNICODE"
+	unknown               "UNKNOWN"
+	user                  "USER"
+	validation            "VALIDATION"
+	value                 "VALUE"
+	variables             "VARIABLES"
+	view                  "VIEW"
+	visible               "VISIBLE"
+	warnings              "WARNINGS"
+	week                  "WEEK"
+	weightString          "WEIGHT_STRING"
+	without               "WITHOUT"
+	x509                  "X509"
+	yearType              "YEAR"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate               "ADDDATE"
@@ -753,6 +755,7 @@ import (
 	CharsetNameOrDefault   "Character set name or default"
 	NextValueForSequence   "Default nextval expression"
 	FunctionNameSequence   "Function with sequence function call"
+	WindowFuncCall         "WINDOW function call"
 
 %type	<statement>
 	AdminStmt            "Check table statement or show ddl statement"
@@ -822,6 +825,8 @@ import (
 	UnionStmt            "Union select state ment"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
+	CreateViewSelectOpt  "Select/Union statement in CREATE VIEW ... AS SELECT"
+	UnionSelect          "Union (select) item"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -839,15 +844,12 @@ import (
 	AssignmentList                         "assignment list"
 	AssignmentListOpt                      "assignment list opt"
 	AuthOption                             "User auth option"
-	AuthString                             "Password string value"
+	Boolean                                "Boolean (0, 1, false, true)"
 	OptionalBraces                         "optional braces"
 	CastType                               "Cast function target type"
-	CharsetName                            "Character set name"
 	ClearPasswordExpireOptions             "Clear password expire options"
-	CollationName                          "Collation name"
 	ColumnDef                              "table column definition"
 	ColumnDefList                          "table column definition list"
-	ColumnFormat                           "Column format"
 	ColumnName                             "column name"
 	ColumnNameOrUserVariable               "column name or user variable"
 	ColumnNameList                         "column name list"
@@ -873,11 +875,9 @@ import (
 	CreateSequenceOptionListOpt            "create sequence list opt"
 	CreateTableOptionListOpt               "create table option list opt"
 	CreateTableSelectOpt                   "Select/Union statement in CREATE TABLE ... SELECT"
-	CreateViewSelectOpt                    "Select/Union statement in CREATE VIEW ... AS SELECT"
 	DatabaseOption                         "CREATE Database specification"
 	DatabaseOptionList                     "CREATE Database specification list"
 	DatabaseOptionListOpt                  "CREATE Database specification list opt"
-	DBName                                 "Database Name"
 	DistinctOpt                            "Explicit distinct option"
 	DefaultFalseDistinctOpt                "Distinct option which defaults to false"
 	DefaultTrueDistinctOpt                 "Distinct option which defaults to true"
@@ -886,7 +886,6 @@ import (
 	RequireClauseOpt                       "optional Encrypted connections options"
 	EqOpt                                  "= or empty"
 	EscapedTableRef                        "escaped table reference"
-	ExplainFormatType                      "explain format type"
 	ExpressionList                         "expression list"
 	MaxValueOrExpressionList               "maxvalue or expression list"
 	ExpressionListOpt                      "expression list opt"
@@ -894,10 +893,7 @@ import (
 	FuncDatetimePrecList                   "Function datetime precision list"
 	Field                                  "field expression"
 	Fields                                 "Fields clause"
-	FieldAsName                            "Field alias name"
-	FieldAsNameOpt                         "Field alias name opt"
 	FieldList                              "field expression list"
-	FieldTerminator                        "Field terminator"
 	FlushOption                            "Flush option"
 	InstanceOption                         "Instance option"
 	FulltextSearchModifierOpt              "Fulltext modifier"
@@ -909,7 +905,6 @@ import (
 	GetFormatSelector                      "{DATE|DATETIME|TIME|TIMESTAMP}"
 	GlobalScope                            "The scope of variable"
 	GroupByClause                          "GROUP BY clause"
-	HashString                             "Hashed string"
 	HavingClause                           "HAVING clause"
 	HandleRange                            "handle range"
 	HandleRangeList                        "handle range list"
@@ -924,7 +919,6 @@ import (
 	IndexInvisible                         "index visible/invisible"
 	IndexKeyTypeOpt                        "index key type"
 	IndexLockAndAlgorithmOpt               "index lock and algorithm"
-	IndexName                              "index name"
 	IndexNameAndTypeOpt                    "index name and index type"
 	IndexNameList                          "index name list"
 	IndexOption                            "Index Option"
@@ -940,12 +934,10 @@ import (
 	JoinType                               "join type"
 	KillOrKillTiDB                         "Kill or Kill TiDB"
 	LocationLabelList                      "location label name list"
-	LikeEscapeOpt                          "like escape option"
 	LikeTableWithOrWithoutParen            "LIKE table_name or ( LIKE table_name )"
 	LimitClause                            "LIMIT clause"
 	LimitOption                            "Limit option could be integer or parameter marker."
 	Lines                                  "Lines clause"
-	LinesTerminated                        "Lines terminated by"
 	LoadDataSetSpecOpt                     "Optional load data specification"
 	LoadDataSetList                        "Load data specifications"
 	LoadDataSetItem                        "Single load data specification"
@@ -981,7 +973,6 @@ import (
 	PartDefOptionList                      "PartDefOption list"
 	PartDefOption                          "COMMENT [=] xxx | TABLESPACE [=] tablespace_name | ENGINE [=] xxx"
 	PasswordExpire                         "Single password option for create user statement"
-	PasswordOpt                            "Password option"
 	PasswordOrLockOption                   "Single password or lock option for create user statement"
 	PasswordOrLockOptionList               "Password or lock options for create user statement"
 	PasswordOrLockOptions                  "Optional password or lock options for create user statement"
@@ -1005,7 +996,6 @@ import (
 	RolenameList                           "RolenameList"
 	RoleSpec                               "Rolename and auth option"
 	RoleSpecList                           "Rolename and auth option list"
-	RoleNameString                         "role name string"
 	RowFormat                              "Row format option"
 	RowValue                               "Row value"
 	SelectLockOpt                          "FOR UPDATE or LOCK IN SHARE MODE,"
@@ -1028,7 +1018,6 @@ import (
 	SetRoleOpt                             "Set role options"
 	SetDefaultRoleOpt                      "Set default role options"
 	ShowTargetFilterable                   "Show target that can be filtered by WHERE or LIKE"
-	ShowDatabaseNameOpt                    "Show tables/columns statement database name option"
 	ShowTableAliasOpt                      "Show table alias option"
 	ShowLikeOrWhereOpt                     "Show like or where clause option"
 	ShowProfileArgsOpt                     "Show profile args option"
@@ -1037,10 +1026,8 @@ import (
 	ShowProfileTypes                       "Show profile types"
 	SplitOption                            "Split Option"
 	SplitSyntaxOption                      "Split syntax Option"
-	Starting                               "Starting by"
 	StatementList                          "statement list"
 	StatsPersistentVal                     "stats_persistent value"
-	StringName                             "string literal or identifier"
 	StringList                             "string list"
 	SubPartDefinition                      "SubPartition definition"
 	SubPartDefinitionList                  "SubPartition definition list"
@@ -1048,7 +1035,6 @@ import (
 	SubPartitionMethod                     "SubPartition method"
 	SubPartitionOpt                        "SubPartition option"
 	SubPartitionNumOpt                     "SubPartition NUM option"
-	Symbol                                 "Constraint Symbol"
 	TableAliasRefList                      "table alias reference list"
 	TableAsName                            "table alias name"
 	TableAsNameOpt                         "table alias name optional"
@@ -1072,13 +1058,11 @@ import (
 	TimestampUnit                          "Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	TimestampBound                         "Timestamp bound for start transaction with timestamp mode"
 	LockType                               "Table locks type"
-	FlashbackToNewName                     "Flashback to new name"
 	TransactionChar                        "Transaction characteristic"
 	TransactionChars                       "Transaction characteristic list"
 	TrimDirection                          "Trim string direction"
 	UnionOpt                               "Union Option(empty/ALL/DISTINCT)"
 	UnionClauseList                        "Union select clause list"
-	UnionSelect                            "Union (select) item"
 	Username                               "Username"
 	UsernameList                           "UsernameList"
 	UserSpec                               "Username and auth option"
@@ -1125,7 +1109,6 @@ import (
 	WindowFrameBound                       "WINDOW frame bound"
 	WindowFrameExtent                      "WINDOW frame extent"
 	WindowFrameStart                       "WINDOW frame start"
-	WindowFuncCall                         "WINDOW function call"
 	WindowName                             "WINDOW name"
 	WindowNameOrSpec                       "WINDOW name or spec"
 	WindowSpec                             "WINDOW spec"
@@ -1154,9 +1137,8 @@ import (
 	OptBinary                              "Optional BINARY"
 	OptBinMod                              "Optional BINARY mode"
 	OptCharsetWithOptBinary                "Optional BINARY or ASCII or UNICODE or BYTE"
-	OptCharset                             "Optional Character setting"
-	OptCollate                             "Optional Collate setting"
 	IgnoreLines                            "Ignore num(int) lines"
+	Int64Num                               "a number that can be safely converted to int64"
 	NUM                                    "A number"
 	NumList                                "Some numbers"
 	LengthNum                              "Field length num(uint64)"
@@ -1173,11 +1155,12 @@ import (
 	PerDB                                  "Max index number PER_DB"
 	BRIETables                             "List of tables or databases for BRIE statements"
 	DBNameList                             "List of database names"
-	BackupTypeSpec                         "Backup type (FULL or INCREMENTAL)"
 	BRIEOption                             "Single BRIE option"
 	BRIEOptions                            "List of BRIE options"
 	BRIEIntegerOptionName                  "Name of a BRIE option which takes an integer as input"
+	BRIEBooleanOptionName                  "Name of a BRIE option which takes a boolean as input"
 	BRIEStringOptionName                   "Name of a BRIE option which takes a string as input"
+	BRIEKeywordOptionName                  "Name of a BRIE option which takes a case-insensitive string as input"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1228,6 +1211,30 @@ import (
 	FunctionNameDateArith           "Date arith function call names (date_add or date_sub)"
 	FunctionNameDateArithMultiForms "Date arith function call names (adddate or subdate)"
 	VariableName                    "A simple Identifier like xx or the xx.xx form"
+	ConfigItemName                  "A config item like aa or aa.bb or aa.bb-cc.dd"
+	AuthString                      "Password string value"
+	CharsetName                     "Character set name"
+	CollationName                   "Collation name"
+	ColumnFormat                    "Column format"
+	DBName                          "Database Name"
+	ExplainFormatType               "explain format type"
+	FieldAsName                     "Field alias name"
+	FieldAsNameOpt                  "Field alias name opt"
+	FieldTerminator                 "Field terminator"
+	FlashbackToNewName              "Flashback to new name"
+	HashString                      "Hashed string"
+	IndexName                       "index name"
+	LikeEscapeOpt                   "like escape option"
+	LinesTerminated                 "Lines terminated by"
+	OptCharset                      "Optional Character setting"
+	OptCollate                      "Optional Collate setting"
+	PasswordOpt                     "Password option"
+	RoleNameString                  "role name string"
+	ShowDatabaseNameOpt             "Show tables/columns statement database name option"
+	Starting                        "Starting by"
+	StringName                      "string literal or identifier"
+	StringNameOrBRIEOptionKeyword   "string literal or identifier or keyword used for BRIE options"
+	Symbol                          "Constraint Symbol"
 
 %precedence empty
 %precedence sqlBufferResult
@@ -1379,11 +1386,11 @@ AlterTableSpec:
 	{
 		op := &ast.AlterTableSpec{
 			Tp: ast.AlterTableOption,
-			Options: []*ast.TableOption{{Tp: ast.TableOptionCharset, StrValue: $4.(string),
+			Options: []*ast.TableOption{{Tp: ast.TableOptionCharset, StrValue: $4,
 				UintValue: ast.TableOptionCharsetWithConvertTo}},
 		}
 		if $5 != "" {
-			op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $5.(string)})
+			op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $5})
 		}
 		$$ = op
 	}
@@ -1395,7 +1402,7 @@ AlterTableSpec:
 				UintValue: ast.TableOptionCharsetWithConvertTo}},
 		}
 		if $5 != "" {
-			op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $5.(string)})
+			op.Options = append(op.Options, &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $5})
 		}
 		$$ = op
 	}
@@ -1652,7 +1659,7 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			IfExists: $4.(bool),
 			Tp:       ast.AlterTableDropForeignKey,
-			Name:     $5.(string),
+			Name:     $5,
 		}
 	}
 |	"ORDER" "BY" AlterOrderList %prec lowerThenOrder
@@ -1794,8 +1801,6 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableWithValidation,
 		}
-		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	"WITHOUT" "VALIDATION"
 	{
@@ -1803,8 +1808,6 @@ AlterTableSpec:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableWithoutValidation,
 		}
-		yylex.AppendError(yylex.Errorf("The WITH/WITHOUT VALIDATION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 // Added in MySQL 8.0.13, see: https://dev.mysql.com/doc/refman/8.0/en/keywords.html for details
 |	"SECONDARY_LOAD"
@@ -1887,18 +1890,12 @@ AllOrPartitionNameList:
 		$$ = nil
 	}
 |	PartitionNameList %prec lowerThanComma
-	{
-		$$ = $1
-	}
 
 WithValidationOpt:
 	{
 		$$ = true
 	}
 |	WithValidation
-	{
-		$$ = $1
-	}
 
 WithValidation:
 	"WITH" "VALIDATION"
@@ -1988,9 +1985,6 @@ AlterTableSpecListOpt:
 		$$ = make([]*ast.AlterTableSpec, 0, 1)
 	}
 |	AlterTableSpecList
-	{
-		$$ = $1
-	}
 
 AlterTableSpecList:
 	AlterTableSpec
@@ -2022,14 +2016,11 @@ ConstraintKeywordOpt:
 	}
 |	"CONSTRAINT" Symbol
 	{
-		$$ = $2.(string)
+		$$ = $2
 	}
 
 Symbol:
 	Identifier
-	{
-		$$ = $1
-	}
 
 /**************************************RenameTableStmt***************************************
  * See http://dev.mysql.com/doc/refman/5.7/en/rename-table.html
@@ -2076,7 +2067,7 @@ TableToTable:
  *
  *******************************************************************/
 RecoverTableStmt:
-	"RECOVER" "TABLE" "BY" "JOB" NUM
+	"RECOVER" "TABLE" "BY" "JOB" Int64Num
 	{
 		$$ = &ast.RecoverTableStmt{
 			JobID: $5.(int64),
@@ -2088,7 +2079,7 @@ RecoverTableStmt:
 			Table: $3.(*ast.TableName),
 		}
 	}
-|	"RECOVER" "TABLE" TableName NUM
+|	"RECOVER" "TABLE" TableName Int64Num
 	{
 		$$ = &ast.RecoverTableStmt{
 			Table:  $3.(*ast.TableName),
@@ -2108,7 +2099,7 @@ FlashbackTableStmt:
 	{
 		$$ = &ast.FlashBackTableStmt{
 			Table:   $3.(*ast.TableName),
-			NewName: $4.(string),
+			NewName: $4,
 		}
 	}
 
@@ -2151,7 +2142,7 @@ SplitRegionStmt:
 	}
 
 SplitOption:
-	"BETWEEN" RowValue "AND" RowValue "REGIONS" NUM
+	"BETWEEN" RowValue "AND" RowValue "REGIONS" Int64Num
 	{
 		$$ = &ast.SplitOption{
 			Lower: $2.([]ast.ExprNode),
@@ -2445,9 +2436,6 @@ ColumnNameListOpt:
 		$$ = []*ast.ColumnName{}
 	}
 |	ColumnNameList
-	{
-		$$ = $1.([]*ast.ColumnName)
-	}
 
 ColumnNameOrUserVarListOpt:
 	/* EMPTY */
@@ -2455,9 +2443,6 @@ ColumnNameOrUserVarListOpt:
 		$$ = []*ast.ColumnNameOrUserVar{}
 	}
 |	ColumnNameOrUserVariableList
-	{
-		$$ = $1.([]*ast.ColumnNameOrUserVar)
-	}
 
 ColumnNameOrUserVariableList:
 	ColumnNameOrUserVariable
@@ -2519,9 +2504,6 @@ EnforcedOrNotOpt:
 		$$ = true
 	}
 |	EnforcedOrNot
-	{
-		$$ = $1
-	}
 
 EnforcedOrNotOrNotNullOpt:
 	//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
@@ -2631,11 +2613,11 @@ ColumnOption:
 	}
 |	"COLLATE" CollationName
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2.(string)}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionCollate, StrValue: $2}
 	}
 |	"COLUMN_FORMAT" ColumnFormat
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2.(string)}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionColumnFormat, StrValue: $2}
 	}
 |	"STORAGE" StorageMedia
 	{
@@ -2707,9 +2689,6 @@ ColumnOptionListOpt:
 		$$ = []*ast.ColumnOption{}
 	}
 |	ColumnOptionList
-	{
-		$$ = $1.([]*ast.ColumnOption)
-	}
 
 ConstraintElem:
 	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
@@ -2735,7 +2714,7 @@ ConstraintElem:
 		c := &ast.Constraint{
 			Tp:   ast.ConstraintFulltext,
 			Keys: $5.([]*ast.IndexPartSpecification),
-			Name: $3.(string),
+			Name: $3,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2785,7 +2764,7 @@ ConstraintElem:
 			IfNotExists: $3.(bool),
 			Tp:          ast.ConstraintForeignKey,
 			Keys:        $6.([]*ast.IndexPartSpecification),
-			Name:        $4.(string),
+			Name:        $4,
 			Refer:       $8.(*ast.ReferenceDef),
 		}
 	}
@@ -3142,7 +3121,7 @@ AlterDatabaseStmt:
 	"ALTER" DatabaseSym DBName DatabaseOptionList
 	{
 		$$ = &ast.AlterDatabaseStmt{
-			Name:                 $3.(string),
+			Name:                 $3,
 			AlterDefaultDatabase: false,
 			Options:              $4.([]*ast.DatabaseOption),
 		}
@@ -3172,25 +3151,22 @@ CreateDatabaseStmt:
 	{
 		$$ = &ast.CreateDatabaseStmt{
 			IfNotExists: $3.(bool),
-			Name:        $4.(string),
+			Name:        $4,
 			Options:     $5.([]*ast.DatabaseOption),
 		}
 	}
 
 DBName:
 	Identifier
-	{
-		$$ = $1
-	}
 
 DatabaseOption:
 	DefaultKwdOpt CharsetKw EqOpt CharsetName
 	{
-		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCharset, Value: $4.(string)}
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCharset, Value: $4}
 	}
 |	DefaultKwdOpt "COLLATE" EqOpt CollationName
 	{
-		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4.(string)}
+		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionCollate, Value: $4}
 	}
 |	DefaultKwdOpt "ENCRYPTION" EqOpt EncryptionOpt
 	{
@@ -3306,9 +3282,6 @@ PartitionKeyAlgorithmOpt:
 
 PartitionMethod:
 	SubPartitionMethod
-	{
-		$$ = $1
-	}
 |	"RANGE" '(' Expression ')'
 	{
 		$$ = &ast.PartitionMethod{
@@ -3364,9 +3337,6 @@ LinearOpt:
 		$$ = ""
 	}
 |	"LINEAR"
-	{
-		$$ = $1
-	}
 
 SubPartitionOpt:
 	{
@@ -3486,15 +3456,15 @@ PartDefOption:
 	}
 |	"ENGINE" EqOpt StringName
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $3.(string)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $3}
 	}
 |	"STORAGE" "ENGINE" EqOpt StringName
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $4.(string)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionEngine, StrValue: $4}
 	}
 |	"INSERT_METHOD" EqOpt StringName
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionInsertMethod, StrValue: $3.(string)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionInsertMethod, StrValue: $3}
 	}
 |	"DATA" "DIRECTORY" EqOpt stringLit
 	{
@@ -3602,20 +3572,14 @@ CreateTableSelectOpt:
 
 CreateViewSelectOpt:
 	SelectStmt
-	{
-		$$ = $1.(*ast.SelectStmt)
-	}
 |	UnionStmt
-	{
-		$$ = $1.(*ast.UnionStmt)
-	}
 |	'(' SelectStmt ')'
 	{
-		$$ = $2.(*ast.SelectStmt)
+		$$ = $2
 	}
 |	'(' UnionStmt ')'
 	{
-		$$ = $2.(*ast.UnionStmt)
+		$$ = $2
 	}
 
 LikeTableWithOrWithoutParen:
@@ -3717,9 +3681,6 @@ ViewSQLSecurity:
 
 ViewName:
 	TableName
-	{
-		$$ = $1.(*ast.TableName)
-	}
 
 ViewFieldList:
 	/* Empty */
@@ -3785,6 +3746,9 @@ DeleteFromStmt:
 			Quick:     $4.(bool),
 			IgnoreErr: $5.(bool),
 		}
+		if $2 != nil {
+			x.TableHints = $2.([]*ast.TableOptimizerHint)
+		}
 		if $10 != nil {
 			x.Where = $10.(ast.ExprNode)
 		}
@@ -3843,7 +3807,7 @@ DatabaseSym:
 DropDatabaseStmt:
 	"DROP" DatabaseSym IfExists DBName
 	{
-		$$ = &ast.DropDatabaseStmt{IfExists: $3.(bool), Name: $4.(string)}
+		$$ = &ast.DropDatabaseStmt{IfExists: $3.(bool), Name: $4}
 	}
 
 /******************************************************************
@@ -4031,7 +3995,7 @@ ExplainStmt:
 |	ExplainSym "FORMAT" "=" ExplainFormatType "FOR" "CONNECTION" NUM
 	{
 		$$ = &ast.ExplainForStmt{
-			Format:       $4.(string),
+			Format:       $4,
 			ConnectionID: getUint64FromNUM($7),
 		}
 	}
@@ -4039,7 +4003,7 @@ ExplainStmt:
 	{
 		$$ = &ast.ExplainStmt{
 			Stmt:   $5,
-			Format: $4.(string),
+			Format: $4,
 		}
 	}
 |	ExplainSym "ANALYZE" ExplainableStmt
@@ -4062,34 +4026,38 @@ ExplainFormatType:
 	}
 
 /*******************************************************************
- * Backup / restore statements
+ * Backup / restore / import statements
  *
- *	BACKUP DATABASE [ * | db1, db2, db3 ] [ FULL ] TO 'scheme://location' [ options... ]
- *	BACKUP TABLE [ db1.tbl1, db2.tbl2 ] [ FULL ] TO 'scheme://location' [ options... ]
- *	RESTORE DATABASE [ * | db1, db2, db3 ] [ FULL ] FROM 'scheme://location' [ options... ]
- *	RESTORE TABLE [ db1.tbl1, db2.tbl2 ] [ FULL ] FROM 'scheme://location' [ options... ]
+ *	BACKUP DATABASE [ * | db1, db2, db3 ] TO 'scheme://location' [ options... ]
+ *	BACKUP TABLE [ db1.tbl1, db2.tbl2 ] TO 'scheme://location' [ options... ]
+ *	RESTORE DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
+ *	RESTORE TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
+ *	IMPORT DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
+ *	IMPORT TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
  */
 BRIEStmt:
-	"BACKUP" BRIETables BackupTypeSpec "TO" stringLit BRIEOptions
+	"BACKUP" BRIETables "TO" stringLit BRIEOptions
 	{
 		stmt := $2.(*ast.BRIEStmt)
 		stmt.Kind = ast.BRIEKindBackup
-		stmt.Storage = $5
-		stmt.Options = $6.([]*ast.BRIEOption)
-		if $3 != nil {
-			stmt.Incremental = $3.(*ast.BRIEOption)
-		}
+		stmt.Storage = $4
+		stmt.Options = $5.([]*ast.BRIEOption)
 		$$ = stmt
 	}
-|	"RESTORE" BRIETables BackupTypeSpec "FROM" stringLit BRIEOptions
+|	"RESTORE" BRIETables "FROM" stringLit BRIEOptions
 	{
 		stmt := $2.(*ast.BRIEStmt)
 		stmt.Kind = ast.BRIEKindRestore
-		stmt.Storage = $5
-		stmt.Options = $6.([]*ast.BRIEOption)
-		if $3 != nil {
-			stmt.Incremental = $3.(*ast.BRIEOption)
-		}
+		stmt.Storage = $4
+		stmt.Options = $5.([]*ast.BRIEOption)
+		$$ = stmt
+	}
+|	"IMPORT" BRIETables "FROM" stringLit BRIEOptions
+	{
+		stmt := $2.(*ast.BRIEStmt)
+		stmt.Kind = ast.BRIEKindImport
+		stmt.Storage = $4
+		stmt.Options = $5.([]*ast.BRIEOption)
 		$$ = stmt
 	}
 
@@ -4110,35 +4078,11 @@ BRIETables:
 DBNameList:
 	DBName
 	{
-		$$ = []string{$1.(string)}
+		$$ = []string{$1}
 	}
 |	DBNameList ',' DBName
 	{
-		$$ = append($1.([]string), $3.(string))
-	}
-
-BackupTypeSpec:
-	%prec empty
-	{
-		$$ = nil
-	}
-|	"FULL"
-	{
-		$$ = nil
-	}
-|	"INCREMENTAL" "UNTIL" "TIMESTAMP" stringLit
-	{
-		$$ = &ast.BRIEOption{
-			Tp:       ast.BRIEOptionLastBackupTS,
-			StrValue: $4,
-		}
-	}
-|	"INCREMENTAL" "UNTIL" "TIMESTAMP_ORACLE" LengthNum
-	{
-		$$ = &ast.BRIEOption{
-			Tp:        ast.BRIEOptionLastBackupTSO,
-			UintValue: $4.(uint64),
-		}
+		$$ = append($1.([]string), $3)
 	}
 
 BRIEOptions:
@@ -4156,7 +4100,9 @@ BRIEIntegerOptionName:
 	{
 		$$ = ast.BRIEOptionConcurrency
 	}
-|	"CHECKSUM"
+
+BRIEBooleanOptionName:
+	"CHECKSUM"
 	{
 		$$ = ast.BRIEOptionChecksum
 	}
@@ -4168,63 +4114,65 @@ BRIEIntegerOptionName:
 	{
 		$$ = ast.BRIEOptionOnline
 	}
-|	"S3_FORCE_PATH_STYLE"
+|	"CHECKPOINT"
 	{
-		$$ = ast.BRIEOptionS3ForcePathStyle
+		$$ = ast.BRIEOptionCheckpoint
 	}
-|	"S3_USE_ACCELERATE_ENDPOINT"
+|	"ANALYZE"
 	{
-		$$ = ast.BRIEOptionS3UseAccelerateEndpoint
+		$$ = ast.BRIEOptionAnalyze
+	}
+|	"SKIP_SCHEMA_FILES"
+	{
+		$$ = ast.BRIEOptionSkipSchemaFiles
+	}
+|	"STRICT_FORMAT"
+	{
+		$$ = ast.BRIEOptionStrictFormat
+	}
+|	"CSV_NOT_NULL"
+	{
+		$$ = ast.BRIEOptionCSVNotNull
+	}
+|	"CSV_BACKSLASH_ESCAPE"
+	{
+		$$ = ast.BRIEOptionCSVBackslashEscape
+	}
+|	"CSV_TRIM_LAST_SEPARATORS"
+	{
+		$$ = ast.BRIEOptionCSVTrimLastSeparators
 	}
 
 BRIEStringOptionName:
-	"S3_ENDPOINT"
+	"TIKV_IMPORTER"
 	{
-		$$ = ast.BRIEOptionS3Endpoint
+		$$ = ast.BRIEOptionTiKVImporter
 	}
-|	"S3_REGION"
+|	"CSV_SEPARATOR"
 	{
-		$$ = ast.BRIEOptionS3Region
+		$$ = ast.BRIEOptionCSVSeparator
 	}
-|	"S3_STORAGE_CLASS"
+|	"CSV_DELIMITER"
 	{
-		$$ = ast.BRIEOptionS3StorageClass
+		$$ = ast.BRIEOptionCSVDelimiter
 	}
-|	"S3_SSE"
+|	"CSV_NULL"
 	{
-		$$ = ast.BRIEOptionS3SSE
+		$$ = ast.BRIEOptionCSVNull
 	}
-|	"S3_ACL"
+
+BRIEKeywordOptionName:
+	"BACKEND"
 	{
-		$$ = ast.BRIEOptionS3ACL
+		$$ = ast.BRIEOptionBackend
 	}
-|	"S3_ACCESS_KEY"
+|	"ON_DUPLICATE"
 	{
-		$$ = ast.BRIEOptionS3AccessKey
+		$$ = ast.BRIEOptionOnDuplicate
 	}
-|	"S3_SECRET_ACCESS_KEY"
+|	"ON" "DUPLICATE"
 	{
-		$$ = ast.BRIEOptionS3SecretAccessKey
-	}
-|	"S3_PROVIDER"
-	{
-		$$ = ast.BRIEOptionS3Provider
-	}
-|	"GCS_ENDPOINT"
-	{
-		$$ = ast.BRIEOptionGCSEndpoint
-	}
-|	"GCS_STORAGE_CLASS"
-	{
-		$$ = ast.BRIEOptionGCSStorageClass
-	}
-|	"GCS_PREDEFINED_ACL"
-	{
-		$$ = ast.BRIEOptionGCSPredefinedACL
-	}
-|	"GCS_CREDENTIALS_FILE"
-	{
-		$$ = ast.BRIEOptionGCSCredentialsFile
+		$$ = ast.BRIEOptionOnDuplicate
 	}
 
 BRIEOption:
@@ -4235,11 +4183,29 @@ BRIEOption:
 			UintValue: $3.(uint64),
 		}
 	}
+|	BRIEBooleanOptionName EqOpt Boolean
+	{
+		value := uint64(0)
+		if $3.(bool) {
+			value = 1
+		}
+		$$ = &ast.BRIEOption{
+			Tp:        $1.(ast.BRIEOptionType),
+			UintValue: value,
+		}
+	}
 |	BRIEStringOptionName EqOpt stringLit
 	{
 		$$ = &ast.BRIEOption{
 			Tp:       $1.(ast.BRIEOptionType),
 			StrValue: $3,
+		}
+	}
+|	BRIEKeywordOptionName EqOpt StringNameOrBRIEOptionKeyword
+	{
+		$$ = &ast.BRIEOption{
+			Tp:       $1.(ast.BRIEOptionType),
+			StrValue: strings.ToLower($3),
 		}
 	}
 |	"SNAPSHOT" EqOpt LengthNum TimestampUnit "AGO"
@@ -4271,12 +4237,40 @@ BRIEOption:
 			UintValue: $3.(uint64),
 		}
 	}
+|	"LAST_BACKUP" EqOpt stringLit
+	{
+		$$ = &ast.BRIEOption{
+			Tp:       ast.BRIEOptionLastBackupTS,
+			StrValue: $3,
+		}
+	}
+|	"LAST_BACKUP" EqOpt LengthNum
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionLastBackupTSO,
+			UintValue: $3.(uint64),
+		}
+	}
 |	"RATE_LIMIT" EqOpt LengthNum "MB" '/' "SECOND"
 	{
 		// TODO: check overflow?
 		$$ = &ast.BRIEOption{
 			Tp:        ast.BRIEOptionRateLimit,
 			UintValue: $3.(uint64) * 1048576,
+		}
+	}
+|	"CSV_HEADER" EqOpt FieldsOrColumns
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionCSVHeader,
+			UintValue: ast.BRIECSVHeaderIsColumns,
+		}
+	}
+|	"CSV_HEADER" EqOpt LengthNum
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionCSVHeader,
+			UintValue: $3.(uint64),
 		}
 	}
 
@@ -4286,8 +4280,33 @@ LengthNum:
 		$$ = getUint64FromNUM($1)
 	}
 
+Int64Num:
+	NUM
+	{
+		v, rangeErrMsg := getInt64FromNUM($1)
+		if len(rangeErrMsg) != 0 {
+			yylex.AppendError(yylex.Errorf(rangeErrMsg))
+			return 1
+		}
+		$$ = v
+	}
+
 NUM:
 	intLit
+
+Boolean:
+	NUM
+	{
+		$$ = $1.(int64) != 0
+	}
+|	"FALSE"
+	{
+		$$ = false
+	}
+|	"TRUE"
+	{
+		$$ = true
+	}
 
 Expression:
 	singleAtIdentifier assignmentEq Expression %prec assignmentEq
@@ -4352,9 +4371,6 @@ MaxValueOrExpression:
 		$$ = &ast.MaxValueExpr{}
 	}
 |	Expression
-	{
-		$$ = $1
-	}
 
 FulltextSearchModifierOpt:
 	/* empty */
@@ -4417,9 +4433,6 @@ FuncDatetimePrecListOpt:
 		$$ = []ast.ExprNode{}
 	}
 |	FuncDatetimePrecList
-	{
-		$$ = $1
-	}
 
 FuncDatetimePrecList:
 	intLit
@@ -4577,7 +4590,7 @@ PredicateExpr:
 	}
 |	BitExpr LikeOrNotOp SimpleExpr LikeEscapeOpt
 	{
-		escape := $4.(string)
+		escape := $4
 		if len(escape) > 1 {
 			yylex.AppendError(ErrWrongArguments.GenWithStackByArgs("ESCAPE"))
 			return 1
@@ -4629,7 +4642,7 @@ Field:
 |	Expression FieldAsNameOpt
 	{
 		expr := $1
-		asName := $2.(string)
+		asName := $2
 		$$ = &ast.SelectField{Expr: expr, AsName: model.NewCIStr(asName)}
 	}
 |	'{' Identifier Expression '}' FieldAsNameOpt
@@ -4639,7 +4652,7 @@ Field:
 		 * See https://dev.mysql.com/doc/refman/5.7/en/expressions.html
 		 */
 		expr := $3
-		asName := $5.(string)
+		asName := $5
 		$$ = &ast.SelectField{Expr: expr, AsName: model.NewCIStr(asName)}
 	}
 
@@ -4649,23 +4662,14 @@ FieldAsNameOpt:
 		$$ = ""
 	}
 |	FieldAsName
-	{
-		$$ = $1
-	}
 
 FieldAsName:
 	Identifier
-	{
-		$$ = $1
-	}
 |	"AS" Identifier
 	{
 		$$ = $2
 	}
 |	stringLit
-	{
-		$$ = $1
-	}
 |	"AS" stringLit
 	{
 		$$ = $2
@@ -4738,10 +4742,6 @@ IndexName:
 		$$ = ""
 	}
 |	Identifier
-	{
-		//"index name"
-		$$ = $1
-	}
 
 IndexOptionList:
 	{
@@ -4842,9 +4842,6 @@ IndexTypeOpt:
 		$$ = nil
 	}
 |	IndexType
-	{
-		$$ = $1
-	}
 
 IndexType:
 	"USING" IndexTypeName
@@ -4891,6 +4888,7 @@ UnReservedKeyword:
 	"ACTION"
 |	"ADVISE"
 |	"ASCII"
+|	"AUTO_ID_CACHE"
 |	"AUTO_INCREMENT"
 |	"AFTER"
 |	"ALWAYS"
@@ -4905,6 +4903,7 @@ UnReservedKeyword:
 |	"CLEANUP"
 |	"CHARSET"
 |	"COLUMNS"
+|	"CONFIG"
 |	"COMMIT"
 |	"COMPACT"
 |	"COMPRESSED"
@@ -5115,10 +5114,12 @@ UnReservedKeyword:
 |	"COLUMN_FORMAT"
 |	"REPAIR"
 |	"IMPORT"
+|	"IMPORTS"
 |	"DISCARD"
 |	"TABLE_CHECKSUM"
 |	"UNICODE"
 |	"AUTO_RANDOM"
+|	"AUTO_RANDOM_BASE"
 |	"SQL_TSI_DAY"
 |	"SQL_TSI_HOUR"
 |	"SQL_TSI_MINUTE"
@@ -5148,7 +5149,6 @@ UnReservedKeyword:
 |	"CACHE"
 |	"CYCLE"
 |	"NOCYCLE"
-|	"NOORDER"
 |	"SEQUENCE"
 |	"MAX_MINUTES"
 |	"MAX_IDXNUM"
@@ -5160,27 +5160,28 @@ UnReservedKeyword:
 |	"SETVAL"
 |	"AGO"
 |	"BACKUP"
+|	"BACKUPS"
 |	"CONCURRENCY"
-|	"GCS_CREDENTIALS_FILE"
-|	"GCS_ENDPOINT"
-|	"GCS_PREDEFINED_ACL"
-|	"GCS_STORAGE_CLASS"
 |	"MB"
 |	"ONLINE"
 |	"RATE_LIMIT"
 |	"RESTORE"
-|	"S3_ACCESS_KEY"
-|	"S3_ACL"
-|	"S3_ENDPOINT"
-|	"S3_FORCE_PATH_STYLE"
-|	"S3_PROVIDER"
-|	"S3_REGION"
-|	"S3_SECRET_ACCESS_KEY"
-|	"S3_SSE"
-|	"S3_STORAGE_CLASS"
-|	"S3_USE_ACCELERATE_ENDPOINT"
+|	"RESTORES"
 |	"SEND_CREDENTIALS_TO_TIKV"
-|	"TIMESTAMP_ORACLE"
+|	"LAST_BACKUP"
+|	"CHECKPOINT"
+|	"SKIP_SCHEMA_FILES"
+|	"STRICT_FORMAT"
+|	"BACKEND"
+|	"CSV_BACKSLASH_ESCAPE"
+|	"CSV_NOT_NULL"
+|	"CSV_TRIM_LAST_SEPARATORS"
+|	"CSV_DELIMITER"
+|	"CSV_HEADER"
+|	"CSV_NULL"
+|	"CSV_SEPARATOR"
+|	"ON_DUPLICATE"
+|	"TIKV_IMPORTER"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5468,9 +5469,6 @@ Literal:
 		$$ = ast.NewValueExpr($1, parser.charset, parser.collation)
 	}
 |	StringLiteral %prec lowerThanStringLitToken
-	{
-		$$ = $1
-	}
 |	"UNDERSCORE_CHARSET" stringLit
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
@@ -5582,9 +5580,6 @@ OrderByOptional:
 		$$ = nil
 	}
 |	OrderBy
-	{
-		$$ = $1
-	}
 
 BitExpr:
 	BitExpr '|' BitExpr %prec '|'
@@ -5696,12 +5691,9 @@ SimpleExpr:
 |	FunctionCallGeneric
 |	SimpleExpr "COLLATE" CollationName
 	{
-		$$ = &ast.SetCollationExpr{Expr: $1, Collate: $3.(string)}
+		$$ = &ast.SetCollationExpr{Expr: $1, Collate: $3}
 	}
 |	WindowFuncCall
-	{
-		$$ = $1.(*ast.WindowFuncExpr)
-	}
 |	Literal
 |	paramMarker
 	{
@@ -6322,7 +6314,11 @@ SumExpr:
 		if $8 != nil {
 			$$ = &ast.WindowFuncExpr{F: $1, Args: args, Distinct: $3.(bool), Spec: *($8.(*ast.WindowSpec))}
 		} else {
-			$$ = &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+			agg := &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+			if $5 != nil {
+				agg.Order = $5.(*ast.OrderByClause)
+			}
+			$$ = agg
 		}
 	}
 |	builtinMax '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
@@ -6441,9 +6437,6 @@ FuncDatetimePrec:
 
 TimeUnit:
 	TimestampUnit
-	{
-		$$ = $1
-	}
 |	"SECOND_MICROSECOND"
 	{
 		$$ = ast.TimeUnitSecondMicrosecond
@@ -6564,9 +6557,6 @@ ExpressionOpt:
 		$$ = nil
 	}
 |	Expression
-	{
-		$$ = $1
-	}
 
 WhenClauseList:
 	WhenClause
@@ -6820,11 +6810,11 @@ PreparedStmt:
 	{
 		var sqlText string
 		var sqlVar *ast.VariableExpr
-		switch $4.(type) {
+		switch x := $4.(type) {
 		case string:
-			sqlText = $4.(string)
+			sqlText = x
 		case *ast.VariableExpr:
-			sqlVar = $4.(*ast.VariableExpr)
+			sqlVar = x
 		}
 		$$ = &ast.PrepareStmt{
 			Name:    $2,
@@ -6840,7 +6830,7 @@ PrepareSQL:
 	}
 |	UserVariable
 	{
-		$$ = $1.(interface{})
+		$$ = $1
 	}
 
 /*
@@ -7112,9 +7102,6 @@ OptExistingWindowName:
 		$$ = model.CIStr{}
 	}
 |	WindowName
-	{
-		$$ = $1.(model.CIStr)
-	}
 
 OptPartitionClause:
 	{
@@ -7169,9 +7156,6 @@ WindowFrameExtent:
 		}
 	}
 |	WindowFrameBetween
-	{
-		$$ = $1.(ast.FrameExtent)
-	}
 
 WindowFrameStart:
 	"UNBOUNDED" "PRECEDING"
@@ -7203,9 +7187,6 @@ WindowFrameBetween:
 
 WindowFrameBound:
 	WindowFrameStart
-	{
-		$$ = $1.(ast.FrameBound)
-	}
 |	"UNBOUNDED" "FOLLOWING"
 	{
 		$$ = ast.FrameBound{Type: ast.Following, UnBounded: true}
@@ -7245,9 +7226,6 @@ WindowNameOrSpec:
 		$$ = ast.WindowSpec{Name: $1.(model.CIStr), OnlyAlias: true}
 	}
 |	WindowSpec
-	{
-		$$ = $1.(ast.WindowSpec)
-	}
 
 WindowFuncCall:
 	"ROW_NUMBER" '(' ')' WindowingClause
@@ -7383,9 +7361,6 @@ TableRefs:
 
 EscapedTableRef:
 	TableRef %prec lowerThanSetKeyword
-	{
-		$$ = $1
-	}
 |	'{' Identifier TableRef '}'
 	{
 		/*
@@ -7397,13 +7372,7 @@ EscapedTableRef:
 
 TableRef:
 	TableFactor
-	{
-		$$ = $1
-	}
 |	JoinTable
-	{
-		$$ = $1
-	}
 
 TableFactor:
 	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
@@ -7444,9 +7413,6 @@ TableAsNameOpt:
 		$$ = model.CIStr{}
 	}
 |	TableAsName
-	{
-		$$ = $1
-	}
 
 TableAsName:
 	Identifier
@@ -7533,13 +7499,9 @@ IndexHintList:
 
 IndexHintListOpt:
 	{
-		var hintList []*ast.IndexHint
-		$$ = hintList
+		$$ = []*ast.IndexHint{}
 	}
 |	IndexHintList
-	{
-		$$ = $1
-	}
 
 JoinTable:
 	/* Use %prec to evaluate production TableRef before cross join */
@@ -7929,9 +7891,6 @@ UnionClauseList:
 
 UnionSelect:
 	SelectStmt
-	{
-		$$ = $1.(interface{})
-	}
 |	'(' SelectStmt ')'
 	{
 		st := $2.(*ast.SelectStmt)
@@ -7971,11 +7930,11 @@ SetStmt:
 	}
 |	"SET" "PASSWORD" eq PasswordOpt
 	{
-		$$ = &ast.SetPwdStmt{Password: $4.(string)}
+		$$ = &ast.SetPwdStmt{Password: $4}
 	}
 |	"SET" "PASSWORD" "FOR" Username eq PasswordOpt
 	{
-		$$ = &ast.SetPwdStmt{User: $4.(*auth.UserIdentity), Password: $6.(string)}
+		$$ = &ast.SetPwdStmt{User: $4.(*auth.UserIdentity), Password: $6}
 	}
 |	"SET" "GLOBAL" "TRANSACTION" TransactionChars
 	{
@@ -8000,11 +7959,11 @@ SetStmt:
 		}
 		$$ = &ast.SetStmt{Variables: assigns}
 	}
-|	"SET" "CONFIG" Identifier VariableName EqOrAssignmentEq SetExpr
+|	"SET" "CONFIG" Identifier ConfigItemName EqOrAssignmentEq SetExpr
 	{
 		$$ = &ast.SetConfigStmt{Type: strings.ToLower($3), Name: $4, Value: $6}
 	}
-|	"SET" "CONFIG" stringLit VariableName EqOrAssignmentEq SetExpr
+|	"SET" "CONFIG" stringLit ConfigItemName EqOrAssignmentEq SetExpr
 	{
 		$$ = &ast.SetConfigStmt{Instance: $3, Name: $4, Value: $6}
 	}
@@ -8046,9 +8005,6 @@ SetRoleOpt:
 		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleAllExcept, RoleList: $3.([]*auth.RoleIdentity)}
 	}
 |	SetDefaultRoleOpt
-	{
-		$$ = $1
-	}
 |	"DEFAULT"
 	{
 		$$ = &ast.SetRoleStmt{SetRoleOpt: ast.SetRoleDefault, RoleList: nil}
@@ -8132,6 +8088,17 @@ VariableName:
 		$$ = $1 + "." + $3
 	}
 
+ConfigItemName:
+	Identifier
+|	Identifier '.' ConfigItemName
+	{
+		$$ = $1 + "." + $3
+	}
+|	Identifier '-' ConfigItemName
+	{
+		$$ = $1 + "-" + $3
+	}
+
 VariableAssignment:
 	VariableName EqOrAssignmentEq SetExpr
 	{
@@ -8175,22 +8142,22 @@ VariableAssignment:
 	{
 		$$ = &ast.VariableAssignment{
 			Name:  ast.SetNames,
-			Value: ast.NewValueExpr($2.(string), parser.charset, parser.collation),
+			Value: ast.NewValueExpr($2, parser.charset, parser.collation),
 		}
 	}
 |	"NAMES" CharsetName "COLLATE" "DEFAULT"
 	{
 		$$ = &ast.VariableAssignment{
 			Name:  ast.SetNames,
-			Value: ast.NewValueExpr($2.(string), parser.charset, parser.collation),
+			Value: ast.NewValueExpr($2, parser.charset, parser.collation),
 		}
 	}
 |	"NAMES" CharsetName "COLLATE" StringName
 	{
 		$$ = &ast.VariableAssignment{
 			Name:        ast.SetNames,
-			Value:       ast.NewValueExpr($2.(string), parser.charset, parser.collation),
-			ExtendValue: ast.NewValueExpr($4.(string), parser.charset, parser.collation),
+			Value:       ast.NewValueExpr($2, parser.charset, parser.collation),
+			ExtendValue: ast.NewValueExpr($4, parser.charset, parser.collation),
 		}
 	}
 |	"NAMES" "DEFAULT"
@@ -8206,7 +8173,7 @@ VariableAssignment:
 CharsetNameOrDefault:
 	CharsetName
 	{
-		$$ = ast.NewValueExpr($1.(string), parser.charset, parser.collation)
+		$$ = ast.NewValueExpr($1, parser.charset, parser.collation)
 	}
 |	"DEFAULT"
 	{
@@ -8217,7 +8184,7 @@ CharsetName:
 	StringName
 	{
 		// Validate input charset name to keep the same behavior as parser of MySQL.
-		name, _, err := charset.GetCharsetInfo($1.(string))
+		name, _, err := charset.GetCharsetInfo($1)
 		if err != nil {
 			yylex.AppendError(ErrUnknownCharacterSet.GenWithStackByArgs($1))
 			return 1
@@ -8234,12 +8201,16 @@ CharsetName:
 CollationName:
 	StringName
 	{
-		info, err := charset.GetCollationByName($1.(string))
+		info, err := charset.GetCollationByName($1)
 		if err != nil {
 			yylex.AppendError(err)
 			return 1
 		}
 		$$ = info.Name
+	}
+|	binaryType
+	{
+		$$ = charset.CollationBin
 	}
 
 VariableAssignmentList:
@@ -8289,15 +8260,15 @@ UserVariable:
 Username:
 	StringName
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: "%"}
+		$$ = &auth.UserIdentity{Username: $1, Hostname: "%"}
 	}
 |	StringName '@' StringName
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: $3.(string)}
+		$$ = &auth.UserIdentity{Username: $1, Hostname: $3}
 	}
 |	StringName singleAtIdentifier
 	{
-		$$ = &auth.UserIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@")}
+		$$ = &auth.UserIdentity{Username: $1, Hostname: strings.TrimPrefix($2, "@")}
 	}
 |	"CURRENT_USER" OptionalBraces
 	{
@@ -8316,42 +8287,30 @@ UsernameList:
 
 PasswordOpt:
 	stringLit
-	{
-		$$ = $1
-	}
 |	"PASSWORD" '(' AuthString ')'
 	{
-		$$ = $3.(string)
+		$$ = $3
 	}
 
 AuthString:
 	stringLit
-	{
-		$$ = $1
-	}
 
 RoleNameString:
 	stringLit
-	{
-		$$ = $1
-	}
 |	identifier
-	{
-		$$ = $1
-	}
 
 Rolename:
 	RoleNameString
 	{
-		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: "%"}
+		$$ = &auth.RoleIdentity{Username: $1, Hostname: "%"}
 	}
 |	StringName '@' StringName
 	{
-		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: $3.(string)}
+		$$ = &auth.RoleIdentity{Username: $1, Hostname: $3}
 	}
 |	StringName singleAtIdentifier
 	{
-		$$ = &auth.RoleIdentity{Username: $1.(string), Hostname: strings.TrimPrefix($2, "@")}
+		$$ = &auth.RoleIdentity{Username: $1, Hostname: strings.TrimPrefix($2, "@")}
 	}
 
 RolenameList:
@@ -8378,7 +8337,7 @@ AdminStmt:
 		}
 		$$ = stmt
 	}
-|	"ADMIN" "SHOW" "DDL" "JOBS" NUM WhereClauseOptional
+|	"ADMIN" "SHOW" "DDL" "JOBS" Int64Num WhereClauseOptional
 	{
 		stmt := &ast.AdminStmt{
 			Tp:        ast.AdminShowDDLJobs,
@@ -8572,17 +8531,17 @@ HandleRangeList:
 	}
 
 HandleRange:
-	'(' NUM ',' NUM ')'
+	'(' Int64Num ',' Int64Num ')'
 	{
 		$$ = ast.HandleRange{Begin: $2.(int64), End: $4.(int64)}
 	}
 
 NumList:
-	NUM
+	Int64Num
 	{
 		$$ = []int64{$1.(int64)}
 	}
-|	NumList ',' NUM
+|	NumList ',' Int64Num
 	{
 		$$ = append($1.([]int64), $3.(int64))
 	}
@@ -8620,7 +8579,7 @@ ShowStmt:
 		$$ = &ast.ShowStmt{
 			Tp:          ast.ShowCreateDatabase,
 			IfNotExists: $4.(bool),
-			DBName:      $5.(string),
+			DBName:      $5,
 		}
 	}
 |	"SHOW" "CREATE" "SEQUENCE" TableName
@@ -8743,9 +8702,6 @@ ShowProfileTypesOpt:
 		$$ = nil
 	}
 |	ShowProfileTypes
-	{
-		$$ = $1
-	}
 
 ShowProfileTypes:
 	ShowProfileType
@@ -8801,7 +8757,7 @@ ShowProfileArgsOpt:
 	{
 		$$ = nil
 	}
-|	"FOR" "QUERY" NUM
+|	"FOR" "QUERY" Int64Num
 	{
 		v := $3.(int64)
 		$$ = &v
@@ -8846,7 +8802,7 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowTables,
-			DBName: $3.(string),
+			DBName: $3,
 			Full:   $1.(bool),
 		}
 	}
@@ -8854,14 +8810,14 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowOpenTables,
-			DBName: $3.(string),
+			DBName: $3,
 		}
 	}
 |	"TABLE" "STATUS" ShowDatabaseNameOpt
 	{
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowTableStatus,
-			DBName: $3.(string),
+			DBName: $3,
 		}
 	}
 |	ShowIndexKwd FromOrIn TableName
@@ -8884,7 +8840,7 @@ ShowTargetFilterable:
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowColumns,
 			Table:  $3.(*ast.TableName),
-			DBName: $4.(string),
+			DBName: $4,
 			Full:   $1.(bool),
 		}
 	}
@@ -8893,7 +8849,7 @@ ShowTargetFilterable:
 		$$ = &ast.ShowStmt{
 			Tp:       ast.ShowColumns,
 			Table:    $4.(*ast.TableName),
-			DBName:   $5.(string),
+			DBName:   $5,
 			Full:     $2.(bool),
 			Extended: true,
 		}
@@ -8937,7 +8893,7 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowTriggers,
-			DBName: $2.(string),
+			DBName: $2,
 		}
 	}
 |	"PROCEDURE" "STATUS"
@@ -8972,7 +8928,7 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:     ast.ShowEvents,
-			DBName: $2.(string),
+			DBName: $2,
 		}
 	}
 |	"PLUGINS"
@@ -9001,13 +8957,17 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowAnalyzeStatus}
 	}
-|	"BACKUP"
+|	"BACKUPS"
 	{
-		$$ = &ast.ShowStmt{Tp: ast.ShowBackup}
+		$$ = &ast.ShowStmt{Tp: ast.ShowBackups}
 	}
-|	"RESTORE"
+|	"RESTORES"
 	{
-		$$ = &ast.ShowStmt{Tp: ast.ShowRestore}
+		$$ = &ast.ShowStmt{Tp: ast.ShowRestores}
+	}
+|	"IMPORTS"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowImports}
 	}
 
 ShowLikeOrWhereOpt:
@@ -9054,7 +9014,7 @@ ShowDatabaseNameOpt:
 	}
 |	FromOrIn DBName
 	{
-		$$ = $2.(string)
+		$$ = $2
 	}
 
 ShowTableAliasOpt:
@@ -9169,9 +9129,6 @@ TableNameListOpt:
 		$$ = []*ast.TableName{}
 	}
 |	TableNameList
-	{
-		$$ = $1
-	}
 
 WithReadLockOpt:
 	{
@@ -9309,13 +9266,7 @@ Constraint:
 
 TableElement:
 	ColumnDef
-	{
-		$$ = $1.(*ast.ColumnDef)
-	}
 |	Constraint
-	{
-		$$ = $1.(*ast.Constraint)
-	}
 
 TableElementList:
 	TableElement
@@ -9366,22 +9317,27 @@ TableElementListOpt:
 
 TableOption:
 	PartDefOption
-	{
-		$$ = $1
-	}
 |	DefaultKwdOpt CharsetKw EqOpt CharsetName
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionCharset, StrValue: $4.(string),
+		$$ = &ast.TableOption{Tp: ast.TableOptionCharset, StrValue: $4,
 			UintValue: ast.TableOptionCharsetWithoutConvertTo}
 	}
 |	DefaultKwdOpt "COLLATE" EqOpt CollationName
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $4.(string),
+		$$ = &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $4,
 			UintValue: ast.TableOptionCharsetWithoutConvertTo}
 	}
 |	"AUTO_INCREMENT" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $3.(uint64)}
+	}
+|	"AUTO_ID_CACHE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
+	}
+|	"AUTO_RANDOM_BASE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $3.(uint64)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
@@ -9496,7 +9452,7 @@ TableOption:
 	{
 		// Parse it but will ignore it
 		// See https://github.com/mysql/mysql-server/blob/8.0/sql/sql_yacc.yy#L5977-L5984
-		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: $3.(string)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionSecondaryEngine, StrValue: $3}
 		yylex.AppendError(yylex.Errorf("The SECONDARY_ENGINE clause is parsed but ignored by all storage engines."))
 		parser.lastErrorAsWarn()
 	}
@@ -9614,17 +9570,8 @@ RowFormat:
 /*************************************Type Begin***************************************/
 Type:
 	NumericType
-	{
-		$$ = $1
-	}
 |	StringType
-	{
-		$$ = $1
-	}
 |	DateAndTimeType
-	{
-		$$ = $1
-	}
 
 NumericType:
 	IntegerType OptFieldLen FieldOpts
@@ -9891,7 +9838,7 @@ StringType:
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
 		x.Flag |= mysql.BinaryFlag
-		$$ = $1.(*types.FieldType)
+		$$ = x
 	}
 |	TextType OptCharsetWithOptBinary
 	{
@@ -9906,14 +9853,14 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
-		x.Charset = $5.(string)
+		x.Charset = $5
 		$$ = x
 	}
 |	"SET" '(' StringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
-		x.Charset = $5.(string)
+		x.Charset = $5
 		$$ = x
 	}
 |	"JSON"
@@ -10025,9 +9972,6 @@ TextType:
 
 OptCharsetWithOptBinary:
 	OptBinary
-	{
-		$$ = $1
-	}
 |	"ASCII"
 	{
 		$$ = &ast.OptBinary{
@@ -10113,9 +10057,6 @@ OptFieldLen:
 		$$ = types.UnspecifiedLength
 	}
 |	FieldLen
-	{
-		$$ = $1.(int)
-	}
 
 FieldOpt:
 	"UNSIGNED"
@@ -10149,9 +10090,6 @@ FloatOpt:
 		$$ = &ast.FloatOpt{Flen: $1.(int), Decimal: types.UnspecifiedLength}
 	}
 |	Precision
-	{
-		$$ = $1.(*ast.FloatOpt)
-	}
 
 Precision:
 	'(' LengthNum ',' LengthNum ')'
@@ -10179,14 +10117,14 @@ OptBinary:
 	{
 		$$ = &ast.OptBinary{
 			IsBinary: true,
-			Charset:  $2.(string),
+			Charset:  $2,
 		}
 	}
 |	CharsetKw CharsetName OptBinMod
 	{
 		$$ = &ast.OptBinary{
 			IsBinary: $3.(bool),
-			Charset:  $2.(string),
+			Charset:  $2,
 		}
 	}
 
@@ -10196,7 +10134,7 @@ OptCharset:
 	}
 |	CharsetKw CharsetName
 	{
-		$$ = $2.(string)
+		$$ = $2
 	}
 
 CharsetKw:
@@ -10210,7 +10148,7 @@ OptCollate:
 	}
 |	"COLLATE" CollationName
 	{
-		$$ = $2.(string)
+		$$ = $2
 	}
 
 StringList:
@@ -10225,13 +10163,13 @@ StringList:
 
 StringName:
 	stringLit
-	{
-		$$ = $1
-	}
 |	Identifier
-	{
-		$$ = $1
-	}
+
+StringNameOrBRIEOptionKeyword:
+	StringName
+|	"ERROR"
+|	"IGNORE"
+|	"REPLACE"
 
 /***********************************************************************************
  * Update Statement
@@ -10286,7 +10224,7 @@ UpdateStmt:
 UseStmt:
 	"USE" DBName
 	{
-		$$ = &ast.UseStmt{DBName: $2.(string)}
+		$$ = &ast.UseStmt{DBName: $2}
 	}
 
 WhereClause:
@@ -10300,9 +10238,6 @@ WhereClauseOptional:
 		$$ = nil
 	}
 |	WhereClause
-	{
-		$$ = $1
-	}
 
 CommaOpt:
 	{}
@@ -10353,7 +10288,7 @@ AlterUserStmt:
 |	"ALTER" "USER" IfExists "USER" '(' ')' "IDENTIFIED" "BY" AuthString
 	{
 		auth := &ast.AuthOption{
-			AuthString:   $9.(string),
+			AuthString:   $9,
 			ByAuthString: true,
 		}
 		$$ = &ast.AlterUserStmt{
@@ -10431,28 +10366,28 @@ ConnectionOptionList:
 	}
 
 ConnectionOption:
-	"MAX_QUERIES_PER_HOUR" NUM
+	"MAX_QUERIES_PER_HOUR" Int64Num
 	{
 		$$ = &ast.ResourceOption{
 			Type:  ast.MaxQueriesPerHour,
 			Count: $2.(int64),
 		}
 	}
-|	"MAX_UPDATES_PER_HOUR" NUM
+|	"MAX_UPDATES_PER_HOUR" Int64Num
 	{
 		$$ = &ast.ResourceOption{
 			Type:  ast.MaxUpdatesPerHour,
 			Count: $2.(int64),
 		}
 	}
-|	"MAX_CONNECTIONS_PER_HOUR" NUM
+|	"MAX_CONNECTIONS_PER_HOUR" Int64Num
 	{
 		$$ = &ast.ResourceOption{
 			Type:  ast.MaxConnectionsPerHour,
 			Count: $2.(int64),
 		}
 	}
-|	"MAX_USER_CONNECTIONS" NUM
+|	"MAX_USER_CONNECTIONS" Int64Num
 	{
 		$$ = &ast.ResourceOption{
 			Type:  ast.MaxUserConnections,
@@ -10465,9 +10400,6 @@ RequireClauseOpt:
 		$$ = []*ast.TLSOption{}
 	}
 |	RequireClause
-	{
-		$$ = $1
-	}
 
 RequireClause:
 	"REQUIRE" "NONE"
@@ -10580,7 +10512,7 @@ PasswordOrLockOption:
 			Type: ast.PasswordExpire,
 		}
 	}
-|	PasswordExpire "INTERVAL" NUM "DAY"
+|	PasswordExpire "INTERVAL" Int64Num "DAY"
 	{
 		$$ = &ast.PasswordOrLockOption{
 			Type:  ast.PasswordExpireInterval,
@@ -10618,7 +10550,7 @@ AuthOption:
 |	"IDENTIFIED" "BY" AuthString
 	{
 		$$ = &ast.AuthOption{
-			AuthString:   $3.(string),
+			AuthString:   $3,
 			ByAuthString: true,
 		}
 	}
@@ -10629,28 +10561,25 @@ AuthOption:
 |	"IDENTIFIED" "WITH" StringName "BY" AuthString
 	{
 		$$ = &ast.AuthOption{
-			AuthString:   $5.(string),
+			AuthString:   $5,
 			ByAuthString: true,
 		}
 	}
 |	"IDENTIFIED" "WITH" StringName "AS" HashString
 	{
 		$$ = &ast.AuthOption{
-			HashString: $5.(string),
+			HashString: $5,
 		}
 	}
 |	"IDENTIFIED" "BY" "PASSWORD" HashString
 	{
 		$$ = &ast.AuthOption{
-			HashString: $4.(string),
+			HashString: $4,
 		}
 	}
 
 HashString:
 	stringLit
-	{
-		$$ = $1
-	}
 
 RoleSpec:
 	Rolename
@@ -10914,6 +10843,10 @@ PrivType:
 	{
 		$$ = mysql.FilePriv
 	}
+|	"CONFIG"
+	{
+		$$ = mysql.ConfigPriv
+	}
 |	"CREATE" "TEMPORARY" "TABLES"
 	{
 		$$ = mysql.CreateTMPTablePriv
@@ -11147,12 +11080,12 @@ FieldItem:
 	{
 		$$ = &ast.FieldItem{
 			Type:  ast.Terminated,
-			Value: $3.(string),
+			Value: $3,
 		}
 	}
 |	"OPTIONALLY" "ENCLOSED" "BY" FieldTerminator
 	{
-		str := $4.(string)
+		str := $4
 		if str != "\\" && len(str) > 1 {
 			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
 			return 1
@@ -11165,7 +11098,7 @@ FieldItem:
 	}
 |	"ENCLOSED" "BY" FieldTerminator
 	{
-		str := $3.(string)
+		str := $3
 		if str != "\\" && len(str) > 1 {
 			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
 			return 1
@@ -11177,7 +11110,7 @@ FieldItem:
 	}
 |	"ESCAPED" "BY" FieldTerminator
 	{
-		str := $3.(string)
+		str := $3
 		if str != "\\" && len(str) > 1 {
 			yylex.AppendError(ErrWrongFieldTerminators.GenWithStackByArgs())
 			return 1
@@ -11190,9 +11123,6 @@ FieldItem:
 
 FieldTerminator:
 	stringLit
-	{
-		$$ = $1
-	}
 |	hexLit
 	{
 		$$ = $1.(ast.BinaryLiteral).ToString()
@@ -11208,7 +11138,7 @@ Lines:
 	}
 |	"LINES" Starting LinesTerminated
 	{
-		$$ = &ast.LinesClause{Starting: $2.(string), Terminated: $3.(string)}
+		$$ = &ast.LinesClause{Starting: $2, Terminated: $3}
 	}
 
 Starting:
@@ -11378,18 +11308,16 @@ LoadStatsStmt:
  *	[ START [ WITH | = ] start ]
  *	[ CACHE [=] cache | NOCACHE | NO CACHE]
  *	[ CYCLE | NOCYCLE | NO CYCLE]
- *	[ ORDER | NOORDER | NO ORDER]
  *	[table_options]
  ********************************************************************************************/
 CreateSequenceStmt:
-	"CREATE" OptTemporary "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
+	"CREATE" "SEQUENCE" IfNotExists TableName CreateSequenceOptionListOpt CreateTableOptionListOpt
 	{
 		$$ = &ast.CreateSequenceStmt{
-			IsTemporary: $2.(bool),
-			IfNotExists: $4.(bool),
-			Name:        $5.(*ast.TableName),
-			SeqOptions:  $6.([]*ast.SequenceOption),
-			TblOptions:  $7.([]*ast.TableOption),
+			IfNotExists: $3.(bool),
+			Name:        $4.(*ast.TableName),
+			SeqOptions:  $5.([]*ast.SequenceOption),
+			TblOptions:  $6.([]*ast.TableOption),
 		}
 	}
 
@@ -11474,40 +11402,24 @@ SequenceOption:
 	{
 		$$ = &ast.SequenceOption{Tp: ast.SequenceNoCycle}
 	}
-|	"ORDER"
-	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceOrder}
-	}
-|	"NOORDER"
-	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceNoOrder}
-	}
-|	"NO" "ORDER"
-	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceNoOrder}
-	}
 
 SignedNum:
-	NUM
+	Int64Num
+|	'+' Int64Num
 	{
-		$$ = $1.(int64)
+		$$ = $2
 	}
-|	'+' NUM
-	{
-		$$ = $2.(int64)
-	}
-|	'-' NUM
+|	'-' Int64Num
 	{
 		$$ = -$2.(int64)
 	}
 
 DropSequenceStmt:
-	"DROP" OptTemporary "SEQUENCE" IfExists TableNameList
+	"DROP" "SEQUENCE" IfExists TableNameList
 	{
 		$$ = &ast.DropSequenceStmt{
-			IsTemporary: $2.(bool),
-			IfExists:    $4.(bool),
-			Sequences:   $5.([]*ast.TableName),
+			IfExists:  $3.(bool),
+			Sequences: $4.([]*ast.TableName),
 		}
 	}
 

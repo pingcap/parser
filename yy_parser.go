@@ -51,23 +51,13 @@ var (
 	ErrWrongValue = terror.ClassParser.New(mysql.ErrWrongValue, mysql.MySQLErrName[mysql.ErrWrongValue])
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
-	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
 	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
 	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
-	// SpecVersionCodePattern is a pattern for special comments with version.
-	SpecVersionCodePattern = regexp.MustCompile(`\/\*T![0-9]{5,6}([^*]|\*+[^*/])*\*+\/`)
-	specVersionCodeStart   = regexp.MustCompile(`^\/\*T![0-9]{5,6}[ \t]*`)
-	specVersionCodeValue   = regexp.MustCompile(`[0-9]{5,6}`)
 )
 
 // TrimComment trim comment for special comment code of MySQL.
 func TrimComment(txt string) string {
 	txt = specCodeStart.ReplaceAllString(txt, "")
-	return specCodeEnd.ReplaceAllString(txt, "")
-}
-
-func TrimCodeVersionComment(txt string) string {
-	txt = specVersionCodeStart.ReplaceAllString(txt, "")
 	return specCodeEnd.ReplaceAllString(txt, "")
 }
 
@@ -283,10 +273,10 @@ func getUint64FromNUM(num interface{}) uint64 {
 	return 0
 }
 
-func getInt64FromNUM(num interface{}) int64 {
+func getInt64FromNUM(num interface{}) (val int64, errMsg string) {
 	switch v := num.(type) {
 	case int64:
-		return v
+		return v, ""
 	}
-	return -1
+	return -1, fmt.Sprintf("%d is out of range [–9223372036854775808,9223372036854775807]", num)
 }

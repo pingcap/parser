@@ -1094,18 +1094,13 @@ func (n *DropTableStmt) Accept(v Visitor) (Node, bool) {
 type DropSequenceStmt struct {
 	ddlNode
 
-	IfExists    bool
-	Sequences   []*TableName
-	IsTemporary bool
+	IfExists  bool
+	Sequences []*TableName
 }
 
 // Restore implements Node interface.
 func (n *DropSequenceStmt) Restore(ctx *format.RestoreCtx) error {
-	if n.IsTemporary {
-		ctx.WriteKeyWord("DROP TEMPORARY SEQUENCE ")
-	} else {
-		ctx.WriteKeyWord("DROP SEQUENCE ")
-	}
+	ctx.WriteKeyWord("DROP SEQUENCE ")
 	if n.IfExists {
 		ctx.WriteKeyWord("IF EXISTS ")
 	}
@@ -1331,8 +1326,6 @@ type CreateSequenceStmt struct {
 	ddlNode
 
 	// TODO : support or replace if need : care for it will conflict on temporaryOpt.
-	OrReplace   bool
-	IsTemporary bool
 	IfNotExists bool
 	Name        *TableName
 	SeqOptions  []*SequenceOption
@@ -1342,12 +1335,6 @@ type CreateSequenceStmt struct {
 // Restore implements Node interface.
 func (n *CreateSequenceStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("CREATE ")
-	if n.OrReplace {
-		ctx.WriteKeyWord("OR REPLACE ")
-	}
-	if n.IsTemporary {
-		ctx.WriteKeyWord("TEMPORARY ")
-	}
 	ctx.WriteKeyWord("SEQUENCE ")
 	if n.IfNotExists {
 		ctx.WriteKeyWord("IF NOT EXISTS ")
@@ -1742,7 +1729,9 @@ const (
 	TableOptionEngine
 	TableOptionCharset
 	TableOptionCollate
+	TableOptionAutoIdCache
 	TableOptionAutoIncrement
+	TableOptionAutoRandomBase
 	TableOptionComment
 	TableOptionAvgRowLength
 	TableOptionCheckSum
@@ -1848,6 +1837,14 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionAutoIncrement:
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionAutoIdCache:
+		ctx.WriteKeyWord("AUTO_ID_CACHE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionAutoRandomBase:
+		ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionComment:
@@ -2029,8 +2026,6 @@ const (
 	SequenceCache
 	SequenceNoCycle
 	SequenceCycle
-	SequenceNoOrder
-	SequenceOrder
 )
 
 // SequenceOption is used for parsing sequence option from SQL.
@@ -2066,10 +2061,6 @@ func (n *SequenceOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("NOCYCLE")
 	case SequenceCycle:
 		ctx.WriteKeyWord("CYCLE")
-	case SequenceNoOrder:
-		ctx.WriteKeyWord("NOORDER")
-	case SequenceOrder:
-		ctx.WriteKeyWord("ORDER")
 	default:
 		return errors.Errorf("invalid SequenceOption: %d", n.Tp)
 	}
