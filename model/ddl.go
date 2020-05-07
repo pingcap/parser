@@ -71,6 +71,7 @@ const (
 	ActionModifyTableAutoIdCache        ActionType = 39
 	ActionRebaseAutoRandomBase          ActionType = 40
 	ActionRenameDatabase                ActionType = 41
+	ActionAlterIndexVisibility          ActionType = 42
 )
 
 const (
@@ -121,6 +122,7 @@ var actionMap = map[ActionType]string{
 	ActionModifyTableAutoIdCache:        "modify auto id cache",
 	ActionRebaseAutoRandomBase:          "rebase auto_random ID",
 	ActionRenameDatabase:                "rename database",
+	ActionAlterIndexVisibility:          "alter index visibility",
 }
 
 // String return current ddl action in string
