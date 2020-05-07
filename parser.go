@@ -11114,7 +11114,11 @@ yynewstate:
 		{
 			args := yyS[yypt-3].item.([]ast.ExprNode)
 			args = append(args, yyS[yypt-1].item.(ast.ExprNode))
-			parser.yyVAL.expr = &ast.AggregateFuncExpr{F: yyS[yypt-6].ident, Args: args, Distinct: yyS[yypt-4].item.(bool)}
+			agg := &ast.AggregateFuncExpr{F: yyS[yypt-6].ident, Args: args, Distinct: yyS[yypt-4].item.(bool)}
+			if yyS[yypt-2].item != nil {
+				agg.Order = yyS[yypt-2].item.(*ast.OrderByClause)
+			}
+			parser.yyVAL.expr = agg
 		}
 	case 915:
 		{

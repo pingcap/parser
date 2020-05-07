@@ -4726,7 +4726,11 @@ SumExpr:
 	{
 		args := $4.([]ast.ExprNode)
 		args = append(args, $6.(ast.ExprNode))
-		$$ = &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+		agg := &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+		if $5 != nil {
+			agg.Order = $5.(*ast.OrderByClause)
+		}
+		$$ = agg
 	}
 |	builtinMax '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
