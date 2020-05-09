@@ -2274,6 +2274,7 @@ type AlterTableSpec struct {
 
 	Tp              AlterTableType
 	Name            string
+	IndexName       model.CIStr
 	Constraint      *Constraint
 	Options         []*TableOption
 	OrderByList     []*AlterOrderItem
@@ -2730,7 +2731,7 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("DISCARD TABLESPACE")
 	case AlterTableIndexInvisible:
 		ctx.WriteKeyWord("ALTER INDEX ")
-		ctx.WriteName(n.Name)
+		ctx.WriteName(n.IndexName.O)
 		switch n.Visibility {
 		case IndexVisibilityVisible:
 			ctx.WriteKeyWord(" VISIBLE")
