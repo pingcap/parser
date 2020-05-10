@@ -70,7 +70,8 @@ const (
 	ActionDropColumns                   ActionType = 38
 	ActionModifyTableAutoIdCache        ActionType = 39
 	ActionRebaseAutoRandomBase          ActionType = 40
-	ActionExchangeTablePartition        ActionType = 41
+	ActionAlterIndexVisibility          ActionType = 41
+	ActionExchangeTablePartition        ActionType = 42
 )
 
 const (
@@ -120,6 +121,7 @@ var actionMap = map[ActionType]string{
 	ActionDropColumns:                   "drop multi-columns",
 	ActionModifyTableAutoIdCache:        "modify auto id cache",
 	ActionRebaseAutoRandomBase:          "rebase auto_random ID",
+	ActionAlterIndexVisibility:          "alter index visibility",
 	ActionExchangeTablePartition:        "exchange partition",
 }
 
