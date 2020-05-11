@@ -3162,7 +3162,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
 	// TEST BC_JOIN
-	stmt, _, err = parser.Parse("select /*+ BC_JOIN(t1, T2), bc_join(t3, t4), BC_JOIN_PREFER_LOCAL(t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	stmt, _, err = parser.Parse("select /*+ BC_JOIN(t1, T2), bc_join(t3, t4), BCJ_LOCAL(t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
@@ -3178,7 +3178,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	c.Assert(hints[2].HintName.L, Equals, "bc_join_prefer_local")
+	c.Assert(hints[2].HintName.L, Equals, "bcj_local")
 	c.Assert(hints[2].Tables, HasLen, 1)
 	c.Assert(hints[2].Tables[0].TableName.L, Equals, "t2")
 
