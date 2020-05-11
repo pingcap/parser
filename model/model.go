@@ -217,7 +217,12 @@ type TableInfo struct {
 	ForeignKeys     []*FKInfo         `json:"fk_info"`
 	Constraints     []*ConstraintInfo `json:"constraint_info"`
 	State           SchemaState       `json:"state"`
+	// PKIsHandle is true when primary key is a single integer column.
 	PKIsHandle      bool              `json:"pk_is_handle"`
+	// IsCommonHandle is true when clustered index feature is
+	// enabled and the primary key is not a single integer column.
+	IsCommonHandle bool `json:"is_common_handle"`
+
 	Comment         string            `json:"comment"`
 	AutoIncID       int64             `json:"auto_inc_id"`
 	AutoIdCache     int64             `json:"auto_id_cache"`
