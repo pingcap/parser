@@ -15259,7 +15259,7 @@ yynewstate:
 		}
 	case 1472:
 		{
-			parser.yyVAL.item = &ast.VariableAssignment{Name: ast.SetNames, Value: yyS[yypt-0].expr}
+			parser.yyVAL.item = &ast.VariableAssignment{Name: ast.SetCharset, Value: yyS[yypt-0].expr}
 		}
 	case 1473:
 		{
