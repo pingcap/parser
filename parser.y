@@ -5270,17 +5270,18 @@ NotKeywordToken:
  *  TODO: support PARTITION
  **********************************************************************************/
 InsertIntoStmt:
-	"INSERT" PriorityOpt IgnoreOptional IntoOpt TableName InsertValues OnDuplicateKeyUpdate
+	"INSERT" PriorityOpt IgnoreOptional IntoOpt TableName PartitionNameListOpt InsertValues OnDuplicateKeyUpdate
 	{
-		x := $6.(*ast.InsertStmt)
+		x := $7.(*ast.InsertStmt)
 		x.Priority = $2.(mysql.PriorityEnum)
 		x.IgnoreErr = $3.(bool)
 		// Wraps many layers here so that it can be processed the same way as select statement.
 		ts := &ast.TableSource{Source: $5.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
-		if $7 != nil {
-			x.OnDuplicate = $7.([]*ast.Assignment)
+		if $8 != nil {
+			x.OnDuplicate = $8.([]*ast.Assignment)
 		}
+		x.PartitionNames = $6.([]model.CIStr)
 		$$ = x
 	}
 
@@ -5414,13 +5415,14 @@ OnDuplicateKeyUpdate:
  *  TODO: support PARTITION
  **********************************************************************************/
 ReplaceIntoStmt:
-	"REPLACE" PriorityOpt IntoOpt TableName InsertValues
+	"REPLACE" PriorityOpt IntoOpt TableName PartitionNameListOpt InsertValues
 	{
-		x := $5.(*ast.InsertStmt)
+		x := $6.(*ast.InsertStmt)
 		x.IsReplace = true
 		x.Priority = $2.(mysql.PriorityEnum)
 		ts := &ast.TableSource{Source: $4.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
+		x.PartitionNames = $5.([]model.CIStr)
 		$$ = x
 	}
 
