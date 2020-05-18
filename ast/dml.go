@@ -1407,10 +1407,12 @@ func (n *InsertStmt) Restore(ctx *format.RestoreCtx) error {
 		return errors.Annotate(err, "An error occurred while restore InsertStmt.Table")
 	}
 	if len(n.PartitionNames) != 0 {
-		ctx.WritePlain(" partition(")
-		ctx.WriteName(n.PartitionNames[0].String())
-		for i := 1; i < len(n.PartitionNames); i++ {
-			ctx.WritePlain(", ")
+		ctx.WriteKeyWord(" PARTITION")
+		ctx.WritePlain("(")
+		for i := 0; i < len(n.PartitionNames); i++ {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
 			ctx.WriteName(n.PartitionNames[i].String())
 		}
 		ctx.WritePlain(")")
