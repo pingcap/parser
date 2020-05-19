@@ -302,6 +302,7 @@ import (
 	autoIdCache             "AUTO_ID_CACHE"
 	autoIncrement           "AUTO_INCREMENT"
 	autoRandom              "AUTO_RANDOM"
+	autoRandomBase          "AUTO_RANDOM_BASE"
 	avg                     "AVG"
 	avgRowLength            "AVG_ROW_LENGTH"
 	backup                  "BACKUP"
@@ -5116,6 +5117,7 @@ UnReservedKeyword:
 |	"TABLE_CHECKSUM"
 |	"UNICODE"
 |	"AUTO_RANDOM"
+|	"AUTO_RANDOM_BASE"
 |	"SQL_TSI_DAY"
 |	"SQL_TSI_HOUR"
 |	"SQL_TSI_MINUTE"
@@ -6320,7 +6322,11 @@ SumExpr:
 		if $8 != nil {
 			$$ = &ast.WindowFuncExpr{F: $1, Args: args, Distinct: $3.(bool), Spec: *($8.(*ast.WindowSpec))}
 		} else {
-			$$ = &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+			agg := &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+			if $5 != nil {
+				agg.Order = $5.(*ast.OrderByClause)
+			}
+			$$ = agg
 		}
 	}
 |	builtinMax '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
@@ -9388,6 +9394,10 @@ TableOption:
 |	"AUTO_ID_CACHE" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
+	}
+|	"AUTO_RANDOM_BASE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $3.(uint64)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
