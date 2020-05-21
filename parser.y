@@ -1232,6 +1232,7 @@ import (
 	FunctionNameDateArith           "Date arith function call names (date_add or date_sub)"
 	FunctionNameDateArithMultiForms "Date arith function call names (adddate or subdate)"
 	VariableName                    "A simple Identifier like xx or the xx.xx form"
+	ConfigItemName                  "A config item like aa or aa.bb or aa.bb-cc.dd"
 	StringNameOrBRIEOptionKeyword   "string literal or identifier or keyword used for BRIE options"
 
 %precedence empty
@@ -8054,11 +8055,11 @@ SetStmt:
 		}
 		$$ = &ast.SetStmt{Variables: assigns}
 	}
-|	"SET" "CONFIG" Identifier VariableName EqOrAssignmentEq SetExpr
+|	"SET" "CONFIG" Identifier ConfigItemName EqOrAssignmentEq SetExpr
 	{
 		$$ = &ast.SetConfigStmt{Type: strings.ToLower($3), Name: $4, Value: $6}
 	}
-|	"SET" "CONFIG" stringLit VariableName EqOrAssignmentEq SetExpr
+|	"SET" "CONFIG" stringLit ConfigItemName EqOrAssignmentEq SetExpr
 	{
 		$$ = &ast.SetConfigStmt{Instance: $3, Name: $4, Value: $6}
 	}
@@ -8184,6 +8185,17 @@ VariableName:
 |	Identifier '.' Identifier
 	{
 		$$ = $1 + "." + $3
+	}
+
+ConfigItemName:
+	Identifier
+|	Identifier '.' ConfigItemName
+	{
+		$$ = $1 + "." + $3
+	}
+|	Identifier '-' ConfigItemName
+	{
+		$$ = $1 + "-" + $3
 	}
 
 VariableAssignment:
