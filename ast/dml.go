@@ -1895,8 +1895,9 @@ const (
 	ShowRegions
 	ShowBuiltins
 	ShowTableNextRowId
-	ShowBackup
-	ShowRestore
+	ShowBackups
+	ShowRestores
+	ShowImports
 )
 
 const (
@@ -2193,10 +2194,12 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 			}
 			ctx.WriteKeyWord(" NEXT_ROW_ID")
 			return nil
-		case ShowBackup:
-			ctx.WriteKeyWord("BACKUP")
-		case ShowRestore:
-			ctx.WriteKeyWord("RESTORE")
+		case ShowBackups:
+			ctx.WriteKeyWord("BACKUPS")
+		case ShowRestores:
+			ctx.WriteKeyWord("RESTORES")
+		case ShowImports:
+			ctx.WriteKeyWord("IMPORTS")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
