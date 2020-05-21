@@ -34,6 +34,7 @@ jobs:
           cd /go/src/github.com/pingcap/
           git clone git@github.com:pingcap/tidb.git
           cd tidb
+          git checkout origin/release-4.0
           rm go.sum
           GO111MODULE=on go mod edit -replace github.com/pingcap/parser=github.com/${CIRCLE_PR_USERNAME:-$CIRCLE_PROJECT_USERNAME}/${CIRCLE_PR_REPONAME:-$CIRCLE_PROJECT_REPONAME}@$CIRCLE_SHA1
           # use only 1 thread to minimize memory usage (we've only got 2 CPU + 4 GB on Circle CI).
