@@ -15,6 +15,7 @@ package model
 
 import (
 	"encoding/json"
+	"github.com/pingcap/parser/ast"
 	"strconv"
 	"strings"
 	"time"
@@ -768,6 +769,26 @@ func (index *IndexInfo) HasPrefixIndex() bool {
 		}
 	}
 	return false
+}
+
+// ConstraintInfo provides meta data describing check-expression constraint.
+type ConstraintInfo struct {
+	ID              int64       `json:"id"`
+	Name            CIStr       `json:"constraint_name"`
+	Table           CIStr       `json:"tbl_name"`     // Table name.
+	ConstraintCols  []CIStr     `json:"constraint_cols"`
+	Enforced        bool        `json:"enforced"`
+	ExprString      string      `json:"expr_string"`
+	State           SchemaState `json:"state"`
+}
+
+// Clone clones ConstraintInfo.
+func (ci *ConstraintInfo) Clone() *ConstraintInfo {
+	nci := *ci
+
+	nci.ConstraintCols = make([]CIStr, len(ci.ConstraintCols))
+	copy(nci.ConstraintCols, ci.ConstraintCols)
+	return &nci
 }
 
 // FKInfo provides meta data describing a foreign key constraint.
