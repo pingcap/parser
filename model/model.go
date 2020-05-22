@@ -15,7 +15,6 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/pingcap/parser/ast"
 	"strconv"
 	"strings"
 	"time"
@@ -213,10 +212,11 @@ type TableInfo struct {
 	Charset string `json:"charset"`
 	Collate string `json:"collate"`
 	// Columns are listed in the order in which they appear in the schema.
-	Columns     []*ColumnInfo `json:"cols"`
-	Indices     []*IndexInfo  `json:"index_info"`
-	ForeignKeys []*FKInfo     `json:"fk_info"`
-	State       SchemaState   `json:"state"`
+	Columns     []*ColumnInfo     `json:"cols"`
+	Indices     []*IndexInfo      `json:"index_info"`
+	Constraints []*ConstraintInfo `json:"constraint_info"`
+	ForeignKeys []*FKInfo         `json:"fk_info"`
+	State       SchemaState       `json:"state"`
 	// PKIsHandle is true when primary key is a single integer column.
 	PKIsHandle bool `json:"pk_is_handle"`
 	// IsCommonHandle is true when clustered index feature is
@@ -773,13 +773,13 @@ func (index *IndexInfo) HasPrefixIndex() bool {
 
 // ConstraintInfo provides meta data describing check-expression constraint.
 type ConstraintInfo struct {
-	ID              int64       `json:"id"`
-	Name            CIStr       `json:"constraint_name"`
-	Table           CIStr       `json:"tbl_name"`     // Table name.
-	ConstraintCols  []CIStr     `json:"constraint_cols"`
-	Enforced        bool        `json:"enforced"`
-	ExprString      string      `json:"expr_string"`
-	State           SchemaState `json:"state"`
+	ID             int64       `json:"id"`
+	Name           CIStr       `json:"constraint_name"`
+	Table          CIStr       `json:"tbl_name"`        // Table name.
+	ConstraintCols []CIStr     `json:"constraint_cols"` // depended column names.
+	Enforced       bool        `json:"enforced"`
+	ExprString     string      `json:"expr_string"`
+	State          SchemaState `json:"state"`
 }
 
 // Clone clones ConstraintInfo.
