@@ -702,6 +702,8 @@ type Constraint struct {
 	Expr ExprNode // Used for Check
 
 	Enforced bool // Used for Check
+
+	InColumn bool // Used for Check
 }
 
 // Restore implements Node interface.
