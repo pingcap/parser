@@ -778,7 +778,7 @@ type ConstraintInfo struct {
 	Table          CIStr       `json:"tbl_name"`        // Table name.
 	ConstraintCols []CIStr     `json:"constraint_cols"` // Depended column names.
 	Enforced       bool        `json:"enforced"`
-	InColumn       bool        `json:"in_column"`       // Indicate whether the constraint is column type check.
+	InColumn       bool        `json:"in_column"` // Indicate whether the constraint is column type check.
 	ExprString     string      `json:"expr_string"`
 	State          SchemaState `json:"state"`
 }

@@ -2577,6 +2577,9 @@ ColumnOption:
 			Expr:     $4,
 			Enforced: true,
 		}
+		if $1 != nil {
+			optionCheck.Name = $1.(string)
+		}
 		switch $6.(int) {
 		case 0:
 			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}

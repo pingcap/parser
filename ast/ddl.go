@@ -477,6 +477,8 @@ type ColumnOption struct {
 	AutoRandomBitLength int
 	// Enforced is only for Check, default is true.
 	Enforced bool
+	// Name is only used for Check Constraint name.
+	Name string
 }
 
 // Restore implements Node interface.
@@ -534,6 +536,11 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("COLLATE ")
 		ctx.WritePlain(n.StrValue)
 	case ColumnOptionCheck:
+		if n.Name != "" {
+			ctx.WriteKeyWord("CONSTRAINT ")
+			ctx.WriteName(n.Name)
+			ctx.WritePlain(" ")
+		}
 		ctx.WriteKeyWord("CHECK")
 		ctx.WritePlain("(")
 		if err := n.Expr.Restore(ctx); err != nil {
