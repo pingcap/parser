@@ -2577,6 +2577,7 @@ ColumnOption:
 			Expr:     $4,
 			Enforced: true,
 		}
+		// Keep the column type check constraint name.
 		if $1 != nil {
 			optionCheck.Name = $1.(string)
 		}
