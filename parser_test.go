@@ -626,11 +626,13 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DELETE FROM t1 WHERE t1.a > 0 ORDER BY t1.a LIMIT 1", true, "DELETE FROM `t1` WHERE `t1`.`a`>0 ORDER BY `t1`.`a` LIMIT 1"},
 		{"DELETE FROM x.y z WHERE z.a > 0", true, "DELETE FROM `x`.`y` AS `z` WHERE `z`.`a`>0"},
 		{"DELETE FROM t1 AS w WHERE a > 0", true, "DELETE FROM `t1` AS `w` WHERE `a`>0"},
+		{"DELETE from t1 partition (p0,p1)", true, "DELETE FROM `t1` PARTITION(`p0`, `p1`)"},
 
 		// multi table syntax: before from
 		{"delete low_priority t1, t2 from t1, t2", true, "DELETE LOW_PRIORITY `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete quick t1, t2 from t1, t2", true, "DELETE QUICK `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete ignore t1, t2 from t1, t2", true, "DELETE IGNORE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete ignore t1, t2 from t1 partition (p0,p1), t2", true, "DELETE IGNORE `t1`,`t2` FROM (`t1` PARTITION(`p0`, `p1`)) JOIN `t2`"},
 		{"delete low_priority quick ignore t1, t2 from t1, t2 where t1.a > 5", true, "DELETE LOW_PRIORITY QUICK IGNORE `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`a`>5"},
 		{"delete t1, t2 from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete t1, t2 from t1, t2 where t1.a = 1 and t2.b <> 1", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`a`=1 AND `t2`.`b`!=1"},
@@ -1817,6 +1819,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select count(all c1) from t;`, true, "SELECT COUNT(`c1`) FROM `t`"},
 		{`select count(distinct all c1) from t;`, false, ""},
 		{`select count(distinctrow all c1) from t;`, false, ""},
+		{`select approx_count_distinct(c1) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`) FROM `t`"},
+		{`select approx_count_distinct(c1, c2) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, `c2`) FROM `t`"},
+		{`select approx_count_distinct(c1, 123) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, 123) FROM `t`"},
 		{`select group_concat(c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(c2,c1 SEPARATOR ';') from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ';') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
