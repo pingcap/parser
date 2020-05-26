@@ -10916,6 +10916,10 @@ yynewstate:
 				Expr:     yyS[yypt-2].expr,
 				Enforced: true,
 			}
+			// Keep the column type check constraint name.
+			if yyS[yypt-5].item != nil {
+				optionCheck.ConstraintName = yyS[yypt-5].item.(string)
+			}
 			switch yyS[yypt-0].item.(int) {
 			case 0:
 				parser.yyVAL.item = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}

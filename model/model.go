@@ -215,6 +215,7 @@ type TableInfo struct {
 	Columns     []*ColumnInfo `json:"cols"`
 	Indices     []*IndexInfo  `json:"index_info"`
 	ForeignKeys []*FKInfo     `json:"fk_info"`
+	Constraints []*ConstraintInfo `json:"constraint_info"`
 	State       SchemaState   `json:"state"`
 	PKIsHandle  bool          `json:"pk_is_handle"`
 	Comment     string        `json:"comment"`
@@ -223,6 +224,7 @@ type TableInfo struct {
 	AutoRandID  int64         `json:"auto_rand_id"`
 	MaxColumnID int64         `json:"max_col_id"`
 	MaxIndexID  int64         `json:"max_idx_id"`
+	MaxConstraintID int64  `json:"max_cst_id"`
 	// UpdateTS is used to record the timestamp of updating the table's schema information.
 	// These changing schema operations don't include 'truncate table' and 'rename table'.
 	UpdateTS uint64 `json:"update_timestamp"`
@@ -763,6 +765,27 @@ func (index *IndexInfo) HasPrefixIndex() bool {
 		}
 	}
 	return false
+}
+
+// ConstraintInfo provides meta data describing check-expression constraint.
+type ConstraintInfo struct {
+	ID             int64       `json:"id"`
+	Name           CIStr       `json:"constraint_name"`
+	Table          CIStr       `json:"tbl_name"`        // Table name.
+	ConstraintCols []CIStr     `json:"constraint_cols"` // Depended column names.
+	Enforced       bool        `json:"enforced"`
+	InColumn       bool        `json:"in_column"` // Indicate whether the constraint is column type check.
+	ExprString     string      `json:"expr_string"`
+	State          SchemaState `json:"state"`
+}
+
+// Clone clones ConstraintInfo.
+func (ci *ConstraintInfo) Clone() *ConstraintInfo {
+	nci := *ci
+
+	nci.ConstraintCols = make([]CIStr, len(ci.ConstraintCols))
+	copy(nci.ConstraintCols, ci.ConstraintCols)
+	return &nci
 }
 
 // FKInfo provides meta data describing a foreign key constraint.
