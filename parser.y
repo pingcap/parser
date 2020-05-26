@@ -2579,7 +2579,7 @@ ColumnOption:
 		}
 		// Keep the column type check constraint name.
 		if $1 != nil {
-			optionCheck.Name = $1.(string)
+			optionCheck.ConstraintName = $1.(string)
 		}
 		switch $6.(int) {
 		case 0:

@@ -478,7 +478,7 @@ type ColumnOption struct {
 	// Enforced is only for Check, default is true.
 	Enforced bool
 	// Name is only used for Check Constraint name.
-	Name string
+	ConstraintName string
 }
 
 // Restore implements Node interface.
@@ -536,9 +536,9 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("COLLATE ")
 		ctx.WritePlain(n.StrValue)
 	case ColumnOptionCheck:
-		if n.Name != "" {
+		if n.ConstraintName != "" {
 			ctx.WriteKeyWord("CONSTRAINT ")
-			ctx.WriteName(n.Name)
+			ctx.WriteName(n.ConstraintName)
 			ctx.WritePlain(" ")
 		}
 		ctx.WriteKeyWord("CHECK")
@@ -711,6 +711,8 @@ type Constraint struct {
 	Enforced bool // Used for Check
 
 	InColumn bool // Used for Check
+
+	InColumnName string // Used for Check
 }
 
 // Restore implements Node interface.
