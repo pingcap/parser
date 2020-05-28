@@ -59,13 +59,8 @@ var (
 	ErrUnknownAlterAlgorithm = terror.ClassParser.New(codeErrUnknownAlterAlgorithm, mysql.MySQLErrName[mysql.ErrUnknownAlterAlgorithm])
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
-	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
 	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
 	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
-	// SpecVersionCodePattern is a pattern for special comments with version.
-	SpecVersionCodePattern = regexp.MustCompile(`\/\*T![0-9]{5,6}([^*]|\*+[^*/])*\*+\/`)
-	specVersionCodeStart   = regexp.MustCompile(`^\/\*T![0-9]{5,6}[ \t]*`)
-	specVersionCodeValue   = regexp.MustCompile(`[0-9]{5,6}`)
 )
 
 func init() {
@@ -89,23 +84,19 @@ func TrimComment(txt string) string {
 	return specCodeEnd.ReplaceAllString(txt, "")
 }
 
-func TrimCodeVersionComment(txt string) string {
-	txt = specVersionCodeStart.ReplaceAllString(txt, "")
-	return specCodeEnd.ReplaceAllString(txt, "")
-}
-
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
 type Parser struct {
-	charset   string
-	collation string
-	result    []ast.StmtNode
-	src       string
-	lexer     Scanner
+	charset    string
+	collation  string
+	result     []ast.StmtNode
+	src        string
+	lexer      Scanner
+	hintParser *hintParser
 
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
 	yylval yySymType
-	yyVAL  yySymType
+	yyVAL  *yySymType
 }
 
 type stmtTexter interface {
@@ -161,11 +152,7 @@ func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode
 }
 
 func (parser *Parser) lastErrorAsWarn() {
-	if len(parser.lexer.errs) == 0 {
-		return
-	}
-	parser.lexer.warns = append(parser.lexer.warns, parser.lexer.errs[len(parser.lexer.errs)-1])
-	parser.lexer.errs = parser.lexer.errs[:len(parser.lexer.errs)-1]
+	parser.lexer.lastErrorAsWarn()
 }
 
 // ParseOneStmt parses a query and returns an ast.StmtNode.
@@ -220,6 +207,13 @@ func (parser *Parser) endOffset(v *yySymType) int {
 		offset--
 	}
 	return offset
+}
+
+func (parser *Parser) parseHint(input string) ([]*ast.TableOptimizerHint, []error) {
+	if parser.hintParser == nil {
+		parser.hintParser = newHintParser()
+	}
+	return parser.hintParser.parse(input, parser.lexer.GetSQLMode(), parser.lexer.lastHintPos)
 }
 
 func toInt(l yyLexer, lval *yySymType, str string) int {

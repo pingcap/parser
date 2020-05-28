@@ -14,39 +14,10 @@
 package parser
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/charset"
 )
-
-// CommentCodeVersion is used to track the highest version can be parsed in the comment with pattern /*T!00001 xxx */
-type CommentCodeVersion int
-
-const (
-	CommentCodeNoVersion  CommentCodeVersion = iota
-	CommentCodeAutoRandom CommentCodeVersion = 40000
-
-	CommentCodeCurrentVersion
-)
-
-func (ccv CommentCodeVersion) String() string {
-	return fmt.Sprintf("%05d", ccv)
-}
-
-func extractVersionCodeInComment(comment string) CommentCodeVersion {
-	code, err := strconv.Atoi(specVersionCodeValue.FindString(comment))
-	if err != nil {
-		return CommentCodeNoVersion
-	}
-	return CommentCodeVersion(code)
-}
-
-// WrapStringWithCodeVersion convert a string `str` to `/*T!xxxxx str */`, where `xxxxx` is determined by CommentCodeVersion.
-func WrapStringWithCodeVersion(str string, ccv CommentCodeVersion) string {
-	return fmt.Sprintf("/*T!%05d %s */", ccv, str)
-}
 
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -111,7 +82,6 @@ func init() {
 	// set root trie node's token to invalid, so when input match nothing
 	// in the trie, invalid will be the default return token.
 	ruleTable.token = invalid
-	initTokenByte('*', int('*'))
 	initTokenByte('/', int('/'))
 	initTokenByte('+', int('+'))
 	initTokenByte('>', int('>'))
@@ -150,6 +120,7 @@ func init() {
 
 	initTokenFunc("@", startWithAt)
 	initTokenFunc("/", startWithSlash)
+	initTokenFunc("*", startWithStar)
 	initTokenFunc("-", startWithDash)
 	initTokenFunc("#", startWithSharp)
 	initTokenFunc("Xx", startWithXx)
@@ -169,7 +140,6 @@ var tokenMap = map[string]int{
 	"ADDDATE":                  addDate,
 	"ADMIN":                    admin,
 	"AFTER":                    after,
-	"AGG_TO_COP":               hintAggToCop,
 	"ALL":                      all,
 	"ALGORITHM":                algorithm,
 	"ALTER":                    alter,
@@ -180,8 +150,10 @@ var tokenMap = map[string]int{
 	"AS":                       as,
 	"ASC":                      asc,
 	"ASCII":                    ascii,
+	"AUTO_ID_CACHE":            autoIdCache,
 	"AUTO_INCREMENT":           autoIncrement,
 	"AUTO_RANDOM":              autoRandom,
+	"AUTO_RANDOM_BASE":         autoRandomBase,
 	"AVG":                      avg,
 	"AVG_ROW_LENGTH":           avgRowLength,
 	"BEGIN":                    begin,
@@ -281,7 +253,6 @@ var tokenMap = map[string]int{
 	"DYNAMIC":                  dynamic,
 	"ELSE":                     elseKwd,
 	"ENABLE":                   enable,
-	"ENABLE_PLAN_CACHE":        hintEnablePlanCache,
 	"ENCLOSED":                 enclosed,
 	"END":                      end,
 	"ENFORCED":                 enforced,
@@ -324,8 +295,6 @@ var tokenMap = map[string]int{
 	"GROUP":                    group,
 	"GROUP_CONCAT":             groupConcat,
 	"HASH":                     hash,
-	"HASH_AGG":                 hintHASHAGG,
-	"HASH_JOIN":                hintHJ,
 	"HAVING":                   having,
 	"HIGH_PRIORITY":            highPriority,
 	"HISTORY":                  history,
@@ -336,13 +305,11 @@ var tokenMap = map[string]int{
 	"IDENTIFIED":               identified,
 	"IF":                       ifKwd,
 	"IGNORE":                   ignore,
-	"IGNORE_INDEX":             hintIgnoreIndex,
 	"IN":                       in,
 	"INCREMENTAL":              incremental,
 	"INDEX":                    index,
 	"INDEXES":                  indexes,
 	"INFILE":                   infile,
-	"INL_JOIN":                 hintINLJ,
 	"INNER":                    inner,
 	"INPLACE":                  inplace,
 	"INSTANT":                  instant,
@@ -396,7 +363,6 @@ var tokenMap = map[string]int{
 	"MATCH":                    match,
 	"MAX":                      max,
 	"MAX_CONNECTIONS_PER_HOUR": maxConnectionsPerHour,
-	"MAX_EXECUTION_TIME":       maxExecutionTime,
 	"MAX_QUERIES_PER_HOUR":     maxQueriesPerHour,
 	"MAX_ROWS":                 maxRows,
 	"MAX_UPDATES_PER_HOUR":     maxUpdatesPerHour,
@@ -406,7 +372,6 @@ var tokenMap = map[string]int{
 	"MEDIUMINT":                mediumIntType,
 	"MEDIUMTEXT":               mediumtextType,
 	"MEMORY":                   memory,
-	"MEMORY_QUOTA":             hintMemoryQuota,
 	"MERGE":                    merge,
 	"MICROSECOND":              microsecond,
 	"MIN":                      min,
@@ -424,7 +389,6 @@ var tokenMap = map[string]int{
 	"NEVER":                    never,
 	"NEXT_ROW_ID":              next_row_id,
 	"NO":                       no,
-	"NO_INDEX_MERGE":           hintNoIndexMerge,
 	"NO_WRITE_TO_BINLOG":       noWriteToBinLog,
 	"NODE_ID":                  nodeID,
 	"NODE_STATE":               nodeState,
@@ -437,8 +401,6 @@ var tokenMap = map[string]int{
 	"NUMERIC":                  numericType,
 	"NVARCHAR":                 nvarcharType,
 	"OFFSET":                   offset,
-	"OLAP":                     hintOLAP,
-	"OLTP":                     hintOLTP,
 	"ON":                       on,
 	"ONLY":                     only,
 	"OPTIMISTIC":               optimistic,
@@ -467,10 +429,8 @@ var tokenMap = map[string]int{
 	"PROFILE":                  profile,
 	"PROFILES":                 profiles,
 	"PUMP":                     pump,
-	"QB_NAME":                  hintQBName,
 	"QUARTER":                  quarter,
 	"QUERY":                    query,
-	"QUERY_TYPE":               hintQueryType,
 	"QUERIES":                  queries,
 	"QUICK":                    quick,
 	"SHARD_ROW_ID_BITS":        shardRowIDBits,
@@ -478,8 +438,6 @@ var tokenMap = map[string]int{
 	"RANGE":                    rangeKwd,
 	"RECOVER":                  recover,
 	"READ":                     read,
-	"READ_CONSISTENT_REPLICA":  hintReadConsistentReplica,
-	"READ_FROM_STORAGE":        hintReadFromStorage,
 	"REAL":                     realType,
 	"RECENT":                   recent,
 	"REDUNDANT":                redundant,
@@ -525,7 +483,6 @@ var tokenMap = map[string]int{
 	"SIMPLE":                   simple,
 	"SLAVE":                    slave,
 	"SLOW":                     slow,
-	"SM_JOIN":                  hintSMJ,
 	"SMALLINT":                 smallIntType,
 	"SNAPSHOT":                 snapshot,
 	"SOME":                     some,
@@ -558,7 +515,6 @@ var tokenMap = map[string]int{
 	"STDDEV_SAMP":              stddevSamp,
 	"STORED":                   stored,
 	"STRAIGHT_JOIN":            straightJoin,
-	"STREAM_AGG":               hintSTREAMAGG,
 	"SUBDATE":                  subDate,
 	"SUBJECT":                  subject,
 	"SUBPARTITION":             subpartition,
@@ -577,11 +533,7 @@ var tokenMap = map[string]int{
 	"THAN":                     than,
 	"THEN":                     then,
 	"TIDB":                     tidb,
-	"TIDB_HJ":                  hintHJ,
-	"TIDB_INLJ":                hintINLJ,
-	"TIDB_SMJ":                 hintSMJ,
-	"TIKV":                     hintTiKV,
-	"TIFLASH":                  hintTiFlash,
+	"TIFLASH":                  tiFlash,
 	"TIME":                     timeType,
 	"TIMESTAMP":                timestampType,
 	"TIMESTAMPADD":             timestampAdd,
@@ -599,6 +551,7 @@ var tokenMap = map[string]int{
 	"TOKUDB_UNCOMPRESSED":      tokudbUncompressed,
 	"TOKUDB_ZLIB":              tokudbZlib,
 	"TOP":                      top,
+	"TOPN":                     topn,
 	"TRACE":                    trace,
 	"TRADITIONAL":              traditional,
 	"TRAILING":                 trailing,
@@ -619,10 +572,6 @@ var tokenMap = map[string]int{
 	"UPDATE":                   update,
 	"USAGE":                    usage,
 	"USE":                      use,
-	"USE_INDEX":                hintUseIndex,
-	"USE_INDEX_MERGE":          hintUseIndexMerge,
-	"USE_PLAN_CACHE":           hintUsePlanCache,
-	"USE_TOJA":                 hintUseToja,
 	"USER":                     user,
 	"USING":                    using,
 	"UTC_DATE":                 utcDate,
@@ -715,13 +664,94 @@ var windowFuncTokenMap = map[string]int{
 
 // aliases are strings directly map to another string and use the same token.
 var aliases = map[string]string{
-	"SCHEMA":    "DATABASE",
-	"SCHEMAS":   "DATABASES",
-	"DEC":       "DECIMAL",
-	"SUBSTR":    "SUBSTRING",
-	"TIDB_HJ":   "HASH_JOIN",
-	"TIDB_INLJ": "INL_JOIN",
-	"TIDB_SMJ":  "SM_JOIN",
+	"SCHEMA":  "DATABASE",
+	"SCHEMAS": "DATABASES",
+	"DEC":     "DECIMAL",
+	"SUBSTR":  "SUBSTRING",
+}
+
+// hintedTokens is a set of tokens which recognizes a hint.
+// According to https://dev.mysql.com/doc/refman/8.0/en/optimizer-hints.html,
+// only SELECT, INSERT, REPLACE, UPDATE and DELETE accept optimizer hints.
+// additionally we support CREATE and PARTITION for hints at table creation.
+var hintedTokens = map[int]struct{}{
+	selectKwd: {},
+	insert:    {},
+	replace:   {},
+	update:    {},
+	deleteKwd: {},
+	create:    {},
+	partition: {},
+}
+
+var hintTokenMap = map[string]int{
+	// MySQL 8.0 hint names
+	"JOIN_FIXED_ORDER":      hintJoinFixedOrder,
+	"JOIN_ORDER":            hintJoinOrder,
+	"JOIN_PREFIX":           hintJoinPrefix,
+	"JOIN_SUFFIX":           hintJoinSuffix,
+	"BKA":                   hintBKA,
+	"NO_BKA":                hintNoBKA,
+	"BNL":                   hintBNL,
+	"NO_BNL":                hintNoBNL,
+	"HASH_JOIN":             hintHashJoin,
+	"NO_HASH_JOIN":          hintNoHashJoin,
+	"MERGE":                 hintMerge,
+	"NO_MERGE":              hintNoMerge,
+	"INDEX_MERGE":           hintIndexMerge,
+	"NO_INDEX_MERGE":        hintNoIndexMerge,
+	"MRR":                   hintMRR,
+	"NO_MRR":                hintNoMRR,
+	"NO_ICP":                hintNoICP,
+	"NO_RANGE_OPTIMIZATION": hintNoRangeOptimization,
+	"SKIP_SCAN":             hintSkipScan,
+	"NO_SKIP_SCAN":          hintNoSkipScan,
+	"SEMIJOIN":              hintSemijoin,
+	"NO_SEMIJOIN":           hintNoSemijoin,
+	"MAX_EXECUTION_TIME":    hintMaxExecutionTime,
+	"SET_VAR":               hintSetVar,
+	"RESOURCE_GROUP":        hintResourceGroup,
+	"QB_NAME":               hintQBName,
+
+	// TiDB hint names
+	"AGG_TO_COP":              hintAggToCop,
+	"ENABLE_PLAN_CACHE":       hintEnablePlanCache,
+	"HASH_AGG":                hintHashAgg,
+	"IGNORE_INDEX":            hintIgnoreIndex,
+	"INL_HASH_JOIN":           hintInlHashJoin,
+	"INL_JOIN":                hintInlJoin,
+	"INL_MERGE_JOIN":          hintInlMergeJoin,
+	"MEMORY_QUOTA":            hintMemoryQuota,
+	"NO_SWAP_JOIN_INPUTS":     hintNoSwapJoinInputs,
+	"QUERY_TYPE":              hintQueryType,
+	"READ_CONSISTENT_REPLICA": hintReadConsistentReplica,
+	"READ_FROM_STORAGE":       hintReadFromStorage,
+	"SM_JOIN":                 hintSMJoin,
+	"STREAM_AGG":              hintStreamAgg,
+	"SWAP_JOIN_INPUTS":        hintSwapJoinInputs,
+	"USE_INDEX_MERGE":         hintUseIndexMerge,
+	"USE_INDEX":               hintUseIndex,
+	"USE_PLAN_CACHE":          hintUsePlanCache,
+	"USE_TOJA":                hintUseToja,
+
+	// TiDB hint aliases
+	"TIDB_HJ":   hintHashJoin,
+	"TIDB_INLJ": hintInlJoin,
+	"TIDB_SMJ":  hintSMJoin,
+
+	// Other keywords
+	"OLAP":            hintOLAP,
+	"OLTP":            hintOLTP,
+	"TIKV":            hintTiKV,
+	"TIFLASH":         hintTiFlash,
+	"FALSE":           hintFalse,
+	"TRUE":            hintTrue,
+	"MB":              hintMB,
+	"GB":              hintGB,
+	"DUPSWEEDOUT":     hintDupsWeedOut,
+	"FIRSTMATCH":      hintFirstMatch,
+	"LOOSESCAN":       hintLooseScan,
+	"MATERIALIZATION": hintMaterialization,
 }
 
 func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
@@ -780,4 +810,39 @@ func handleIdent(lval *yySymType) int {
 	}
 	lval.ident = cs
 	return underscoreCS
+}
+
+// SpecialCommentsController controls whether special comments like `/*T![xxx] yyy */`
+// can be parsed as `yyy`. To add such rules, please use SpecialCommentsController.Register().
+// For example:
+//     SpecialCommentsController.Register("30100");
+// Now the parser will treat
+//   select a, /*T![30100] mysterious_keyword */ from t;
+// and
+//   select a, mysterious_keyword from t;
+// equally.
+// Similar special comments without registration are ignored by parser.
+var SpecialCommentsController = specialCommentsCtrl{
+	supportedFeatures: map[string]struct{}{},
+}
+
+type specialCommentsCtrl struct {
+	supportedFeatures map[string]struct{}
+}
+
+func (s *specialCommentsCtrl) Register(featureID string) {
+	s.supportedFeatures[featureID] = struct{}{}
+}
+
+func (s *specialCommentsCtrl) Unregister(featureID string) {
+	delete(s.supportedFeatures, featureID)
+}
+
+func (s *specialCommentsCtrl) ContainsAll(featureIDs []string) bool {
+	for _, f := range featureIDs {
+		if _, found := s.supportedFeatures[f]; !found {
+			return false
+		}
+	}
+	return true
 }

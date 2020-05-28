@@ -216,6 +216,8 @@ type TableInfo struct {
 	PKIsHandle  bool          `json:"pk_is_handle"`
 	Comment     string        `json:"comment"`
 	AutoIncID   int64         `json:"auto_inc_id"`
+	AutoIdCache int64         `json:"auto_id_cache"`
+	AutoRandID  int64         `json:"auto_rand_id"`
 	MaxColumnID int64         `json:"max_col_id"`
 	MaxIndexID  int64         `json:"max_idx_id"`
 	// UpdateTS is used to record the timestamp of updating the table's schema information.
