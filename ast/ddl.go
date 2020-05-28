@@ -2182,6 +2182,8 @@ const (
 	AlterTableOrderByColumns
 	// AlterTableSetTiFlashReplica uses to set the table TiFlash replica.
 	AlterTableSetTiFlashReplica
+	AlterTableDropConstraint
+	AlterTableAlterConstraint
 )
 
 // LockType is the type for AlterTableSpec.
