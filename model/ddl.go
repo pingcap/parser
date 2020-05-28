@@ -56,8 +56,11 @@ const (
 	ActionDropView                      ActionType = 24
 	ActionRecoverTable                  ActionType = 25
 	ActionModifySchemaCharsetAndCollate ActionType = 26
+	ActionLockTable                     ActionType = 27
+	ActionUnlockTable                   ActionType = 28
 	ActionAddPrimaryKey                 ActionType = 32
 	ActionDropPrimaryKey                ActionType = 33
+	ActionModifyTableAutoIdCache        ActionType = 34
 )
 
 const (
@@ -93,8 +96,11 @@ var actionMap = map[ActionType]string{
 	ActionDropView:                      "drop view",
 	ActionRecoverTable:                  "recover table",
 	ActionModifySchemaCharsetAndCollate: "modify schema charset and collate",
+	ActionLockTable:                     "lock table",
+	ActionUnlockTable:                   "unlock table",
 	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
 	ActionDropPrimaryKey:                "drop primary key",
+	ActionModifyTableAutoIdCache:        "modify auto id cache",
 }
 
 // String return current ddl action in string
@@ -150,12 +156,13 @@ func NewDDLReorgMeta() *DDLReorgMeta {
 
 // Job is for a DDL operation.
 type Job struct {
-	ID       int64         `json:"id"`
-	Type     ActionType    `json:"type"`
-	SchemaID int64         `json:"schema_id"`
-	TableID  int64         `json:"table_id"`
-	State    JobState      `json:"state"`
-	Error    *terror.Error `json:"err"`
+	ID         int64         `json:"id"`
+	Type       ActionType    `json:"type"`
+	SchemaID   int64         `json:"schema_id"`
+	TableID    int64         `json:"table_id"`
+	SchemaName string        `json:"schema_name"`
+	State      JobState      `json:"state"`
+	Error      *terror.Error `json:"err"`
 	// ErrorCount will be increased, every time we meet an error when running job.
 	ErrorCount int64 `json:"err_count"`
 	// RowCount means the number of rows that are processed.

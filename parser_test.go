@@ -1575,7 +1575,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select group_concat(c2,c1 SEPARATOR ';') from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ';') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinctrow c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
-		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
+		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
 		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STD(`c1`),STD(`c1`),STD(DISTINCT `c1`) FROM `t`"},
 		{`select std(c1, c2) from t`, false, ""},
 		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV(`c1`),STDDEV(`c1`),STDDEV(DISTINCT `c1`) FROM `t`"},
@@ -2179,6 +2179,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"replace t set a = default", true, "REPLACE INTO `t` SET `a`=DEFAULT"},
 		{"update t set a = default", true, "UPDATE `t` SET `a`=DEFAULT"},
 		{"insert into t set a = default on duplicate key update a = default", true, "INSERT INTO `t` SET `a`=DEFAULT ON DUPLICATE KEY UPDATE `a`=DEFAULT"},
+
+		// for auto_id_cache
+		{"create table t (a int) auto_id_cache=1", true, "CREATE TABLE `t` (`a` INT) AUTO_ID_CACHE = 1"},
+		{"create table t (a int auto_increment key) auto_id_cache 10", true, "CREATE TABLE `t` (`a` INT AUTO_INCREMENT PRIMARY KEY) AUTO_ID_CACHE = 10"},
+		{"create table t (a bigint, b varchar(255)) auto_id_cache 50", true, "CREATE TABLE `t` (`a` BIGINT,`b` VARCHAR(255)) AUTO_ID_CACHE = 50"},
 	}
 	s.RunTest(c, table)
 }
@@ -2641,20 +2646,30 @@ func (s *testParserSuite) TestLikeEscape(c *C) {
 	s.RunTest(c, table)
 }
 
-func (s *testParserSuite) TestMysqlDump(c *C) {
-	// Statements used by mysqldump.
+func (s *testParserSuite) TestLockUnlockTables(c *C) {
 	table := []testCase{
-		{`UNLOCK TABLES;`, true, ""},
-		{`LOCK TABLES t1 READ;`, true, ""},
+		{`UNLOCK TABLES;`, true, "UNLOCK TABLES"},
+		{`LOCK TABLES t1 READ;`, true, "LOCK TABLES `t1` READ"},
+		{`LOCK TABLES t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
-		{`LOCK TABLES t2 WRITE`, true, ""},
+		{`LOCK TABLES t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
+		{`LOCK TABLES t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
+		{`LOCK TABLES t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
+		{`LOCK TABLES t1 WRITE LOCAL, t2 READ LOCAL;`, true, "LOCK TABLES `t1` WRITE LOCAL, `t2` READ LOCAL"},
 
 		// for unlock table and lock table
-		{`UNLOCK TABLE;`, true, ""},
-		{`LOCK TABLE t1 READ;`, true, ""},
+		{`UNLOCK TABLE;`, true, "UNLOCK TABLES"},
+		{`LOCK TABLE t1 READ;`, true, "LOCK TABLES `t1` READ"},
+		{`LOCK TABLE t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
-		{`LOCK TABLE t2 WRITE`, true, ""},
-		{`LOCK TABLE t1 WRITE, t3 READ`, true, ""},
+		{`LOCK TABLE t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
+		{`LOCK TABLE t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
+		{`LOCK TABLE t1 WRITE, t2 READ;`, true, "LOCK TABLES `t1` WRITE, `t2` READ"},
+
+		// for cleanup table lock.
+		{"ADMIN CLEANUP TABLE LOCK", false, ""},
+		{"ADMIN CLEANUP TABLE LOCK t", true, "ADMIN CLEANUP TABLE LOCK `t`"},
+		{"ADMIN CLEANUP TABLE LOCK t1,t2", true, "ADMIN CLEANUP TABLE LOCK `t1`, `t2`"},
 	}
 	s.RunTest(c, table)
 }

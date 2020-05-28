@@ -159,7 +159,7 @@ func runTest(c *C, table []testCaseItem) {
 }
 
 func (s *testLexerSuite) TestComment(c *C) {
-
+	SpecialCommentsController.Register("test")
 	table := []testCaseItem{
 		{"-- select --\n1", intLit},
 		{"/*!40101 SET character_set_client = utf8 */;", set},
@@ -176,6 +176,8 @@ SELECT`, selectKwd},
 		{"--\tSELECT", 0},
 		{"--\r\nSELECT", selectKwd},
 		{"--", 0},
+		{"/*T![unsupported] '*/0 -- ' */", intLit}, // equivalent to 0
+		{"/*T![test] s*/0 -- ' */", identifier},    // equivalent to '*/0 -- '
 	}
 	runTest(c, table)
 }
@@ -266,6 +268,25 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 	c.Assert(tok, Equals, intLit)
 	c.Assert(lit, Equals, "5")
 	c.Assert(pos, Equals, Pos{1, 1, 16})
+}
+
+func (s *testLexerSuite) TestFeatureIDsComment(c *C) {
+	SpecialCommentsController.Register("auto_rand")
+	l := NewScanner("/*T![auto_rand] auto_random(5) */")
+	tok, pos, lit := l.scan()
+	c.Assert(tok, Equals, identifier)
+	c.Assert(lit, Equals, "auto_random")
+	c.Assert(pos, Equals, Pos{0, 0, 16})
+	tok, pos, lit = l.scan()
+	c.Assert(tok, Equals, int('('))
+	tok, pos, lit = l.scan()
+	c.Assert(lit, Equals, "5")
+	c.Assert(pos, Equals, Pos{0, 12, 28})
+	tok, pos, lit = l.scan()
+	c.Assert(tok, Equals, int(')'))
+	l = NewScanner("/*T![unsupported_feature] unsupported(123) */")
+	tok, pos, lit = l.scan()
+	c.Assert(tok, Equals, 0)
 }
 
 func (s *testLexerSuite) TestOptimizerHint(c *C) {
@@ -370,4 +391,73 @@ func (s *testLexerSuite) TestIllegal(c *C) {
 		{"@@global.`", 0},
 	}
 	runTest(c, table)
+}
+
+func (s *testLexerSuite) TestFeatureIDs(c *C) {
+	tests := []struct {
+		input      string
+		featureIDs []string
+		nextChar   rune
+	}{
+		{
+			input:      "[feature]",
+			featureIDs: []string{"feature"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[feature] xx",
+			featureIDs: []string{"feature"},
+			nextChar:   ' ',
+		},
+		{
+			input:      "[feature1,feature2]",
+			featureIDs: []string{"feature1", "feature2"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[feature1,feature2,feature3]",
+			featureIDs: []string{"feature1", "feature2", "feature3"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[id_en_ti_fier]",
+			featureIDs: []string{"id_en_ti_fier"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[invalid,    whitespace]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "[unclosed_brac",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "unclosed_brac]",
+			featureIDs: nil,
+			nextChar:   'u',
+		},
+		{
+			input:      "[invalid_comma,]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "[,]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "[]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+	}
+	for _, t := range tests {
+		comment := Commentf("input = %s", t.input)
+		featureIDs := scanFeatureIDs("/*T!" + t.input)
+		c.Assert(featureIDs, DeepEquals, t.featureIDs, comment)
+	}
 }

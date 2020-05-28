@@ -941,6 +941,7 @@ var MySQLErrName = map[uint16]string{
 	ErrRequireVersionCheckFail:    "Plugin %s require %s be %v but got %v",
 	ErrUnsupportedReloadPlugin:    "Plugin %s isn't loaded so cannot be reloaded",
 	ErrUnsupportedReloadPluginVar: "Reload plugin with different sysVar is unsupported %v",
+	ErrTableLocked:                "Table '%s' was locked in %s by %v",
 	ErrInfoSchemaExpired:          "Information schema is out of date: schema failed to update in 1 lease, please make sure TiDB can connect to TiKV",
 	ErrInfoSchemaChanged:          "Information schema is changed during the execution of the statement(for example, table definition may be updated by other DDL ran in parallel). If you see this error often, try increasing `tidb_max_delta_schema_count`",
 	ErrInvalidIncrementAndOffset:  "Invalid auto_increment settings: auto_increment_increment: %d, auto_increment_offset: %d, both of them must be in range [1..65535]",
@@ -954,4 +955,5 @@ var MySQLErrName = map[uint16]string{
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
 	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictStartTS=%d, conflictCommitTS=%d, key=%s",
 	ErrTiKVStoreLimit:     "Store token is up to the limit, store id = %d",
+	ErrTiKVStaleCommand:   "TiKV server reports stale command",
 }

@@ -280,6 +280,7 @@ import (
 	algorithm	"ALGORITHM"
 	any 		"ANY"
 	ascii		"ASCII"
+	autoIdCache     "AUTO_ID_CACHE"
 	autoIncrement	"AUTO_INCREMENT"
 	avgRowLength	"AVG_ROW_LENGTH"
 	avg		"AVG"
@@ -911,6 +912,7 @@ import (
 	TableRefs 			"table references"
 	TableToTable 			"rename table to table"
 	TableToTableList 		"rename table to table by list"
+	LockType			"Table locks type"
 
 	TransactionChar		"Transaction characteristic"
 	TransactionChars	"Transaction characteristic list"
@@ -1038,7 +1040,6 @@ import (
 	NationalOpt		"National option"
 	CharsetKw		"charset or charater set"
 	CommaOpt		"optional comma"
-	LockType		"Table locks type"
 	logAnd			"logical and operator"
 	logOr			"logical or operator"
 	LinearOpt		"linear or empty"
@@ -3705,7 +3706,7 @@ Identifier:
 identifier | UnReservedKeyword | NotKeywordToken | TiDBKeyword
 
 UnReservedKeyword:
- "ACTION" | "ASCII" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
+ "ACTION" | "ASCII" | "AUTO_ID_CACHE" | "AUTO_INCREMENT" | "AFTER" | "ALWAYS" | "AVG" | "BEGIN" | "BIT" | "BOOL" | "BOOLEAN" | "BTREE" | "BYTE" | "CLEANUP" | "CHARSET" %prec charsetKwd
 | "COLUMNS" | "COMMIT" | "COMPACT" | "COMPRESSED" | "CONSISTENT" | "CURRENT" | "DATA" | "DATE" %prec lowerThanStringLitToken| "DATETIME" | "DAY" | "DEALLOCATE" | "DO" | "DUPLICATE"
 | "DYNAMIC"| "END" | "ENFORCED" | "ENGINE" | "ENGINES" | "ENUM" | "ERRORS" | "ESCAPE" | "EXECUTE" | "FIELDS" | "FIRST" | "FIXED" | "FLUSH" | "FOLLOWING" | "FORMAT" | "FULL" |"GLOBAL"
 | "HASH" | "HOUR" | "LESS" | "LOCAL" | "LAST" | "NAMES" | "OFFSET" | "PASSWORD" %prec lowerThanEq | "PREPARE" | "QUICK" | "REDUNDANT"
@@ -4725,7 +4726,11 @@ SumExpr:
 	{
 		args := $4.([]ast.ExprNode)
 		args = append(args, $6.(ast.ExprNode))
-		$$ = &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+		agg := &ast.AggregateFuncExpr{F: $1, Args: args, Distinct: $3.(bool)}
+		if $5 != nil {
+			agg.Order = $5.(*ast.OrderByClause)
+		}
+		$$ = agg
 	}
 |	builtinMax '(' BuggyDefaultFalseDistinctOpt Expression ')'  OptWindowingClause
 	{
@@ -6740,6 +6745,12 @@ AdminStmt:
  			Plugins: $4.([]string),
  		}
  	}
+|	"ADMIN" "CLEANUP" "TABLE" "LOCK" TableNameList
+	{
+		$$ = &ast.CleanupTableLockStmt{
+			Tables: $5.([]*ast.TableName),
+		}
+	}
 
 AdminShowSlow:
 	"RECENT" NUM
@@ -7564,6 +7575,10 @@ TableOption:
 |	"AUTO_INCREMENT" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $3.(uint64)}
+	}
+|	"AUTO_ID_CACHE" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
@@ -9235,11 +9250,18 @@ LoadDataSetItem:
  *********************************************************************/
 
 UnlockTablesStmt:
-	"UNLOCK" TablesTerminalSym {}
+	"UNLOCK" TablesTerminalSym
+	{
+		$$ = &ast.UnlockTablesStmt{}
+	}
 
 LockTablesStmt:
 	"LOCK" TablesTerminalSym TableLockList
-	{}
+        {
+		$$ = &ast.LockTablesStmt{
+			TableLocks: $3.([]ast.TableLock),
+		}
+        }
 
 TablesTerminalSym:
 	"TABLES"
@@ -9247,15 +9269,40 @@ TablesTerminalSym:
 
 TableLock:
 	TableName LockType
+        {
+		$$ = ast.TableLock{
+			Table: $1.(*ast.TableName),
+			Type:  $2.(model.TableLockType),
+		}
+        }
 
 LockType:
 	"READ"
+        {
+		$$ = model.TableLockRead
+        }
 |	"READ" "LOCAL"
+        {
+		$$ = model.TableLockReadLocal
+        }
 |	"WRITE"
+        {
+		$$ = model.TableLockWrite
+        }
+|	"WRITE" "LOCAL"
+        {
+		$$ = model.TableLockWriteLocal
+        }
 
 TableLockList:
 	TableLock
+	{
+		$$ = []ast.TableLock{$1.(ast.TableLock)}
+	}
 |	TableLockList ',' TableLock
+	{
+		$$ = append($1.([]ast.TableLock), $3.(ast.TableLock))
+	}
 
 
 /********************************************************************
