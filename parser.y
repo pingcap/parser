@@ -323,6 +323,7 @@ import (
 	columnFormat          "COLUMN_FORMAT"
 	columns               "COLUMNS"
 	config                "CONFIG"
+	san                   "SAN"
 	comment               "COMMENT"
 	commit                "COMMIT"
 	committed             "COMMITTED"
@@ -4910,6 +4911,7 @@ UnReservedKeyword:
 |	"CHARSET"
 |	"COLUMNS"
 |	"CONFIG"
+|	"SAN"
 |	"COMMIT"
 |	"COMPACT"
 |	"COMPRESSED"
@@ -10489,6 +10491,13 @@ RequireListElement:
 	{
 		$$ = &ast.TLSOption{
 			Type:  ast.Cipher,
+			Value: $2,
+		}
+	}
+|	"SAN" stringLit
+	{
+		$$ = &ast.TLSOption{
+			Type:  ast.SAN,
 			Value: $2,
 		}
 	}
