@@ -6443,11 +6443,18 @@ OptGConcatSeparator:
 FunctionCallGeneric:
 	identifier '(' ExpressionListOpt ')'
 	{
-		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr($1), Args: $3.([]ast.ExprNode)}
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   $3.([]ast.ExprNode),
+		}
 	}
 |	Identifier '.' Identifier '(' ExpressionListOpt ')'
 	{
-		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr($1 + "." + $3), Args: $5.([]ast.ExprNode)}
+		$$ = &ast.FuncCallExpr{
+			Schema: model.NewCIStr($1),
+			FnName: model.NewCIStr($3),
+			Args:   $5.([]ast.ExprNode),
+		}
 	}
 
 FuncDatetimePrec:

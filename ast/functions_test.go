@@ -227,3 +227,17 @@ func (ts *testDMLSuite) TestWindowFuncExprRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "select %s from t", extractNodeFunc)
 }
+
+func (ts *testFunctionsSuite) TestGenericFuncRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"s.a()", "`s`.A()"},
+		{"`s`.`a`()", "`s`.A()"},
+		{"now()", "NOW()"},
+		{"`s`.`now`()", "`s`.NOW()"},
+		{"generic_func()", "GENERIC_FUNC()"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*SelectStmt).Fields.Fields[0].Expr
+	}
+	RunNodeRestoreTest(c, testCases, "select %s from t", extractNodeFunc)
+}

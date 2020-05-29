@@ -342,6 +342,7 @@ const (
 // FuncCallExpr is for function expression.
 type FuncCallExpr struct {
 	funcNode
+	Schema model.CIStr
 	// FnName is the function name.
 	FnName model.CIStr
 	// Args is the function args.
@@ -365,6 +366,11 @@ func (n *FuncCallExpr) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
 		return nil
+	}
+
+	if len(n.Schema.String()) != 0 {
+		ctx.WriteName(n.Schema.O)
+		ctx.WritePlain(".")
 	}
 
 	ctx.WriteKeyWord(n.FnName.O)
