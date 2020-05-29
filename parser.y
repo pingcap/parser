@@ -6450,7 +6450,14 @@ FunctionCallGeneric:
 	}
 |	Identifier '.' Identifier '(' ExpressionListOpt ')'
 	{
+		var tp ast.FuncCallExprType
+		if CheckInTokenMap($3) {
+			tp = ast.FuncCallExprTypeKeyword
+		} else {
+			tp = ast.FuncCallExprTypeGeneric
+		}
 		$$ = &ast.FuncCallExpr{
+			Tp:     tp,
 			Schema: model.NewCIStr($1),
 			FnName: model.NewCIStr($3),
 			Args:   $5.([]ast.ExprNode),

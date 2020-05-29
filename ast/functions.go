@@ -339,9 +339,17 @@ const (
 	SetVal  = "setval"
 )
 
+type FuncCallExprType int8
+
+const (
+	FuncCallExprTypeKeyword FuncCallExprType = iota
+	FuncCallExprTypeGeneric
+)
+
 // FuncCallExpr is for function expression.
 type FuncCallExpr struct {
 	funcNode
+	Tp     FuncCallExprType
 	Schema model.CIStr
 	// FnName is the function name.
 	FnName model.CIStr
@@ -372,8 +380,12 @@ func (n *FuncCallExpr) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteName(n.Schema.O)
 		ctx.WritePlain(".")
 	}
+	if n.Tp == FuncCallExprTypeGeneric {
+		ctx.WriteName(n.FnName.O)
+	} else {
+		ctx.WriteKeyWord(n.FnName.O)
+	}
 
-	ctx.WriteKeyWord(n.FnName.O)
 	ctx.WritePlain("(")
 	switch n.FnName.L {
 	case "convert":
