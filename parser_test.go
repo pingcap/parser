@@ -106,6 +106,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"always", "stats", "stats_meta", "stats_histogram", "stats_buckets", "stats_healthy", "tidb_version", "replication", "slave", "client",
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
+		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -476,6 +477,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"INSERT INTO foo VALUES (1234)", true, "INSERT INTO `foo` VALUES (1234)"},
 		{"INSERT INTO foo VALUES (1234, 5678)", true, "INSERT INTO `foo` VALUES (1234,5678)"},
 		{"INSERT INTO t1 (SELECT * FROM t2)", true, "INSERT INTO `t1` SELECT * FROM `t2`"},
+		{"INSERT INTO t partition (p0) values(1234)", true, "INSERT INTO `t` PARTITION(`p0`) VALUES (1234)"},
+		{"REPLACE INTO t partition (p0) values(1234)", true, "REPLACE INTO `t` PARTITION(`p0`) VALUES (1234)"},
+		{"INSERT INTO t partition (p0, p1, p2) values(1234)", true, "INSERT INTO `t` PARTITION(`p0`, `p1`, `p2`) VALUES (1234)"},
+		{"REPLACE INTO t partition (p0, p1, p2) values(1234)", true, "REPLACE INTO `t` PARTITION(`p0`, `p1`, `p2`) VALUES (1234)"},
 		// 15
 		{"INSERT INTO foo VALUES (1 || 2)", true, "INSERT INTO `foo` VALUES (1 OR 2)"},
 		{"INSERT INTO foo VALUES (1 | 2)", true, "INSERT INTO `foo` VALUES (1|2)"},
@@ -677,11 +682,13 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"DELETE FROM t1 WHERE t1.a > 0 ORDER BY t1.a LIMIT 1", true, "DELETE FROM `t1` WHERE `t1`.`a`>0 ORDER BY `t1`.`a` LIMIT 1"},
 		{"DELETE FROM x.y z WHERE z.a > 0", true, "DELETE FROM `x`.`y` AS `z` WHERE `z`.`a`>0"},
 		{"DELETE FROM t1 AS w WHERE a > 0", true, "DELETE FROM `t1` AS `w` WHERE `a`>0"},
+		{"DELETE from t1 partition (p0,p1)", true, "DELETE FROM `t1` PARTITION(`p0`, `p1`)"},
 
 		// multi table syntax: before from
 		{"delete low_priority t1, t2 from t1, t2", true, "DELETE LOW_PRIORITY `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete quick t1, t2 from t1, t2", true, "DELETE QUICK `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete ignore t1, t2 from t1, t2", true, "DELETE IGNORE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete ignore t1, t2 from t1 partition (p0,p1), t2", true, "DELETE IGNORE `t1`,`t2` FROM (`t1` PARTITION(`p0`, `p1`)) JOIN `t2`"},
 		{"delete low_priority quick ignore t1, t2 from t1, t2 where t1.a > 5", true, "DELETE LOW_PRIORITY QUICK IGNORE `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`a`>5"},
 		{"delete t1, t2 from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
 		{"delete t1, t2 from t1, t2 where t1.a = 1 and t2.b <> 1", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`a`=1 AND `t2`.`b`!=1"},
@@ -883,6 +890,14 @@ AAAAAAAAAAAA5gm5Mg==
 		{"show table t1 index idx1 regions where a=2", true, "SHOW TABLE `t1` INDEX `idx1` REGIONS WHERE `a`=2"},
 		{"show table t1 index idx1", false, ""},
 
+		// for show table partition regions.
+		{"show table t1 partition (p0,p1) regions", true, "SHOW TABLE `t1` PARTITION(`p0`, `p1`) REGIONS"},
+		{"show table t1 partition (p0) regions where a=1", true, "SHOW TABLE `t1` PARTITION(`p0`) REGIONS WHERE `a`=1"},
+		{"show table t1 partition", false, ""},
+		{"show table t1 partition (p0) index idx1 regions", true, "SHOW TABLE `t1` PARTITION(`p0`) INDEX `idx1` REGIONS"},
+		{"show table t1 partition (p0,p1) index idx1 regions where a=2", true, "SHOW TABLE `t1` PARTITION(`p0`, `p1`) INDEX `idx1` REGIONS WHERE `a`=2"},
+		{"show table t1 partition index idx1", false, ""},
+
 		// for show table next_row_id.
 		{"show table t1.t1 next_row_id", true, "SHOW TABLE `t1`.`t1` NEXT_ROW_ID"},
 		{"show table t1 next_row_id", true, "SHOW TABLE `t1` NEXT_ROW_ID"},
@@ -1005,9 +1020,12 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show builtins
 		{"show builtins", true, "SHOW BUILTINS"},
 		// for show backup & restore
-		{"show backup", true, "SHOW BACKUP"},
-		{"show restore like 'r0001'", true, "SHOW RESTORE LIKE 'r0001'"},
-		{"show backup where start_time > now() - interval 10 hour", true, "SHOW BACKUP WHERE `start_time`>DATE_SUB(NOW(), INTERVAL 10 HOUR)"},
+		{"show backups", true, "SHOW BACKUPS"},
+		{"show restores like 'r0001'", true, "SHOW RESTORES LIKE 'r0001'"},
+		{"show backups where start_time > now() - interval 10 hour", true, "SHOW BACKUPS WHERE `start_time`>DATE_SUB(NOW(), INTERVAL 10 HOUR)"},
+		{"show backup", false, ""},
+		{"show restore", false, ""},
+		{"show imports", true, "SHOW IMPORTS"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
@@ -1047,8 +1065,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"SET @@global.autocommit = default", true, "SET @@GLOBAL.`autocommit`=DEFAULT"},
 		{"SET @@session.autocommit = default", true, "SET @@SESSION.`autocommit`=DEFAULT"},
 		// SET CHARACTER SET
-		{"SET CHARACTER SET utf8mb4;", true, "SET NAMES 'utf8mb4'"},
-		{"SET CHARACTER SET 'utf8mb4';", true, "SET NAMES 'utf8mb4'"},
+		{"SET CHARACTER SET utf8mb4;", true, "SET CHARSET 'utf8mb4'"},
+		{"SET CHARACTER SET 'utf8mb4';", true, "SET CHARSET 'utf8mb4'"},
 		// set password
 		{"SET PASSWORD = 'password';", true, "SET PASSWORD='password'"},
 		{"SET PASSWORD FOR 'root'@'localhost' = 'password';", true, "SET PASSWORD FOR `root`@`localhost`='password'"},
@@ -1073,9 +1091,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 
 		// for set character set | name default
 		{"set names default", true, "SET NAMES DEFAULT"},
-		{"set character set default", true, "SET NAMES DEFAULT"},
-		{"set charset default", true, "SET NAMES DEFAULT"},
-		{"set char set default", true, "SET NAMES DEFAULT"},
+		{"set character set default", true, "SET CHARSET DEFAULT"},
+		{"set charset default", true, "SET CHARSET DEFAULT"},
+		{"set char set default", true, "SET CHARSET DEFAULT"},
 
 		{"set role `role1`", true, "SET ROLE `role1`@`%`"},
 		{"SET ROLE DEFAULT", true, "SET ROLE DEFAULT"},
@@ -1084,16 +1102,19 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"SET DEFAULT ROLE administrator, developer TO `joe`@`10.0.0.1`", true, "SET DEFAULT ROLE `administrator`@`%`, `developer`@`%` TO `joe`@`10.0.0.1`"},
 		// for set names and set vars
 		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
-		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
+		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', CHARSET 'utf8'"},
 
 		// for set/show config
 		{"set config TIKV LOG.LEVEL='info'", true, "SET CONFIG TIKV LOG.LEVEL = 'info'"},
 		{"set config PD LOG.LEVEL='info'", true, "SET CONFIG PD LOG.LEVEL = 'info'"},
 		{"set config TIDB LOG.LEVEL='info'", true, "SET CONFIG TIDB LOG.LEVEL = 'info'"},
 		{"set config '127.0.0.1:3306' LOG.LEVEL='info'", true, "SET CONFIG '127.0.0.1:3306' LOG.LEVEL = 'info'"},
+		{"set config '127.0.0.1:3306' AUTO-COMPACTION-MODE=TRUE", true, "SET CONFIG '127.0.0.1:3306' AUTO-COMPACTION-MODE = TRUE"},
+		{"set config '127.0.0.1:3306' LABEL-PROPERTY.REJECT-LEADER.KEY='zone'", true, "SET CONFIG '127.0.0.1:3306' LABEL-PROPERTY.REJECT-LEADER.KEY = 'zone'"},
 		{"show config", true, "SHOW CONFIG"},
 		{"show config where type='tidb'", true, "SHOW CONFIG WHERE `type`='tidb'"},
 		{"show config where instance='127.0.0.1:3306'", true, "SHOW CONFIG WHERE `instance`='127.0.0.1:3306'"},
+		{"create table CONFIG (a int)", true, "CREATE TABLE `CONFIG` (`a` INT)"}, // check that `CONFIG` is unreserved keyword
 
 		// for FLUSH statement
 		{"flush no_write_to_binlog tables tbl1 with read lock", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1` WITH READ LOCK"},
@@ -1854,6 +1875,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select count(all c1) from t;`, true, "SELECT COUNT(`c1`) FROM `t`"},
 		{`select count(distinct all c1) from t;`, false, ""},
 		{`select count(distinctrow all c1) from t;`, false, ""},
+		{`select approx_count_distinct(c1) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`) FROM `t`"},
+		{`select approx_count_distinct(c1, c2) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, `c2`) FROM `t`"},
+		{`select approx_count_distinct(c1, 123) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, 123) FROM `t`"},
 		{`select group_concat(c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(c2,c1 SEPARATOR ';') from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ';') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
@@ -2854,11 +2878,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE ident ADD ( CONSTRAINT FOREIGN KEY ident ( EXECUTE ( 123 ) ) REFERENCES t ( a ) MATCH SIMPLE ON DELETE CASCADE ON UPDATE SET NULL )", true, "ALTER TABLE `ident` ADD COLUMN (CONSTRAINT `ident` FOREIGN KEY (`EXECUTE`(123)) REFERENCES `t`(`a`) MATCH SIMPLE ON DELETE CASCADE ON UPDATE SET NULL)"},
 		// for CONSTRAINT cont'd, the following tests are for another aspect of the incompatibility
 		{"ALTER TABLE t ADD COLUMN a DATE CHECK ( a > 0 ) FIRST", true, "ALTER TABLE `t` ADD COLUMN `a` DATE CHECK(`a`>0) ENFORCED FIRST"},
-		{"ALTER TABLE t ADD a1 int CONSTRAINT ident CHECK ( a1 > 1 ) REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE;", true, "ALTER TABLE `t` ADD COLUMN `a1` INT CHECK(`a1`>1) ENFORCED REFERENCES `b` ON DELETE CASCADE ON UPDATE CASCADE"},
+		{"ALTER TABLE t ADD a1 int CONSTRAINT ident CHECK ( a1 > 1 ) REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE;", true, "ALTER TABLE `t` ADD COLUMN `a1` INT CONSTRAINT `ident` CHECK(`a1`>1) ENFORCED REFERENCES `b` ON DELETE CASCADE ON UPDATE CASCADE"},
 		{"ALTER TABLE t ADD COLUMN a DATE CONSTRAINT CHECK ( a > 0 ) FIRST", true, "ALTER TABLE `t` ADD COLUMN `a` DATE CHECK(`a`>0) ENFORCED FIRST"},
-		{"ALTER TABLE t ADD a TINYBLOB CONSTRAINT ident CHECK ( 1>2 ) REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE", true, "ALTER TABLE `t` ADD COLUMN `a` TINYBLOB CHECK(1>2) ENFORCED REFERENCES `b` ON DELETE CASCADE ON UPDATE CASCADE"},
-		{"ALTER TABLE t ADD a2 int CONSTRAINT ident CHECK (a2 > 1) ENFORCED", true, "ALTER TABLE `t` ADD COLUMN `a2` INT CHECK(`a2`>1) ENFORCED"},
-		{"ALTER TABLE t ADD a2 int CONSTRAINT ident CHECK (a2 > 1) NOT ENFORCED", true, "ALTER TABLE `t` ADD COLUMN `a2` INT CHECK(`a2`>1) NOT ENFORCED"},
+		{"ALTER TABLE t ADD a TINYBLOB CONSTRAINT ident CHECK ( 1>2 ) REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE", true, "ALTER TABLE `t` ADD COLUMN `a` TINYBLOB CONSTRAINT `ident` CHECK(1>2) ENFORCED REFERENCES `b` ON DELETE CASCADE ON UPDATE CASCADE"},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident CHECK (a2 > 1) ENFORCED", true, "ALTER TABLE `t` ADD COLUMN `a2` INT CONSTRAINT `ident` CHECK(`a2`>1) ENFORCED"},
+		{"ALTER TABLE t ADD a2 int CONSTRAINT ident CHECK (a2 > 1) NOT ENFORCED", true, "ALTER TABLE `t` ADD COLUMN `a2` INT CONSTRAINT `ident` CHECK(`a2`>1) NOT ENFORCED"},
 		{"ALTER TABLE t ADD a2 int CONSTRAINT ident primary key REFERENCES b ON DELETE CASCADE ON UPDATE CASCADE;", false, ""},
 		{"ALTER TABLE t ADD a2 int CONSTRAINT ident primary key (a2))", false, ""},
 		{"ALTER TABLE t ADD a2 int CONSTRAINT ident unique key (a2))", false, ""},
@@ -2981,6 +3005,12 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a int) auto_id_cache=1", true, "CREATE TABLE `t` (`a` INT) AUTO_ID_CACHE = 1"},
 		{"create table t (a int auto_increment key) auto_id_cache 10", true, "CREATE TABLE `t` (`a` INT AUTO_INCREMENT PRIMARY KEY) AUTO_ID_CACHE = 10"},
 		{"create table t (a bigint, b varchar(255)) auto_id_cache 50", true, "CREATE TABLE `t` (`a` BIGINT,`b` VARCHAR(255)) AUTO_ID_CACHE = 50"},
+
+		// for auto_random_id
+		{"create table t (a bigint auto_random(3) primary key) auto_random_base = 10", true, "CREATE TABLE `t` (`a` BIGINT AUTO_RANDOM(3) PRIMARY KEY) AUTO_RANDOM_BASE = 10"},
+		{"create table t (a bigint primary key auto_random(4), b varchar(100)) auto_random_base 200", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(4),`b` VARCHAR(100)) AUTO_RANDOM_BASE = 200"},
+		{"alter table t auto_random_base = 50", true, "ALTER TABLE `t` AUTO_RANDOM_BASE = 50"},
+		{"alter table t auto_increment 30, auto_random_base 40", true, "ALTER TABLE `t` AUTO_INCREMENT = 30, AUTO_RANDOM_BASE = 40"},
 	}
 	s.RunTest(c, table)
 }
@@ -3007,6 +3037,13 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err.Error(), Equals, "line 1 column 47 near \"t1, t2 where t1.c1 = t2.c1\" ")
 	_, _, err = parser.Parse("SELECT 1 FROM DUAL WHERE 1 IN (SELECT /*+ DEBUG_HINT3 */ 1)", "", "")
 	c.Assert(err, IsNil)
+	stmt, _, err = parser.Parse("insert into t select /*+ memory_quota(1 MB) */ * from t;", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 0)
+	c.Assert(len(stmt[0].(*ast.InsertStmt).Select.(*ast.SelectStmt).TableHints), Equals, 1)
+	stmt, _, err = parser.Parse("insert /*+ memory_quota(1 MB) */ into t select * from t;", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
 }
 
 func (s *testParserSuite) TestErrorMsg(c *C) {
@@ -3387,11 +3424,25 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	stmt, _, err = parser.Parse("select /*+ IGNORE_PLAN_CACHE(), ignore_plan_cache() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
-
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "ignore_plan_cache")
+	c.Assert(hints[1].HintName.L, Equals, "ignore_plan_cache")
 
+	stmt, _, err = parser.Parse("delete /*+ IGNORE_PLAN_CACHE(), ignore_plan_cache() */ from t where a = 1", "", "")
+	c.Assert(err, IsNil)
+	deleteStmt := stmt[0].(*ast.DeleteStmt)
+	hints = deleteStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "ignore_plan_cache")
+	c.Assert(hints[1].HintName.L, Equals, "ignore_plan_cache")
+
+	stmt, _, err = parser.Parse("update /*+  IGNORE_PLAN_CACHE(), ignore_plan_cache() */ t set a = 1 where a = 10", "", "")
+	c.Assert(err, IsNil)
+	updateStmt := stmt[0].(*ast.UpdateStmt)
+	hints = updateStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "ignore_plan_cache")
 	c.Assert(hints[1].HintName.L, Equals, "ignore_plan_cache")
 
 	// Test USE_CASCADES
@@ -3628,6 +3679,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT 'u1' TO 'u1';", true, "GRANT `u1`@`%` TO `u1`@`%`"},
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
 		{"GRANT SHUTDOWN ON *.* TO 'dev1'@'localhost';", true, "GRANT SHUTDOWN ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CONFIG ON *.* TO 'dev1'@'localhost';", true, "GRANT CONFIG ON *.* TO `dev1`@`localhost`"},
 
 		// for revoke statement
 		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
@@ -3642,6 +3694,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"REVOKE all privileges on zabbix.* FROM 'zabbix'@'localhost' identified by 'password';", true, "REVOKE ALL ON `zabbix`.* FROM `zabbix`@`localhost` IDENTIFIED BY 'password'"},
 		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, "REVOKE `role1`@`%`, `role2`@`%` FROM `user1`@`localhost`, `user2`@`localhost`"},
 		{"REVOKE SHUTDOWN ON *.* FROM 'dev1'@'localhost';", true, "REVOKE SHUTDOWN ON *.* FROM `dev1`@`localhost`"},
+		{"REVOKE CONFIG ON *.* FROM 'dev1'@'localhost';", true, "REVOKE CONFIG ON *.* FROM `dev1`@`localhost`"},
 	}
 	s.RunTest(c, table)
 }
@@ -5111,8 +5164,8 @@ func (s *testParserSuite) TestBRIE(c *C) {
 	table := []testCase{
 		{"BACKUP DATABASE a TO 'local:///tmp/archive01/'", true, "BACKUP DATABASE `a` TO 'local:///tmp/archive01/'"},
 		{"BACKUP SCHEMA a TO 'local:///tmp/archive01/'", true, "BACKUP DATABASE `a` TO 'local:///tmp/archive01/'"},
-		{"BACKUP DATABASE a,b,c FULL TO 'noop://'", true, "BACKUP DATABASE `a`, `b`, `c` TO 'noop://'"},
-		{"BACKUP DATABASE a.b FULL TO 'noop://'", false, ""},
+		{"BACKUP DATABASE a,b,c TO 'noop://'", true, "BACKUP DATABASE `a`, `b`, `c` TO 'noop://'"},
+		{"BACKUP DATABASE a.b TO 'noop://'", false, ""},
 		{"BACKUP DATABASE * TO 'noop://'", true, "BACKUP DATABASE * TO 'noop://'"},
 		{"BACKUP DATABASE *, a TO 'noop://'", false, ""},
 		{"BACKUP DATABASE a, * TO 'noop://'", false, ""},
@@ -5125,10 +5178,8 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"BACKUP TABLE TO 'noop://'", false, ""},
 		{"RESTORE DATABASE * FROM 's3://bucket/path/'", true, "RESTORE DATABASE * FROM 's3://bucket/path/'"},
 
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP '2020-02-02 14:14:14' TO 'noop://'", true, "BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP '2020-02-02 14:14:14' TO 'noop://'"},
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP_ORACLE 1234567890 TO 'noop://'", true, "BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP_ORACLE 1234567890 TO 'noop://'"},
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP_ORACLE '2020-02-02 14:14:14' TO 'noop://'", false, ""},
-		{"BACKUP DATABASE * INCREMENTAL UNTIL TIMESTAMP 1234567890 TO 'noop://'", false, ""},
+		{"BACKUP DATABASE * TO 'noop://' LAST_BACKUP = '2020-02-02 14:14:14'", true, "BACKUP DATABASE * TO 'noop://' LAST_BACKUP = '2020-02-02 14:14:14'"},
+		{"BACKUP DATABASE * TO 'noop://' LAST_BACKUP = 1234567890", true, "BACKUP DATABASE * TO 'noop://' LAST_BACKUP = 1234567890"},
 
 		{"backup database * to 'noop://' rate_limit 500 MB/second snapshot 5 minute ago", true, "BACKUP DATABASE * TO 'noop://' RATE_LIMIT = 500 MB/SECOND SNAPSHOT = 300000000 MICROSECOND AGO"},
 		{"backup database * to 'noop://' snapshot = '2020-03-18 18:13:54'", true, "BACKUP DATABASE * TO 'noop://' SNAPSHOT = '2020-03-18 18:13:54'"},
@@ -5136,20 +5187,54 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"restore table g from 'noop://' concurrency 40 checksum 0 online 1", true, "RESTORE TABLE `g` FROM 'noop://' CONCURRENCY = 40 CHECKSUM = 0 ONLINE = 1"},
 		{
 			// FIXME: should we really include the access key in the Restore() text???
-			"backup table x to 's3://bucket/path/' s3_endpoint = 'https://test-cluster-s3.local' s3_access_key = 'aaaaaaaaa' s3_secret_access_key = 'bbbbbbbb' s3_force_path_style = 1",
+			"backup table x to 's3://bucket/path/?endpoint=https://test-cluster-s3.local&access-key=aaaaaaaaa&secret-access-key=bbbbbbbb&force-path-style=1'",
 			true,
-			"BACKUP TABLE `x` TO 's3://bucket/path/' S3_ENDPOINT = 'https://test-cluster-s3.local' S3_ACCESS_KEY = 'aaaaaaaaa' S3_SECRET_ACCESS_KEY = 'bbbbbbbb' S3_FORCE_PATH_STYLE = 1",
+			"BACKUP TABLE `x` TO 's3://bucket/path/?endpoint=https://test-cluster-s3.local&access-key=aaaaaaaaa&secret-access-key=bbbbbbbb&force-path-style=1'",
 		},
 		{
-			"backup database * to 's3://bucket/path/' send_credentials_to_tikv = 1 s3_provider = 'alibaba' s3_region = 'us-west-9' s3_storage_class = 'glacier' s3_sse = 'AES256' s3_acl = 'authenticated-read' s3_use_accelerate_endpoint = 1",
+			"backup database * to 's3://bucket/path/?provider=alibaba&region=us-west-9&storage-class=glacier&sse=AES256&acl=authenticated-read&use-accelerate-endpoint=1' send_credentials_to_tikv = 1",
 			true,
-			"BACKUP DATABASE * TO 's3://bucket/path/' SEND_CREDENTIALS_TO_TIKV = 1 S3_PROVIDER = 'alibaba' S3_REGION = 'us-west-9' S3_STORAGE_CLASS = 'glacier' S3_SSE = 'AES256' S3_ACL = 'authenticated-read' S3_USE_ACCELERATE_ENDPOINT = 1",
+			"BACKUP DATABASE * TO 's3://bucket/path/?provider=alibaba&region=us-west-9&storage-class=glacier&sse=AES256&acl=authenticated-read&use-accelerate-endpoint=1' SEND_CREDENTIALS_TO_TIKV = 1",
 		},
 		{
-			"restore database * from 'gcs://bucket/path/' gcs_endpoint 'https://test-cluster.gcs.local' gcs_storage_class 'coldline' gcs_predefined_acl 'OWNER' gcs_credentials_file '/data/private/creds.json'",
+			"restore database * from 'gcs://bucket/path/?endpoint=https://test-cluster.gcs.local&storage-class=coldline&predefined-acl=OWNER&credentials-file=/data/private/creds.json'",
 			true,
-			"RESTORE DATABASE * FROM 'gcs://bucket/path/' GCS_ENDPOINT = 'https://test-cluster.gcs.local' GCS_STORAGE_CLASS = 'coldline' GCS_PREDEFINED_ACL = 'OWNER' GCS_CREDENTIALS_FILE = '/data/private/creds.json'",
+			"RESTORE DATABASE * FROM 'gcs://bucket/path/?endpoint=https://test-cluster.gcs.local&storage-class=coldline&predefined-acl=OWNER&credentials-file=/data/private/creds.json'",
 		},
+
+		{"IMPORT DATABASE * FROM 'file:///data/dump'", true, "IMPORT DATABASE * FROM 'file:///data/dump'"},
+		{
+			"import schema * from 'file:///d/' checkpoint false analyze false checksum false backend 'importer' tikv_importer '10.0.1.1:8287'",
+			true,
+			"IMPORT DATABASE * FROM 'file:///d/' CHECKPOINT = 0 ANALYZE = 0 CHECKSUM = 0 BACKEND = 'importer' TIKV_IMPORTER = '10.0.1.1:8287'",
+		},
+		{
+			"IMPORT DATABASE * FROM 'file:///d/' BACKEND TIDB ON DUPLICATE IGNORE SKIP_SCHEMA_FILES TRUE",
+			true,
+			"IMPORT DATABASE * FROM 'file:///d/' BACKEND = 'tidb' ON_DUPLICATE = 'ignore' SKIP_SCHEMA_FILES = 1",
+		},
+		{
+			"import schema * from 'file:///d/' csv_header = columns strict_format = true csv_backslash_escape = true csv_delimiter = '''' csv_not_null = false csv_null = 'Null' csv_separator = '|' csv_trim_last_separators = true",
+			true,
+			"IMPORT DATABASE * FROM 'file:///d/' CSV_HEADER = COLUMNS STRICT_FORMAT = 1 CSV_BACKSLASH_ESCAPE = 1 CSV_DELIMITER = '''' CSV_NOT_NULL = 0 CSV_NULL = 'Null' CSV_SEPARATOR = '|' CSV_TRIM_LAST_SEPARATORS = 1",
+		},
+		{"import table db1.tbl1 from 'file:///d/' csv_header = 0", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CSV_HEADER = 0"},
+		{"import table db1.tbl1 from 'file:///d/' csv_header = 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CSV_HEADER = 1"},
+		{"import table db1.tbl1 from 'file:///d/' csv_header = 9001", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CSV_HEADER = 9001"},
+		{"import table db1.tbl1 from 'file:///d/' csv_header = fields", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CSV_HEADER = COLUMNS"},
+		{"import table db1.tbl1 from 'file:///d/' csv_header = 'columns'", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' on_duplicate = ignore", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' ON_DUPLICATE = 'ignore'"},
+		{"import table db1.tbl1 from 'file:///d/' on_duplicate = replace", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' ON_DUPLICATE = 'replace'"},
+		{"import table db1.tbl1 from 'file:///d/' on_duplicate = error", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' ON_DUPLICATE = 'error'"},
+		{"import table db1.tbl1 from 'file:///d/' backend = local", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' BACKEND = 'local'"},
+		{"import table db1.tbl1 from 'file:///d/' backend = tidb", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' BACKEND = 'tidb'"},
+		{"import table db1.tbl1 from 'file:///d/' backend = importer", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' BACKEND = 'importer'"},
+		{"import table db1.tbl1 from 'file:///d/' checkpoint = 'false'", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' checkpoint = 30", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CHECKPOINT = 1"},
+		{"import table db1.tbl1 from 'file:///d/' csv_null = null", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' csv_null = false", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' csv_null = 0", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' csv_null = abcdefgh", false, ""},
 	}
 
 	s.RunTest(c, table)

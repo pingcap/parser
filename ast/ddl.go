@@ -477,6 +477,8 @@ type ColumnOption struct {
 	AutoRandomBitLength int
 	// Enforced is only for Check, default is true.
 	Enforced bool
+	// Name is only used for Check Constraint name.
+	ConstraintName string
 }
 
 // Restore implements Node interface.
@@ -534,6 +536,11 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("COLLATE ")
 		ctx.WritePlain(n.StrValue)
 	case ColumnOptionCheck:
+		if n.ConstraintName != "" {
+			ctx.WriteKeyWord("CONSTRAINT ")
+			ctx.WriteName(n.ConstraintName)
+			ctx.WritePlain(" ")
+		}
 		ctx.WriteKeyWord("CHECK")
 		ctx.WritePlain("(")
 		if err := n.Expr.Restore(ctx); err != nil {
@@ -702,6 +709,10 @@ type Constraint struct {
 	Expr ExprNode // Used for Check
 
 	Enforced bool // Used for Check
+
+	InColumn bool // Used for Check
+
+	InColumnName string // Used for Check
 }
 
 // Restore implements Node interface.
@@ -1731,6 +1742,7 @@ const (
 	TableOptionCollate
 	TableOptionAutoIdCache
 	TableOptionAutoIncrement
+	TableOptionAutoRandomBase
 	TableOptionComment
 	TableOptionAvgRowLength
 	TableOptionCheckSum
@@ -1840,6 +1852,10 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionAutoIdCache:
 		ctx.WriteKeyWord("AUTO_ID_CACHE ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case TableOptionAutoRandomBase:
+		ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionComment:
@@ -2240,6 +2256,7 @@ type AlterTableSpec struct {
 
 	Tp              AlterTableType
 	Name            string
+	IndexName       model.CIStr
 	Constraint      *Constraint
 	Options         []*TableOption
 	OrderByList     []*AlterOrderItem
@@ -2696,7 +2713,7 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("DISCARD TABLESPACE")
 	case AlterTableIndexInvisible:
 		ctx.WriteKeyWord("ALTER INDEX ")
-		ctx.WriteName(n.Name)
+		ctx.WriteName(n.IndexName.O)
 		switch n.Visibility {
 		case IndexVisibilityVisible:
 			ctx.WriteKeyWord(" VISIBLE")
