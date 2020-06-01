@@ -429,4 +429,7 @@ type SchemaDiff struct {
 	OldTableID int64 `json:"old_table_id"`
 	// OldSchemaID is the schema ID before rename table, only used by rename table DDL.
 	OldSchemaID int64 `json:"old_schema_id"`
+
+	// PtTableID is the table ID of partition table when exchanging partition
+	PtTableID int64 `json:"pt_table_id"`
 }
