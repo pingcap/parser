@@ -503,6 +503,7 @@ import (
 	rowCount              "ROW_COUNT"
 	rowFormat             "ROW_FORMAT"
 	rtree                 "RTREE"
+	san                   "SAN"
 	second                "SECOND"
 	secondaryEngine       "SECONDARY_ENGINE"
 	secondaryLoad         "SECONDARY_LOAD"
@@ -595,6 +596,7 @@ import (
 	cast                  "CAST"
 	copyKwd               "COPY"
 	count                 "COUNT"
+	approxCountDistinct   "APPROX_COUNT_DISTINCT"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
@@ -642,40 +644,41 @@ import (
 	tls                   "TLS"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
-	admin              "ADMIN"
-	buckets            "BUCKETS"
-	builtins           "BUILTINS"
-	cancel             "CANCEL"
-	cmSketch           "CMSKETCH"
-	ddl                "DDL"
-	depth              "DEPTH"
-	drainer            "DRAINER"
-	jobs               "JOBS"
-	job                "JOB"
-	nodeID             "NODE_ID"
-	nodeState          "NODE_STATE"
-	optimistic         "OPTIMISTIC"
-	pessimistic        "PESSIMISTIC"
-	pump               "PUMP"
-	samples            "SAMPLES"
-	stats              "STATS"
-	statsMeta          "STATS_META"
-	statsHistograms    "STATS_HISTOGRAMS"
-	statsBuckets       "STATS_BUCKETS"
-	statsHealthy       "STATS_HEALTHY"
-	tidb               "TIDB"
-	tiFlash            "TIFLASH"
-	topn               "TOPN"
-	split              "SPLIT"
-	width              "WIDTH"
-	regions            "REGIONS"
-	region             "REGION"
+	admin                      "ADMIN"
+	buckets                    "BUCKETS"
+	builtins                   "BUILTINS"
+	cancel                     "CANCEL"
+	cmSketch                   "CMSKETCH"
+	ddl                        "DDL"
+	depth                      "DEPTH"
+	drainer                    "DRAINER"
+	jobs                       "JOBS"
+	job                        "JOB"
+	nodeID                     "NODE_ID"
+	nodeState                  "NODE_STATE"
+	optimistic                 "OPTIMISTIC"
+	pessimistic                "PESSIMISTIC"
+	pump                       "PUMP"
+	samples                    "SAMPLES"
+	stats                      "STATS"
+	statsMeta                  "STATS_META"
+	statsHistograms            "STATS_HISTOGRAMS"
+	statsBuckets               "STATS_BUCKETS"
+	statsHealthy               "STATS_HEALTHY"
+	tidb                       "TIDB"
+	tiFlash                    "TIFLASH"
+	topn                       "TOPN"
+	split                      "SPLIT"
+	width                      "WIDTH"
+	regions                    "REGIONS"
+	region                     "REGION"
 	builtinAddDate
 	builtinBitAnd
 	builtinBitOr
 	builtinBitXor
 	builtinCast
 	builtinCount
+	builtinApproxCountDistinct
 	builtinCurDate
 	builtinCurTime
 	builtinDateAdd
@@ -2575,6 +2578,10 @@ ColumnOption:
 			Expr:     $4,
 			Enforced: true,
 		}
+		// Keep the column type check constraint name.
+		if $1 != nil {
+			optionCheck.ConstraintName = $1.(string)
+		}
 		switch $6.(int) {
 		case 0:
 			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
@@ -3732,12 +3739,13 @@ DoStmt:
  *
  *******************************************************************/
 DeleteFromStmt:
-	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
+	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
 	{
 		// Single Table
 		tn := $7.(*ast.TableName)
-		tn.IndexHints = $9.([]*ast.IndexHint)
-		join := &ast.Join{Left: &ast.TableSource{Source: tn, AsName: $8.(model.CIStr)}, Right: nil}
+		tn.IndexHints = $10.([]*ast.IndexHint)
+		tn.PartitionNames = $8.([]model.CIStr)
+		join := &ast.Join{Left: &ast.TableSource{Source: tn, AsName: $9.(model.CIStr)}, Right: nil}
 		x := &ast.DeleteStmt{
 			TableRefs: &ast.TableRefsClause{TableRefs: join},
 			Priority:  $3.(mysql.PriorityEnum),
@@ -3747,14 +3755,14 @@ DeleteFromStmt:
 		if $2 != nil {
 			x.TableHints = $2.([]*ast.TableOptimizerHint)
 		}
-		if $10 != nil {
-			x.Where = $10.(ast.ExprNode)
-		}
 		if $11 != nil {
-			x.Order = $11.(*ast.OrderByClause)
+			x.Where = $11.(ast.ExprNode)
 		}
 		if $12 != nil {
-			x.Limit = $12.(*ast.Limit)
+			x.Order = $12.(*ast.OrderByClause)
+		}
+		if $13 != nil {
+			x.Limit = $13.(*ast.Limit)
 		}
 
 		$$ = x
@@ -4903,6 +4911,7 @@ UnReservedKeyword:
 |	"CHARSET"
 |	"COLUMNS"
 |	"CONFIG"
+|	"SAN"
 |	"COMMIT"
 |	"COMPACT"
 |	"COMPRESSED"
@@ -5227,6 +5236,7 @@ NotKeywordToken:
 |	"CAST"
 |	"COPY"
 |	"COUNT"
+|	"APPROX_COUNT_DISTINCT"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
@@ -5281,20 +5291,21 @@ NotKeywordToken:
  *  TODO: support PARTITION
  **********************************************************************************/
 InsertIntoStmt:
-	"INSERT" TableOptimizerHints PriorityOpt IgnoreOptional IntoOpt TableName InsertValues OnDuplicateKeyUpdate
+	"INSERT" TableOptimizerHints PriorityOpt IgnoreOptional IntoOpt TableName PartitionNameListOpt InsertValues OnDuplicateKeyUpdate
 	{
-		x := $7.(*ast.InsertStmt)
+		x := $8.(*ast.InsertStmt)
 		x.Priority = $3.(mysql.PriorityEnum)
 		x.IgnoreErr = $4.(bool)
 		// Wraps many layers here so that it can be processed the same way as select statement.
 		ts := &ast.TableSource{Source: $6.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
-		if $8 != nil {
-			x.OnDuplicate = $8.([]*ast.Assignment)
+		if $9 != nil {
+			x.OnDuplicate = $9.([]*ast.Assignment)
 		}
 		if $2 != nil {
 			x.TableHints = $2.([]*ast.TableOptimizerHint)
 		}
+		x.PartitionNames = $7.([]model.CIStr)
 		$$ = x
 	}
 
@@ -5428,13 +5439,14 @@ OnDuplicateKeyUpdate:
  *  TODO: support PARTITION
  **********************************************************************************/
 ReplaceIntoStmt:
-	"REPLACE" PriorityOpt IntoOpt TableName InsertValues
+	"REPLACE" PriorityOpt IntoOpt TableName PartitionNameListOpt InsertValues
 	{
-		x := $5.(*ast.InsertStmt)
+		x := $6.(*ast.InsertStmt)
 		x.IsReplace = true
 		x.Priority = $2.(mysql.PriorityEnum)
 		ts := &ast.TableSource{Source: $4.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
+		x.PartitionNames = $5.([]model.CIStr)
 		$$ = x
 	}
 
@@ -6315,6 +6327,10 @@ SumExpr:
 		} else {
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: args}
 		}
+	}
+|	builtinApproxCountDistinct '(' ExpressionList ')'
+	{
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode), Distinct: false}
 	}
 |	builtinGroupConcat '(' BuggyDefaultFalseDistinctOpt ExpressionList OrderByOptional OptGConcatSeparator ')' OptWindowingClause
 	{
@@ -8176,7 +8192,7 @@ VariableAssignment:
 	}
 |	CharsetKw CharsetNameOrDefault
 	{
-		$$ = &ast.VariableAssignment{Name: ast.SetNames, Value: $2}
+		$$ = &ast.VariableAssignment{Name: ast.SetCharset, Value: $2}
 	}
 
 CharsetNameOrDefault:
@@ -8606,14 +8622,15 @@ ShowStmt:
 			User: $4.(*auth.UserIdentity),
 		}
 	}
-|	"SHOW" "TABLE" TableName "REGIONS" WhereClauseOptional
+|	"SHOW" "TABLE" TableName PartitionNameListOpt "REGIONS" WhereClauseOptional
 	{
 		stmt := &ast.ShowStmt{
 			Tp:    ast.ShowRegions,
 			Table: $3.(*ast.TableName),
 		}
-		if $5 != nil {
-			stmt.Where = $5.(ast.ExprNode)
+		stmt.Table.PartitionNames = $4.([]model.CIStr)
+		if $6 != nil {
+			stmt.Where = $6.(ast.ExprNode)
 		}
 		$$ = stmt
 	}
@@ -8624,15 +8641,16 @@ ShowStmt:
 			Table: $3.(*ast.TableName),
 		}
 	}
-|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS" WhereClauseOptional
+|	"SHOW" "TABLE" TableName PartitionNameListOpt "INDEX" Identifier "REGIONS" WhereClauseOptional
 	{
 		stmt := &ast.ShowStmt{
 			Tp:        ast.ShowRegions,
 			Table:     $3.(*ast.TableName),
-			IndexName: model.NewCIStr($5),
+			IndexName: model.NewCIStr($6),
 		}
-		if $7 != nil {
-			stmt.Where = $7.(ast.ExprNode)
+		stmt.Table.PartitionNames = $4.([]model.CIStr)
+		if $8 != nil {
+			stmt.Where = $8.(ast.ExprNode)
 		}
 		$$ = stmt
 	}
@@ -10473,6 +10491,13 @@ RequireListElement:
 	{
 		$$ = &ast.TLSOption{
 			Type:  ast.Cipher,
+			Value: $2,
+		}
+	}
+|	"SAN" stringLit
+	{
+		$$ = &ast.TLSOption{
+			Type:  ast.SAN,
 			Value: $2,
 		}
 	}

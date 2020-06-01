@@ -562,9 +562,11 @@ func (n *UseStmt) Accept(v Visitor) (Node, bool) {
 }
 
 const (
-	// SetNames is the const for set names/charset stmt.
-	// If VariableAssignment.Name == Names, it should be set names/charset stmt.
+	// SetNames is the const for set names stmt.
+	// If VariableAssignment.Name == Names, it should be set names stmt.
 	SetNames = "SetNAMES"
+	// SetCharset is the const for set charset stmt.
+	SetCharset = "SetCharset"
 )
 
 // VariableAssignment is a variable assignment struct.
@@ -592,11 +594,13 @@ func (n *VariableAssignment) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("SESSION")
 		}
 		ctx.WritePlain(".")
-	} else if n.Name != SetNames {
+	} else if n.Name != SetNames && n.Name != SetCharset {
 		ctx.WriteKeyWord("@")
 	}
 	if n.Name == SetNames {
 		ctx.WriteKeyWord("NAMES ")
+	} else if n.Name == SetCharset {
+		ctx.WriteKeyWord("CHARSET ")
 	} else {
 		ctx.WriteName(n.Name)
 		ctx.WritePlain("=")
@@ -1115,6 +1119,7 @@ const (
 	Cipher
 	Issuer
 	Subject
+	SAN
 )
 
 type TLSOption struct {
@@ -1138,6 +1143,9 @@ func (t *TLSOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteString(t.Value)
 	case Subject:
 		ctx.WriteKeyWord("SUBJECT ")
+		ctx.WriteString(t.Value)
+	case SAN:
+		ctx.WriteKeyWord("SAN ")
 		ctx.WriteString(t.Value)
 	default:
 		return errors.Errorf("Unsupported TLSOption.Type %d", t.Type)
