@@ -12770,7 +12770,7 @@ yynewstate:
 			x.Priority = yyS[yypt-6].item.(mysql.PriorityEnum)
 			x.IgnoreErr = yyS[yypt-5].item.(bool)
 			// Wraps many layers here so that it can be processed the same way as select statement.
-			ts := &ast.TableSource{Source: yyS[yypt-4].ident.(*ast.TableName)}
+			ts := &ast.TableSource{Source: yyS[yypt-3].item.(*ast.TableName)}
 			x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
 			if yyS[yypt-0].item != nil {
 				x.OnDuplicate = yyS[yypt-0].item.([]*ast.Assignment)
