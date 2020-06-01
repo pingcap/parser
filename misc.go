@@ -550,6 +550,7 @@ var tokenMap = map[string]int{
 	"ROW":                      row,
 	"RTREE":                    rtree,
 	"SAMPLES":                  samples,
+	"SAN":                      san,
 	"SCHEMA":                   database,
 	"SCHEMAS":                  databases,
 	"SECOND_MICROSECOND":       secondMicrosecond,
