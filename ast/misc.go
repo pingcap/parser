@@ -974,6 +974,7 @@ const (
 	Cipher
 	Issuer
 	Subject
+	SAN
 )
 
 type TLSOption struct {
@@ -997,6 +998,9 @@ func (t *TLSOption) Restore(ctx *RestoreCtx) error {
 		ctx.WriteString(t.Value)
 	case Subject:
 		ctx.WriteKeyWord("SUBJECT ")
+		ctx.WriteString(t.Value)
+	case SAN:
+		ctx.WriteKeyWord("SAN ")
 		ctx.WriteString(t.Value)
 	default:
 		return errors.Errorf("Unsupported TLSOption.Type %d", t.Type)
