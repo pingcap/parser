@@ -432,4 +432,6 @@ type SchemaDiff struct {
 
 	// PtTableID is the table ID of partition table when exchanging partition
 	PtTableID int64 `json:"pt_table_id"`
+	// PtSchemaID is the schema ID of partition table when exchanging partition
+	PtSchemaID int64 `json:"pt_schema_id"`
 }
