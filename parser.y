@@ -419,7 +419,7 @@ import (
 	routine		"ROUTINE"
 	rowCount	"ROW_COUNT"
 	rowFormat	"ROW_FORMAT"
-	san         "SAN"
+	san		"SAN"
 	second		"SECOND"
 	security	"SECURITY"
 	separator 	"SEPARATOR"
