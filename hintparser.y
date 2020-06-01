@@ -89,6 +89,7 @@ import (
 	hintQueryType             "QUERY_TYPE"
 	hintReadConsistentReplica "READ_CONSISTENT_REPLICA"
 	hintReadFromStorage       "READ_FROM_STORAGE"
+	hintPartition             "PARTITION"
 	hintSMJoin                "MERGE_JOIN"
 	hintStreamAgg             "STREAM_AGG"
 	hintSwapJoinInputs        "SWAP_JOIN_INPUTS"
@@ -142,6 +143,8 @@ import (
 	TableOptimizerHintOpt   "optimizer hint"
 	HintTableList           "table list in optimizer hint"
 	HintTableListOpt        "optional table list in optimizer hint"
+	PartitionList           "partition name list in optimizer hint"
+	PartitionListOpt        "optional partition name list in optimizer hint"
 	HintIndexList           "table name with index list in optimizer hint"
 	IndexNameList           "index list in optimizer hint"
 	IndexNameListOpt        "optional index list in optimizer hint"
@@ -151,7 +154,8 @@ import (
 	HintStorageTypeAndTable "storage type and tables in optimizer hint"
 
 %type	<table>
-	HintTable "Table in optimizer hint"
+	HintTable          "Table in optimizer hint"
+	HintPartitionIdent "Partition in optimizer hint"
 
 
 %start	Start
@@ -343,6 +347,32 @@ CommaOpt:
 |	','
 	{}
 
+PartitionListOpt:
+	/* empty */
+	{
+		$$ = nil
+	}
+|	PartitionList
+	{
+		$$ = $1
+	}
+
+PartitionList:
+	HintPartitionIdent
+	{
+		$$ = []*ast.HintPartition{$1}
+	}
+|	PartitionList HintPartitionIdent
+	{
+		$$ = append($1, $2)
+	}
+
+HintPartitionIdent:
+	"PARTITION" '(' Identifier ')'
+	{
+		$$ = model.NewCIStr($3)
+	}
+
 /**
  * HintTableListOpt:
  *
@@ -375,19 +405,21 @@ HintTableList:
 	}
 
 HintTable:
-	Identifier QueryBlockOpt
+	Identifier QueryBlockOpt PartitionListOpt
 	{
 		$$ = ast.HintTable{
-			TableName: model.NewCIStr($1),
-			QBName:    model.NewCIStr($2),
+			TableName:     model.NewCIStr($1),
+			QBName:        model.NewCIStr($2),
+			PartitionList: $3,
 		}
 	}
-|	Identifier '.' Identifier QueryBlockOpt
+|	Identifier '.' Identifier QueryBlockOpt PartitionListOpt
 	{
 		$$ = ast.HintTable{
-			DBName:    model.NewCIStr($1),
-			TableName: model.NewCIStr($3),
-			QBName:    model.NewCIStr($4),
+			DBName:        model.NewCIStr($1),
+			TableName:     model.NewCIStr($3),
+			QBName:        model.NewCIStr($4),
+			PartitionList: $5,
 		}
 	}
 
