@@ -1177,6 +1177,10 @@ yynewstate:
 		{
 			parser.yyVAL.ident = ""
 		}
+	case 30:
+		{
+			parser.yyVAL.modelIdents = nil
+		}
 	case 31:
 		{
 			parser.yyVAL.modelIdents = yyS[yypt-1].modelIdents

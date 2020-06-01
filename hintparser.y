@@ -355,7 +355,9 @@ CommaOpt:
 
 PartitionListOpt:
 	/* empty */
-	{}
+	{
+		$$ = nil
+	}
 |	'(' PartitionList ')'
 	{
 		$$ = $2

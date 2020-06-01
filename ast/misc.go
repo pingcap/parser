@@ -2562,9 +2562,9 @@ func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
 			if i > 0 {
 				ctx.WriteKeyWord(" ")
 			}
-			ctx.WriteKeyWord("PARTITION(")
+			ctx.WriteKeyWord("PARTITION[")
 			ctx.WriteName(p.String())
-			ctx.WriteKeyWord(")")
+			ctx.WriteKeyWord("]")
 		}
 		ctx.WriteKeyWord(")")
 	}

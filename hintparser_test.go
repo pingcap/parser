@@ -173,7 +173,6 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 					HintName: model.NewCIStr("USE_INDEX"),
 					Tables: []ast.HintTable{{
 						TableName:     model.NewCIStr("tbl1"),
-						QBName:        model.NewCIStr("qb1"),
 						PartitionList: []model.CIStr{model.NewCIStr("p0")},
 					}},
 					QBName:  model.NewCIStr("qb1"),
@@ -182,7 +181,7 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 				{
 					HintName: model.NewCIStr("USE_INDEX_MERGE"),
 					Tables: []ast.HintTable{{
-						TableName:     model.NewCIStr("tbl1"),
+						TableName:     model.NewCIStr("tbl2"),
 						QBName:        model.NewCIStr("qb2"),
 						PartitionList: []model.CIStr{model.NewCIStr("p0"), model.NewCIStr("p1")},
 					}},
