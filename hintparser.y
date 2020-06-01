@@ -30,6 +30,8 @@ import (
 	hint    *ast.TableOptimizerHint
 	hints []*ast.TableOptimizerHint
 	table 	ast.HintTable
+	modelIdent model.CIStr
+	modelIdents []model.CIStr
 }
 
 %token	<number>
@@ -89,7 +91,6 @@ import (
 	hintQueryType             "QUERY_TYPE"
 	hintReadConsistentReplica "READ_CONSISTENT_REPLICA"
 	hintReadFromStorage       "READ_FROM_STORAGE"
-	hintPartition             "PARTITION"
 	hintSMJoin                "MERGE_JOIN"
 	hintStreamAgg             "STREAM_AGG"
 	hintSwapJoinInputs        "SWAP_JOIN_INPUTS"
@@ -103,6 +104,7 @@ import (
 	/* Other keywords */
 	hintOLAP            "OLAP"
 	hintOLTP            "OLTP"
+	hintPartition       "PARTITION"
 	hintTiKV            "TIKV"
 	hintTiFlash         "TIFLASH"
 	hintFalse           "FALSE"
@@ -143,8 +145,6 @@ import (
 	TableOptimizerHintOpt   "optimizer hint"
 	HintTableList           "table list in optimizer hint"
 	HintTableListOpt        "optional table list in optimizer hint"
-	PartitionList           "partition name list in optimizer hint"
-	PartitionListOpt        "optional partition name list in optimizer hint"
 	HintIndexList           "table name with index list in optimizer hint"
 	IndexNameList           "index list in optimizer hint"
 	IndexNameListOpt        "optional index list in optimizer hint"
@@ -154,8 +154,14 @@ import (
 	HintStorageTypeAndTable "storage type and tables in optimizer hint"
 
 %type	<table>
-	HintTable          "Table in optimizer hint"
-	HintPartitionIdent "Partition in optimizer hint"
+	HintTable "Table in optimizer hint"
+
+%type	<modelIdent>
+	HintPartitionIdent "partition name in optimizer hint"
+
+%type	<modelIdents>
+	PartitionList    "partition name list in optimizer hint"
+	PartitionListOpt "optional partition name list in optimizer hint"
 
 
 %start	Start
@@ -349,26 +355,24 @@ CommaOpt:
 
 PartitionListOpt:
 	/* empty */
+	{}
+|	'(' PartitionList ')'
 	{
-		$$ = nil
-	}
-|	PartitionList
-	{
-		$$ = $1
+		$$ = $2
 	}
 
 PartitionList:
 	HintPartitionIdent
 	{
-		$$ = []*ast.HintPartition{$1}
+		$$ = []model.CIStr{$1}
 	}
-|	PartitionList HintPartitionIdent
+|	PartitionList CommaOpt HintPartitionIdent
 	{
-		$$ = append($1, $2)
+		$$ = append($1, $3)
 	}
 
 HintPartitionIdent:
-	"PARTITION" '(' Identifier ')'
+	"PARTITION" '[' Identifier ']'
 	{
 		$$ = model.NewCIStr($3)
 	}
@@ -626,6 +630,7 @@ Identifier:
 |	"OLTP"
 |	"TIKV"
 |	"TIFLASH"
+|	"PARTITION"
 |	"FALSE"
 |	"TRUE"
 |	"MB"
