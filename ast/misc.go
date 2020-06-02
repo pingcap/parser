@@ -2557,7 +2557,8 @@ func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
 		ctx.WriteName(ht.QBName.String())
 	}
 	if len(ht.PartitionList) > 0 {
-		ctx.WritePlain(" PARTITION(")
+		ctx.WriteKeyWord(" PARTITION")
+		ctx.WritePlain("(")
 		for i, p := range ht.PartitionList {
 			if i > 0 {
 				ctx.WritePlain(", ")
