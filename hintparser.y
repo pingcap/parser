@@ -30,7 +30,6 @@ import (
 	hint    *ast.TableOptimizerHint
 	hints []*ast.TableOptimizerHint
 	table 	ast.HintTable
-	modelIdent model.CIStr
 	modelIdents []model.CIStr
 }
 
@@ -155,9 +154,6 @@ import (
 
 %type	<table>
 	HintTable "Table in optimizer hint"
-
-%type	<modelIdent>
-	HintPartitionIdent "partition name in optimizer hint"
 
 %type	<modelIdents>
 	PartitionList    "partition name list in optimizer hint"
@@ -358,25 +354,19 @@ PartitionListOpt:
 	{
 		$$ = nil
 	}
-|	'(' PartitionList ')'
+|	"PARTITION" '(' PartitionList ')'
 	{
-		$$ = $2
+		$$ = $3
 	}
 
 PartitionList:
-	HintPartitionIdent
+	Identifier
 	{
-		$$ = []model.CIStr{$1}
+		$$ = []model.CIStr{model.NewCIStr($1)}
 	}
-|	PartitionList CommaOpt HintPartitionIdent
+|	PartitionList CommaOpt Identifier
 	{
-		$$ = append($1, $3)
-	}
-
-HintPartitionIdent:
-	"PARTITION" '[' Identifier ']'
-	{
-		$$ = model.NewCIStr($3)
+		$$ = append($1, model.NewCIStr($3))
 	}
 
 /**
@@ -632,7 +622,6 @@ Identifier:
 |	"OLTP"
 |	"TIKV"
 |	"TIFLASH"
-|	"PARTITION"
 |	"FALSE"
 |	"TRUE"
 |	"MB"

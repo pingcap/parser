@@ -2557,14 +2557,12 @@ func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
 		ctx.WriteName(ht.QBName.String())
 	}
 	if len(ht.PartitionList) > 0 {
-		ctx.WriteKeyWord("(")
+		ctx.WriteKeyWord(" PARTITION(")
 		for i, p := range ht.PartitionList {
 			if i > 0 {
-				ctx.WriteKeyWord(" ")
+				ctx.WriteKeyWord(", ")
 			}
-			ctx.WriteKeyWord("PARTITION[")
 			ctx.WriteName(p.String())
-			ctx.WriteKeyWord("]")
 		}
 		ctx.WriteKeyWord(")")
 	}

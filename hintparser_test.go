@@ -167,7 +167,7 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 			},
 		},
 		{
-			input: "USE_INDEX(@qb1 tbl1(partition[p0]) x) USE_INDEX_MERGE(@qb2 tbl2@qb2(partition[p0] partition[p1]) x, y, z)",
+			input: "USE_INDEX(@qb1 tbl1 partition(p0) x) USE_INDEX_MERGE(@qb2 tbl2@qb2 partition(p0, p1) x, y, z)",
 			output: []*ast.TableOptimizerHint{
 				{
 					HintName: model.NewCIStr("USE_INDEX"),
