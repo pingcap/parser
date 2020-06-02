@@ -869,6 +869,7 @@ var hintTokenMap = map[string]int{
 	"OLTP":            hintOLTP,
 	"TIKV":            hintTiKV,
 	"TIFLASH":         hintTiFlash,
+	"PARTITION":       hintPartition,
 	"FALSE":           hintFalse,
 	"TRUE":            hintTrue,
 	"MB":              hintMB,
