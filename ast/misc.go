@@ -2565,7 +2565,7 @@ func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
 			ctx.WriteKeyWord("PARTITION")
 			ctx.WritePlain("[")
 			ctx.WriteName(p.String())
-			ctx.WriteKeyWord("]")
+			ctx.WritePlain("]")
 		}
 		ctx.WriteKeyWord(")")
 	}
