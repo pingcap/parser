@@ -2567,7 +2567,7 @@ func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
 			ctx.WriteName(p.String())
 			ctx.WritePlain("]")
 		}
-		ctx.WriteKeyWord(")")
+		ctx.WritePlain(")")
 	}
 }
 
