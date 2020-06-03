@@ -133,8 +133,8 @@ func init() {
 	initTokenFunc("'\"", startString)
 }
 
-// CheckInTokenMap indicates whether the target string is contained in tokenMap.
-func CheckInTokenMap(target string) bool {
+// isInTokenMap indicates whether the target string is contained in tokenMap.
+func isInTokenMap(target string) bool {
 	_, ok := tokenMap[target]
 	return ok
 }

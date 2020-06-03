@@ -6451,7 +6451,7 @@ FunctionCallGeneric:
 |	Identifier '.' Identifier '(' ExpressionListOpt ')'
 	{
 		var tp ast.FuncCallExprType
-		if CheckInTokenMap($3) {
+		if isInTokenMap($3) {
 			tp = ast.FuncCallExprTypeKeyword
 		} else {
 			tp = ast.FuncCallExprTypeGeneric
