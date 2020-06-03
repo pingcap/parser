@@ -430,8 +430,13 @@ type SchemaDiff struct {
 	// OldSchemaID is the schema ID before rename table, only used by rename table DDL.
 	OldSchemaID int64 `json:"old_schema_id"`
 
-	// AffectedTableID is the table ID of partition table when exchanging partition
-	AffectedTableID int64 `json:"affected_table_id"`
-	// AffectedSchemaID is the schema ID of partition table when exchanging partition
-	AffectedSchemaID int64 `json:"affected_schema_id"`
+	OtherAffectedSchema []*SchemaAffect `json:"other_affected_schema"`
+}
+
+// SchemaAffect is uesed when a ddl affect multi table.
+type SchemaAffect struct {
+	SchemaID    int64 `json:"schema_id"`
+	TableID     int64 `json:"table_id"`
+	OldTableID  int64 `json:"old_table_id"`
+	OldSchemaID int64 `json:"old_schema_id"`
 }
