@@ -7,7 +7,6 @@ In this example, you are going to build a project, which can extract all the col
 ## Prerequisites
 
 - [Golang](https://golang.org/dl/) version 1.13 or above. You can follow the instructions in the official [installation page](https://golang.org/doc/install) (check it by `go version`)
-- [Make](https://en.wikipedia.org/wiki/Make_(software)) (check it by `make --version`)
 
 ## Create a Project
 
