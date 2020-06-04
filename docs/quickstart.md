@@ -2,7 +2,7 @@
 
 This parser is highly compatible with MySQL syntax. You can use it as a library, parse a text SQL into an AST tree, and traverse the AST nodes.
 
-In this example, you are going to build a project, which can extract all the column names from a text SQL.
+In this example, you will build a project, which can extract all the column names from a text SQL.
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@ In this example, you are going to build a project, which can extract all the col
 ## Create a Project
 
 ```bash
-$ mkdir colx && cd colx
-$ go mod init colx && touch main.go
+mkdir colx && cd colx
+go mod init colx && touch main.go
 ```
 
 ## Import Dependencies
@@ -20,7 +20,7 @@ $ go mod init colx && touch main.go
 First of all, you need to use `go get` to fetch the dependencies:
 
 ```bash
-$ go get -v github.com/pingcap/parser@v4.0.0-rc.1
+go get -v github.com/pingcap/parser@v4.0.0-rc.1
 ```
 
 > **NOTE**
@@ -48,8 +48,8 @@ Now, open `main.go` with your favouriate editor, start coding!
 ## Parse SQL text
 
 To convert a SQL text to an AST tree, you can:
-1. use `parser.New()` to instantiate a parser and
-2. call the method `Parse(sql, charset, collation)` on it.
+1. use [`parser.New()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#New) function to instantiate a parser and
+2. invoke the method [`Parse(sql, charset, collation)`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) on it.
 
 ```go
 package main
@@ -85,7 +85,7 @@ func main() {
 Test it with
 
 ```bash
-$ go run main.go
+go run main.go
 ```
 
 You should get something like this:
@@ -99,19 +99,19 @@ You should get something like this:
 > Here are a few things you might want to know:
 > - To use a parser, a `parser_driver` is required. It decides how to parse the basic data types in SQL.
 >
->   You can use `github.com/pingcap/parser/test_driver` as the `parser_driver` for test. Again, if you need advanced features, please use the `test_driver` in TiDB(`go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1` and import it).
+>   You can use [`github.com/pingcap/parser/test_driver`](https://pkg.go.dev/github.com/pingcap/parser/test_driver) as the `parser_driver` for test. Again, if you need advanced features, please use the `test_driver` in TiDB (`go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1` and import it).
 > - The instantiated parser object is not goroutine safe. it is better to keep it in a single goroutine.
 > - The instantiated parser object is not lightweight, it is better to reuse it if possible.
-> - The 2rd and 3th arguments of `parser.Parse()` are charset and collation respectively. If you pass an empty string into it, a default value is chosen.
+> - The 2nd and 3rd arguments of [`parser.Parse()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) are charset and collation respectively. If you pass an empty string into it, a default value is chosen.
 
 
 ## Traverse AST Nodes
 
-Now you get the AST tree root of a SQL statement. It is time to extract the column names with traverse.
+Now you get the AST tree root of a SQL statement. It is time to extract the column names by traverse.
 
-Parser implements the interface `ast.Node` for each kind of AST node, i.e. SelectStmt, TableName, ColumnName. `ast.Node` provides a method `Accept(v Visitor) (node Node, ok bool)` to allow any struct that implemented `ast.Visitor` to traverse itself.
+Parser implements the interface [`ast.Node`](https://pkg.go.dev/github.com/pingcap/parser/ast?tab=doc#Node) for each kind of AST node, i.e. SelectStmt, TableName, ColumnName. [`ast.Node`](https://pkg.go.dev/github.com/pingcap/parser/ast?tab=doc#Node) provides a method `Accept(v Visitor) (node Node, ok bool)` to allow any struct that implemented [`ast.Visitor`](https://pkg.go.dev/github.com/pingcap/parser/ast?tab=doc#Visitor) to traverse itself.
 
-`ast.Visitor` is defined as follows:
+[`ast.Visitor`](https://pkg.go.dev/github.com/pingcap/parser/ast?tab=doc#Visitor) is defined as follows:
 ```go
 type Visitor interface {
 	Enter(n Node) (node Node, skipChildren bool)
@@ -153,7 +153,7 @@ and slightly modifiy main function:
 ```go
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Printf("usage: colx '%%s' (%%s can be any SQL statement)\n")
+		fmt.Println("usage: colx 'SQL statement'")
 		return
 	}
 	sql := os.Args[1]
@@ -169,7 +169,7 @@ func main() {
 Test it:
 
 ```bash
-$ go build && ./colx 'select a, b from t'
+go build && ./colx 'select a, b from t'
 ```
 
 ```
@@ -178,11 +178,12 @@ $ go build && ./colx 'select a, b from t'
 
 You can also try with different SQL as an input, i.e.
 
-```bash
+```console
 $ ./colx 'SELECT a, b FROM t GROUP BY (a, b) HAVING a > c ORDER BY b'
-```
-```bash
+[a b a b a c b]
+
 $ ./colx 'SELECT a, b FROM t/invalid_str'
+parse error: line 1 column 19 near "/invalid_str"
 ```
 
 Enjoy!
