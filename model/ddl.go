@@ -430,7 +430,7 @@ type SchemaDiff struct {
 	// OldSchemaID is the schema ID before rename table, only used by rename table DDL.
 	OldSchemaID int64 `json:"old_schema_id"`
 
-	OtherAffectedSchema []*SchemaAffect `json:"other_affected_schema"`
+	OtherAffectedSchemas []*SchemaAffect `json:"other_affected_schema"`
 }
 
 // SchemaAffect is used when a ddl affects multi tables.
