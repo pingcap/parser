@@ -434,7 +434,7 @@ type SchemaDiff struct {
 }
 
 // SchemaAffect is used when a ddl affects multi tables.
-type SchemaAffect struct {
+type AffectedSchema struct {
 	SchemaID    int64 `json:"schema_id"`
 	TableID     int64 `json:"table_id"`
 	OldTableID  int64 `json:"old_table_id"`
