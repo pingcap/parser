@@ -985,6 +985,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"SET @_e._$. = 1", true, "SET @`_e._$.`=1"},
 		{"SET @~f = 1", false, ""},
 		{"SET @`g,` = 1", true, "SET @`g,`=1"},
+		{"SET", false, ""},
+		{"SET @a = 1, @b := 2", true, "SET @`a`=1, @`b`=2"},
 		// session system variables
 		{"SET SESSION autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
 		{"SET @@session.autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
@@ -1334,6 +1336,8 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		// for cast with charset
 		{"SELECT *, CAST(data AS CHAR CHARACTER SET utf8) FROM t;", true, "SELECT *,CAST(`data` AS CHAR CHARSET UTF8) FROM `t`"},
+		{"SELECT CAST(data AS CHARACTER);", true, "SELECT CAST(`data` AS CHAR)"},
+		{"SELECT CAST(data AS CHARACTER(10) CHARACTER SET utf8);", true, "SELECT CAST(`data` AS CHAR(10) CHARSET UTF8)"},
 
 		// for cast as JSON
 		{"SELECT *, CAST(data AS JSON) FROM t;", true, "SELECT *,CAST(`data` AS JSON) FROM `t`"},
