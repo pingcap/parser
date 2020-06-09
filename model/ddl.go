@@ -284,7 +284,7 @@ func (job *Job) Decode(b []byte) error {
 func (job *Job) DecodeArgs(args ...interface{}) error {
 	var rawArgs []json.RawMessage
 	if err := json.Unmarshal(job.RawArgs, &rawArgs); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	sz := len(rawArgs)
@@ -294,7 +294,7 @@ func (job *Job) DecodeArgs(args ...interface{}) error {
 
 	for i := 0; i < sz; i++ {
 		if err := json.Unmarshal(rawArgs[i], args[i]); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 	job.Args = args[:sz]
