@@ -287,15 +287,18 @@ func (job *Job) DecodeArgs(args ...interface{}) error {
 		return err
 	}
 
-	for i := 0; ; i++ {
-		if i == len(rawArgs) || i == len(args) {
-			job.Args = args[:i]
-			return nil
-		}
+	sz := len(rawArgs)
+	if sz > len(args) {
+		sz = len(args)
+	}
+
+	for i := 0; i < sz; i++ {
 		if err := json.Unmarshal(rawArgs[i], args[i]); err != nil {
 			return err
 		}
 	}
+	job.Args = args[:sz]
+	return nil
 }
 
 // String implements fmt.Stringer interface.
