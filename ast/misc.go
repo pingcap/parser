@@ -64,11 +64,12 @@ const (
 	RepeatableRead  = "REPEATABLE-READ"
 
 	// Valid formats for explain statement.
-	ExplainFormatROW  = "row"
-	ExplainFormatDOT  = "dot"
-	ExplainFormatHint = "hint"
-	PumpType          = "PUMP"
-	DrainerType       = "DRAINER"
+	ExplainFormatROW     = "row"
+	ExplainFormatDOT     = "dot"
+	ExplainFormatHint    = "hint"
+	ExplainFormatVerbose = "verbose"
+	PumpType             = "PUMP"
+	DrainerType          = "DRAINER"
 )
 
 // Transaction mode constants.
@@ -83,6 +84,7 @@ var (
 		ExplainFormatROW,
 		ExplainFormatDOT,
 		ExplainFormatHint,
+		ExplainFormatVerbose,
 	}
 )
 
