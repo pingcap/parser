@@ -83,7 +83,7 @@ func (ft *FieldType) Equal(other *FieldType) bool {
 func (ft *FieldType) EvalType() EvalType {
 	switch ft.Tp {
 	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong,
-		mysql.TypeBit, mysql.TypeYear:
+		mysql.TypeBit, mysql.TypeYear, mysql.TypeNull:
 		return ETInt
 	case mysql.TypeFloat, mysql.TypeDouble:
 		return ETReal
