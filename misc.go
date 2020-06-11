@@ -133,6 +133,12 @@ func init() {
 	initTokenFunc("'\"", startString)
 }
 
+// isInTokenMap indicates whether the target string is contained in tokenMap.
+func isInTokenMap(target string) bool {
+	_, ok := tokenMap[target]
+	return ok
+}
+
 // tokenMap is a map of known identifiers to the parser token ID.
 // Please try to keep the map in alphabetical order.
 var tokenMap = map[string]int{
@@ -850,6 +856,7 @@ var hintTokenMap = map[string]int{
 	"USE_TOJA":                hintUseToja,
 	"TIME_RANGE":              hintTimeRange,
 	"USE_CASCADES":            hintUseCascades,
+	"NTH_PLAN":                hintNthPlan,
 
 	// TiDB hint aliases
 	"TIDB_HJ":   hintHashJoin,
