@@ -890,6 +890,7 @@ var MySQLErrName = map[uint16]string{
 	ErrInvalidJSONPathWildcard:                               "In this situation, path expressions may not contain the * and ** tokens.",
 	ErrInvalidJSONContainsPathType:                           "The second argument can only be either 'one' or 'all'.",
 	ErrJSONUsedAsKey:                                         "JSON column '%-.192s' cannot be used in key specification.",
+	ErrFKIncompatibleColumns:                                 "Referencing column '%s' in foreign key constraint '%s' are incompatible",
 
 	// TiDB errors.
 	ErrMemExceedThreshold:         "%s holds %dB memory, exceeds threshold %dB.%s",
@@ -916,4 +917,5 @@ var MySQLErrName = map[uint16]string{
 	ErrGCTooEarly:         "GC life time is shorter than transaction duration, transaction starts at %v, GC safe point is %v",
 	ErrWriteConflict:      "Write conflict, txnStartTS=%d, conflictTS=%d, key=%s",
 	ErrTiKVStoreLimit:     "Store token is up to the limit, store id = %d",
+	ErrTiKVStaleCommand:   "TiKV server reports stale command",
 }
