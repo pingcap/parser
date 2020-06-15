@@ -71,6 +71,10 @@ const (
 	ActionModifyTableAutoIdCache        ActionType = 39
 	ActionRebaseAutoRandomBase          ActionType = 40
 	ActionAlterIndexVisibility          ActionType = 41
+	ActionExchangeTablePartition        ActionType = 42
+	ActionAddCheckConstraint            ActionType = 43
+	ActionDropCheckConstraint           ActionType = 44
+	ActionAlterCheckConstraint          ActionType = 45
 )
 
 const (
@@ -121,6 +125,10 @@ var actionMap = map[ActionType]string{
 	ActionModifyTableAutoIdCache:        "modify auto id cache",
 	ActionRebaseAutoRandomBase:          "rebase auto_random ID",
 	ActionAlterIndexVisibility:          "alter index visibility",
+	ActionExchangeTablePartition:        "exchange partition",
+	ActionAddCheckConstraint:            "add check constraint",
+	ActionDropCheckConstraint:           "drop check constraint",
+	ActionAlterCheckConstraint:          "alter check constraint",
 }
 
 // String return current ddl action in string
@@ -280,9 +288,23 @@ func (job *Job) Decode(b []byte) error {
 
 // DecodeArgs decodes job args.
 func (job *Job) DecodeArgs(args ...interface{}) error {
-	job.Args = args
-	err := json.Unmarshal(job.RawArgs, &job.Args)
-	return errors.Trace(err)
+	var rawArgs []json.RawMessage
+	if err := json.Unmarshal(job.RawArgs, &rawArgs); err != nil {
+		return errors.Trace(err)
+	}
+
+	sz := len(rawArgs)
+	if sz > len(args) {
+		sz = len(args)
+	}
+
+	for i := 0; i < sz; i++ {
+		if err := json.Unmarshal(rawArgs[i], args[i]); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	job.Args = args[:sz]
+	return nil
 }
 
 // String implements fmt.Stringer interface.
@@ -426,5 +448,15 @@ type SchemaDiff struct {
 	// OldTableID is the table ID before truncate, only used by truncate table DDL.
 	OldTableID int64 `json:"old_table_id"`
 	// OldSchemaID is the schema ID before rename table, only used by rename table DDL.
+	OldSchemaID int64 `json:"old_schema_id"`
+
+	AffectedOpts []*AffectedOption `json:"affected_options"`
+}
+
+// AffectedOption is used when a ddl affects multi tables.
+type AffectedOption struct {
+	SchemaID    int64 `json:"schema_id"`
+	TableID     int64 `json:"table_id"`
+	OldTableID  int64 `json:"old_table_id"`
 	OldSchemaID int64 `json:"old_schema_id"`
 }

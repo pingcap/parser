@@ -16,6 +16,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -63,11 +64,12 @@ const (
 	RepeatableRead  = "REPEATABLE-READ"
 
 	// Valid formats for explain statement.
-	ExplainFormatROW  = "row"
-	ExplainFormatDOT  = "dot"
-	ExplainFormatHint = "hint"
-	PumpType          = "PUMP"
-	DrainerType       = "DRAINER"
+	ExplainFormatROW     = "row"
+	ExplainFormatDOT     = "dot"
+	ExplainFormatHint    = "hint"
+	ExplainFormatVerbose = "verbose"
+	PumpType             = "PUMP"
+	DrainerType          = "DRAINER"
 )
 
 // Transaction mode constants.
@@ -82,6 +84,7 @@ var (
 		ExplainFormatROW,
 		ExplainFormatDOT,
 		ExplainFormatHint,
+		ExplainFormatVerbose,
 	}
 )
 
@@ -561,9 +564,11 @@ func (n *UseStmt) Accept(v Visitor) (Node, bool) {
 }
 
 const (
-	// SetNames is the const for set names/charset stmt.
-	// If VariableAssignment.Name == Names, it should be set names/charset stmt.
+	// SetNames is the const for set names stmt.
+	// If VariableAssignment.Name == Names, it should be set names stmt.
 	SetNames = "SetNAMES"
+	// SetCharset is the const for set charset stmt.
+	SetCharset = "SetCharset"
 )
 
 // VariableAssignment is a variable assignment struct.
@@ -591,11 +596,13 @@ func (n *VariableAssignment) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("SESSION")
 		}
 		ctx.WritePlain(".")
-	} else if n.Name != SetNames {
+	} else if n.Name != SetNames && n.Name != SetCharset {
 		ctx.WriteKeyWord("@")
 	}
 	if n.Name == SetNames {
 		ctx.WriteKeyWord("NAMES ")
+	} else if n.Name == SetCharset {
+		ctx.WriteKeyWord("CHARSET ")
 	} else {
 		ctx.WriteName(n.Name)
 		ctx.WritePlain("=")
@@ -1114,6 +1121,7 @@ const (
 	Cipher
 	Issuer
 	Subject
+	SAN
 )
 
 type TLSOption struct {
@@ -1137,6 +1145,9 @@ func (t *TLSOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteString(t.Value)
 	case Subject:
 		ctx.WriteKeyWord("SUBJECT ")
+		ctx.WriteString(t.Value)
+	case SAN:
+		ctx.WriteKeyWord("SAN ")
 		ctx.WriteString(t.Value)
 	default:
 		return errors.Errorf("Unsupported TLSOption.Type %d", t.Type)
@@ -2436,6 +2447,38 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
+// SecureText implements SensitiveStmtNode
+func (n *BRIEStmt) SecureText() string {
+	// FIXME: this solution is not scalable, and duplicates some logic from BR.
+	redactedStorage := n.Storage
+	u, err := url.Parse(n.Storage)
+	if err == nil {
+		if u.Scheme == "s3" {
+			query := u.Query()
+			for key := range query {
+				switch strings.ToLower(strings.ReplaceAll(key, "_", "-")) {
+				case "access-key", "secret-access-key":
+					query[key] = []string{"xxxxxx"}
+				}
+			}
+			u.RawQuery = query.Encode()
+			redactedStorage = u.String()
+		}
+	}
+
+	redactedStmt := &BRIEStmt{
+		Kind:    n.Kind,
+		Schemas: n.Schemas,
+		Tables:  n.Tables,
+		Storage: redactedStorage,
+		Options: n.Options,
+	}
+
+	var sb strings.Builder
+	_ = redactedStmt.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
+	return sb.String()
+}
+
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
@@ -2484,6 +2527,7 @@ type TableOptimizerHint struct {
 	// - TIME_RANGE          => ast.HintTimeRange
 	// - READ_FROM_STORAGE   => model.CIStr
 	// - USE_TOJA            => bool
+	// - NTH_PLAN            => int64
 	HintData interface{}
 	// QBName is the default effective query block of this hint.
 	QBName  model.CIStr
@@ -2499,9 +2543,10 @@ type HintTimeRange struct {
 
 // HintTable is table in the hint. It may have query block info.
 type HintTable struct {
-	DBName    model.CIStr
-	TableName model.CIStr
-	QBName    model.CIStr
+	DBName        model.CIStr
+	TableName     model.CIStr
+	QBName        model.CIStr
+	PartitionList []model.CIStr
 }
 
 func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
@@ -2513,6 +2558,17 @@ func (ht *HintTable) Restore(ctx *format.RestoreCtx) {
 	if ht.QBName.L != "" {
 		ctx.WriteKeyWord("@")
 		ctx.WriteName(ht.QBName.String())
+	}
+	if len(ht.PartitionList) > 0 {
+		ctx.WriteKeyWord(" PARTITION")
+		ctx.WritePlain("(")
+		for i, p := range ht.PartitionList {
+			if i > 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteName(p.String())
+		}
+		ctx.WritePlain(")")
 	}
 }
 
@@ -2539,6 +2595,8 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	switch n.HintName.L {
 	case "max_execution_time":
 		ctx.WritePlainf("%d", n.HintData.(uint64))
+	case "nth_plan":
+		ctx.WritePlainf("%d", n.HintData.(int64))
 	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "bc_join", "bcj_local", "tidb_bcj":
 		for i, table := range n.Tables {
 			if i != 0 {

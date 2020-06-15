@@ -133,6 +133,12 @@ func init() {
 	initTokenFunc("'\"", startString)
 }
 
+// isInTokenMap indicates whether the target string is contained in tokenMap.
+func isInTokenMap(target string) bool {
+	_, ok := tokenMap[target]
+	return ok
+}
+
 // tokenMap is a map of known identifiers to the parser token ID.
 // Please try to keep the map in alphabetical order.
 var tokenMap = map[string]int{
@@ -226,6 +232,7 @@ var tokenMap = map[string]int{
 	"CONVERT":                  convert,
 	"COPY":                     copyKwd,
 	"COUNT":                    count,
+	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
 	"CPU":                      cpu,
 	"CREATE":                   create,
 	"CROSS":                    cross,
@@ -550,6 +557,7 @@ var tokenMap = map[string]int{
 	"ROW":                      row,
 	"RTREE":                    rtree,
 	"SAMPLES":                  samples,
+	"SAN":                      san,
 	"SCHEMA":                   database,
 	"SCHEMAS":                  databases,
 	"SECOND_MICROSECOND":       secondMicrosecond,
@@ -722,38 +730,39 @@ var tokenMap = map[string]int{
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details
 var btFuncTokenMap = map[string]int{
-	"ADDDATE":      builtinAddDate,
-	"BIT_AND":      builtinBitAnd,
-	"BIT_OR":       builtinBitOr,
-	"BIT_XOR":      builtinBitXor,
-	"CAST":         builtinCast,
-	"COUNT":        builtinCount,
-	"CURDATE":      builtinCurDate,
-	"CURTIME":      builtinCurTime,
-	"DATE_ADD":     builtinDateAdd,
-	"DATE_SUB":     builtinDateSub,
-	"EXTRACT":      builtinExtract,
-	"GROUP_CONCAT": builtinGroupConcat,
-	"MAX":          builtinMax,
-	"MID":          builtinSubstring,
-	"MIN":          builtinMin,
-	"NOW":          builtinNow,
-	"POSITION":     builtinPosition,
-	"SESSION_USER": builtinUser,
-	"STD":          builtinStddevPop,
-	"STDDEV":       builtinStddevPop,
-	"STDDEV_POP":   builtinStddevPop,
-	"STDDEV_SAMP":  builtinStddevSamp,
-	"SUBDATE":      builtinSubDate,
-	"SUBSTR":       builtinSubstring,
-	"SUBSTRING":    builtinSubstring,
-	"SUM":          builtinSum,
-	"SYSDATE":      builtinSysDate,
-	"SYSTEM_USER":  builtinUser,
-	"TRIM":         builtinTrim,
-	"VARIANCE":     builtinVarPop,
-	"VAR_POP":      builtinVarPop,
-	"VAR_SAMP":     builtinVarSamp,
+	"ADDDATE":               builtinAddDate,
+	"BIT_AND":               builtinBitAnd,
+	"BIT_OR":                builtinBitOr,
+	"BIT_XOR":               builtinBitXor,
+	"CAST":                  builtinCast,
+	"COUNT":                 builtinCount,
+	"APPROX_COUNT_DISTINCT": builtinApproxCountDistinct,
+	"CURDATE":               builtinCurDate,
+	"CURTIME":               builtinCurTime,
+	"DATE_ADD":              builtinDateAdd,
+	"DATE_SUB":              builtinDateSub,
+	"EXTRACT":               builtinExtract,
+	"GROUP_CONCAT":          builtinGroupConcat,
+	"MAX":                   builtinMax,
+	"MID":                   builtinSubstring,
+	"MIN":                   builtinMin,
+	"NOW":                   builtinNow,
+	"POSITION":              builtinPosition,
+	"SESSION_USER":          builtinUser,
+	"STD":                   builtinStddevPop,
+	"STDDEV":                builtinStddevPop,
+	"STDDEV_POP":            builtinStddevPop,
+	"STDDEV_SAMP":           builtinStddevSamp,
+	"SUBDATE":               builtinSubDate,
+	"SUBSTR":                builtinSubstring,
+	"SUBSTRING":             builtinSubstring,
+	"SUM":                   builtinSum,
+	"SYSDATE":               builtinSysDate,
+	"SYSTEM_USER":           builtinUser,
+	"TRIM":                  builtinTrim,
+	"VARIANCE":              builtinVarPop,
+	"VAR_POP":               builtinVarPop,
+	"VAR_SAMP":              builtinVarSamp,
 }
 
 var windowFuncTokenMap = map[string]int{
@@ -849,6 +858,7 @@ var hintTokenMap = map[string]int{
 	"USE_TOJA":                hintUseToja,
 	"TIME_RANGE":              hintTimeRange,
 	"USE_CASCADES":            hintUseCascades,
+	"NTH_PLAN":                hintNthPlan,
 
 	// TiDB hint aliases
 	"TIDB_HJ":   hintHashJoin,
@@ -861,6 +871,7 @@ var hintTokenMap = map[string]int{
 	"OLTP":            hintOLTP,
 	"TIKV":            hintTiKV,
 	"TIFLASH":         hintTiFlash,
+	"PARTITION":       hintPartition,
 	"FALSE":           hintFalse,
 	"TRUE":            hintTrue,
 	"MB":              hintMB,

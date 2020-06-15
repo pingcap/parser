@@ -30,6 +30,7 @@ import (
 	hint    *ast.TableOptimizerHint
 	hints []*ast.TableOptimizerHint
 	table 	ast.HintTable
+	modelIdents []model.CIStr
 }
 
 %token	<number>
@@ -100,10 +101,12 @@ import (
 	hintUseToja               "USE_TOJA"
 	hintTimeRange             "TIME_RANGE"
 	hintUseCascades           "USE_CASCADES"
+	hintNthPlan               "NTH_PLAN"
 
 	/* Other keywords */
 	hintOLAP            "OLAP"
 	hintOLTP            "OLTP"
+	hintPartition       "PARTITION"
 	hintTiKV            "TIKV"
 	hintTiFlash         "TIFLASH"
 	hintFalse           "FALSE"
@@ -154,6 +157,10 @@ import (
 
 %type	<table>
 	HintTable "Table in optimizer hint"
+
+%type	<modelIdents>
+	PartitionList    "partition name list in optimizer hint"
+	PartitionListOpt "optional partition name list in optimizer hint"
 
 
 %start	Start
@@ -234,6 +241,14 @@ TableOptimizerHintOpt:
 			HintName: model.NewCIStr($1),
 			QBName:   model.NewCIStr($3),
 			HintData: $4,
+		}
+	}
+|	"NTH_PLAN" '(' QueryBlockOpt hintIntLit ')'
+	{
+		$$ = &ast.TableOptimizerHint{
+			HintName: model.NewCIStr($1),
+			QBName:   model.NewCIStr($3),
+			HintData: int64($4),
 		}
 	}
 |	"SET_VAR" '(' Identifier '=' Value ')'
@@ -345,6 +360,26 @@ CommaOpt:
 |	','
 	{}
 
+PartitionListOpt:
+	/* empty */
+	{
+		$$ = nil
+	}
+|	"PARTITION" '(' PartitionList ')'
+	{
+		$$ = $3
+	}
+
+PartitionList:
+	Identifier
+	{
+		$$ = []model.CIStr{model.NewCIStr($1)}
+	}
+|	PartitionList CommaOpt Identifier
+	{
+		$$ = append($1, model.NewCIStr($3))
+	}
+
 /**
  * HintTableListOpt:
  *
@@ -377,19 +412,21 @@ HintTableList:
 	}
 
 HintTable:
-	Identifier QueryBlockOpt
+	Identifier QueryBlockOpt PartitionListOpt
 	{
 		$$ = ast.HintTable{
-			TableName: model.NewCIStr($1),
-			QBName:    model.NewCIStr($2),
+			TableName:     model.NewCIStr($1),
+			QBName:        model.NewCIStr($2),
+			PartitionList: $3,
 		}
 	}
-|	Identifier '.' Identifier QueryBlockOpt
+|	Identifier '.' Identifier QueryBlockOpt PartitionListOpt
 	{
 		$$ = ast.HintTable{
-			DBName:    model.NewCIStr($1),
-			TableName: model.NewCIStr($3),
-			QBName:    model.NewCIStr($4),
+			DBName:        model.NewCIStr($1),
+			TableName:     model.NewCIStr($3),
+			QBName:        model.NewCIStr($4),
+			PartitionList: $5,
 		}
 	}
 
@@ -595,6 +632,7 @@ Identifier:
 |	"USE_TOJA"
 |	"TIME_RANGE"
 |	"USE_CASCADES"
+|	"NTH_PLAN"
 /* other keywords */
 |	"OLAP"
 |	"OLTP"

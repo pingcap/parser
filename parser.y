@@ -85,7 +85,6 @@ import (
 	by                "BY"
 	cascade           "CASCADE"
 	caseKwd           "CASE"
-	chain             "CHAIN"
 	change            "CHANGE"
 	character         "CHARACTER"
 	charType          "CHAR"
@@ -123,7 +122,6 @@ import (
 	dual              "DUAL"
 	elseKwd           "ELSE"
 	enclosed          "ENCLOSED"
-	errorKwd          "ERROR"
 	escaped           "ESCAPED"
 	exists            "EXISTS"
 	explain           "EXPLAIN"
@@ -137,7 +135,6 @@ import (
 	from              "FROM"
 	fulltext          "FULLTEXT"
 	generated         "GENERATED"
-	general           "GENERAL"
 	grant             "GRANT"
 	group             "GROUP"
 	groups            "GROUPS"
@@ -198,7 +195,6 @@ import (
 	ntile             "NTILE"
 	null              "NULL"
 	numericType       "NUMERIC"
-	nvarcharType      "NVARCHAR"
 	on                "ON"
 	optimize          "OPTIMIZE"
 	option            "OPTION"
@@ -207,15 +203,11 @@ import (
 	order             "ORDER"
 	outer             "OUTER"
 	over              "OVER"
-	packKeys          "PACK_KEYS"
 	partition         "PARTITION"
-	parser            "PARSER"
 	percentRank       "PERCENT_RANK"
 	precisionType     "PRECISION"
 	primary           "PRIMARY"
 	procedure         "PROCEDURE"
-	shardRowIDBits    "SHARD_ROW_ID_BITS"
-	preSplitRegions   "PRE_SPLIT_REGIONS"
 	rangeKwd          "RANGE"
 	rank              "RANK"
 	read              "READ"
@@ -319,6 +311,7 @@ import (
 	cache                 "CACHE"
 	capture               "CAPTURE"
 	cascaded              "CASCADED"
+	chain                 "CHAIN"
 	charsetKwd            "CHARSET"
 	checkpoint            "CHECKPOINT"
 	checksum              "CHECKSUM"
@@ -371,6 +364,7 @@ import (
 	engine                "ENGINE"
 	engines               "ENGINES"
 	enum                  "ENUM"
+	errorKwd              "ERROR"
 	escape                "ESCAPE"
 	event                 "EVENT"
 	events                "EVENTS"
@@ -391,6 +385,7 @@ import (
 	format                "FORMAT"
 	full                  "FULL"
 	function              "FUNCTION"
+	general               "GENERAL"
 	global                "GLOBAL"
 	grants                "GRANTS"
 	hash                  "HASH"
@@ -457,13 +452,16 @@ import (
 	nominvalue            "NOMINVALUE"
 	none                  "NONE"
 	nowait                "NOWAIT"
+	nvarcharType          "NVARCHAR"
 	nulls                 "NULLS"
 	offset                "OFFSET"
 	onDuplicate           "ON_DUPLICATE"
 	online                "ONLINE"
 	only                  "ONLY"
 	open                  "OPEN"
+	packKeys              "PACK_KEYS"
 	pageSym               "PAGE"
+	parser                "PARSER"
 	partial               "PARTIAL"
 	partitioning          "PARTITIONING"
 	partitions            "PARTITIONS"
@@ -472,6 +470,7 @@ import (
 	per_table             "PER_TABLE"
 	pipesAsOr
 	plugins               "PLUGINS"
+	preSplitRegions       "PRE_SPLIT_REGIONS"
 	preceding             "PRECEDING"
 	prepare               "PREPARE"
 	privileges            "PRIVILEGES"
@@ -504,6 +503,7 @@ import (
 	rowCount              "ROW_COUNT"
 	rowFormat             "ROW_FORMAT"
 	rtree                 "RTREE"
+	san                   "SAN"
 	second                "SECOND"
 	secondaryEngine       "SECONDARY_ENGINE"
 	secondaryLoad         "SECONDARY_LOAD"
@@ -516,6 +516,7 @@ import (
 	serializable          "SERIALIZABLE"
 	session               "SESSION"
 	setval                "SETVAL"
+	shardRowIDBits        "SHARD_ROW_ID_BITS"
 	share                 "SHARE"
 	shared                "SHARED"
 	shutdown              "SHUTDOWN"
@@ -595,6 +596,7 @@ import (
 	cast                  "CAST"
 	copyKwd               "COPY"
 	count                 "COUNT"
+	approxCountDistinct   "APPROX_COUNT_DISTINCT"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
@@ -642,40 +644,41 @@ import (
 	tls                   "TLS"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
-	admin              "ADMIN"
-	buckets            "BUCKETS"
-	builtins           "BUILTINS"
-	cancel             "CANCEL"
-	cmSketch           "CMSKETCH"
-	ddl                "DDL"
-	depth              "DEPTH"
-	drainer            "DRAINER"
-	jobs               "JOBS"
-	job                "JOB"
-	nodeID             "NODE_ID"
-	nodeState          "NODE_STATE"
-	optimistic         "OPTIMISTIC"
-	pessimistic        "PESSIMISTIC"
-	pump               "PUMP"
-	samples            "SAMPLES"
-	stats              "STATS"
-	statsMeta          "STATS_META"
-	statsHistograms    "STATS_HISTOGRAMS"
-	statsBuckets       "STATS_BUCKETS"
-	statsHealthy       "STATS_HEALTHY"
-	tidb               "TIDB"
-	tiFlash            "TIFLASH"
-	topn               "TOPN"
-	split              "SPLIT"
-	width              "WIDTH"
-	regions            "REGIONS"
-	region             "REGION"
+	admin                      "ADMIN"
+	buckets                    "BUCKETS"
+	builtins                   "BUILTINS"
+	cancel                     "CANCEL"
+	cmSketch                   "CMSKETCH"
+	ddl                        "DDL"
+	depth                      "DEPTH"
+	drainer                    "DRAINER"
+	jobs                       "JOBS"
+	job                        "JOB"
+	nodeID                     "NODE_ID"
+	nodeState                  "NODE_STATE"
+	optimistic                 "OPTIMISTIC"
+	pessimistic                "PESSIMISTIC"
+	pump                       "PUMP"
+	samples                    "SAMPLES"
+	stats                      "STATS"
+	statsMeta                  "STATS_META"
+	statsHistograms            "STATS_HISTOGRAMS"
+	statsBuckets               "STATS_BUCKETS"
+	statsHealthy               "STATS_HEALTHY"
+	tidb                       "TIDB"
+	tiFlash                    "TIFLASH"
+	topn                       "TOPN"
+	split                      "SPLIT"
+	width                      "WIDTH"
+	regions                    "REGIONS"
+	region                     "REGION"
 	builtinAddDate
 	builtinBitAnd
 	builtinBitOr
 	builtinBitXor
 	builtinCast
 	builtinCount
+	builtinApproxCountDistinct
 	builtinCurDate
 	builtinCurTime
 	builtinDateAdd
@@ -1530,8 +1533,6 @@ AlterTableSpec:
 			NewTable:       $6.(*ast.TableName),
 			WithValidation: $7.(bool),
 		}
-		yylex.AppendError(yylex.Errorf("TiDB does not support EXCHANGE PARTITION now, it would be parsed but ignored."))
-		parser.lastErrorAsWarn()
 	}
 |	"TRUNCATE" "PARTITION" AllOrPartitionNameList
 	{
@@ -1829,9 +1830,8 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The SECONDARY_UNLOAD VALIDATION clause is parsed but not implement yet."))
 		parser.lastErrorAsWarn()
 	}
-|	"ALTER" "CHECK" Identifier EnforcedOrNot
+|	"ALTER" CheckConstraintKeyword Identifier EnforcedOrNot
 	{
-		// Parse it and ignore it. Just for compatibility.
 		c := &ast.Constraint{
 			Name:     $3,
 			Enforced: $4.(bool),
@@ -1840,10 +1840,8 @@ AlterTableSpec:
 			Tp:         ast.AlterTableAlterCheck,
 			Constraint: c,
 		}
-		yylex.AppendError(yylex.Errorf("The ALTER CHECK clause is parsed but not implemented yet."))
-		parser.lastErrorAsWarn()
 	}
-|	"DROP" "CHECK" Identifier
+|	"DROP" CheckConstraintKeyword Identifier
 	{
 		// Parse it and ignore it. Just for compatibility.
 		c := &ast.Constraint{
@@ -1853,8 +1851,6 @@ AlterTableSpec:
 			Tp:         ast.AlterTableDropCheck,
 			Constraint: c,
 		}
-		yylex.AppendError(yylex.Errorf("The DROP CHECK clause is parsed but not implemented yet."))
-		parser.lastErrorAsWarn()
 	}
 |	"ALTER" "INDEX" Identifier IndexInvisible
 	{
@@ -2577,6 +2573,10 @@ ColumnOption:
 			Expr:     $4,
 			Enforced: true,
 		}
+		// Keep the column type check constraint name.
+		if $1 != nil {
+			optionCheck.ConstraintName = $1.(string)
+		}
 		switch $6.(int) {
 		case 0:
 			$$ = []*ast.ColumnOption{optionCheck, {Tp: ast.ColumnOptionNotNull}}
@@ -2588,8 +2588,6 @@ ColumnOption:
 			$$ = optionCheck
 		default:
 		}
-		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	GeneratedAlways "AS" '(' Expression ')' VirtualOrStored
 	{
@@ -2775,8 +2773,6 @@ ConstraintElem:
 			Expr:     $3.(ast.ExprNode),
 			Enforced: $5.(bool),
 		}
-		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 
 Match:
@@ -3734,12 +3730,13 @@ DoStmt:
  *
  *******************************************************************/
 DeleteFromStmt:
-	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
+	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
 	{
 		// Single Table
 		tn := $7.(*ast.TableName)
-		tn.IndexHints = $9.([]*ast.IndexHint)
-		join := &ast.Join{Left: &ast.TableSource{Source: tn, AsName: $8.(model.CIStr)}, Right: nil}
+		tn.IndexHints = $10.([]*ast.IndexHint)
+		tn.PartitionNames = $8.([]model.CIStr)
+		join := &ast.Join{Left: &ast.TableSource{Source: tn, AsName: $9.(model.CIStr)}, Right: nil}
 		x := &ast.DeleteStmt{
 			TableRefs: &ast.TableRefsClause{TableRefs: join},
 			Priority:  $3.(mysql.PriorityEnum),
@@ -3749,14 +3746,14 @@ DeleteFromStmt:
 		if $2 != nil {
 			x.TableHints = $2.([]*ast.TableOptimizerHint)
 		}
-		if $10 != nil {
-			x.Where = $10.(ast.ExprNode)
-		}
 		if $11 != nil {
-			x.Order = $11.(*ast.OrderByClause)
+			x.Where = $11.(ast.ExprNode)
 		}
 		if $12 != nil {
-			x.Limit = $12.(*ast.Limit)
+			x.Order = $12.(*ast.OrderByClause)
+		}
+		if $13 != nil {
+			x.Limit = $13.(*ast.Limit)
 		}
 
 		$$ = x
@@ -4901,9 +4898,11 @@ UnReservedKeyword:
 |	"BYTE"
 |	"CAPTURE"
 |	"CLEANUP"
+|	"CHAIN"
 |	"CHARSET"
 |	"COLUMNS"
 |	"CONFIG"
+|	"SAN"
 |	"COMMIT"
 |	"COMPACT"
 |	"COMPRESSED"
@@ -4923,6 +4922,7 @@ UnReservedKeyword:
 |	"ENGINE"
 |	"ENGINES"
 |	"ENUM"
+|	"ERROR"
 |	"ERRORS"
 |	"ESCAPE"
 |	"EVOLVE"
@@ -4936,6 +4936,7 @@ UnReservedKeyword:
 |	"FOLLOWING"
 |	"FORMAT"
 |	"FULL"
+|	"GENERAL"
 |	"GLOBAL"
 |	"HASH"
 |	"HOUR"
@@ -4944,9 +4945,13 @@ UnReservedKeyword:
 |	"LOCAL"
 |	"LAST"
 |	"NAMES"
+|	"NVARCHAR"
 |	"OFFSET"
+|	"PACK_KEYS"
+|	"PARSER"
 |	"PASSWORD" %prec lowerThanEq
 |	"PREPARE"
+|	"PRE_SPLIT_REGIONS"
 |	"QUICK"
 |	"REBUILD"
 |	"REDUNDANT"
@@ -4955,6 +4960,7 @@ UnReservedKeyword:
 |	"ROLLBACK"
 |	"SESSION"
 |	"SIGNED"
+|	"SHARD_ROW_ID_BITS"
 |	"SHUTDOWN"
 |	"SNAPSHOT"
 |	"START"
@@ -5221,6 +5227,7 @@ NotKeywordToken:
 |	"CAST"
 |	"COPY"
 |	"COUNT"
+|	"APPROX_COUNT_DISTINCT"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
@@ -5275,20 +5282,21 @@ NotKeywordToken:
  *  TODO: support PARTITION
  **********************************************************************************/
 InsertIntoStmt:
-	"INSERT" TableOptimizerHints PriorityOpt IgnoreOptional IntoOpt TableName InsertValues OnDuplicateKeyUpdate
+	"INSERT" TableOptimizerHints PriorityOpt IgnoreOptional IntoOpt TableName PartitionNameListOpt InsertValues OnDuplicateKeyUpdate
 	{
-		x := $7.(*ast.InsertStmt)
+		x := $8.(*ast.InsertStmt)
 		x.Priority = $3.(mysql.PriorityEnum)
 		x.IgnoreErr = $4.(bool)
 		// Wraps many layers here so that it can be processed the same way as select statement.
 		ts := &ast.TableSource{Source: $6.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
-		if $8 != nil {
-			x.OnDuplicate = $8.([]*ast.Assignment)
+		if $9 != nil {
+			x.OnDuplicate = $9.([]*ast.Assignment)
 		}
 		if $2 != nil {
 			x.TableHints = $2.([]*ast.TableOptimizerHint)
 		}
+		x.PartitionNames = $7.([]model.CIStr)
 		$$ = x
 	}
 
@@ -5422,13 +5430,14 @@ OnDuplicateKeyUpdate:
  *  TODO: support PARTITION
  **********************************************************************************/
 ReplaceIntoStmt:
-	"REPLACE" PriorityOpt IntoOpt TableName InsertValues
+	"REPLACE" PriorityOpt IntoOpt TableName PartitionNameListOpt InsertValues
 	{
-		x := $5.(*ast.InsertStmt)
+		x := $6.(*ast.InsertStmt)
 		x.IsReplace = true
 		x.Priority = $2.(mysql.PriorityEnum)
 		ts := &ast.TableSource{Source: $4.(*ast.TableName)}
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
+		x.PartitionNames = $5.([]model.CIStr)
 		$$ = x
 	}
 
@@ -6310,6 +6319,10 @@ SumExpr:
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: args}
 		}
 	}
+|	builtinApproxCountDistinct '(' ExpressionList ')'
+	{
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode), Distinct: false}
+	}
 |	builtinGroupConcat '(' BuggyDefaultFalseDistinctOpt ExpressionList OrderByOptional OptGConcatSeparator ')' OptWindowingClause
 	{
 		args := $4.([]ast.ExprNode)
@@ -6421,7 +6434,25 @@ OptGConcatSeparator:
 FunctionCallGeneric:
 	identifier '(' ExpressionListOpt ')'
 	{
-		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr($1), Args: $3.([]ast.ExprNode)}
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   $3.([]ast.ExprNode),
+		}
+	}
+|	Identifier '.' Identifier '(' ExpressionListOpt ')'
+	{
+		var tp ast.FuncCallExprType
+		if isInTokenMap($3) {
+			tp = ast.FuncCallExprTypeKeyword
+		} else {
+			tp = ast.FuncCallExprTypeGeneric
+		}
+		$$ = &ast.FuncCallExpr{
+			Tp:     tp,
+			Schema: model.NewCIStr($1),
+			FnName: model.NewCIStr($3),
+			Args:   $5.([]ast.ExprNode),
+		}
 	}
 
 FuncDatetimePrec:
@@ -6603,7 +6634,7 @@ CastType:
 		x.Flag |= mysql.BinaryFlag
 		$$ = x
 	}
-|	"CHAR" OptFieldLen OptBinary
+|	Char OptFieldLen OptBinary
 	{
 		x := types.NewFieldType(mysql.TypeVarString)
 		x.Flen = $2.(int) // TODO: Flen should be the flen of expression
@@ -8170,7 +8201,7 @@ VariableAssignment:
 	}
 |	CharsetKw CharsetNameOrDefault
 	{
-		$$ = &ast.VariableAssignment{Name: ast.SetNames, Value: $2}
+		$$ = &ast.VariableAssignment{Name: ast.SetCharset, Value: $2}
 	}
 
 CharsetNameOrDefault:
@@ -8217,10 +8248,7 @@ CollationName:
 	}
 
 VariableAssignmentList:
-	{
-		$$ = []*ast.VariableAssignment{}
-	}
-|	VariableAssignment
+	VariableAssignment
 	{
 		$$ = []*ast.VariableAssignment{$1.(*ast.VariableAssignment)}
 	}
@@ -8600,14 +8628,15 @@ ShowStmt:
 			User: $4.(*auth.UserIdentity),
 		}
 	}
-|	"SHOW" "TABLE" TableName "REGIONS" WhereClauseOptional
+|	"SHOW" "TABLE" TableName PartitionNameListOpt "REGIONS" WhereClauseOptional
 	{
 		stmt := &ast.ShowStmt{
 			Tp:    ast.ShowRegions,
 			Table: $3.(*ast.TableName),
 		}
-		if $5 != nil {
-			stmt.Where = $5.(ast.ExprNode)
+		stmt.Table.PartitionNames = $4.([]model.CIStr)
+		if $6 != nil {
+			stmt.Where = $6.(ast.ExprNode)
 		}
 		$$ = stmt
 	}
@@ -8618,15 +8647,16 @@ ShowStmt:
 			Table: $3.(*ast.TableName),
 		}
 	}
-|	"SHOW" "TABLE" TableName "INDEX" Identifier "REGIONS" WhereClauseOptional
+|	"SHOW" "TABLE" TableName PartitionNameListOpt "INDEX" Identifier "REGIONS" WhereClauseOptional
 	{
 		stmt := &ast.ShowStmt{
 			Tp:        ast.ShowRegions,
 			Table:     $3.(*ast.TableName),
-			IndexName: model.NewCIStr($5),
+			IndexName: model.NewCIStr($6),
 		}
-		if $7 != nil {
-			stmt.Where = $7.(ast.ExprNode)
+		stmt.Table.PartitionNames = $4.([]model.CIStr)
+		if $8 != nil {
+			stmt.Where = $8.(ast.ExprNode)
 		}
 		$$ = stmt
 	}
@@ -9266,6 +9296,10 @@ Constraint:
 		}
 		$$ = cst
 	}
+
+CheckConstraintKeyword:
+	"CHECK"
+|	"CONSTRAINT"
 
 TableElement:
 	ColumnDef
@@ -10170,7 +10204,6 @@ StringName:
 
 StringNameOrBRIEOptionKeyword:
 	StringName
-|	"ERROR"
 |	"IGNORE"
 |	"REPLACE"
 
@@ -10468,6 +10501,13 @@ RequireListElement:
 	{
 		$$ = &ast.TLSOption{
 			Type:  ast.Cipher,
+			Value: $2,
+		}
+	}
+|	"SAN" stringLit
+	{
+		$$ = &ast.TLSOption{
+			Type:  ast.SAN,
 			Value: $2,
 		}
 	}

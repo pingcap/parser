@@ -16,6 +16,7 @@ package ast_test
 import (
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
+	"github.com/pingcap/parser/ast"
 	. "github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/mysql"
@@ -214,9 +215,11 @@ func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 		{"USE_INDEX(@sel_1 t1 c1)", "USE_INDEX(@`sel_1` `t1` `c1`)"},
 		{"USE_INDEX(t1@sel_1 c1)", "USE_INDEX(`t1`@`sel_1` `c1`)"},
 		{"USE_INDEX(test.t1@sel_1 c1)", "USE_INDEX(`test`.`t1`@`sel_1` `c1`)"},
+		{"USE_INDEX(test.t1@sel_1 partition(p0) c1)", "USE_INDEX(`test`.`t1`@`sel_1` PARTITION(`p0`) `c1`)"},
 		{"IGNORE_INDEX(t1 c1)", "IGNORE_INDEX(`t1` `c1`)"},
 		{"IGNORE_INDEX(@sel_1 t1 c1)", "IGNORE_INDEX(@`sel_1` `t1` `c1`)"},
 		{"IGNORE_INDEX(t1@sel_1 c1)", "IGNORE_INDEX(`t1`@`sel_1` `c1`)"},
+		{"IGNORE_INDEX(t1@sel_1 partition(p0, p1) c1)", "IGNORE_INDEX(`t1`@`sel_1` PARTITION(`p0`, `p1`) `c1`)"},
 		{"TIDB_SMJ(`t1`)", "TIDB_SMJ(`t1`)"},
 		{"TIDB_SMJ(t1)", "TIDB_SMJ(`t1`)"},
 		{"TIDB_SMJ(t1,t2)", "TIDB_SMJ(`t1`, `t2`)"},
@@ -247,6 +250,8 @@ func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 		{"QUERY_TYPE(OLAP)", "QUERY_TYPE(OLAP)"},
 		{"QUERY_TYPE(OLTP)", "QUERY_TYPE(OLTP)"},
 		{"QUERY_TYPE(@sel1 OLTP)", "QUERY_TYPE(@`sel1` OLTP)"},
+		{"NTH_PLAN(10)", "NTH_PLAN(10)"},
+		{"NTH_PLAN(@sel1 30)", "NTH_PLAN(@`sel1` 30)"},
 		{"MEMORY_QUOTA(1 GB)", "MEMORY_QUOTA(1024 MB)"},
 		{"MEMORY_QUOTA(@sel1 1 GB)", "MEMORY_QUOTA(@`sel1` 1024 MB)"},
 		{"HASH_AGG()", "HASH_AGG()"},
@@ -261,6 +266,7 @@ func (ts *testMiscSuite) TestTableOptimizerHintRestore(c *C) {
 		{"READ_CONSISTENT_REPLICA(@sel1)", "READ_CONSISTENT_REPLICA(@`sel1`)"},
 		{"QB_NAME(sel1)", "QB_NAME(`sel1`)"},
 		{"READ_FROM_STORAGE(@sel TIFLASH[t1, t2])", "READ_FROM_STORAGE(@`sel` TIFLASH[`t1`, `t2`])"},
+		{"READ_FROM_STORAGE(@sel TIFLASH[t1 partition(p0)])", "READ_FROM_STORAGE(@`sel` TIFLASH[`t1` PARTITION(`p0`)])"},
 		{"TIME_RANGE('2020-02-02 10:10:10','2020-02-02 11:10:10')", "TIME_RANGE('2020-02-02 10:10:10', '2020-02-02 11:10:10')"},
 	}
 	extractNodeFunc := func(node Node) Node {
@@ -278,4 +284,41 @@ func (ts *testMiscSuite) TestChangeStmtRestore(c *C) {
 		return node.(*ChangeStmt)
 	}
 	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
+}
+
+func (ts *testMiscSuite) TestBRIESecureText(c *C) {
+	testCases := []struct {
+		input   string
+		secured string
+	}{
+		{
+			input:   "restore database * from 'local:///tmp/br01' snapshot = 23333",
+			secured: `^\QRESTORE DATABASE * FROM 'local:///tmp/br01' SNAPSHOT = 23333\E$`,
+		},
+		{
+			input:   "backup database * to 's3://bucket/prefix?region=us-west-2'",
+			secured: `^\QBACKUP DATABASE * TO 's3://bucket/prefix?region=us-west-2'\E$`,
+		},
+		{
+			// we need to use regexp to match to avoid the random ordering since a map was used.
+			// unfortunately Go's regexp doesn't support lookahead assertion, so the test case below
+			// has false positives.
+			input:   "backup database * to 's3://bucket/prefix?access-key=abcdefghi&secret-access-key=123&force-path-style=true'",
+			secured: `^\QBACKUP DATABASE * TO 's3://bucket/prefix?\E((access-key=xxxxxx|force-path-style=true|secret-access-key=xxxxxx)(&|'$)){3}`,
+		},
+		{
+			input:   "backup database * to 'gcs://bucket/prefix?access-key=irrelevant&credentials-file=/home/user/secrets.txt'",
+			secured: `^\QBACKUP DATABASE * TO 'gcs://bucket/prefix?\E((access-key=irrelevant|credentials-file=/home/user/secrets\.txt)(&|'$)){2}`,
+		},
+	}
+
+	parser := parser.New()
+	for _, tc := range testCases {
+		comment := Commentf("input = %s", tc.input)
+		node, err := parser.ParseOneStmt(tc.input, "", "")
+		c.Assert(err, IsNil, comment)
+		n, ok := node.(ast.SensitiveStmtNode)
+		c.Assert(ok, IsTrue, comment)
+		c.Assert(n.SecureText(), Matches, tc.secured, comment)
+	}
 }
