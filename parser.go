@@ -10327,8 +10327,6 @@ yynewstate:
 				Tp:         ast.AlterTableAlterCheck,
 				Constraint: c,
 			}
-			yylex.AppendError(yylex.Errorf("The ALTER CHECK clause is parsed but not implemented yet."))
-			parser.lastErrorAsWarn()
 		}
 	case 56:
 		{
@@ -10340,8 +10338,6 @@ yynewstate:
 				Tp:         ast.AlterTableDropCheck,
 				Constraint: c,
 			}
-			yylex.AppendError(yylex.Errorf("The DROP CHECK clause is parsed but not implemented yet."))
-			parser.lastErrorAsWarn()
 		}
 	case 57:
 		{
@@ -11105,8 +11101,6 @@ yynewstate:
 				Expr:     yyS[yypt-2].expr.(ast.ExprNode),
 				Enforced: yyS[yypt-0].item.(bool),
 			}
-			yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-			parser.lastErrorAsWarn()
 		}
 	case 211:
 		{
