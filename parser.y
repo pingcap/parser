@@ -2588,8 +2588,6 @@ ColumnOption:
 			$$ = optionCheck
 		default:
 		}
-		yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	GeneratedAlways "AS" '(' Expression ')' VirtualOrStored
 	{
