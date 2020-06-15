@@ -10932,8 +10932,6 @@ yynewstate:
 				parser.yyVAL.item = optionCheck
 			default:
 			}
-			yylex.AppendError(yylex.Errorf("The CHECK clause is parsed but ignored by all storage engines."))
-			parser.lastErrorAsWarn()
 		}
 	case 184:
 		{
