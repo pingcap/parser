@@ -136,11 +136,10 @@ func (c *ColumnInfo) SetOriginDefaultValue(value interface{}) error {
 }
 
 // GetOriginalDefaultValue gets the origin default value.
-// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
-// because after JSON marshaling and unmarshaling against the field with type `interface{}`,
-// the content with actual type `[]byte` is changed.
 func (c *ColumnInfo) GetOriginDefaultValue() interface{} {
 	if c.Tp == mysql.TypeBit {
+		// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
+		// because the content before json.Marshal is INCONSISTENT with the content after json.Unmarshal.
 		return string(c.OriginDefaultValueBit)
 	}
 	return c.OriginDefaultValue
