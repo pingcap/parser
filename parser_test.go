@@ -306,14 +306,6 @@ type testErrMsgCase struct {
 	err error
 }
 
-func (s *testParserSuite) Test1(c *C) {
-	parser := parser.New()
-	parser.EnableWindowFunc(s.enableWindowFunc)
-	fmt.Println("start")
-	parser.Parse("create sequence seq increment -2", "", "")
-	fmt.Println("end")
-}
-
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := parser.New()
 	parser.EnableWindowFunc(s.enableWindowFunc)
