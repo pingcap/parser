@@ -306,6 +306,14 @@ type testErrMsgCase struct {
 	err error
 }
 
+func (s *testParserSuite) Test1(c *C) {
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	fmt.Println("start")
+	parser.Parse("create sequence seq increment -2", "", "")
+	fmt.Println("end")
+}
+
 func (s *testParserSuite) RunTest(c *C, table []testCase) {
 	parser := parser.New()
 	parser.EnableWindowFunc(s.enableWindowFunc)
@@ -861,6 +869,13 @@ AAAAAAAAAAAA5gm5Mg==
 		// for alter instance.
 		{"ALTER INSTANCE RELOAD TLS", true, "ALTER INSTANCE RELOAD TLS"},
 		{"ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR", true, "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"},
+
+		// for create sequence with signed value especially with Two's Complement Min.
+		// for issue #17948
+		{"CREATE SEQUENCE seq INCREMENT - 9223372036854775807", true, "CREATE SEQUENCE `seq` INCREMENT BY -9223372036854775807"},
+		{"CREATE SEQUENCE seq INCREMENT - 9223372036854775808", true, "CREATE SEQUENCE `seq` INCREMENT BY -9223372036854775808"},
+		{"CREATE SEQUENCE seq INCREMENT -9223372036854775808", true, "CREATE SEQUENCE `seq` INCREMENT BY -9223372036854775808"},
+		{"CREATE SEQUENCE seq INCREMENT -9223372036854775809", false, ""},
 	}
 	s.RunTest(c, table)
 }
