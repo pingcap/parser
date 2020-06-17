@@ -847,8 +847,8 @@ var hintTokenMap = map[string]int{
 	"QUERY_TYPE":              hintQueryType,
 	"READ_CONSISTENT_REPLICA": hintReadConsistentReplica,
 	"READ_FROM_STORAGE":       hintReadFromStorage,
-	"BC_JOIN":                 hintBCJoin,
-	"BCJ_LOCAL":               hintBCJoinPreferLocal,
+	"BROADCAST_JOIN":          hintBCJoin,
+	"BROADCAST_JOIN_LOCAL":    hintBCJoinPreferLocal,
 	"MERGE_JOIN":              hintSMJoin,
 	"STREAM_AGG":              hintStreamAgg,
 	"SWAP_JOIN_INPUTS":        hintSwapJoinInputs,
@@ -864,7 +864,6 @@ var hintTokenMap = map[string]int{
 	"TIDB_HJ":   hintHashJoin,
 	"TIDB_INLJ": hintInlJoin,
 	"TIDB_SMJ":  hintSMJoin,
-	"TIDB_BCJ":  hintBCJoin,
 
 	// Other keywords
 	"OLAP":            hintOLAP,

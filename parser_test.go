@@ -3153,23 +3153,6 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	// Test TIDB_BCJ
-	stmt, _, err = parser.Parse("select /*+ TIDB_BCJ(T1,t2), tidb_bcj(T3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
-	c.Assert(err, IsNil)
-	selectStmt = stmt[0].(*ast.SelectStmt)
-
-	hints = selectStmt.TableHints
-	c.Assert(hints, HasLen, 2)
-	c.Assert(hints[0].HintName.L, Equals, "tidb_bcj")
-	c.Assert(hints[0].Tables, HasLen, 2)
-	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
-	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
-
-	c.Assert(hints[1].HintName.L, Equals, "tidb_bcj")
-	c.Assert(hints[1].Tables, HasLen, 2)
-	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
-	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
-
 	// Test MERGE_JOIN
 	stmt, _, err = parser.Parse("select /*+ MERGE_JOIN(t1, T2), merge_join(t3, t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
@@ -3187,24 +3170,24 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	// TEST BC_JOIN
-	stmt, _, err = parser.Parse("select /*+ BC_JOIN(t1, T2), bc_join(t3, t4), BCJ_LOCAL(t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	// TEST BROADCAST_JOIN
+	stmt, _, err = parser.Parse("select /*+ BROADCAST_JOIN(t1, T2), broadcast_join(t3, t4), BROADCAST_JOIN_LOCAL(t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	selectStmt = stmt[0].(*ast.SelectStmt)
 
 	hints = selectStmt.TableHints
 	c.Assert(hints, HasLen, 3)
-	c.Assert(hints[0].HintName.L, Equals, "bc_join")
+	c.Assert(hints[0].HintName.L, Equals, "broadcast_join")
 	c.Assert(hints[0].Tables, HasLen, 2)
 	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
 	c.Assert(hints[0].Tables[1].TableName.L, Equals, "t2")
 
-	c.Assert(hints[1].HintName.L, Equals, "bc_join")
+	c.Assert(hints[1].HintName.L, Equals, "broadcast_join")
 	c.Assert(hints[1].Tables, HasLen, 2)
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 	c.Assert(hints[1].Tables[1].TableName.L, Equals, "t4")
 
-	c.Assert(hints[2].HintName.L, Equals, "bcj_local")
+	c.Assert(hints[2].HintName.L, Equals, "broadcast_join_local")
 	c.Assert(hints[2].Tables, HasLen, 1)
 	c.Assert(hints[2].Tables[0].TableName.L, Equals, "t2")
 
