@@ -25,7 +25,7 @@ go get -v github.com/pingcap/parser@v4.0.0-rc.1
 
 > **NOTE**
 >
-> If you want to use advanced API on expression(which is a kind of AST node), such as numbers, string literals, booleans, nulls, etc., it is strongly recommended to use TiDB's `types` package with the following command:
+> You may want to use advanced API on expression (which is a kind of AST node), such as numbers, string literals, booleans, nulls, etc. It is strongly recommended to use `types` package in TiDB repo with the following command:
 >
 > ```bash
 > go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1
@@ -99,7 +99,7 @@ You should get something like this:
 > Here are a few things you might want to know:
 > - To use a parser, a `parser_driver` is required. It decides how to parse the basic data types in SQL.
 >
->   You can use [`github.com/pingcap/parser/test_driver`](https://pkg.go.dev/github.com/pingcap/parser/test_driver) as the `parser_driver` for test. Again, if you need advanced features, please use the `test_driver` in TiDB (`go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1` and import it).
+>   You can use [`github.com/pingcap/parser/test_driver`](https://pkg.go.dev/github.com/pingcap/parser/test_driver) as the `parser_driver` for test. Again, if you need advanced features, please use the `parser_driver` in TiDB (`go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1` and import it).
 > - The instantiated parser object is not goroutine safe. it is better to keep it in a single goroutine.
 > - The instantiated parser object is not lightweight, it is better to reuse it if possible.
 > - The 2nd and 3rd arguments of [`parser.Parse()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) are charset and collation respectively. If you pass an empty string into it, a default value is chosen.
@@ -181,6 +181,8 @@ You can also try with different SQL as an input, i.e.
 ```console
 $ ./colx 'SELECT a, b FROM t GROUP BY (a, b) HAVING a > c ORDER BY b'
 [a b a b a c b]
+
+If necessary, you can deduplicate by yourself.
 
 $ ./colx 'SELECT a, b FROM t/invalid_str'
 parse error: line 1 column 19 near "/invalid_str"
