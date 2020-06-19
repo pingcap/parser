@@ -1830,9 +1830,8 @@ AlterTableSpec:
 		yylex.AppendError(yylex.Errorf("The SECONDARY_UNLOAD VALIDATION clause is parsed but not implement yet."))
 		parser.lastErrorAsWarn()
 	}
-|	"ALTER" "CHECK" Identifier EnforcedOrNot
+|	"ALTER" CheckConstraintKeyword Identifier EnforcedOrNot
 	{
-		// Parse it and ignore it. Just for compatibility.
 		c := &ast.Constraint{
 			Name:     $3,
 			Enforced: $4.(bool),
@@ -1842,7 +1841,7 @@ AlterTableSpec:
 			Constraint: c,
 		}
 	}
-|	"DROP" "CHECK" Identifier
+|	"DROP" CheckConstraintKeyword Identifier
 	{
 		// Parse it and ignore it. Just for compatibility.
 		c := &ast.Constraint{
@@ -9298,6 +9297,10 @@ Constraint:
 		$$ = cst
 	}
 
+CheckConstraintKeyword:
+	"CHECK"
+|	"CONSTRAINT"
+
 TableElement:
 	ColumnDef
 |	Constraint
@@ -11449,9 +11452,18 @@ SignedNum:
 	{
 		$$ = $2
 	}
-|	'-' Int64Num
+|	'-' NUM
 	{
-		$$ = -$2.(int64)
+		unsigned_num := getUint64FromNUM($2)
+		if unsigned_num > 9223372036854775808 {
+			yylex.AppendError(yylex.Errorf("the Signed Value should be at the range of [-9223372036854775808, 9223372036854775807]."))
+			return 1
+		} else if unsigned_num == 9223372036854775808 {
+			signed_one := int64(1)
+			$$ = signed_one << 63
+		} else {
+			$$ = -int64(unsigned_num)
+		}
 	}
 
 DropSequenceStmt:
