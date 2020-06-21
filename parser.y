@@ -921,6 +921,7 @@ import (
 	IndexHintType                          "index hint type"
 	IndexInvisible                         "index visible/invisible"
 	IndexKeyTypeOpt                        "index key type"
+	IndexLocality                          "index local/global"
 	IndexLockAndAlgorithmOpt               "index lock and algorithm"
 	IndexNameAndTypeOpt                    "index name and index type"
 	IndexNameList                          "index name list"
@@ -4762,6 +4763,8 @@ IndexOptionList:
 				opt1.ParserName = opt2.ParserName
 			} else if opt2.Visibility != ast.IndexVisibilityDefault {
 				opt1.Visibility = opt2.Visibility
+			} else if opt2.Locality != ast.IndexLocalityDefault {
+				opt1.Locality = opt2.Locality
 			}
 			$$ = opt1
 		}
@@ -4798,6 +4801,12 @@ IndexOption:
 	{
 		$$ = &ast.IndexOption{
 			Visibility: $1.(ast.IndexVisibility),
+		}
+	}
+|	IndexLocality
+	{
+		$$ = &ast.IndexOption{
+			Locality: $1.(ast.IndexLocality),
 		}
 	}
 
@@ -4872,6 +4881,16 @@ IndexInvisible:
 |	"INVISIBLE"
 	{
 		$$ = ast.IndexVisibilityInvisible
+	}
+
+IndexLocality:
+	"LOCAL"
+	{
+		$$ = ast.IndexLocalityLocal
+	}
+|	"GLOBAL"
+	{
+		$$ = ast.IndexLocalityGlobal
 	}
 
 /**********************************Identifier********************************************/

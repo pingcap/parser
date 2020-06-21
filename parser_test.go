@@ -2598,6 +2598,11 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"CREATE INDEX idx ON t ( a ) USING HASH VISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH VISIBLE"},
 		{"CREATE INDEX idx ON t ( a ) USING HASH INVISIBLE", true, "CREATE INDEX `idx` ON `t` (`a`) USING HASH INVISIBLE"},
 
+		{"CREATE INDEX idx ON t ( a ) LOCAL", true, "CREATE INDEX `idx` ON `t` (`a`) LOCAL"},
+		{"CREATE INDEX idx ON t ( a ) GLOBAL", true, "CREATE INDEX `idx` ON `t` (`a`) GLOBAL"},
+		{"CREATE INDEX idx ON t ( a ) LOCAL GLOBAL", true, "CREATE INDEX `idx` ON `t` (`a`) GLOBAL"},
+		{"CREATE INDEX idx ON t ( a ) GLOBAL LOCAL", true, "CREATE INDEX `idx` ON `t` (`a`) LOCAL"},
+
 		// For create index with algorithm
 		{"CREATE INDEX idx ON t ( a ) ALGORITHM = DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX idx ON t ( a ) ALGORITHM DEFAULT", true, "CREATE INDEX `idx` ON `t` (`a`)"},

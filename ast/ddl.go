@@ -596,6 +596,16 @@ const (
 	IndexVisibilityInvisible
 )
 
+// IndexLocality is the option for index locality
+type IndexLocality int
+
+// IndexLocality options
+const (
+	IndexLocalityDefault IndexLocality = iota
+	IndexLocalityLocal
+	IndexLocalityGlobal
+)
+
 // IndexOption is the index options.
 //    KEY_BLOCK_SIZE [=] value
 //  | index_type
@@ -610,6 +620,7 @@ type IndexOption struct {
 	Comment      string
 	ParserName   model.CIStr
 	Visibility   IndexVisibility
+	Locality     IndexLocality
 }
 
 // Restore implements Node interface.
@@ -657,6 +668,19 @@ func (n *IndexOption) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("VISIBLE")
 		case IndexVisibilityInvisible:
 			ctx.WriteKeyWord("INVISIBLE")
+		}
+		hasPrevOption = true
+	}
+
+	if n.Locality != IndexLocalityDefault {
+		if hasPrevOption {
+			ctx.WritePlain(" ")
+		}
+		switch n.Locality {
+		case IndexLocalityLocal:
+			ctx.WriteKeyWord("LOCAL")
+		case IndexLocalityGlobal:
+			ctx.WriteKeyWord("GLOBAL")
 		}
 	}
 	return nil
@@ -1482,7 +1506,7 @@ func (n *CreateIndexStmt) Restore(ctx *format.RestoreCtx) error {
 	}
 	ctx.WritePlain(")")
 
-	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || len(n.IndexOption.ParserName.O) > 0 || n.IndexOption.Visibility != IndexVisibilityDefault {
+	if n.IndexOption.Tp != model.IndexTypeInvalid || n.IndexOption.KeyBlockSize > 0 || n.IndexOption.Comment != "" || len(n.IndexOption.ParserName.O) > 0 || n.IndexOption.Visibility != IndexVisibilityDefault || n.IndexOption.Locality != IndexLocalityDefault {
 		ctx.WritePlain(" ")
 		if err := n.IndexOption.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore CreateIndexStmt.IndexOption")
