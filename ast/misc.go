@@ -1626,6 +1626,9 @@ const (
 	AdminCaptureBindings
 	AdminEvolveBindings
 	AdminReloadBindings
+	AdminShowTelemetryData
+	AdminShowTelemetryID
+	AdminResetTelemetryID
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1834,6 +1837,12 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("EVOLVE BINDINGS")
 	case AdminReloadBindings:
 		ctx.WriteKeyWord("RELOAD BINDINGS")
+	case AdminShowTelemetryData:
+		ctx.WriteKeyWord("SHOW TELEMETRY_DATA")
+	case AdminShowTelemetryID:
+		ctx.WriteKeyWord("SHOW TELEMETRY_ID")
+	case AdminResetTelemetryID:
+		ctx.WriteKeyWord("RESET TELEMETRY_ID")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}

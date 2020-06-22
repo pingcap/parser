@@ -665,11 +665,14 @@ import (
 	statsHistograms            "STATS_HISTOGRAMS"
 	statsBuckets               "STATS_BUCKETS"
 	statsHealthy               "STATS_HEALTHY"
+	telemetryData              "TELEMETRY_DATA"
+	telemetryID                "TELEMETRY_ID"
 	tidb                       "TIDB"
 	tiFlash                    "TIFLASH"
 	topn                       "TOPN"
 	split                      "SPLIT"
 	width                      "WIDTH"
+	reset                      "RESET"
 	regions                    "REGIONS"
 	region                     "REGION"
 	builtinAddDate
@@ -5209,6 +5212,8 @@ TiDBKeyword:
 |	"STATS_HISTOGRAMS"
 |	"STATS_BUCKETS"
 |	"STATS_HEALTHY"
+|	"TELEMETRY_DATA"
+|	"TELEMETRY_ID"
 |	"TIDB"
 |	"TIFLASH"
 |	"TOPN"
@@ -5218,6 +5223,7 @@ TiDBKeyword:
 |	"WIDTH"
 |	"REGIONS"
 |	"REGION"
+|	"RESET"
 
 NotKeywordToken:
 	"ADDDATE"
@@ -8515,6 +8521,24 @@ AdminStmt:
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminReloadBindings,
+		}
+	}
+|	"ADMIN" "SHOW" "TELEMETRY_DATA"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminShowTelemetryData,
+		}
+	}
+|	"ADMIN" "SHOW" "TELEMETRY_ID"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminShowTelemetryID,
+		}
+	}
+|	"ADMIN" "RESET" "TELEMETRY_ID"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminResetTelemetryID,
 		}
 	}
 
