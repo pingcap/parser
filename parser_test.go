@@ -701,8 +701,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin capture bindings", true, "ADMIN CAPTURE BINDINGS"},
 		{"admin evolve bindings", true, "ADMIN EVOLVE BINDINGS"},
 		{"admin reload bindings", true, "ADMIN RELOAD BINDINGS"},
-		{"admin show telemetry_data", true, "ADMIN SHOW TELEMETRY_DATA"},
-		{"admin show telemetry_id", true, "ADMIN SHOW TELEMETRY_ID"},
+		{"admin show telemetry", true, "ADMIN SHOW TELEMETRY"},
 		{"admin reset telemetry_id", true, "ADMIN RESET TELEMETRY_ID"},
 
 		// for on duplicate key update

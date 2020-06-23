@@ -665,7 +665,7 @@ import (
 	statsHistograms            "STATS_HISTOGRAMS"
 	statsBuckets               "STATS_BUCKETS"
 	statsHealthy               "STATS_HEALTHY"
-	telemetryData              "TELEMETRY_DATA"
+	telemetry                  "TELEMETRY"
 	telemetryID                "TELEMETRY_ID"
 	tidb                       "TIDB"
 	tiFlash                    "TIFLASH"
@@ -5212,7 +5212,7 @@ TiDBKeyword:
 |	"STATS_HISTOGRAMS"
 |	"STATS_BUCKETS"
 |	"STATS_HEALTHY"
-|	"TELEMETRY_DATA"
+|	"TELEMETRY"
 |	"TELEMETRY_ID"
 |	"TIDB"
 |	"TIFLASH"
@@ -8523,16 +8523,10 @@ AdminStmt:
 			Tp: ast.AdminReloadBindings,
 		}
 	}
-|	"ADMIN" "SHOW" "TELEMETRY_DATA"
+|	"ADMIN" "SHOW" "TELEMETRY"
 	{
 		$$ = &ast.AdminStmt{
-			Tp: ast.AdminShowTelemetryData,
-		}
-	}
-|	"ADMIN" "SHOW" "TELEMETRY_ID"
-	{
-		$$ = &ast.AdminStmt{
-			Tp: ast.AdminShowTelemetryID,
+			Tp: ast.AdminShowTelemetry,
 		}
 	}
 |	"ADMIN" "RESET" "TELEMETRY_ID"
