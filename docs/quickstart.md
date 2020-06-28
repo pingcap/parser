@@ -47,9 +47,9 @@ Now, open `main.go` with your favouriate editor, and start coding!
 
 ## Parse SQL text
 
-To convert a SQL text to an AST tree, you can:
-1. use [`parser.New()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#New) function to instantiate a parser and
-2. invoke the method [`Parse(sql, charset, collation)`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) on it.
+To convert a SQL text to an AST tree, you need to:
+1. Use the [`parser.New()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#New) function to instantiate a parser, and
+2. Invoke the method [`Parse(sql, charset, collation)`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) on the parser.
 
 ```go
 package main
@@ -166,7 +166,7 @@ func main() {
 }
 ```
 
-Test it:
+Test your program:
 
 ```bash
 go build && ./colx 'select a, b from t'
