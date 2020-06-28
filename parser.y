@@ -665,11 +665,14 @@ import (
 	statsHistograms            "STATS_HISTOGRAMS"
 	statsBuckets               "STATS_BUCKETS"
 	statsHealthy               "STATS_HEALTHY"
+	telemetry                  "TELEMETRY"
+	telemetryID                "TELEMETRY_ID"
 	tidb                       "TIDB"
 	tiFlash                    "TIFLASH"
 	topn                       "TOPN"
 	split                      "SPLIT"
 	width                      "WIDTH"
+	reset                      "RESET"
 	regions                    "REGIONS"
 	region                     "REGION"
 	builtinAddDate
@@ -5209,6 +5212,8 @@ TiDBKeyword:
 |	"STATS_HISTOGRAMS"
 |	"STATS_BUCKETS"
 |	"STATS_HEALTHY"
+|	"TELEMETRY"
+|	"TELEMETRY_ID"
 |	"TIDB"
 |	"TIFLASH"
 |	"TOPN"
@@ -5218,6 +5223,7 @@ TiDBKeyword:
 |	"WIDTH"
 |	"REGIONS"
 |	"REGION"
+|	"RESET"
 
 NotKeywordToken:
 	"ADDDATE"
@@ -8517,6 +8523,18 @@ AdminStmt:
 			Tp: ast.AdminReloadBindings,
 		}
 	}
+|	"ADMIN" "SHOW" "TELEMETRY"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminShowTelemetry,
+		}
+	}
+|	"ADMIN" "RESET" "TELEMETRY_ID"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminResetTelemetryID,
+		}
+	}
 
 AdminShowSlow:
 	"RECENT" NUM
@@ -11452,9 +11470,18 @@ SignedNum:
 	{
 		$$ = $2
 	}
-|	'-' Int64Num
+|	'-' NUM
 	{
-		$$ = -$2.(int64)
+		unsigned_num := getUint64FromNUM($2)
+		if unsigned_num > 9223372036854775808 {
+			yylex.AppendError(yylex.Errorf("the Signed Value should be at the range of [-9223372036854775808, 9223372036854775807]."))
+			return 1
+		} else if unsigned_num == 9223372036854775808 {
+			signed_one := int64(1)
+			$$ = signed_one << 63
+		} else {
+			$$ = -int64(unsigned_num)
+		}
 	}
 
 DropSequenceStmt:

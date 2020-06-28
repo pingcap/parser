@@ -1626,6 +1626,8 @@ const (
 	AdminCaptureBindings
 	AdminEvolveBindings
 	AdminReloadBindings
+	AdminShowTelemetry
+	AdminResetTelemetryID
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1834,6 +1836,10 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("EVOLVE BINDINGS")
 	case AdminReloadBindings:
 		ctx.WriteKeyWord("RELOAD BINDINGS")
+	case AdminShowTelemetry:
+		ctx.WriteKeyWord("SHOW TELEMETRY")
+	case AdminResetTelemetryID:
+		ctx.WriteKeyWord("RESET TELEMETRY_ID")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -2597,7 +2603,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlainf("%d", n.HintData.(uint64))
 	case "nth_plan":
 		ctx.WritePlainf("%d", n.HintData.(int64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
