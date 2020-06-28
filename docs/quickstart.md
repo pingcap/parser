@@ -43,7 +43,7 @@ Your directory should contain the following three files:
 └── main.go
 ```
 
-Now, open `main.go` with your favouriate editor, start coding!
+Now, open `main.go` with your favouriate editor, and start coding!
 
 ## Parse SQL text
 
