@@ -43,7 +43,7 @@ Your directory should contain the following three files:
 └── main.go
 ```
 
-Now, open `main.go` with your favouriate editor, and start coding!
+Now, open `main.go` with your favorite editor, and start coding!
 
 ## Parse SQL text
 
@@ -100,8 +100,8 @@ If the parser runs properly, you should get a result like this:
 > - To use a parser, a `parser_driver` is required. It decides how to parse the basic data types in SQL.
 >
 >   You can use [`github.com/pingcap/parser/test_driver`](https://pkg.go.dev/github.com/pingcap/parser/test_driver) as the `parser_driver` for test. Again, if you need advanced features, please use the `parser_driver` in TiDB (run `go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1` and import it).
-> - The instantiated parser object is not goroutine safe. it is better to keep it in a single goroutine.
-> - The instantiated parser object is not lightweight, it is better to reuse it if possible.
+> - The instantiated parser object is not goroutine safe. It is better to keep it in a single goroutine.
+> - The instantiated parser object is not lightweight. It is better to reuse it if possible.
 > - The 2nd and 3rd arguments of [`parser.Parse()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) are charset and collation respectively. If you pass an empty string into it, a default value is chosen.
 
 
@@ -148,7 +148,7 @@ func extract(rootNode *ast.StmtNode) []string {
 }
 ```
 
-And slightly modifiy the main function:
+And slightly modify the main function:
 
 ```go
 func main() {
