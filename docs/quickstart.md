@@ -35,7 +35,7 @@ go get -v github.com/pingcap/parser@v4.0.0-rc.1
 > import _ "github.com/pingcap/tidb/types/parser_driver"
 > ```
 
-Your directory should contains three files:
+Your directory should contain the following three files:
 ```
 .
 ├── go.mod
