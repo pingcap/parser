@@ -30,7 +30,7 @@ go get -v github.com/pingcap/parser@v4.0.0-rc.1
 > ```bash
 > go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1
 > ```
-> and import it in the directive of your golang source code:
+> and import it in your golang source code:
 > ```go
 > import _ "github.com/pingcap/tidb/types/parser_driver"
 > ```
