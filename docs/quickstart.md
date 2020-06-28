@@ -25,7 +25,7 @@ go get -v github.com/pingcap/parser@v4.0.0-rc.1
 
 > **NOTE**
 >
-> You may want to use advanced API on expression (which is a kind of AST node), such as numbers, string literals, booleans, nulls, etc. It is strongly recommended to use `types` package in TiDB repo with the following command:
+> You may want to use advanced API on expressions (a kind of AST node), such as numbers, string literals, booleans, nulls, etc. It is strongly recommended to use the `types` package in TiDB repo with the following command:
 >
 > ```bash
 > go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1
