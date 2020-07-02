@@ -109,6 +109,7 @@ func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARSET UTF8)"},
 		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARSET UTF8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},
+		{"N10_TO_36(2345)", "N10_TO_36(2345)"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr

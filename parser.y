@@ -611,6 +611,7 @@ import (
 	internal              "INTERNAL"
 	min                   "MIN"
 	max                   "MAX"
+	n10_to_36             "N10_to_36"
 	now                   "NOW"
 	position              "POSITION"
 	recent                "RECENT"
@@ -690,6 +691,7 @@ import (
 	builtinGroupConcat
 	builtinMax
 	builtinMin
+	builtinN10To36
 	builtinNow
 	builtinPosition
 	builtinSubDate
@@ -5245,6 +5247,7 @@ NotKeywordToken:
 |	"INTERNAL"
 |	"MIN"
 |	"MAX"
+|	"N10_to_36"
 |	"NOW"
 |	"RECENT"
 |	"POSITION"
@@ -5823,6 +5826,13 @@ SimpleExpr:
 			Expr:         $3,
 			Tp:           tp,
 			FunctionType: ast.CastConvertFunction,
+		}
+	}
+|	builtinN10To36 '(' Expression ')'
+	{
+		$$ = &ast.FuncCastExpr{
+			Expr:         $3,
+			FunctionType: ast.CastN10To36,
 		}
 	}
 |	"CONVERT" '(' Expression "USING" CharsetName ')'

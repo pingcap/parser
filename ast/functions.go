@@ -142,6 +142,7 @@ const (
 	MakeTime         = "maketime"
 	MicroSecond      = "microsecond"
 	Minute           = "minute"
+	N10To36          = "n10_to_36"
 	Month            = "month"
 	MonthName        = "monthname"
 	Now              = "now"
@@ -525,6 +526,7 @@ const (
 	CastFunction CastFunctionType = iota + 1
 	CastConvertFunction
 	CastBinaryOperator
+	CastN10To36
 )
 
 // FuncCastExpr is the cast function converting value to another type, e.g, cast(expr AS signed).
@@ -565,6 +567,13 @@ func (n *FuncCastExpr) Restore(ctx *format.RestoreCtx) error {
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
+	case CastN10To36:
+		ctx.WriteKeyWord("N10_TO_36")
+		ctx.WritePlain("(")
+		if err := n.Expr.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
+		ctx.WritePlain(")")
 	}
 	return nil
 }
@@ -587,6 +596,10 @@ func (n *FuncCastExpr) Format(w io.Writer) {
 	case CastBinaryOperator:
 		fmt.Fprint(w, "BINARY ")
 		n.Expr.Format(w)
+	case CastN10To36:
+		fmt.Fprint(w, "N10_TO_36(")
+		n.Expr.Format(w)
+		fmt.Fprint(w, ")")
 	}
 }
 

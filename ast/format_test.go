@@ -87,13 +87,14 @@ func (ts *testAstFormatSuite) TestAstFormat(c *C) {
 		{` ((case when (c0 = 0) then 0 when (c0 > 0) then (c1 / c0) end)) `, "((CASE WHEN (`c0` = 0) THEN 0 WHEN (`c0` > 0) THEN (`c1` / `c0`) END))"},
 		{` convert (a, signed) `, "CONVERT(`a`, SIGNED)"},
 		{` binary "hello"`, `BINARY "hello"`},
+		{` n10_to_36( 1000 ) `, `N10_TO_36(1000)`},
 	}
 	for _, tt := range testcases {
 		expr := fmt.Sprintf("select %s", tt.input)
 		charset, collation := getDefaultCharsetAndCollate()
 		stmts, _, err := parser.New().Parse(expr, charset, collation)
-		node := stmts[0].(*ast.SelectStmt).Fields.Fields[0].Expr
 		c.Assert(err, IsNil)
+		node := stmts[0].(*ast.SelectStmt).Fields.Fields[0].Expr
 
 		writer := bytes.NewBufferString("")
 		node.Format(writer)
