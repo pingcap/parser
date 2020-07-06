@@ -7829,6 +7829,8 @@ SelectLockOpt:
 	}
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
+// See https://mariadb.com/kb/en/intersect/
+// See https://mariadb.com/kb/en/except/
 SetOprStmt:
 	SetOprClauseList SetOpr SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
 	{

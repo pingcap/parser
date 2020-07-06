@@ -1084,6 +1084,8 @@ const (
 
 // SetOprStmt represents "union/except/intersect statement"
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
+// See https://mariadb.com/kb/en/intersect/
+// See https://mariadb.com/kb/en/except/
 type SetOprStmt struct {
 	dmlNode
 	resultSetNode
