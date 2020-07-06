@@ -719,10 +719,22 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 
 // PartitionDefinition defines a single partition.
 type PartitionDefinition struct {
-	ID       int64    `json:"id"`
-	Name     CIStr    `json:"name"`
-	LessThan []string `json:"less_than"`
-	Comment  string   `json:"comment,omitempty"`
+	ID       int64       `json:"id"`
+	Name     CIStr       `json:"name"`
+	LessThan []string    `json:"less_than"`
+	Comment  string      `json:"comment,omitempty"`
+	State    SchemaState `json:"state"`
+}
+
+// FindPartitionDefinitionByName finds PartitionDefinition by name.
+func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
+	lowConstrName := strings.ToLower(partitionDefinitionName)
+	for _, pd := range t.Partition.Definitions {
+		if pd.Name.L == lowConstrName {
+			return &pd
+		}
+	}
+	return nil
 }
 
 // IndexColumn provides index column info.
