@@ -726,6 +726,14 @@ type PartitionDefinition struct {
 	State    SchemaState `json:"state"`
 }
 
+// Clone clones ConstraintInfo.
+func (ci *PartitionDefinition) Clone() PartitionDefinition {
+	nci := *ci
+	nci.LessThan = make([]string, len(ci.LessThan))
+	copy(nci.LessThan, ci.LessThan)
+	return nci
+}
+
 // FindPartitionDefinitionByName finds PartitionDefinition by name.
 func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
 	lowConstrName := strings.ToLower(partitionDefinitionName)
