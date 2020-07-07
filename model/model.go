@@ -737,9 +737,9 @@ func (ci *PartitionDefinition) Clone() PartitionDefinition {
 // FindPartitionDefinitionByName finds PartitionDefinition by name.
 func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
 	lowConstrName := strings.ToLower(partitionDefinitionName)
-	for _, pd := range t.Partition.Definitions {
+	for i, pd := range t.Partition.Definitions {
 		if pd.Name.L == lowConstrName {
-			return &pd
+			return &t.Partition.Definitions[i]
 		}
 	}
 	return nil
