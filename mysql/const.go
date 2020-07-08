@@ -120,7 +120,7 @@ const (
 	ComStmtSendLongData
 	ComStmtClose
 	ComStmtReset
-	ComSetOprion
+	ComSetOption
 	ComStmtFetch
 	ComDaemon
 	ComBinlogDumpGtid
@@ -390,7 +390,7 @@ var Command2Str = map[byte]string{
 	ComStmtSendLongData: "Long Data",
 	ComStmtClose:        "Close stmt",
 	ComStmtReset:        "Reset stmt",
-	ComSetOprion:        "Set option",
+	ComSetOption:        "Set option",
 	ComStmtFetch:        "Fetch",
 	ComDaemon:           "Daemon",
 	ComBinlogDumpGtid:   "Binlog Dump",
