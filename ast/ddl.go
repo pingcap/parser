@@ -3485,9 +3485,8 @@ func (n *PlacementSpec) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("LABEL")
 	ctx.WritePlain("=")
 	ctx.WriteString(n.Labels)
-	ctx.WritePlain(" ")
 
-	ctx.WriteKeyWord("ROLE")
+	ctx.WriteKeyWord(" ROLE")
 	ctx.WritePlain("=")
 	switch n.Role {
 	case PlacementRoleFollower:
@@ -3501,9 +3500,8 @@ func (n *PlacementSpec) Restore(ctx *format.RestoreCtx) error {
 	default:
 		return errors.Errorf("invalid PlacementRole: %d", n.Role)
 	}
-	ctx.WritePlain(" ")
 
-	ctx.WriteKeyWord("COUNT")
+	ctx.WriteKeyWord(" COUNT")
 	ctx.WritePlainf("=%d", n.Count)
 	return nil
 }
