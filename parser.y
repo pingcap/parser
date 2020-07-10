@@ -7925,7 +7925,7 @@ SetOprClauseList:
 		st := $3.(*ast.SelectStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
-		endOffset := parser.endOffset(&yyS[yypt-2])
+		endOffset := parser.endOffset(&yyS[yypt-1])
 		parser.setLastSelectFieldText(lastSelect, endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr

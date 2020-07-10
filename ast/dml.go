@@ -1090,7 +1090,6 @@ type SetOprStmt struct {
 	dmlNode
 	resultSetNode
 
-	OptType    SetOprType
 	SelectList *SetOprSelectList
 	OrderBy    *OrderByClause
 	Limit      *Limit
