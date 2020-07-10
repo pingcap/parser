@@ -3483,7 +3483,8 @@ func (n *PlacementSpec) Restore(ctx *format.RestoreCtx) error {
 	}
 
 	ctx.WriteKeyWord("LABEL")
-	ctx.WritePlainf("=\"%s\" ", n.Labels)
+	ctx.WritePlain("=")
+	ctx.WriteString(n.Labels)
 
 	ctx.WriteKeyWord("ROLE")
 	ctx.WritePlain("=")
