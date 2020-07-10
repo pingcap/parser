@@ -7899,7 +7899,7 @@ SetOprStmt:
 		st := $4.(*ast.SelectStmt)
 		st.IsInBraces = true
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		endOffset = parser.endOffset(&yyS[yypt-1])
+		endOffset = parser.endOffset(&yyS[yypt-2])
 		parser.setLastSelectFieldText(st, endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		if $6 != nil {
