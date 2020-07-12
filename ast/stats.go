@@ -69,15 +69,20 @@ type HistogramOperationType int
 // Histogram operation types.
 const (
 	// HistogramOperationNop shows no operation in histogram. Default value.
-	HistogramOperationNop = iota
+	HistogramOperationNop HistogramOperationType = iota
 	HistogramOperationUpdate
 	HistogramOperationDrop
 )
 
-// HistogramOperationString stores the string form of histogram operation.
-var HistogramOperationString = map[HistogramOperationType]string{
-	HistogramOperationUpdate: "UPDATE HISTOGRAM",
-	HistogramOperationDrop:   "DROP HISTOGRAM",
+// String implements fmt.Stringer for HistogramOperationType.
+func (hot HistogramOperationType) String() string {
+	switch hot {
+	case HistogramOperationUpdate:
+		return "UPDATE HISTOGRAM"
+	case HistogramOperationDrop:
+		return "DROP HISTOGRAM"
+	}
+	return ""
 }
 
 // AnalyzeOpt stores the analyze option type and value.
@@ -111,7 +116,9 @@ func (n *AnalyzeTableStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteName(partition.O)
 	}
 	if n.HistogramOperation != HistogramOperationNop {
-		ctx.WriteKeyWord(" " + HistogramOperationString[n.HistogramOperation] + " ")
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(n.HistogramOperation.String())
+		ctx.WritePlain(" ")
 	}
 	if len(n.ColumnNames) > 0 {
 		ctx.WriteKeyWord("ON ")
