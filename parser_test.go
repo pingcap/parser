@@ -2581,6 +2581,10 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL= ROLE=follower COUNT=1;", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=-1;", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=0;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=1 COUNT=2;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=1 ROLE=voter;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=1 LABEL='ttt';", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='' ROLE=follower COUNT=1;", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p", false, ""},
 
 		// For create index statement

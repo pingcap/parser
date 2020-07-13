@@ -1384,6 +1384,11 @@ PlacementCountOpt:
 PlacementLabelOpt:
 	"LABEL" "=" stringLit
 	{
+		// [+|-]x=
+		if len($3) < 3 {
+			yylex.AppendError(yylex.Errorf("Get empty/invalid label constraints: %s", $3))
+			return 1
+		}
 		$$ = $3
 	}
 
