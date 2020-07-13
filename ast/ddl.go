@@ -3459,8 +3459,8 @@ const (
 type PlacementRole int
 
 const (
-	PlacementRoleFollower PlacementRole = iota + 1
-	PlacementRoleLeader
+	PlacementRoleLeader PlacementRole = iota + 1
+	PlacementRoleFollower
 	PlacementRoleLearner
 	PlacementRoleVoter
 )
