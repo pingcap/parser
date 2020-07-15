@@ -16,6 +16,7 @@ package terror
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/pingcap/errors"
@@ -83,6 +84,7 @@ var (
 )
 
 var errClass2Desc = make(map[ErrClass]string)
+var errCodeMap = make(map[ErrCode]*Error)
 
 // RegisterErrorClass registers new error class for terror.
 func RegisterErrorClass(classCode int, desc string) ErrClass {
@@ -164,6 +166,7 @@ type Error struct {
 	class   ErrClass
 	code    ErrCode
 	message string
+	workaround string
 	args    []interface{}
 	file    string
 	line    int
@@ -177,6 +180,14 @@ func (e *Error) Class() ErrClass {
 // Code returns ErrCode
 func (e *Error) Code() ErrCode {
 	return e.code
+}
+
+// SetWorkaround is a decorator like method which add a workaround to
+// error which is convenient for user to search.
+func (e *Error) SetWorkaround(workaround string) *Error {
+	e.workaround = workaround
+	errCodeMap[e.code] = e
+	return e
 }
 
 // MarshalJSON implements json.Marshaler interface.
@@ -362,4 +373,30 @@ func Log(err error) {
 	if err != nil {
 		log.Error("encountered error", zap.Error(errors.WithStack(err)))
 	}
+}
+
+// ExportErrorCodeAndWorkaround is used to produce error workaround.
+func ExportErrorCodeAndWorkaround(fileName string) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	for code, e := range errCodeMap {
+		title := fmt.Sprintf("[error.%v]\n", code)
+		message := fmt.Sprintf("message=%v\n", e.message)
+		workaround := fmt.Sprintf("workaround=%v\n", e.workaround)
+		_, err := file.WriteString(title)
+		if err != nil {
+			return err
+		}
+		_, err = file.WriteString(message)
+		if err != nil {
+			return err
+		}
+		_, err = file.WriteString(workaround)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
