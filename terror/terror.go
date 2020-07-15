@@ -163,13 +163,14 @@ func (ec ErrClass) Synthesize(code ErrCode, message string) *Error {
 // Error implements error interface and adds integer Class and Code, so
 // errors with different message can be compared.
 type Error struct {
-	class   ErrClass
-	code    ErrCode
-	message string
-	workaround string
-	args    []interface{}
-	file    string
-	line    int
+	class       ErrClass
+	code        ErrCode
+	message     string
+	workaround  string
+	description string
+	args        []interface{}
+	file        string
+	line        int
 }
 
 // Class returns ErrClass
@@ -184,8 +185,9 @@ func (e *Error) Code() ErrCode {
 
 // SetWorkaround is a decorator like method which add a workaround to
 // error which is convenient for user to search.
-func (e *Error) SetWorkaround(workaround string) *Error {
+func (e *Error) SetWorkaround(workaround, description string) *Error {
 	e.workaround = workaround
+	e.description = description
 	errCodeMap[e.code] = e
 	return e
 }
@@ -383,13 +385,18 @@ func ExportErrorCodeAndWorkaround(fileName string) error {
 	}
 	for code, e := range errCodeMap {
 		title := fmt.Sprintf("[error.%v]\n", code)
-		message := fmt.Sprintf("message=%v\n", e.message)
-		workaround := fmt.Sprintf("workaround=%v\n", e.workaround)
+		errorMsg := fmt.Sprintf("error = '''%v'''\n", e.message)
+		description := fmt.Sprintf("description = '''%v'''\n", e.description)
+		workaround := fmt.Sprintf("workaround = '''%v'''\n", e.workaround)
 		_, err := file.WriteString(title)
 		if err != nil {
 			return err
 		}
-		_, err = file.WriteString(message)
+		_, err = file.WriteString(errorMsg)
+		if err != nil {
+			return err
+		}
+		_, err = file.WriteString(description)
 		if err != nil {
 			return err
 		}
