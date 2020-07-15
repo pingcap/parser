@@ -387,7 +387,7 @@ func ExportErrorCodeAndWorkaround(fileName string) error {
 		title := fmt.Sprintf("[error.%v]\n", code)
 		errorMsg := fmt.Sprintf("error = '''%v'''\n", e.message)
 		description := fmt.Sprintf("description = '''%v'''\n", e.description)
-		workaround := fmt.Sprintf("workaround = '''%v'''\n", e.workaround)
+		workaround := fmt.Sprintf("workaround = '''%v'''\n\n", e.workaround)
 		_, err := file.WriteString(title)
 		if err != nil {
 			return err
