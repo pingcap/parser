@@ -133,11 +133,13 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 		ErrClassToMySQLCodes[ec] = clsMap
 	}
 	clsMap[code] = struct{}{}
-	return &Error{
+	err := &Error{
 		class:   ec,
 		code:    code,
 		message: message,
 	}
+	errCodeMap[code] = err
+	return err
 }
 
 // NewStd calls New using the standard message for the error code
@@ -187,7 +189,6 @@ func (e *Error) Code() ErrCode {
 // error which is convenient for user to search.
 func (e *Error) SetWorkaround(workaround string) *Error {
 	e.workaround = workaround
-	errCodeMap[e.code] = e
 	return e
 }
 
