@@ -185,9 +185,8 @@ func (e *Error) Code() ErrCode {
 
 // SetWorkaround is a decorator like method which add a workaround to
 // error which is convenient for user to search.
-func (e *Error) SetWorkaround(workaround, description string) *Error {
+func (e *Error) SetWorkaround(workaround string) *Error {
 	e.workaround = workaround
-	e.description = description
 	errCodeMap[e.code] = e
 	return e
 }
@@ -384,16 +383,9 @@ func ExportErrorCodeAndWorkaround(fileName string) error {
 		return err
 	}
 	for code, e := range errCodeMap {
-		var workaround string
-		if e.description != "" {
-			workaround = fmt.Sprintf(
-				"[error.%v]\nerror = '''%v'''\ndescription = '''%v'''\nworkaround = '''%v'''\n\n",
-				code, e.message, e.description, e.workaround)
-		} else {
-			workaround = fmt.Sprintf(
-				"[error.%v]\nerror = '''%v'''\nworkaround = '''%v'''\n\n",
-				code, e.message, e.workaround)
-		}
+		workaround := fmt.Sprintf(
+			"[error.%v]\nerror = '''%v'''\nworkaround = '''%v'''\n\n",
+			code, e.message, e.workaround)
 		_, err = file.WriteString(workaround)
 		if err != nil {
 			return err
