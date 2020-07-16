@@ -206,6 +206,7 @@ import (
 	over              "OVER"
 	partition         "PARTITION"
 	percentRank       "PERCENT_RANK"
+	placement         "PLACEMENT"
 	precisionType     "PRECISION"
 	primary           "PRIMARY"
 	procedure         "PROCEDURE"
@@ -334,6 +335,7 @@ import (
 	connection            "CONNECTION"
 	consistent            "CONSISTENT"
 	context               "CONTEXT"
+	count                 "COUNT"
 	cpu                   "CPU"
 	csvBackslashEscape    "CSV_BACKSLASH_ESCAPE"
 	csvDelimiter          "CSV_DELIMITER"
@@ -410,6 +412,7 @@ import (
 	issuer                "ISSUER"
 	jsonType              "JSON"
 	keyBlockSize          "KEY_BLOCK_SIZE"
+	label                 "LABEL"
 	labels                "LABELS"
 	language              "LANGUAGE"
 	last                  "LAST"
@@ -596,7 +599,6 @@ import (
 	bound                 "BOUND"
 	cast                  "CAST"
 	copyKwd               "COPY"
-	count                 "COUNT"
 	approxCountDistinct   "APPROX_COUNT_DISTINCT"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
@@ -643,6 +645,10 @@ import (
 	optRuleBlacklist      "OPT_RULE_BLACKLIST"
 	jsonObjectAgg         "JSON_OBJECTAGG"
 	tls                   "TLS"
+	follower              "FOLLOWER"
+	leader                "LEADER"
+	learner               "LEARNER"
+	voter                 "VOTER"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin                      "ADMIN"
@@ -1169,6 +1175,13 @@ import (
 	BRIEBooleanOptionName                  "Name of a BRIE option which takes a boolean as input"
 	BRIEStringOptionName                   "Name of a BRIE option which takes a string as input"
 	BRIEKeywordOptionName                  "Name of a BRIE option which takes a case-insensitive string as input"
+	PlacementRole                          "Placement rules role constraint"
+	PlacementCountOpt                      "Placement rules count option"
+	PlacementLabelOpt                      "Placement rules label option"
+	PlacementRoleOpt                       "Placement rules role option"
+	PlacementOpts                          "Placement rules constraints"
+	PlacementSpec                          "Placement rules specification"
+	PlacementSpecList                      "Placement rules specifications"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1341,6 +1354,120 @@ AlterTableStmt:
 		}
 	}
 
+PlacementRole:
+	"FOLLOWER"
+	{
+		$$ = ast.PlacementRoleFollower
+	}
+|	"LEADER"
+	{
+		$$ = ast.PlacementRoleLeader
+	}
+|	"LEARNER"
+	{
+		$$ = ast.PlacementRoleLearner
+	}
+|	"VOTER"
+	{
+		$$ = ast.PlacementRoleVoter
+	}
+
+PlacementCountOpt:
+	"COUNT" "=" LengthNum
+	{
+		cnt := $3.(uint64)
+		if cnt <= 0 {
+			yylex.AppendError(yylex.Errorf("Get a non-positive count for placement rules: %s", cnt))
+			return 1
+		}
+		$$ = cnt
+	}
+
+PlacementLabelOpt:
+	"LABEL" "=" stringLit
+	{
+		// [+|-]x=
+		if len($3) < 3 {
+			yylex.AppendError(yylex.Errorf("Get empty/invalid label constraints: %s", $3))
+			return 1
+		}
+		$$ = $3
+	}
+
+PlacementRoleOpt:
+	"ROLE" "=" PlacementRole
+	{
+		$$ = $3
+	}
+
+PlacementOpts:
+	PlacementCountOpt
+	{
+		$$ = &ast.PlacementSpec{
+			Count: $1.(uint64),
+		}
+	}
+|	PlacementLabelOpt
+	{
+		$$ = &ast.PlacementSpec{
+			Labels: $1.(string),
+		}
+	}
+|	PlacementRoleOpt
+	{
+		$$ = &ast.PlacementSpec{
+			Role: $1.(ast.PlacementRole),
+		}
+	}
+|	PlacementOpts PlacementCountOpt
+	{
+		spec := $1.(*ast.PlacementSpec)
+		if spec.Count > 0 {
+			yylex.AppendError(yylex.Errorf("Duplicate placement option COUNT"))
+			return 1
+		}
+		spec.Count = $2.(uint64)
+		$$ = spec
+	}
+|	PlacementOpts PlacementLabelOpt
+	{
+		spec := $1.(*ast.PlacementSpec)
+		if len(spec.Labels) > 0 {
+			yylex.AppendError(yylex.Errorf("Duplicate placement option LABEL"))
+			return 1
+		}
+		spec.Labels = $2.(string)
+		$$ = spec
+	}
+|	PlacementOpts PlacementRoleOpt
+	{
+		spec := $1.(*ast.PlacementSpec)
+		if spec.Role != 0 {
+			yylex.AppendError(yylex.Errorf("Duplicate placement option ROLE"))
+			return 1
+		}
+		spec.Role = $2.(ast.PlacementRole)
+		$$ = spec
+	}
+
+PlacementSpec:
+	"ADD" "PLACEMENT" PlacementOpts
+	{
+		spec := $3.(*ast.PlacementSpec)
+		spec.Tp = ast.PlacementAdd
+		$$ = spec
+	}
+
+PlacementSpecList:
+	PlacementSpec
+	{
+		$$ = []*ast.PlacementSpec{$1.(*ast.PlacementSpec)}
+	}
+|	PlacementSpecList ',' PlacementSpec
+	{
+		$$ = append($1.([]*ast.PlacementSpec), $3.(*ast.PlacementSpec))
+	}
+
 AlterTablePartitionOpt:
 	PartitionOpt
 	{
@@ -1481,6 +1608,14 @@ AlterTableSpec:
 			Num:             getUint64FromNUM($6),
 		}
 	}
+|	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAlterPartition,
+			PartitionNames: []model.CIStr{model.NewCIStr($3)},
+			PlacementSpecs: $4.([]*ast.PlacementSpec),
+		}
+	}
 |	"CHECK" "PARTITION" AllOrPartitionNameList
 	{
 		yylex.AppendError(yylex.Errorf("The CHECK PARTITIONING clause is parsed but not implement yet."))
@@ -1563,8 +1698,6 @@ AlterTableSpec:
 			ret.PartitionNames = $4.([]model.CIStr)
 		}
 		$$ = ret
-		yylex.AppendError(yylex.Errorf("The OPTIMIZE PARTITION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	"REPAIR" "PARTITION" NoWriteToBinLogAliasOpt AllOrPartitionNameList
 	{
@@ -1578,8 +1711,6 @@ AlterTableSpec:
 			ret.PartitionNames = $4.([]model.CIStr)
 		}
 		$$ = ret
-		yylex.AppendError(yylex.Errorf("The REPAIR PARTITION clause is parsed but ignored by all storage engines."))
-		parser.lastErrorAsWarn()
 	}
 |	"IMPORT" "PARTITION" AllOrPartitionNameList "TABLESPACE"
 	{
@@ -1639,8 +1770,6 @@ AlterTableSpec:
 			ret.PartitionNames = $4.([]model.CIStr)
 		}
 		$$ = ret
-		yylex.AppendError(yylex.Errorf("REBUILD PARTITION syntax is parsed but not implement for now."))
-		parser.lastErrorAsWarn()
 	}
 |	"REORGANIZE" "PARTITION" NoWriteToBinLogAliasOpt ReorganizePartitionRuleOpt
 	{
@@ -5191,6 +5320,8 @@ UnReservedKeyword:
 |	"CSV_SEPARATOR"
 |	"ON_DUPLICATE"
 |	"TIKV_IMPORTER"
+|	"LABEL"
+|	"COUNT"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5232,7 +5363,6 @@ NotKeywordToken:
 |	"BIT_XOR"
 |	"CAST"
 |	"COPY"
-|	"COUNT"
 |	"APPROX_COUNT_DISTINCT"
 |	"CURTIME"
 |	"DATE_ADD"
@@ -5280,6 +5410,10 @@ NotKeywordToken:
 |	"FLASHBACK"
 |	"JSON_OBJECTAGG"
 |	"TLS"
+|	"FOLLOWER"
+|	"LEADER"
+|	"LEARNER"
+|	"VOTER"
 
 /************************************************************************************
  *
