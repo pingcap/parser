@@ -384,9 +384,17 @@ func ExportErrorCodeAndWorkaround(fileName string) error {
 		return err
 	}
 	for code, e := range errCodeMap {
-		_, err := fmt.Fprintf(
-			"[error.%v]\nerror = '''%v'''\ndescription = '''%v'''\nworkaround = '''%v'''\n\n", 
-			code, e.message, e.description, e.workaround)
+		var workaround string
+		if e.description != "" {
+			workaround = fmt.Sprintf(
+				"[error.%v]\nerror = '''%v'''\ndescription = '''%v'''\nworkaround = '''%v'''\n\n",
+				code, e.message, e.description, e.workaround)
+		} else {
+			workaround = fmt.Sprintf(
+				"[error.%v]\nerror = '''%v'''\nworkaround = '''%v'''\n\n",
+				code, e.message, e.workaround)
+		}
+		_, err = file.WriteString(workaround)
 		if err != nil {
 			return err
 		}
