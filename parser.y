@@ -1616,6 +1616,15 @@ AlterTableSpec:
 			PlacementSpecs: $4.([]*ast.PlacementSpec),
 		}
 	}
+|	"ALTER" "PARTITION" Identifier "DROP" "PLACEMENT"
+	{
+		spec := &ast.PlacementSpec{Tp: ast.PlacementDrop}
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAlterPartition,
+			PartitionNames: []model.CIStr{model.NewCIStr($3)},
+			PlacementSpecs: []*ast.PlacementSpec{spec},
+		}
+	}
 |	"CHECK" "PARTITION" AllOrPartitionNameList
 	{
 		yylex.AppendError(yylex.Errorf("The CHECK PARTITIONING clause is parsed but not implement yet."))
