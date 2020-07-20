@@ -169,7 +169,6 @@ type Error struct {
 	code        ErrCode
 	message     string
 	workaround  string
-	description string
 	args        []interface{}
 	file        string
 	line        int
