@@ -165,13 +165,13 @@ func (ec ErrClass) Synthesize(code ErrCode, message string) *Error {
 // Error implements error interface and adds integer Class and Code, so
 // errors with different message can be compared.
 type Error struct {
-	class       ErrClass
-	code        ErrCode
-	message     string
-	workaround  string
-	args        []interface{}
-	file        string
-	line        int
+	class      ErrClass
+	code       ErrCode
+	message    string
+	workaround string
+	args       []interface{}
+	file       string
+	line       int
 }
 
 // Class returns ErrClass
