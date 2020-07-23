@@ -2644,7 +2644,7 @@ EnforcedOrNotOrNotNullOpt:
 	{
 		$$ = 0
 	}
-| not2 "NULL"
+|   not2 "NULL"
 	{
 		$$ = 0
 	}
