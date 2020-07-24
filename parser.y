@@ -9634,7 +9634,7 @@ NumericType:
 		// TODO: check flen 0
 		x := types.NewFieldType($1.(byte))
 		x.Flen = $2.(int)
-		if x.Flen != 0 {
+		if $2.(int) != 0 {
 			yylex.AppendError(yylex.Errorf("Integer display width is deprecated and will be removed in a future release."))
 			parser.lastErrorAsWarn()
 		}
