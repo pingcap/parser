@@ -454,6 +454,7 @@ type SelectLockType int
 const (
 	SelectLockNone SelectLockType = iota
 	SelectLockForUpdate
+	SelectLockForShare
 	SelectLockInShareMode
 	SelectLockForUpdateNoWait
 )
@@ -465,6 +466,8 @@ func (slt SelectLockType) String() string {
 		return "none"
 	case SelectLockForUpdate:
 		return "for update"
+	case SelectLockForShare:
+		return "for share"
 	case SelectLockInShareMode:
 		return "in share mode"
 	case SelectLockForUpdateNoWait:
@@ -920,7 +923,7 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	case SelectLockInShareMode:
 		ctx.WriteKeyWord(" LOCK ")
 		ctx.WriteKeyWord(n.LockTp.String())
-	case SelectLockForUpdate, SelectLockForUpdateNoWait:
+	case SelectLockForUpdate, SelectLockForShare, SelectLockForUpdateNoWait:
 		ctx.WritePlain(" ")
 		ctx.WriteKeyWord(n.LockTp.String())
 	}
