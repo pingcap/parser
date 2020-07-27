@@ -292,7 +292,7 @@ func (e *Error) NotEqual(err error) bool {
 }
 
 // ToSQLError convert Error to mysql.SQLError.
-func (e *Error) ToSQLError() *mysql.SQLError {
+func ToSQLError(e *Error) *mysql.SQLError {
 	code := e.getMySQLErrorCode()
 	return mysql.NewErrf(code, "%s", e.getMsg())
 }
