@@ -704,9 +704,9 @@ type PartitionInfo struct {
 	Enable bool `json:"enable"`
 
 	Definitions []PartitionDefinition `json:"definitions"`
-	// AddingDefinition is filled when adding a partition that is in the mid state.
-	AddingDefinition []PartitionDefinition `json:"adding_definitions"`
-	Num              uint64                `json:"num"`
+	// AddingDefinitions is filled when adding a partition that is in the mid state.
+	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
+	Num               uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
