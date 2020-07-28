@@ -17,7 +17,7 @@ go mod init colx && touch main.go
 
 ## Import Dependencies
 
-First of all, you need to use `go get` to fetch the dependencies through git hash. The git hashes are available in [release page](https://github.com/pingcap/parser/releases). Take `release-4.0.2` as an example:
+First of all, you need to use `go get` to fetch the dependencies through git hash. The git hashes are available in [release page](https://github.com/pingcap/parser/releases). Take `v4.0.2` as an example:
 
 ```bash
 go get -v github.com/pingcap/parser@3a18f1e
