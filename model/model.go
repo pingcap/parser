@@ -36,7 +36,7 @@ const (
 	// StateWriteOnly means we can use any write operation on this schema element,
 	// but outer can't read the changed data.
 	StateWriteOnly
-	// StateReplica means this schema element is waiting tiflash replica to be finished.
+	// StateReplica means we're waiting tiflash replica to be finished.
 	StateReplicaOnly
 	// StateWriteReorganization means we are re-organizing whole data after write only state.
 	StateWriteReorganization
