@@ -575,8 +575,13 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// select for update/share
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
 		{"SELECT * from t for share", true, "SELECT * FROM `t` FOR SHARE"},
-		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` LOCK IN SHARE MODE"},
+		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` FOR SHARE"},
 		{"SELECT * from t for update nowait", true, "SELECT * FROM `t` FOR UPDATE NOWAIT"},
+		{"SELECT * from t for share nowait", true, "SELECT * FROM `t` FOR SHARE NOWAIT"},
+		{"SELECT * from t lock in share mode nowait", false, ""},
+		{"SELECT * from t for update skip locked", true, "SELECT * FROM `t` FOR UPDATE SKIP LOCKED"},
+		{"SELECT * from t for share skip locked", true, "SELECT * FROM `t` FOR SHARE SKIP LOCKED"},
+		{"SELECT * from t lock in share mode skip locked", false, ""},
 
 		// select into outfile
 		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},

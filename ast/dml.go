@@ -455,8 +455,10 @@ const (
 	SelectLockNone SelectLockType = iota
 	SelectLockForUpdate
 	SelectLockForShare
-	SelectLockInShareMode
 	SelectLockForUpdateNoWait
+	SelectLockForShareNoWait
+	SelectLockForUpdateSkipLocked
+	SelectLockForShareSkipLocked
 )
 
 // String implements fmt.Stringer.
@@ -468,10 +470,14 @@ func (slt SelectLockType) String() string {
 		return "for update"
 	case SelectLockForShare:
 		return "for share"
-	case SelectLockInShareMode:
-		return "in share mode"
 	case SelectLockForUpdateNoWait:
 		return "for update nowait"
+	case SelectLockForShareNoWait:
+		return "for share nowait"
+	case SelectLockForUpdateSkipLocked:
+		return "for update skip locked"
+	case SelectLockForShareSkipLocked:
+		return "for share skip locked"
 	}
 	return "unsupported select lock type"
 }
@@ -919,11 +925,7 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 		}
 	}
 
-	switch n.LockTp {
-	case SelectLockInShareMode:
-		ctx.WriteKeyWord(" LOCK ")
-		ctx.WriteKeyWord(n.LockTp.String())
-	case SelectLockForUpdate, SelectLockForShare, SelectLockForUpdateNoWait:
+	if n.LockTp != SelectLockNone {
 		ctx.WritePlain(" ")
 		ctx.WriteKeyWord(n.LockTp.String())
 	}

@@ -421,6 +421,7 @@ import (
 	level                 "LEVEL"
 	list                  "LIST"
 	local                 "LOCAL"
+	locked                "LOCKED"
 	location              "LOCATION"
 	logs                  "LOGS"
 	master                "MASTER"
@@ -527,6 +528,7 @@ import (
 	shutdown              "SHUTDOWN"
 	signed                "SIGNED"
 	simple                "SIMPLE"
+	skip                  "SKIP"
 	skipSchemaFiles       "SKIP_SCHEMA_FILES"
 	slave                 "SLAVE"
 	slow                  "SLOW"
@@ -5322,6 +5324,8 @@ UnReservedKeyword:
 |	"CONSTRAINTS"
 |	"REPLICAS"
 |	"POLICY"
+|	"SKIP"
+|	"LOCKED"
 
 TiDBKeyword:
 	"ADMIN"
@@ -7955,13 +7959,25 @@ SelectLockOpt:
 	{
 		$$ = ast.SelectLockForShare
 	}
-|	"LOCK" "IN" "SHARE" "MODE"
-	{
-		$$ = ast.SelectLockInShareMode
-	}
 |	"FOR" "UPDATE" "NOWAIT"
 	{
 		$$ = ast.SelectLockForUpdateNoWait
+	}
+|	"FOR" "SHARE" "NOWAIT"
+	{
+		$$ = ast.SelectLockForShareNoWait
+	}
+|	"FOR" "UPDATE" "SKIP" "LOCKED"
+	{
+		$$ = ast.SelectLockForUpdateSkipLocked
+	}
+|	"FOR" "SHARE" "SKIP" "LOCKED"
+	{
+		$$ = ast.SelectLockForShareSkipLocked
+	}
+|	"LOCK" "IN" "SHARE" "MODE"
+	{
+		$$ = ast.SelectLockForShare
 	}
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
