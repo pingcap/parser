@@ -2553,7 +2553,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	switch n.HintName.L {
 	case "max_execution_time":
 		ctx.WritePlainf("%d", n.HintData.(uint64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
