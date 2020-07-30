@@ -18,4 +18,4 @@ require (
 
 go 1.13
 
-replace github.com/pingcap/errors => github.com/imtbkcat/errors v0.11.5-0.20200730065617-713dbedff439
+replace github.com/pingcap/errors => github.com/imtbkcat/errors v0.11.5-0.20200730071402-2e5431e20da2
