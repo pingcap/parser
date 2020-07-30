@@ -986,7 +986,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// set
 		// user defined
 		{"SET @ = 1", true, "SET @``=1"},
-		{"SET @' ' = 1", true, "SET @` `=1"},
+		{"SET @'' = 1", true, "SET @``=1"},
 		{"SET @! = 1", false, ""},
 		{"SET @1 = 1", true, "SET @`1`=1"},
 		{"SET @a = 1", true, "SET @`a`=1"},
@@ -1573,12 +1573,12 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 
 		// for string functions
 		// trim
-		{`SELECT TRIM('  bar   ');`, true, "SELECT TRIM('  bar   ')"},
+		{`SELECT TRIM('  bar   ');`, true, "SELECT TRIM('  bar')"},
 		{`SELECT TRIM(LEADING 'x' FROM 'xxxbarxxx');`, true, "SELECT TRIM(LEADING 'x' FROM 'xxxbarxxx')"},
 		{`SELECT TRIM(BOTH 'x' FROM 'xxxbarxxx');`, true, "SELECT TRIM(BOTH 'x' FROM 'xxxbarxxx')"},
 		{`SELECT TRIM(TRAILING 'xyz' FROM 'barxxyz');`, true, "SELECT TRIM(TRAILING 'xyz' FROM 'barxxyz')"},
-		{`SELECT LTRIM(' foo ');`, true, "SELECT LTRIM(' foo ')"},
-		{`SELECT RTRIM(' bar ');`, true, "SELECT RTRIM(' bar ')"},
+		{`SELECT LTRIM(' foo ');`, true, "SELECT LTRIM(' foo')"},
+		{`SELECT RTRIM(' bar ');`, true, "SELECT RTRIM(' bar')"},
 
 		{`SELECT RPAD('hi', 6, 'c');`, true, "SELECT RPAD('hi', 6, 'c')"},
 		{`SELECT BIT_LENGTH('hi');`, true, "SELECT BIT_LENGTH('hi')"},
@@ -1842,7 +1842,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select group_concat(c2,c1 SEPARATOR ';') from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ';') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinctrow c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
-		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
+		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR '') FROM `student` GROUP BY `student_name`"},
 		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STD(`c1`),STD(`c1`),STD(DISTINCT `c1`) FROM `t`"},
 		{`select std(c1, c2) from t`, false, ""},
 		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV(`c1`),STDDEV(`c1`),STDDEV(DISTINCT `c1`) FROM `t`"},
