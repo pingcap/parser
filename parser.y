@@ -10134,6 +10134,11 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
+		fieldLen := len(x.Elems) - 1
+		for _, e := range x.Elems {
+			fieldLen += len(e)
+		}
+		x.Flen = fieldLen
 		x.Charset = $5
 		$$ = x
 	}
