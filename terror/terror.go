@@ -292,9 +292,9 @@ func (e *Error) NotEqual(err error) bool {
 }
 
 // ToSQLError convert Error to mysql.SQLError.
-func ToSQLError(e *Error) *mysql.SQLError {
-	code := e.getMySQLErrorCode()
-	return mysql.NewErrf(code, "%s", e.getMsg())
+func ToSQLError(e *errors.Error) *mysql.SQLError {
+	code := uint16(e.Code())
+	return mysql.NewErrf(code, "%s", e.GetMsg())
 }
 
 var defaultMySQLErrorCode uint16
