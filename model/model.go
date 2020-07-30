@@ -45,7 +45,7 @@ const (
 	// StateReplica means we're waiting tiflash replica to be finished.
 	StateReplicaOnly
 	/*
-	 *  keep the values consistent across versions.
+	 *  Please add the new state at the end to keep the values consistent across versions.
 	 */
 )
 
