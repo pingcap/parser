@@ -36,8 +36,8 @@ type testTErrorSuite struct {
 }
 
 func (s *testTErrorSuite) TestErrCode(c *C) {
-	c.Assert(CodeMissConnectionID, Equals, ErrCode(1))
-	c.Assert(CodeResultUndetermined, Equals, ErrCode(2))
+	c.Assert(CodeMissConnectionID, Equals, errors.ErrCode(1))
+	c.Assert(CodeResultUndetermined, Equals, errors.ErrCode(2))
 }
 
 func (s *testTErrorSuite) TestTError(c *C) {
@@ -46,13 +46,13 @@ func (s *testTErrorSuite) TestTError(c *C) {
 	c.Assert(ClassKV.String(), Not(Equals), "")
 	c.Assert(ClassServer.String(), Not(Equals), "")
 
-	parserErr := ClassParser.New(ErrCode(100), "error 100")
+	parserErr := ClassParser.New(errors.ErrCode(100), "error 100")
 	c.Assert(parserErr.Error(), Not(Equals), "")
 	c.Assert(ClassParser.EqualClass(parserErr), IsTrue)
 	c.Assert(ClassParser.NotEqualClass(parserErr), IsFalse)
 
 	c.Assert(ClassOptimizer.EqualClass(parserErr), IsFalse)
-	optimizerErr := ClassOptimizer.New(ErrCode(2), "abc")
+	optimizerErr := ClassOptimizer.New(errors.ErrCode(2), "abc")
 	c.Assert(ClassOptimizer.EqualClass(errors.New("abc")), IsFalse)
 	c.Assert(ClassOptimizer.EqualClass(nil), IsFalse)
 	c.Assert(optimizerErr.Equal(optimizerErr.GenWithStack("def")), IsTrue)
@@ -64,8 +64,8 @@ func (s *testTErrorSuite) TestTError(c *C) {
 	c.Assert(optimizerErr.Equal(optimizerErr.FastGen("def: %s", "def")), IsTrue)
 	kvErr := ClassKV.New(1062, "key already exist")
 	e := kvErr.FastGen("Duplicate entry '%d' for key 'PRIMARY'", 1)
-	c.Assert(e.Error(), Equals, "[kv:1062]Duplicate entry '1' for key 'PRIMARY'")
-	sqlErr := ToSQLError(errors.Cause(e).(*Error))
+	c.Assert(e.Error(), Equals, "[DB:kv:1062] Duplicate entry '1' for key 'PRIMARY'")
+	sqlErr := ToSQLError(errors.Cause(e).(*errors.Error))
 	c.Assert(sqlErr.Message, Equals, "Duplicate entry '1' for key 'PRIMARY'")
 	c.Assert(sqlErr.Code, Equals, uint16(1062))
 
@@ -77,21 +77,17 @@ func (s *testTErrorSuite) TestTError(c *C) {
 }
 
 func (s *testTErrorSuite) TestJson(c *C) {
-	prevTErr := &Error{
-		class:   ClassTable,
-		code:    CodeExecResultIsEmpty,
-		message: "json test",
-	}
+	prevTErr := ClassTable.New(CodeExecResultIsEmpty, "json test")
 	buf, err := json.Marshal(prevTErr)
 	c.Assert(err, IsNil)
-	var curTErr Error
+	var curTErr errors.Error
 	err = json.Unmarshal(buf, &curTErr)
 	c.Assert(err, IsNil)
 	isEqual := prevTErr.Equal(&curTErr)
 	c.Assert(isEqual, IsTrue)
 }
 
-var predefinedErr = ClassExecutor.New(ErrCode(123), "predefiend error")
+var predefinedErr = ClassExecutor.New(errors.ErrCode(123), "predefiend error")
 
 func example() error {
 	err := call()
@@ -153,8 +149,8 @@ func (s *testTErrorSuite) TestErrorEqual(c *C) {
 
 	c.Assert(ErrorEqual(nil, nil), IsTrue)
 	c.Assert(ErrorNotEqual(e1, e6), IsTrue)
-	code1 := ErrCode(9001)
-	code2 := ErrCode(9002)
+	code1 := errors.ErrCode(9001)
+	code2 := errors.ErrCode(9002)
 	te1 := ClassParser.Synthesize(code1, "abc")
 	te3 := ClassKV.New(code1, "abc")
 	te4 := ClassKV.New(code2, "abc")

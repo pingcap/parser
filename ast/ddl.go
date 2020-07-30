@@ -2885,18 +2885,18 @@ func (n *TruncateTableStmt) Accept(v Visitor) (Node, bool) {
 }
 
 var (
-	ErrNoParts                              = terror.ClassDDL.NewStd(mysql.ErrNoParts)
-	ErrPartitionColumnList                  = terror.ClassDDL.NewStd(mysql.ErrPartitionColumnList)
-	ErrPartitionRequiresValues              = terror.ClassDDL.NewStd(mysql.ErrPartitionRequiresValues)
-	ErrPartitionsMustBeDefined              = terror.ClassDDL.NewStd(mysql.ErrPartitionsMustBeDefined)
-	ErrPartitionWrongNoPart                 = terror.ClassDDL.NewStd(mysql.ErrPartitionWrongNoPart)
-	ErrPartitionWrongNoSubpart              = terror.ClassDDL.NewStd(mysql.ErrPartitionWrongNoSubpart)
-	ErrPartitionWrongValues                 = terror.ClassDDL.NewStd(mysql.ErrPartitionWrongValues)
-	ErrRowSinglePartitionField              = terror.ClassDDL.NewStd(mysql.ErrRowSinglePartitionField)
-	ErrSubpartition                         = terror.ClassDDL.NewStd(mysql.ErrSubpartition)
-	ErrSystemVersioningWrongPartitions      = terror.ClassDDL.NewStd(mysql.ErrSystemVersioningWrongPartitions)
-	ErrTooManyValues                        = terror.ClassDDL.NewStd(mysql.ErrTooManyValues)
-	ErrWrongPartitionTypeExpectedSystemTime = terror.ClassDDL.NewStd(mysql.ErrWrongPartitionTypeExpectedSystemTime)
+	ErrNoParts                              = terror.ClassDDL.New(mysql.ErrNoParts, mysql.MySQLErrName[mysql.ErrNoParts])
+	ErrPartitionColumnList                  = terror.ClassDDL.New(mysql.ErrPartitionColumnList, mysql.MySQLErrName[mysql.ErrPartitionColumnList])
+	ErrPartitionRequiresValues              = terror.ClassDDL.New(mysql.ErrPartitionRequiresValues, mysql.MySQLErrName[mysql.ErrPartitionRequiresValues])
+	ErrPartitionsMustBeDefined              = terror.ClassDDL.New(mysql.ErrPartitionsMustBeDefined, mysql.MySQLErrName[mysql.ErrPartitionsMustBeDefined])
+	ErrPartitionWrongNoPart                 = terror.ClassDDL.New(mysql.ErrPartitionWrongNoPart, mysql.MySQLErrName[mysql.ErrPartitionWrongNoPart])
+	ErrPartitionWrongNoSubpart              = terror.ClassDDL.New(mysql.ErrPartitionWrongNoSubpart, mysql.MySQLErrName[mysql.ErrPartitionWrongNoSubpart])
+	ErrPartitionWrongValues                 = terror.ClassDDL.New(mysql.ErrPartitionWrongValues, mysql.MySQLErrName[mysql.ErrPartitionWrongValues])
+	ErrRowSinglePartitionField              = terror.ClassDDL.New(mysql.ErrRowSinglePartitionField, mysql.MySQLErrName[mysql.ErrRowSinglePartitionField])
+	ErrSubpartition                         = terror.ClassDDL.New(mysql.ErrSubpartition, mysql.MySQLErrName[mysql.ErrSubpartition])
+	ErrSystemVersioningWrongPartitions      = terror.ClassDDL.New(mysql.ErrSystemVersioningWrongPartitions, mysql.MySQLErrName[mysql.ErrSystemVersioningWrongPartitions])
+	ErrTooManyValues                        = terror.ClassDDL.New(mysql.ErrTooManyValues, mysql.MySQLErrName[mysql.ErrTooManyValues])
+	ErrWrongPartitionTypeExpectedSystemTime = terror.ClassDDL.New(mysql.ErrWrongPartitionTypeExpectedSystemTime, mysql.MySQLErrName[mysql.ErrWrongPartitionTypeExpectedSystemTime])
 )
 
 type SubPartitionDefinition struct {

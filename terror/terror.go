@@ -33,19 +33,19 @@ const (
 	// Executor error codes.
 
 	// CodeUnknown is for errors of unknown reason.
-	CodeUnknown ErrCode = -1
+	CodeUnknown errors.ErrCode = -1
 	// CodeExecResultIsEmpty indicates execution result is empty.
-	CodeExecResultIsEmpty ErrCode = 3
+	CodeExecResultIsEmpty errors.ErrCode = 3
 
 	// Expression error codes.
 
 	// CodeMissConnectionID indicates connection id is missing.
-	CodeMissConnectionID ErrCode = 1
+	CodeMissConnectionID errors.ErrCode = 1
 
 	// Special error codes.
 
 	// CodeResultUndetermined indicates the sql execution result is undetermined.
-	CodeResultUndetermined ErrCode = 2
+	CodeResultUndetermined errors.ErrCode = 2
 )
 
 // ErrClass represents a class of errors.
@@ -53,27 +53,28 @@ type ErrClass int
 
 // Error classes.
 var (
+	RegDB           = errors.NewRegistry("DB")
 	ClassAutoid     = RegisterErrorClass(1, "autoid")
-	ClassDDL        = RegisterErrorClass(2, "ddl")
+	ClassDDL        = RegDB.RegisterErrorClass(2, "ddl")
 	ClassDomain     = RegisterErrorClass(3, "domain")
 	ClassEvaluator  = RegisterErrorClass(4, "evaluator")
-	ClassExecutor   = RegisterErrorClass(5, "executor")
+	ClassExecutor   = RegDB.RegisterErrorClass(5, "executor")
 	ClassExpression = RegisterErrorClass(6, "expression")
 	ClassAdmin      = RegisterErrorClass(7, "admin")
-	ClassKV         = RegisterErrorClass(8, "kv")
+	ClassKV         = RegDB.RegisterErrorClass(8, "kv")
 	ClassMeta       = RegisterErrorClass(9, "meta")
-	ClassOptimizer  = RegisterErrorClass(10, "planner")
-	ClassParser     = errors.NewRegistry("DB").RegisterErrorClass(11, "parser")
+	ClassOptimizer  = RegDB.RegisterErrorClass(10, "planner")
+	ClassParser     = RegDB.RegisterErrorClass(11, "parser")
 	ClassPerfSchema = RegisterErrorClass(12, "perfschema")
 	ClassPrivilege  = RegisterErrorClass(13, "privilege")
 	ClassSchema     = RegisterErrorClass(14, "schema")
-	ClassServer     = RegisterErrorClass(15, "server")
+	ClassServer     = RegDB.RegisterErrorClass(15, "server")
 	ClassStructure  = RegisterErrorClass(16, "structure")
 	ClassVariable   = RegisterErrorClass(17, "variable")
 	ClassXEval      = RegisterErrorClass(18, "xeval")
-	ClassTable      = RegisterErrorClass(19, "table")
-	ClassTypes      = errors.NewRegistry("DB").RegisterErrorClass(20, "types")
-	ClassGlobal     = RegisterErrorClass(21, "global")
+	ClassTable      = RegDB.RegisterErrorClass(19, "table")
+	ClassTypes      = RegDB.RegisterErrorClass(20, "types")
+	ClassGlobal     = RegDB.RegisterErrorClass(21, "global")
 	ClassMockTikv   = RegisterErrorClass(22, "mocktikv")
 	ClassJSON       = RegisterErrorClass(23, "json")
 	ClassTiKV       = RegisterErrorClass(24, "tikv")
