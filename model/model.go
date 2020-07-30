@@ -45,8 +45,7 @@ const (
 	// StateReplica means we're waiting tiflash replica to be finished.
 	StateReplicaOnly
 	/*
-	 * New states must be appended after the last one, since the value is assigned according
-	 * to the strict position. Otherwise it will cause rolling update failure.
+	 *  keep the values consistent across versions.
 	 */
 )
 
