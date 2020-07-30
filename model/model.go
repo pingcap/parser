@@ -36,14 +36,18 @@ const (
 	// StateWriteOnly means we can use any write operation on this schema element,
 	// but outer can't read the changed data.
 	StateWriteOnly
-	// StateReplica means we're waiting tiflash replica to be finished.
-	StateReplicaOnly
 	// StateWriteReorganization means we are re-organizing whole data after write only state.
 	StateWriteReorganization
 	// StateDeleteReorganization means we are re-organizing whole data after delete only state.
 	StateDeleteReorganization
 	// StatePublic means this schema element is ok for all write and read operations.
 	StatePublic
+	// StateReplica means we're waiting tiflash replica to be finished.
+	StateReplicaOnly
+	/*
+	 * Follower adding state must be appended to the last one, since the value is assigned according
+	 * to the strict position. Otherwise it will cause rolling update failure.
+	 */
 )
 
 // String implements fmt.Stringer interface.
