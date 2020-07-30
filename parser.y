@@ -10120,6 +10120,13 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
+		fieldLen := -1
+		for _, e := range x.Elems {
+			if len(e) > fieldLen {
+				fieldLen = len(e)
+			}
+		}
+		x.Flen = fieldLen
 		x.Charset = $5
 		$$ = x
 	}

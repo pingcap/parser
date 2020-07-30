@@ -241,6 +241,14 @@ func (s *testFieldTypeSuite) TestHasCharsetFromStmt(c *C) {
 	}
 }
 
+func (s *testFieldTypeSuite) TestEnumFlen(c *C) {
+	p := parser.New()
+	stmt, err := p.ParseOneStmt("create table t (e enum('a', 'bb', 'ccc'))", "", "")
+	c.Assert(err, IsNil)
+	col := stmt.(*ast.CreateTableStmt).Cols[0]
+	c.Assert(col.Tp.Flen, Equals, 3)
+}
+
 func (s *testFieldTypeSuite) TestFieldTypeEqual(c *C) {
 
 	// Tp not equal
