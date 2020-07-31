@@ -10033,6 +10033,13 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
+		fieldLen := -1 // enum_flen = max(ele_flen)
+		for _, e := range x.Elems {
+			if len(e) > fieldLen {
+				fieldLen = len(e)
+			}
+		}
+		x.Flen = fieldLen
 		x.Charset = $5.(string)
 		$$ = x
 	}
@@ -10040,6 +10047,11 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
+		fieldLen := len(x.Elems) - 1 // set_flen = sum(ele_flen) + number_of_ele - 1
+		for _, e := range x.Elems {
+			fieldLen += len(e)
+		}
+		x.Flen = fieldLen
 		x.Charset = $5.(string)
 		$$ = x
 	}
