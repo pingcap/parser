@@ -243,8 +243,6 @@ func (s *testFieldTypeSuite) TestHasCharsetFromStmt(c *C) {
 
 func (s *testFieldTypeSuite) TestEnumSetFlen(c *C) {
 	p := parser.New()
-	// enum_flen = max(ele_flen)
-	// set_flen = sum(ele_flen) + number_of_ele - 1
 	cases := []struct {
 		sql string
 		ex  int
