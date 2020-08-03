@@ -42,6 +42,11 @@ const (
 	StateDeleteReorganization
 	// StatePublic means this schema element is ok for all write and read operations.
 	StatePublic
+	// StateReplica means we're waiting tiflash replica to be finished.
+	StateReplicaOnly
+	/*
+	 *  Please add the new state at the end to keep the values consistent across versions.
+	 */
 )
 
 // String implements fmt.Stringer interface.
@@ -57,6 +62,8 @@ func (s SchemaState) String() string {
 		return "delete reorganization"
 	case StatePublic:
 		return "public"
+	case StateReplicaOnly:
+		return "replica only"
 	default:
 		return "none"
 	}
@@ -667,7 +674,9 @@ type PartitionInfo struct {
 	Enable bool `json:"enable"`
 
 	Definitions []PartitionDefinition `json:"definitions"`
-	Num         uint64                `json:"num"`
+	// AddingDefinitions is filled when adding a partition that is in the mid state.
+	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
+	Num               uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
@@ -686,6 +695,25 @@ type PartitionDefinition struct {
 	Name     CIStr    `json:"name"`
 	LessThan []string `json:"less_than"`
 	Comment  string   `json:"comment,omitempty"`
+}
+
+// Clone clones ConstraintInfo.
+func (ci *PartitionDefinition) Clone() PartitionDefinition {
+	nci := *ci
+	nci.LessThan = make([]string, len(ci.LessThan))
+	copy(nci.LessThan, ci.LessThan)
+	return nci
+}
+
+// FindPartitionDefinitionByName finds PartitionDefinition by name.
+func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
+	lowConstrName := strings.ToLower(partitionDefinitionName)
+	for i, pd := range t.Partition.Definitions {
+		if pd.Name.L == lowConstrName {
+			return &t.Partition.Definitions[i]
+		}
+	}
+	return nil
 }
 
 // IndexColumn provides index column info.
