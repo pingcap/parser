@@ -1424,7 +1424,7 @@ PlacementOptions:
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if spec.Replicas > 0 {
-			yylex.AppendError(yylex.Errorf("Duplicated placement option REPLICAS"))
+			yylex.AppendError(yylex.Errorf("Duplicate placement option REPLICAS"))
 			return 1
 		}
 		spec.Replicas = $2.(uint64)
@@ -1434,7 +1434,7 @@ PlacementOptions:
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if len(spec.Constraints) > 0 {
-			yylex.AppendError(yylex.Errorf("Duplicated placement option CONSTRAINTS"))
+			yylex.AppendError(yylex.Errorf("Duplicate placement option CONSTRAINTS"))
 			return 1
 		}
 		spec.Constraints = $2.(string)
@@ -1444,7 +1444,7 @@ PlacementOptions:
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if spec.Role != ast.PlacementRoleNone {
-			yylex.AppendError(yylex.Errorf("Duplicated placement option ROLE"))
+			yylex.AppendError(yylex.Errorf("Duplicate placement option ROLE"))
 			return 1
 		}
 		spec.Role = $2.(ast.PlacementRole)
