@@ -1383,22 +1383,12 @@ PlacementRole:
 PlacementCount:
 	"REPLICAS" "=" LengthNum
 	{
-		cnt := $3.(uint64)
-		if cnt <= 0 {
-			yylex.AppendError(yylex.Errorf("Get a non-positive count for placement rules: %s", cnt))
-			return 1
-		}
-		$$ = cnt
+		$$ = $3
 	}
 
 PlacementLabelConstraints:
 	"CONSTRAINTS" "=" stringLit
 	{
-		// [+|-]x=
-		if len($3) < 3 {
-			yylex.AppendError(yylex.Errorf("Get empty/invalid label constraints: %s", $3))
-			return 1
-		}
 		$$ = $3
 	}
 
@@ -1434,7 +1424,7 @@ PlacementOptions:
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if spec.Replicas > 0 {
-			yylex.AppendError(yylex.Errorf("Duplicate placement option REPLICAS"))
+			yylex.AppendError(yylex.Errorf("Duplicated placement option REPLICAS"))
 			return 1
 		}
 		spec.Replicas = $2.(uint64)
@@ -1444,7 +1434,7 @@ PlacementOptions:
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if len(spec.Constraints) > 0 {
-			yylex.AppendError(yylex.Errorf("Duplicate placement option CONSTRAINTS"))
+			yylex.AppendError(yylex.Errorf("Duplicated placement option CONSTRAINTS"))
 			return 1
 		}
 		spec.Constraints = $2.(string)
@@ -1453,8 +1443,8 @@ PlacementOptions:
 |	PlacementOptions PlacementRole
 	{
 		spec := $1.(*ast.PlacementSpec)
-		if spec.Role != 0 {
-			yylex.AppendError(yylex.Errorf("Duplicate placement option ROLE"))
+		if spec.Role != ast.PlacementRoleNone {
+			yylex.AppendError(yylex.Errorf("Duplicated placement option ROLE"))
 			return 1
 		}
 		spec.Role = $2.(ast.PlacementRole)
