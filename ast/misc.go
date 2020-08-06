@@ -1474,6 +1474,8 @@ type CreateBindingStmt struct {
 	GlobalScope bool
 	OriginSel   StmtNode
 	HintedSel   StmtNode
+	SelDigest   string
+	Hints       []*TableOptimizerHint
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {

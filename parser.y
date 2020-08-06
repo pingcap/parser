@@ -353,6 +353,7 @@ import (
 	deallocate            "DEALLOCATE"
 	definer               "DEFINER"
 	delayKeyWrite         "DELAY_KEY_WRITE"
+	digest                "DIGEST"
 	directory             "DIRECTORY"
 	disable               "DISABLE"
 	discard               "DISCARD"
@@ -392,6 +393,7 @@ import (
 	global                "GLOBAL"
 	grants                "GRANTS"
 	hash                  "HASH"
+	hints                 "HINTS"
 	history               "HISTORY"
 	hosts                 "HOSTS"
 	hour                  "HOUR"
@@ -5291,6 +5293,8 @@ UnReservedKeyword:
 |	"TRADITIONAL"
 |	"SQL_BUFFER_RESULT"
 |	"DIRECTORY"
+|	"DIGEST"
+|	"HINTS"
 |	"HISTORY"
 |	"LIST"
 |	"NODEGROUP"
@@ -10934,6 +10938,20 @@ CreateBindingStmt:
 		x := &ast.CreateBindingStmt{
 			OriginSel:   selStmt,
 			HintedSel:   hintedSelStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+|	"CREATE" GlobalScope "BINDING" "FOR" "DIGEST" stringLit "WITH" "HINTS" hintComment
+	{
+		hints, warns := parser.parseHint($9)
+		for _, w := range warns {
+			yylex.AppendError(w)
+		}
+		x := &ast.CreateBindingStmt{
+			SelDigest:   $6,
+			Hints:       hints,
 			GlobalScope: $2.(bool),
 		}
 
