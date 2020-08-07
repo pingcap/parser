@@ -79,9 +79,9 @@ const (
 )
 
 // ChangeStateInfo is used for recording the information of schema changing.
-type ChangeStateInfo struct{
+type ChangeStateInfo struct {
 	// DependencyColumnOffset is the changing column offset that the current column depends on when executing modify/change column.
-	DependencyColumnOffset int	`json:"relative_col_offset"`
+	DependencyColumnOffset int `json:"relative_col_offset"`
 }
 
 // ColumnInfo provides meta data describing of a table column.
@@ -102,7 +102,7 @@ type ColumnInfo struct {
 	State               SchemaState `json:"state"`
 	Comment             string      `json:"comment"`
 	// A hidden column is used internally(expression index) and are not accessible by users.
-	Hidden bool `json:"hidden"`
+	Hidden           bool `json:"hidden"`
 	*ChangeStateInfo `json: "change_state_info"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
