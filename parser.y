@@ -10936,6 +10936,7 @@ CreateBindingStmt:
 		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.CreateBindingStmt{
+			ForDigest:   false,
 			OriginSel:   selStmt,
 			HintedSel:   hintedSelStmt,
 			GlobalScope: $2.(bool),
@@ -10950,6 +10951,7 @@ CreateBindingStmt:
 			yylex.AppendError(w)
 		}
 		x := &ast.CreateBindingStmt{
+			ForDigest:   true,
 			SelDigest:   $6,
 			Hints:       hints,
 			GlobalScope: $2.(bool),

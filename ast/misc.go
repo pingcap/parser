@@ -1471,11 +1471,14 @@ func (n *DropUserStmt) Accept(v Visitor) (Node, bool) {
 type CreateBindingStmt struct {
 	stmtNode
 
+	ForDigest bool
+
 	GlobalScope bool
 	OriginSel   StmtNode
 	HintedSel   StmtNode
-	SelDigest   string
-	Hints       []*TableOptimizerHint
+
+	SelDigest string
+	Hints     []*TableOptimizerHint
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1486,12 +1489,26 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
-		return errors.Trace(err)
-	}
-	ctx.WriteKeyWord(" USING ")
-	if err := n.HintedSel.Restore(ctx); err != nil {
-		return errors.Trace(err)
+	if n.ForDigest {
+		ctx.WriteKeyWord("DIGEST ")
+		ctx.WriteString(n.SelDigest)
+		ctx.WriteKeyWord(" WITH HINTS ")
+
+		ctx.WritePlain("/*+ ")
+		for _, hint := range n.Hints {
+			if err := hint.Restore(ctx); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		ctx.WritePlain(" */")
+	} else {
+		if err := n.OriginSel.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+		ctx.WriteKeyWord(" USING ")
+		if err := n.HintedSel.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
 	}
 	return nil
 }
@@ -1502,16 +1519,26 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
-	if !ok {
-		return n, false
+	if !n.ForDigest {
+		selnode, ok := n.OriginSel.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.OriginSel = selnode.(*SelectStmt)
+		hintedSelnode, ok := n.HintedSel.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.HintedSel = hintedSelnode.(*SelectStmt)
+	} else {
+		for i, hint := range n.Hints {
+			hintNode, ok := hint.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.Hints[i] = hintNode.(*TableOptimizerHint)
+		}
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	hintedSelnode, ok := n.HintedSel.Accept(v)
-	if !ok {
-		return n, false
-	}
-	n.HintedSel = hintedSelnode.(*SelectStmt)
 	return v.Leave(n)
 }
 

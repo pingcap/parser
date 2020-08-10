@@ -4128,7 +4128,7 @@ func (s *testParserSuite) TestBinding(c *C) {
 	table := []testCase{
 		{"create global binding for select * from t using select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"create session binding for select * from t using select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
-		{"create session binding for digest 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' with hints /*+ use_index(@`sel_1` `mysql`.`t` ) */", true, "CREATE SESSION BINDING FOR DIGEST faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663 WITH HINTS /*+ use_index(@`sel_1` `mysql`.`t` ) */"},
+		{"create session binding for digest 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' with hints /*+ USE_INDEX(@`sel_1` `mysql`.`t` ) */", true, "CREATE SESSION BINDING FOR DIGEST 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' WITH HINTS /*+ USE_INDEX(@`sel_1` `mysql`.`t` ) */"},
 		{"drop global binding for select * from t", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t`"},
 		{"drop session binding for select * from t", true, "DROP SESSION BINDING FOR SELECT * FROM `t`"},
 		{"drop global binding for select * from t using select * from t use index(a)", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
@@ -4139,9 +4139,9 @@ func (s *testParserSuite) TestBinding(c *C) {
 	s.RunTest(c, table)
 
 	p := parser.New()
-	sms, _, err := p.Parse("create global binding for select * from t using select * from t use index(a)", "", "")
+	stmt, _, err := p.Parse("create global binding for select * from t using select * from t use index(a)", "", "")
 	c.Assert(err, IsNil)
-	v, ok := sms[0].(*ast.CreateBindingStmt)
+	v, ok := stmt[0].(*ast.CreateBindingStmt)
 	c.Assert(ok, IsTrue)
 	c.Assert(v.OriginSel.Text(), Equals, "select * from t")
 	c.Assert(v.HintedSel.Text(), Equals, "select * from t use index(a)")
