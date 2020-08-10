@@ -26,6 +26,7 @@
 package parser
 
 import (
+	"math"
 	"strings"
 
 	"github.com/pingcap/parser/mysql"
@@ -1411,19 +1412,21 @@ PlacementOptions:
 |	PlacementLabelConstraints
 	{
 		$$ = &ast.PlacementSpec{
+			Replicas:    math.MaxUint64,
 			Constraints: $1.(string),
 		}
 	}
 |	PlacementRole
 	{
 		$$ = &ast.PlacementSpec{
-			Role: $1.(ast.PlacementRole),
+			Replicas: math.MaxUint64,
+			Role:     $1.(ast.PlacementRole),
 		}
 	}
 |	PlacementOptions PlacementCount
 	{
 		spec := $1.(*ast.PlacementSpec)
-		if spec.Replicas > 0 {
+		if spec.Replicas != math.MaxUint64 {
 			yylex.AppendError(yylex.Errorf("Duplicate placement option REPLICAS"))
 			return 1
 		}

@@ -3487,7 +3487,8 @@ type PlacementSpec struct {
 	Tp          PlacementActionType
 	Constraints string
 	Role        PlacementRole
-	Replicas    uint64
+	// Replicas defaults to math.MaxUint64
+	Replicas uint64
 }
 
 func (n *PlacementSpec) restoreRole(ctx *format.RestoreCtx) error {
