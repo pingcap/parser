@@ -2183,6 +2183,7 @@ const (
 	AlterTableOrderByColumns
 	// AlterTableSetTiFlashReplica uses to set the table TiFlash replica.
 	AlterTableSetTiFlashReplica
+	AlterTablePlacement
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2542,6 +2543,9 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlain(" ")
 
 		for i, spec := range n.PlacementSpecs {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
 			if err := spec.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
@@ -2735,6 +2739,15 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord(" VISIBLE")
 		case IndexVisibilityInvisible:
 			ctx.WriteKeyWord(" INVISIBLE")
+		}
+	case AlterTablePlacement:
+		for i, spec := range n.PlacementSpecs {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := spec.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
+			}
 		}
 	default:
 		// TODO: not support
@@ -3454,12 +3467,15 @@ type PlacementActionType int
 
 const (
 	PlacementAdd PlacementActionType = iota + 1
+	PlacementAlter
+	PlacementDrop
 )
 
 type PlacementRole int
 
 const (
-	PlacementRoleLeader PlacementRole = iota + 1
+	PlacementRoleNone PlacementRole = iota
+	PlacementRoleLeader
 	PlacementRoleFollower
 	PlacementRoleLearner
 	PlacementRoleVoter
@@ -3468,24 +3484,13 @@ const (
 type PlacementSpec struct {
 	node
 
-	Tp     PlacementActionType
-	Labels string
-	Role   PlacementRole
-	Count  uint64
+	Tp          PlacementActionType
+	Constraints string
+	Role        PlacementRole
+	Replicas    uint64
 }
 
-func (n *PlacementSpec) Restore(ctx *format.RestoreCtx) error {
-	switch n.Tp {
-	case PlacementAdd:
-		ctx.WriteKeyWord("ADD PLACEMENT ")
-	default:
-		return errors.Errorf("invalid PlacementActionType: %d", n.Tp)
-	}
-
-	ctx.WriteKeyWord("LABEL")
-	ctx.WritePlain("=")
-	ctx.WriteString(n.Labels)
-
+func (n *PlacementSpec) restoreRole(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(" ROLE")
 	ctx.WritePlain("=")
 	switch n.Role {
@@ -3500,9 +3505,35 @@ func (n *PlacementSpec) Restore(ctx *format.RestoreCtx) error {
 	default:
 		return errors.Errorf("invalid PlacementRole: %d", n.Role)
 	}
+	return nil
+}
 
-	ctx.WriteKeyWord(" COUNT")
-	ctx.WritePlainf("=%d", n.Count)
+func (n *PlacementSpec) Restore(ctx *format.RestoreCtx) error {
+	switch n.Tp {
+	case PlacementAdd:
+		ctx.WriteKeyWord("ADD PLACEMENT POLICY ")
+	case PlacementAlter:
+		ctx.WriteKeyWord("ALTER PLACEMENT POLICY ")
+	case PlacementDrop:
+		ctx.WriteKeyWord("DROP PLACEMENT POLICY")
+		if n.Role != PlacementRoleNone {
+			return n.restoreRole(ctx)
+		}
+		return nil
+	default:
+		return errors.Errorf("invalid PlacementActionType: %d", n.Tp)
+	}
+
+	ctx.WriteKeyWord("CONSTRAINTS")
+	ctx.WritePlain("=")
+	ctx.WriteString(n.Constraints)
+
+	if err := n.restoreRole(ctx); err != nil {
+		return err
+	}
+
+	ctx.WriteKeyWord(" REPLICAS")
+	ctx.WritePlainf("=%d", n.Replicas)
 	return nil
 }
 

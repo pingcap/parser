@@ -107,7 +107,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
-		"label", "role", "count",
+		"constraints", "role", "replicas", "policy",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -704,6 +704,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin reload bindings", true, "ADMIN RELOAD BINDINGS"},
 		{"admin show telemetry", true, "ADMIN SHOW TELEMETRY"},
 		{"admin reset telemetry_id", true, "ADMIN RESET TELEMETRY_ID"},
+		{"admin reload statistics", true, "ADMIN RELOAD STATISTICS"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -2573,20 +2574,23 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t reorganize partition no_write_to_binlog remove into (partition p0 VALUES LESS THAN (1991));", true, "ALTER TABLE `t` REORGANIZE PARTITION NO_WRITE_TO_BINLOG `remove` INTO (PARTITION `p0` VALUES LESS THAN (1991))"},
 
 		// alter placement rules
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=zone1' ROLE=LEADER COUNT=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT LABEL='+zone=zone1' ROLE=LEADER COUNT=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='-zone=zone1' ROLE=LEADER COUNT=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT LABEL='-zone=zone1' ROLE=LEADER COUNT=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=zone1,-zone=zone2' ROLE=LEADER COUNT=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT LABEL='+zone=zone1,-zone=zone2' ROLE=LEADER COUNT=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=zone1' ROLE=FOLLOWER COUNT=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT LABEL='+zone=zone1' ROLE=FOLLOWER COUNT=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT ROLE=LEARNER LABEL='+zone=zone1' COUNT=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT LABEL='+zone=zone1' ROLE=LEARNER COUNT=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT COUNT=1 LABEL='+zone=zone1' ROLE=VOTER", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT LABEL='+zone=zone1' ROLE=VOTER COUNT=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL= ROLE=follower COUNT=1;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=-1;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=0;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=1 COUNT=2;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=1 ROLE=voter;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='+zone=gh' ROLE=follower COUNT=1 LABEL='ttt';", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT LABEL='' ROLE=follower COUNT=1;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str,str2' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str,str2' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=FOLLOWER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=FOLLOWER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY ROLE=LEARNER CONSTRAINTS='str' REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEARNER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY REPLICAS=1 CONSTRAINTS='str' ROLE=VOTER", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=VOTER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS= ROLE=follower REPLICAS=1;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 REPLICAS=2;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 ROLE=voter;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 CONSTRAINTS='ttt';", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY", true, "ALTER TABLE `t` ALTER PARTITION `p` DROP PLACEMENT POLICY"},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY ROLE=voter", true, "ALTER TABLE `t` ALTER PARTITION `p` DROP PLACEMENT POLICY ROLE=VOTER"},
+		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
@@ -3814,8 +3818,9 @@ func (s *testParserSuite) TestSubquery(c *C) {
 		})
 	}
 }
-func (s *testParserSuite) TestUnion(c *C) {
+func (s *testParserSuite) TestSetOperator(c *C) {
 	table := []testCase{
+		// union and union all
 		{"select c1 from t1 union select c2 from t2", true, "SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"select c1 from t1 union (select c2 from t2)", true, "SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`)"},
 		{"select c1 from t1 union (select c2 from t2) order by c1", true, "SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) ORDER BY `c1`"},
@@ -3836,6 +3841,43 @@ func (s *testParserSuite) TestUnion(c *C) {
 		{"insert into t select c1 from t1 union select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 union select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual union select 1 as b from dual order by a", true, "SELECT 2 AS `a` UNION SELECT 1 AS `b` ORDER BY `a`"},
+		// except
+		{"select c1 from t1 except select c2 from t2", true, "SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
+		{"select c1 from t1 except (select c2 from t2)", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`)"},
+		{"select c1 from t1 except (select c2 from t2) order by c1", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`) ORDER BY `c1`"},
+		{"select c1 from t1 except select c2 from t2 order by c2", true, "SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2` ORDER BY `c2`"},
+		{"select c1 from t1 except (select c2 from t2) limit 1", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`) LIMIT 1"},
+		{"select c1 from t1 except (select c2 from t2) limit 1, 1", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{"select c1 from t1 except (select c2 from t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) except (select c2 from t2) order by c1 except select c3 from t3", false, ""},
+		{"(select c1 from t1) except (select c2 from t2) limit 1 except select c3 from t3", false, ""},
+		{"(select c1 from t1) except select c2 from t2 except (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) EXCEPT SELECT `c2` FROM `t2` EXCEPT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"select (select 1 except select 1) as a", true, "SELECT (SELECT 1 EXCEPT SELECT 1) AS `a`"},
+		{"select * from (select 1 except select 2) as a", true, "SELECT * FROM (SELECT 1 EXCEPT SELECT 2) AS `a`"},
+		{"insert into t select c1 from t1 except select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
+		{"insert into t (c) select c1 from t1 except select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
+		{"select 2 as a from dual except select 1 as b from dual order by a", true, "SELECT 2 AS `a` EXCEPT SELECT 1 AS `b` ORDER BY `a`"},
+		// intersect
+		{"select c1 from t1 intersect select c2 from t2", true, "SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
+		{"select c1 from t1 intersect (select c2 from t2)", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`)"},
+		{"select c1 from t1 intersect (select c2 from t2) order by c1", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`) ORDER BY `c1`"},
+		{"select c1 from t1 intersect select c2 from t2 order by c2", true, "SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2` ORDER BY `c2`"},
+		{"select c1 from t1 intersect (select c2 from t2) limit 1", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`) LIMIT 1"},
+		{"select c1 from t1 intersect (select c2 from t2) limit 1, 1", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{"select c1 from t1 intersect (select c2 from t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) intersect (select c2 from t2) order by c1 intersect select c3 from t3", false, ""},
+		{"(select c1 from t1) intersect (select c2 from t2) limit 1 intersect select c3 from t3", false, ""},
+		{"(select c1 from t1) intersect select c2 from t2 intersect (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT SELECT `c2` FROM `t2` INTERSECT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"select (select 1 intersect select 1) as a", true, "SELECT (SELECT 1 INTERSECT SELECT 1) AS `a`"},
+		{"select * from (select 1 intersect select 2) as a", true, "SELECT * FROM (SELECT 1 INTERSECT SELECT 2) AS `a`"},
+		{"insert into t select c1 from t1 intersect select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
+		{"insert into t (c) select c1 from t1 intersect select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
+		{"select 2 as a from dual intersect select 1 as b from dual order by a", true, "SELECT 2 AS `a` INTERSECT SELECT 1 AS `b` ORDER BY `a`"},
+		// mixture of union, except and intersect
+		{"(select c1 from t1) intersect select c2 from t2 union (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT SELECT `c2` FROM `t2` UNION (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) union all select c2 from t2 except (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) UNION ALL SELECT `c2` FROM `t2` EXCEPT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) except select c2 from t2 intersect (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) EXCEPT SELECT `c2` FROM `t2` INTERSECT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"select 1 union distinct select 1 except select 1 intersect select 1", true, "SELECT 1 UNION SELECT 1 EXCEPT SELECT 1 INTERSECT SELECT 1"},
 	}
 	s.RunTest(c, table)
 }
@@ -3858,7 +3900,7 @@ func (s *testParserSuite) TestUnionOrderBy(c *C) {
 	for _, t := range tests {
 		stmt, _, err := parser.Parse(t.src, "", "")
 		c.Assert(err, IsNil)
-		us, ok := stmt[0].(*ast.UnionStmt)
+		us, ok := stmt[0].(*ast.SetOprStmt)
 		if ok {
 			var i int
 			for _, s := range us.SelectList.Selects {
@@ -5262,4 +5304,34 @@ func (s *testParserSuite) TestBRIE(c *C) {
 	}
 
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestStatisticsOps(c *C) {
+	table := []testCase{
+		{"create statistics stats1 (cardinality) on t(a,b,c)", true, "CREATE STATISTICS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"create statistics stats2 (dependency) on t(a,b)", true, "CREATE STATISTICS `stats2` (DEPENDENCY) ON `t`(`a`, `b`)"},
+		{"create statistics stats3 (correlation) on t(a,b)", true, "CREATE STATISTICS `stats3` (CORRELATION) ON `t`(`a`, `b`)"},
+		{"create statistics stats3 on t(a,b)", false, ""},
+		{"create statistics if not exists stats1 (cardinality) on t(a,b,c)", true, "CREATE STATISTICS IF NOT EXISTS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"create statistics if not exists stats2 (dependency) on t(a,b)", true, "CREATE STATISTICS IF NOT EXISTS `stats2` (DEPENDENCY) ON `t`(`a`, `b`)"},
+		{"create statistics if not exists stats3 (correlation) on t(a,b)", true, "CREATE STATISTICS IF NOT EXISTS `stats3` (CORRELATION) ON `t`(`a`, `b`)"},
+		{"create statistics if not exists stats3 on t(a,b)", false, ""},
+		{"create statistics stats1(cardinality) on t(a,b,c)", true, "CREATE STATISTICS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"drop statistics stats1", true, "DROP STATISTICS `stats1`"},
+	}
+	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("create statistics if not exists stats1 (cardinality) on t(a,b,c)", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.CreateStatisticsStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.IfNotExists, IsTrue)
+	c.Assert(v.StatsName, Equals, "stats1")
+	c.Assert(v.StatsType, Equals, ast.StatsTypeCardinality)
+	c.Assert(v.Table.Name, Equals, model.CIStr{O: "t", L: "t"})
+	c.Assert(len(v.Columns), Equals, 3)
+	c.Assert(v.Columns[0].Name, Equals, model.CIStr{O: "a", L: "a"})
+	c.Assert(v.Columns[1].Name, Equals, model.CIStr{O: "b", L: "b"})
+	c.Assert(v.Columns[2].Name, Equals, model.CIStr{O: "c", L: "c"})
 }
