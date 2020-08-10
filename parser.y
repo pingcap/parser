@@ -1384,7 +1384,12 @@ PlacementRole:
 PlacementCount:
 	"REPLICAS" "=" LengthNum
 	{
-		$$ = $3
+		cnt := $3.(uint64)
+		if cnt == math.MaxUint64 {
+			yylex.AppendError(yylex.Errorf("Invalid placement option REPLICAS, it is not allowed to be MaxUint64"))
+			return 1
+		}
+		$$ = cnt
 	}
 
 PlacementLabelConstraints:
@@ -1405,13 +1410,8 @@ PlacementRoleOpt:
 PlacementOptions:
 	PlacementCount
 	{
-		cnt := $1.(uint64)
-		if cnt == math.MaxUint64 {
-			yylex.AppendError(yylex.Errorf("Invalid placement option REPLICAS, it is not allowed to be MaxUint64"))
-			return 1
-		}
 		$$ = &ast.PlacementSpec{
-			Replicas: cnt,
+			Replicas: $1.(uint64),
 		}
 	}
 |	PlacementLabelConstraints
