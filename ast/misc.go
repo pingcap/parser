@@ -88,6 +88,13 @@ var (
 	}
 )
 
+const (
+	BindingForDigest = iota
+	BindingForStmt
+)
+
+type BindingType int
+
 // TypeOpt is used for parsing data type option from SQL.
 type TypeOpt struct {
 	IsUnsigned bool
@@ -1471,14 +1478,14 @@ func (n *DropUserStmt) Accept(v Visitor) (Node, bool) {
 type CreateBindingStmt struct {
 	stmtNode
 
-	ForDigest bool
+	BindingTp BindingType
 
 	GlobalScope bool
 	OriginSel   StmtNode
 	HintedSel   StmtNode
 
-	SelDigest string
-	Hints     []*TableOptimizerHint
+	StmtDigest string
+	Hints      []*TableOptimizerHint
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1489,9 +1496,10 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if n.ForDigest {
+	switch n.BindingTp {
+	case BindingForDigest:
 		ctx.WriteKeyWord("DIGEST ")
-		ctx.WriteString(n.SelDigest)
+		ctx.WriteString(n.StmtDigest)
 		ctx.WriteKeyWord(" WITH HINTS ")
 
 		ctx.WritePlain("/*+ ")
@@ -1501,7 +1509,7 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 			}
 		}
 		ctx.WritePlain(" */")
-	} else {
+	case BindingForStmt:
 		if err := n.OriginSel.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
@@ -1509,6 +1517,7 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		if err := n.HintedSel.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
+
 	}
 	return nil
 }
@@ -1519,7 +1528,8 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	if !n.ForDigest {
+	switch n.BindingTp {
+	case BindingForStmt:
 		selnode, ok := n.OriginSel.Accept(v)
 		if !ok {
 			return n, false
@@ -1530,7 +1540,7 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.HintedSel = hintedSelnode.(*SelectStmt)
-	} else {
+	case BindingForDigest:
 		for i, hint := range n.Hints {
 			hintNode, ok := hint.Accept(v)
 			if !ok {
