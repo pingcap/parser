@@ -729,7 +729,7 @@ type PartitionDefinition struct {
 	ID       int64    `json:"id"`
 	Name     CIStr    `json:"name"`
 	LessThan []string `json:"less_than"`
-	Values   []string `json:"values"`
+	InValues []string `json:"in_values"`
 	Comment  string   `json:"comment,omitempty"`
 }
 
