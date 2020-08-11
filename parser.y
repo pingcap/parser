@@ -1185,12 +1185,11 @@ import (
 	BRIEBooleanOptionName                  "Name of a BRIE option which takes a boolean as input"
 	BRIEStringOptionName                   "Name of a BRIE option which takes a string as input"
 	BRIEKeywordOptionName                  "Name of a BRIE option which takes a case-insensitive string as input"
-	PlacementRole                          "Placement rules role constraint"
-	PlacementCountOpt                      "Placement rules count option"
-	PlacementLabelOpt                      "Placement rules label option"
-	PlacementRoleOpt                       "Placement rules role option"
-	PlacementRoleOptOrNone                 "Placement rules role option, or empty role"
-	PlacementOpts                          "Placement rules constraints"
+	PlacementCount                         "Placement rules count option"
+	PlacementLabelConstraints              "Placement rules label constraints option"
+	PlacementRole                          "Placement rules role option"
+	PlacementRoleOpt                       "Placement rules role option, optional"
+	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
 
@@ -1366,90 +1365,79 @@ AlterTableStmt:
 	}
 
 PlacementRole:
-	"FOLLOWER"
+	"ROLE" "=" "FOLLOWER"
 	{
 		$$ = ast.PlacementRoleFollower
 	}
-|	"LEADER"
+|	"ROLE" "=" "LEADER"
 	{
 		$$ = ast.PlacementRoleLeader
 	}
-|	"LEARNER"
+|	"ROLE" "=" "LEARNER"
 	{
 		$$ = ast.PlacementRoleLearner
 	}
-|	"VOTER"
+|	"ROLE" "=" "VOTER"
 	{
 		$$ = ast.PlacementRoleVoter
 	}
 
-PlacementCountOpt:
+PlacementCount:
 	"REPLICAS" "=" LengthNum
 	{
 		cnt := $3.(uint64)
-		if cnt <= 0 {
-			yylex.AppendError(yylex.Errorf("Get a non-positive count for placement rules: %s", cnt))
+		if cnt == 0 {
+			yylex.AppendError(yylex.Errorf("Invalid placement option REPLICAS, it is not allowed to be 0"))
 			return 1
 		}
 		$$ = cnt
 	}
 
-PlacementLabelOpt:
+PlacementLabelConstraints:
 	"CONSTRAINTS" "=" stringLit
 	{
-		// [+|-]x=
-		if len($3) < 3 {
-			yylex.AppendError(yylex.Errorf("Get empty/invalid label constraints: %s", $3))
-			return 1
-		}
 		$$ = $3
 	}
 
 PlacementRoleOpt:
-	"ROLE" "=" PlacementRole
-	{
-		$$ = $3
-	}
-
-PlacementRoleOptOrNone:
 	{
 		$$ = ast.PlacementRoleNone
 	}
-|	PlacementRoleOpt
+|	PlacementRole
 	{
 		$$ = $1
 	}
 
-PlacementOpts:
-	PlacementCountOpt
+PlacementOptions:
+	PlacementCount
 	{
 		$$ = &ast.PlacementSpec{
 			Replicas: $1.(uint64),
 		}
 	}
-|	PlacementLabelOpt
+|	PlacementLabelConstraints
 	{
 		$$ = &ast.PlacementSpec{
 			Constraints: $1.(string),
 		}
 	}
-|	PlacementRoleOpt
+|	PlacementRole
 	{
 		$$ = &ast.PlacementSpec{
 			Role: $1.(ast.PlacementRole),
 		}
 	}
-|	PlacementOpts PlacementCountOpt
+|	PlacementOptions PlacementCount
 	{
 		spec := $1.(*ast.PlacementSpec)
-		if spec.Replicas > 0 {
+		if spec.Replicas != 0 {
 			yylex.AppendError(yylex.Errorf("Duplicate placement option REPLICAS"))
 			return 1
 		}
 		spec.Replicas = $2.(uint64)
 		$$ = spec
 	}
-|	PlacementOpts PlacementLabelOpt
+|	PlacementOptions PlacementLabelConstraints
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if len(spec.Constraints) > 0 {
@@ -1459,10 +1447,10 @@ PlacementOpts:
 		spec.Constraints = $2.(string)
 		$$ = spec
 	}
-|	PlacementOpts PlacementRoleOpt
+|	PlacementOptions PlacementRole
 	{
 		spec := $1.(*ast.PlacementSpec)
-		if spec.Role != 0 {
+		if spec.Role != ast.PlacementRoleNone {
 			yylex.AppendError(yylex.Errorf("Duplicate placement option ROLE"))
 			return 1
 		}
@@ -1471,19 +1459,19 @@ PlacementOpts:
 	}
 
 PlacementSpec:
-	"ADD" "PLACEMENT" "POLICY" PlacementOpts
+	"ADD" "PLACEMENT" "POLICY" PlacementOptions
 	{
 		spec := $4.(*ast.PlacementSpec)
 		spec.Tp = ast.PlacementAdd
 		$$ = spec
 	}
-|	"ALTER" "PLACEMENT" "POLICY" PlacementOpts
+|	"ALTER" "PLACEMENT" "POLICY" PlacementOptions
 	{
 		spec := $4.(*ast.PlacementSpec)
 		spec.Tp = ast.PlacementAlter
 		$$ = spec
 	}
-|	"DROP" "PLACEMENT" "POLICY" PlacementRoleOptOrNone
+|	"DROP" "PLACEMENT" "POLICY" PlacementRoleOpt
 	{
 		spec := &ast.PlacementSpec{Role: $4.(ast.PlacementRole)}
 		spec.Tp = ast.PlacementDrop
@@ -2020,6 +2008,13 @@ AlterTableSpec:
 			Tp:         ast.AlterTableIndexInvisible,
 			IndexName:  model.NewCIStr($3),
 			Visibility: $4.(ast.IndexVisibility),
+		}
+	}
+|	PlacementSpecList %prec lowerThanComma
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePlacement,
+			PlacementSpecs: $1.([]*ast.PlacementSpec),
 		}
 	}
 
