@@ -700,6 +700,10 @@ const (
 	AggFuncVarPop = "var_pop"
 	// AggFuncVarSamp is the name of var_samp function
 	AggFuncVarSamp = "var_samp"
+	// AggFuncStd is the name of std function
+	AggFuncStd = "std"
+	// AggFuncStddev is the name of stddev function
+	AggFuncStddev = "stddev"
 	// AggFuncStddevPop is the name of stddev_pop function
 	AggFuncStddevPop = "stddev_pop"
 	// AggFuncStddevSamp is the name of stddev_samp function
