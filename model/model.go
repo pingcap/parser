@@ -42,6 +42,11 @@ const (
 	StateDeleteReorganization
 	// StatePublic means this schema element is ok for all write and read operations.
 	StatePublic
+	// StateReplica means we're waiting tiflash replica to be finished.
+	StateReplicaOnly
+	/*
+	 *  Please add the new state at the end to keep the values consistent across versions.
+	 */
 )
 
 // String implements fmt.Stringer interface.
@@ -704,7 +709,9 @@ type PartitionInfo struct {
 	Enable bool `json:"enable"`
 
 	Definitions []PartitionDefinition `json:"definitions"`
-	Num         uint64                `json:"num"`
+	// AddingDefinitions is filled when adding a partition that is in the mid state.
+	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
+	Num               uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
@@ -719,11 +726,10 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 
 // PartitionDefinition defines a single partition.
 type PartitionDefinition struct {
-	ID       int64       `json:"id"`
-	Name     CIStr       `json:"name"`
-	LessThan []string    `json:"less_than"`
-	Comment  string      `json:"comment,omitempty"`
-	State    SchemaState `json:"state"`
+	ID       int64    `json:"id"`
+	Name     CIStr    `json:"name"`
+	LessThan []string `json:"less_than"`
+	Comment  string   `json:"comment,omitempty"`
 }
 
 // Clone clones ConstraintInfo.

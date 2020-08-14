@@ -150,6 +150,7 @@ import (
 	infile            "INFILE"
 	inner             "INNER"
 	integerType       "INTEGER"
+	intersect         "INTERSECT"
 	interval          "INTERVAL"
 	into              "INTO"
 	outfile           "OUTFILE"
@@ -205,6 +206,7 @@ import (
 	over              "OVER"
 	partition         "PARTITION"
 	percentRank       "PERCENT_RANK"
+	placement         "PLACEMENT"
 	precisionType     "PRECISION"
 	primary           "PRIMARY"
 	procedure         "PROCEDURE"
@@ -332,6 +334,7 @@ import (
 	concurrency           "CONCURRENCY"
 	connection            "CONNECTION"
 	consistent            "CONSISTENT"
+	constraints           "CONSTRAINTS"
 	context               "CONTEXT"
 	cpu                   "CPU"
 	csvBackslashEscape    "CSV_BACKSLASH_ESCAPE"
@@ -470,6 +473,7 @@ import (
 	per_table             "PER_TABLE"
 	pipesAsOr
 	plugins               "PLUGINS"
+	policy                "POLICY"
 	preSplitRegions       "PRE_SPLIT_REGIONS"
 	preceding             "PRECEDING"
 	prepare               "PREPARE"
@@ -492,6 +496,7 @@ import (
 	repair                "REPAIR"
 	repeatable            "REPEATABLE"
 	replica               "REPLICA"
+	replicas              "REPLICAS"
 	replication           "REPLICATION"
 	respect               "RESPECT"
 	restore               "RESTORE"
@@ -595,7 +600,6 @@ import (
 	bound                 "BOUND"
 	cast                  "CAST"
 	copyKwd               "COPY"
-	count                 "COUNT"
 	approxCountDistinct   "APPROX_COUNT_DISTINCT"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
@@ -642,14 +646,21 @@ import (
 	optRuleBlacklist      "OPT_RULE_BLACKLIST"
 	jsonObjectAgg         "JSON_OBJECTAGG"
 	tls                   "TLS"
+	follower              "FOLLOWER"
+	leader                "LEADER"
+	learner               "LEARNER"
+	voter                 "VOTER"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin                      "ADMIN"
 	buckets                    "BUCKETS"
 	builtins                   "BUILTINS"
 	cancel                     "CANCEL"
+	cardinality                "CARDINALITY"
 	cmSketch                   "CMSKETCH"
+	correlation                "CORRELATION"
 	ddl                        "DDL"
+	dependency                 "DEPENDENCY"
 	depth                      "DEPTH"
 	drainer                    "DRAINER"
 	jobs                       "JOBS"
@@ -660,6 +671,7 @@ import (
 	pessimistic                "PESSIMISTIC"
 	pump                       "PUMP"
 	samples                    "SAMPLES"
+	statistics                 "STATISTICS"
 	stats                      "STATS"
 	statsMeta                  "STATS_META"
 	statsHistograms            "STATS_HISTOGRAMS"
@@ -775,16 +787,18 @@ import (
 	BRIEStmt             "BACKUP or RESTORE statement"
 	CommitStmt           "COMMIT statement"
 	CreateTableStmt      "CREATE TABLE statement"
-	CreateViewStmt       "CREATE VIEW  stetement"
+	CreateViewStmt       "CREATE VIEW  statement"
 	CreateUserStmt       "CREATE User statement"
 	CreateRoleStmt       "CREATE Role statement"
 	CreateDatabaseStmt   "Create Database Statement"
 	CreateIndexStmt      "CREATE INDEX statement"
 	CreateBindingStmt    "CREATE BINDING  statement"
 	CreateSequenceStmt   "CREATE SEQUENCE statement"
+	CreateStatisticsStmt "CREATE STATISTICS statement"
 	DoStmt               "Do statement"
 	DropDatabaseStmt     "DROP DATABASE statement"
 	DropIndexStmt        "DROP INDEX statement"
+	DropStatisticsStmt   "DROP STATISTICS statement"
 	DropStatsStmt        "DROP STATS statement"
 	DropTableStmt        "DROP TABLE statement"
 	DropSequenceStmt     "DROP SEQUENCE statement"
@@ -803,7 +817,7 @@ import (
 	GrantStmt            "Grant statement"
 	GrantRoleStmt        "Grant role statement"
 	InsertIntoStmt       "INSERT INTO statement"
-	IndexAdviseStmt      "INDEX ADVISE stetement"
+	IndexAdviseStmt      "INDEX ADVISE statement"
 	KillStmt             "Kill statement"
 	LoadDataStmt         "Load data statement"
 	LoadStatsStmt        "Load statistic statement"
@@ -828,11 +842,11 @@ import (
 	TruncateTableStmt    "TRUNCATE TABLE statement"
 	UnlockTablesStmt     "Unlock tables statement"
 	UpdateStmt           "UPDATE statement"
-	UnionStmt            "Union select state ment"
+	SetOprStmt           "Union/Except/Intersect select statement"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
-	CreateViewSelectOpt  "Select/Union statement in CREATE VIEW ... AS SELECT"
-	UnionSelect          "Union (select) item"
+	CreateViewSelectOpt  "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
+	SetOprSelect         "Union/Except/Intersect (select) item"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -1023,6 +1037,8 @@ import (
 	SequenceOptionList                     "Create sequence option list"
 	SetRoleOpt                             "Set role options"
 	SetDefaultRoleOpt                      "Set default role options"
+	SetOpr                                 "Set operator contain UNION, EXCEPT and INTERSECT"
+	SetOprClauseList                       "Union/Except/Intersect select clause list"
 	ShowTargetFilterable                   "Show target that can be filtered by WHERE or LIKE"
 	ShowTableAliasOpt                      "Show table alias option"
 	ShowLikeOrWhereOpt                     "Show like or where clause option"
@@ -1034,6 +1050,7 @@ import (
 	SplitSyntaxOption                      "Split syntax Option"
 	StatementList                          "statement list"
 	StatsPersistentVal                     "stats_persistent value"
+	StatsType                              "stats type value"
 	StringList                             "string list"
 	SubPartDefinition                      "SubPartition definition"
 	SubPartDefinitionList                  "SubPartition definition list"
@@ -1068,7 +1085,6 @@ import (
 	TransactionChars                       "Transaction characteristic list"
 	TrimDirection                          "Trim string direction"
 	UnionOpt                               "Union Option(empty/ALL/DISTINCT)"
-	UnionClauseList                        "Union select clause list"
 	Username                               "Username"
 	UsernameList                           "UsernameList"
 	UserSpec                               "Username and auth option"
@@ -1167,6 +1183,12 @@ import (
 	BRIEBooleanOptionName                  "Name of a BRIE option which takes a boolean as input"
 	BRIEStringOptionName                   "Name of a BRIE option which takes a string as input"
 	BRIEKeywordOptionName                  "Name of a BRIE option which takes a case-insensitive string as input"
+	PlacementCount                         "Placement rules count option"
+	PlacementLabelConstraints              "Placement rules label constraints option"
+	PlacementRole                          "Placement rules role option"
+	PlacementOptions                       "Placement rules options"
+	PlacementSpec                          "Placement rules specification"
+	PlacementSpecList                      "Placement rules specifications"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1339,6 +1361,121 @@ AlterTableStmt:
 		}
 	}
 
+PlacementRole:
+	"ROLE" "=" "FOLLOWER"
+	{
+		$$ = ast.PlacementRoleFollower
+	}
+|	"ROLE" "=" "LEADER"
+	{
+		$$ = ast.PlacementRoleLeader
+	}
+|	"ROLE" "=" "LEARNER"
+	{
+		$$ = ast.PlacementRoleLearner
+	}
+|	"ROLE" "=" "VOTER"
+	{
+		$$ = ast.PlacementRoleVoter
+	}
+
+PlacementCount:
+	"REPLICAS" "=" LengthNum
+	{
+		cnt := $3.(uint64)
+		if cnt == 0 {
+			yylex.AppendError(yylex.Errorf("Invalid placement option REPLICAS, it is not allowed to be 0"))
+			return 1
+		}
+		$$ = cnt
+	}
+
+PlacementLabelConstraints:
+	"CONSTRAINTS" "=" stringLit
+	{
+		$$ = $3
+	}
+
+PlacementOptions:
+	PlacementCount
+	{
+		$$ = &ast.PlacementSpec{
+			Replicas: $1.(uint64),
+		}
+	}
+|	PlacementLabelConstraints
+	{
+		$$ = &ast.PlacementSpec{
+			Constraints: $1.(string),
+		}
+	}
+|	PlacementRole
+	{
+		$$ = &ast.PlacementSpec{
+			Role: $1.(ast.PlacementRole),
+		}
+	}
+|	PlacementOptions PlacementCount
+	{
+		spec := $1.(*ast.PlacementSpec)
+		if spec.Replicas != 0 {
+			yylex.AppendError(yylex.Errorf("Duplicate placement option REPLICAS"))
+			return 1
+		}
+		spec.Replicas = $2.(uint64)
+		$$ = spec
+	}
+|	PlacementOptions PlacementLabelConstraints
+	{
+		spec := $1.(*ast.PlacementSpec)
+		if len(spec.Constraints) > 0 {
+			yylex.AppendError(yylex.Errorf("Duplicate placement option CONSTRAINTS"))
+			return 1
+		}
+		spec.Constraints = $2.(string)
+		$$ = spec
+	}
+|	PlacementOptions PlacementRole
+	{
+		spec := $1.(*ast.PlacementSpec)
+		if spec.Role != ast.PlacementRoleNone {
+			yylex.AppendError(yylex.Errorf("Duplicate placement option ROLE"))
+			return 1
+		}
+		spec.Role = $2.(ast.PlacementRole)
+		$$ = spec
+	}
+
+PlacementSpec:
+	"ADD" "PLACEMENT" "POLICY" PlacementOptions
+	{
+		spec := $4.(*ast.PlacementSpec)
+		spec.Tp = ast.PlacementAdd
+		$$ = spec
+	}
+|	"ALTER" "PLACEMENT" "POLICY" PlacementOptions
+	{
+		spec := $4.(*ast.PlacementSpec)
+		spec.Tp = ast.PlacementAlter
+		$$ = spec
+	}
+|	"DROP" "PLACEMENT" "POLICY" PlacementRole
+	{
+		spec := &ast.PlacementSpec{Role: $4.(ast.PlacementRole)}
+		spec.Tp = ast.PlacementDrop
+		$$ = spec
+	}
+
+PlacementSpecList:
+	PlacementSpec
+	{
+		$$ = []*ast.PlacementSpec{$1.(*ast.PlacementSpec)}
+	}
+|	PlacementSpecList ',' PlacementSpec
+	{
+		$$ = append($1.([]*ast.PlacementSpec), $3.(*ast.PlacementSpec))
+	}
+
 AlterTablePartitionOpt:
 	PartitionOpt
 	{
@@ -1356,6 +1493,12 @@ AlterTablePartitionOpt:
 		$$ = &ast.AlterTableSpec{
 			Tp: ast.AlterTableRemovePartitioning,
 		}
+	}
+|	"REORGANIZE" "PARTITION" NoWriteToBinLogAliasOpt ReorganizePartitionRuleOpt
+	{
+		ret := $4.(*ast.AlterTableSpec)
+		ret.NoWriteToBinlog = $3.(bool)
+		$$ = ret
 	}
 
 LocationLabelList:
@@ -1477,6 +1620,14 @@ AlterTableSpec:
 			NoWriteToBinlog: noWriteToBinlog,
 			Tp:              ast.AlterTableAddPartitions,
 			Num:             getUint64FromNUM($6),
+		}
+	}
+|	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAlterPartition,
+			PartitionNames: []model.CIStr{model.NewCIStr($3)},
+			PlacementSpecs: $4.([]*ast.PlacementSpec),
 		}
 	}
 |	"CHECK" "PARTITION" AllOrPartitionNameList
@@ -1633,14 +1784,6 @@ AlterTableSpec:
 			ret.PartitionNames = $4.([]model.CIStr)
 		}
 		$$ = ret
-	}
-|	"REORGANIZE" "PARTITION" NoWriteToBinLogAliasOpt ReorganizePartitionRuleOpt
-	{
-		ret := $4.(*ast.AlterTableSpec)
-		ret.NoWriteToBinlog = $3.(bool)
-		$$ = ret
-		yylex.AppendError(yylex.Errorf("REORGANIZE PARTITION syntax is parsed but not implement for now."))
-		parser.lastErrorAsWarn()
 	}
 |	"DROP" KeyOrIndex IfExists Identifier
 	{
@@ -1853,6 +1996,13 @@ AlterTableSpec:
 			Tp:         ast.AlterTableIndexInvisible,
 			IndexName:  model.NewCIStr($3),
 			Visibility: $4.(ast.IndexVisibility),
+		}
+	}
+|	PlacementSpecList %prec lowerThanComma
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePlacement,
+			PlacementSpecs: $1.([]*ast.PlacementSpec),
 		}
 	}
 
@@ -2952,6 +3102,38 @@ NumLiteral:
 |	floatLit
 |	decLit
 
+StatsType:
+	'(' "CARDINALITY" ')'
+	{
+		$$ = ast.StatsTypeCardinality
+	}
+|	'(' "DEPENDENCY" ')'
+	{
+		$$ = ast.StatsTypeDependency
+	}
+|	'(' "CORRELATION" ')'
+	{
+		$$ = ast.StatsTypeCorrelation
+	}
+
+CreateStatisticsStmt:
+	"CREATE" "STATISTICS" IfNotExists Identifier StatsType "ON" TableName '(' ColumnNameList ')'
+	{
+		$$ = &ast.CreateStatisticsStmt{
+			IfNotExists: $3.(bool),
+			StatsName:   $4,
+			StatsType:   $5.(uint8),
+			Table:       $7.(*ast.TableName),
+			Columns:     $9.([]*ast.ColumnName),
+		}
+	}
+
+DropStatisticsStmt:
+	"DROP" "STATISTICS" Identifier
+	{
+		$$ = &ast.DropStatisticsStmt{StatsName: $3}
+	}
+
 /**************************************CreateIndexStmt***************************************
  * See https://dev.mysql.com/doc/refman/8.0/en/create-index.html
  *
@@ -3551,7 +3733,7 @@ CreateTableSelectOpt:
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
-|	UnionStmt
+|	SetOprStmt
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
@@ -3563,12 +3745,12 @@ CreateTableSelectOpt:
 
 CreateViewSelectOpt:
 	SelectStmt
-|	UnionStmt
+|	SetOprStmt
 |	'(' SelectStmt ')'
 	{
 		$$ = $2
 	}
-|	'(' UnionStmt ')'
+|	'(' SetOprStmt ')'
 	{
 		$$ = $2
 	}
@@ -5183,14 +5365,20 @@ UnReservedKeyword:
 |	"CSV_SEPARATOR"
 |	"ON_DUPLICATE"
 |	"TIKV_IMPORTER"
+|	"CONSTRAINTS"
+|	"REPLICAS"
+|	"POLICY"
 
 TiDBKeyword:
 	"ADMIN"
 |	"BUCKETS"
 |	"BUILTINS"
 |	"CANCEL"
+|	"CARDINALITY"
 |	"CMSKETCH"
+|	"CORRELATION"
 |	"DDL"
+|	"DEPENDENCY"
 |	"DEPTH"
 |	"DRAINER"
 |	"JOBS"
@@ -5199,6 +5387,7 @@ TiDBKeyword:
 |	"NODE_STATE"
 |	"PUMP"
 |	"SAMPLES"
+|	"STATISTICS"
 |	"STATS"
 |	"STATS_META"
 |	"STATS_HISTOGRAMS"
@@ -5224,7 +5413,6 @@ NotKeywordToken:
 |	"BIT_XOR"
 |	"CAST"
 |	"COPY"
-|	"COUNT"
 |	"APPROX_COUNT_DISTINCT"
 |	"CURTIME"
 |	"DATE_ADD"
@@ -5272,6 +5460,10 @@ NotKeywordToken:
 |	"FLASHBACK"
 |	"JSON_OBJECTAGG"
 |	"TLS"
+|	"FOLLOWER"
+|	"LEADER"
+|	"LEARNER"
+|	"VOTER"
 
 /************************************************************************************
  *
@@ -5318,9 +5510,9 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $5.(*ast.SelectStmt)}
 	}
-|	'(' ColumnNameListOpt ')' UnionStmt
+|	'(' ColumnNameListOpt ')' SetOprStmt
 	{
-		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.UnionStmt)}
+		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.SetOprStmt)}
 	}
 |	ValueSym ValuesList %prec insertValues
 	{
@@ -5334,9 +5526,9 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
 	}
-|	UnionStmt
+|	SetOprStmt
 	{
-		$$ = &ast.InsertStmt{Select: $1.(*ast.UnionStmt)}
+		$$ = &ast.InsertStmt{Select: $1.(*ast.SetOprStmt)}
 	}
 |	"SET" ColumnSetValueList
 	{
@@ -7421,9 +7613,9 @@ TableFactor:
 		parser.setLastSelectFieldText(st, endOffset)
 		$$ = &ast.TableSource{Source: $2.(*ast.SelectStmt), AsName: $4.(model.CIStr)}
 	}
-|	'(' UnionStmt ')' TableAsName
+|	'(' SetOprStmt ')' TableAsName
 	{
-		$$ = &ast.TableSource{Source: $2.(*ast.UnionStmt), AsName: $4.(model.CIStr)}
+		$$ = &ast.TableSource{Source: $2.(*ast.SetOprStmt), AsName: $4.(model.CIStr)}
 	}
 |	'(' TableRefs ')'
 	{
@@ -7790,9 +7982,9 @@ SubSelect:
 		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: s}
 	}
-|	'(' UnionStmt ')'
+|	'(' SetOprStmt ')'
 	{
-		s := $2.(*ast.UnionStmt)
+		s := $2.(*ast.SetOprStmt)
 		src := parser.src
 		// See the implementation of yyParse function
 		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
@@ -7819,109 +8011,111 @@ SelectLockOpt:
 	}
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
-UnionStmt:
-	UnionClauseList "UNION" UnionOpt SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
+// See https://mariadb.com/kb/en/intersect/
+// See https://mariadb.com/kb/en/except/
+SetOprStmt:
+	SetOprClauseList SetOpr SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
 	{
-		st := $4.(*ast.SelectStmt)
-		union := $1.(*ast.UnionStmt)
-		st.IsAfterUnionDistinct = $3.(bool)
-		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
+		st := $3.(*ast.SelectStmt)
+		setOpr := $1.(*ast.SetOprStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		endOffset := parser.endOffset(&yyS[yypt-4])
+		parser.setLastSelectFieldText(lastSelect, endOffset)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		if $4 != nil {
+			setOpr.OrderBy = $4.(*ast.OrderByClause)
+		}
+		if $5 != nil {
+			setOpr.Limit = $5.(*ast.Limit)
+		}
+		if $4 == nil && $5 == nil {
+			st.LockTp = $6.(ast.SelectLockType)
+		}
+		$$ = setOpr
+	}
+|	SetOprClauseList SetOpr SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt
+	{
+		st := $3.(*ast.SelectStmt)
+		setOpr := $1.(*ast.SetOprStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		endOffset := parser.endOffset(&yyS[yypt-4])
+		parser.setLastSelectFieldText(lastSelect, endOffset)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		if $4 != nil {
+			setOpr.OrderBy = $4.(*ast.OrderByClause)
+		}
+		if $5 != nil {
+			setOpr.Limit = $5.(*ast.Limit)
+		}
+		if $4 == nil && $5 == nil {
+			st.LockTp = $6.(ast.SelectLockType)
+		}
+		$$ = setOpr
+	}
+|	SetOprClauseList SetOpr SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt
+	{
+		st := $3.(*ast.SelectStmt)
+		setOpr := $1.(*ast.SetOprStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		endOffset := parser.endOffset(&yyS[yypt-4])
+		parser.setLastSelectFieldText(lastSelect, endOffset)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		if $4 != nil {
+			setOpr.OrderBy = $4.(*ast.OrderByClause)
+		}
+		if $5 != nil {
+			setOpr.Limit = $5.(*ast.Limit)
+		}
+		if $4 == nil && $5 == nil {
+			st.LockTp = $6.(ast.SelectLockType)
+		}
+		$$ = setOpr
+	}
+|	SetOprClauseList SetOpr '(' SelectStmt ')' OrderByOptional SelectStmtLimit
+	{
+		setOpr := $1.(*ast.SetOprStmt)
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-5])
 		parser.setLastSelectFieldText(lastSelect, endOffset)
-		union.SelectList.Selects = append(union.SelectList.Selects, st)
-		if $5 != nil {
-			union.OrderBy = $5.(*ast.OrderByClause)
-		}
-		if $6 != nil {
-			union.Limit = $6.(*ast.Limit)
-		}
-		if $5 == nil && $6 == nil {
-			st.LockTp = $7.(ast.SelectLockType)
-		}
-		$$ = union
-	}
-|	UnionClauseList "UNION" UnionOpt SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt
-	{
 		st := $4.(*ast.SelectStmt)
-		union := $1.(*ast.UnionStmt)
-		st.IsAfterUnionDistinct = $3.(bool)
-		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
-		endOffset := parser.endOffset(&yyS[yypt-5])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
-		union.SelectList.Selects = append(union.SelectList.Selects, st)
-		if $5 != nil {
-			union.OrderBy = $5.(*ast.OrderByClause)
-		}
-		if $6 != nil {
-			union.Limit = $6.(*ast.Limit)
-		}
-		if $5 == nil && $6 == nil {
-			st.LockTp = $7.(ast.SelectLockType)
-		}
-		$$ = union
-	}
-|	UnionClauseList "UNION" UnionOpt SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt
-	{
-		st := $4.(*ast.SelectStmt)
-		union := $1.(*ast.UnionStmt)
-		st.IsAfterUnionDistinct = $3.(bool)
-		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
-		endOffset := parser.endOffset(&yyS[yypt-5])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
-		union.SelectList.Selects = append(union.SelectList.Selects, st)
-		if $5 != nil {
-			union.OrderBy = $5.(*ast.OrderByClause)
-		}
-		if $6 != nil {
-			union.Limit = $6.(*ast.Limit)
-		}
-		if $5 == nil && $6 == nil {
-			st.LockTp = $7.(ast.SelectLockType)
-		}
-		$$ = union
-	}
-|	UnionClauseList "UNION" UnionOpt '(' SelectStmt ')' OrderByOptional SelectStmtLimit
-	{
-		union := $1.(*ast.UnionStmt)
-		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
-		endOffset := parser.endOffset(&yyS[yypt-6])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
-		st := $5.(*ast.SelectStmt)
 		st.IsInBraces = true
-		st.IsAfterUnionDistinct = $3.(bool)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
 		endOffset = parser.endOffset(&yyS[yypt-2])
 		parser.setLastSelectFieldText(st, endOffset)
-		union.SelectList.Selects = append(union.SelectList.Selects, st)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		if $6 != nil {
+			setOpr.OrderBy = $6.(*ast.OrderByClause)
+		}
 		if $7 != nil {
-			union.OrderBy = $7.(*ast.OrderByClause)
+			setOpr.Limit = $7.(*ast.Limit)
 		}
-		if $8 != nil {
-			union.Limit = $8.(*ast.Limit)
-		}
-		$$ = union
+		$$ = setOpr
 	}
 
-UnionClauseList:
-	UnionSelect
+SetOprClauseList:
+	SetOprSelect
 	{
-		selectList := &ast.UnionSelectList{Selects: []*ast.SelectStmt{$1.(*ast.SelectStmt)}}
-		$$ = &ast.UnionStmt{
+		selectList := &ast.SetOprSelectList{Selects: []*ast.SelectStmt{$1.(*ast.SelectStmt)}}
+		$$ = &ast.SetOprStmt{
 			SelectList: selectList,
 		}
 	}
-|	UnionClauseList "UNION" UnionOpt UnionSelect
+|	SetOprClauseList SetOpr SetOprSelect
 	{
-		union := $1.(*ast.UnionStmt)
-		st := $4.(*ast.SelectStmt)
-		st.IsAfterUnionDistinct = $3.(bool)
-		lastSelect := union.SelectList.Selects[len(union.SelectList.Selects)-1]
-		endOffset := parser.endOffset(&yyS[yypt-2])
+		setOpr := $1.(*ast.SetOprStmt)
+		st := $3.(*ast.SelectStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		endOffset := parser.endOffset(&yyS[yypt-1])
 		parser.setLastSelectFieldText(lastSelect, endOffset)
-		union.SelectList.Selects = append(union.SelectList.Selects, st)
-		$$ = union
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		$$ = setOpr
 	}
 
-UnionSelect:
+SetOprSelect:
 	SelectStmt
 |	'(' SelectStmt ')'
 	{
@@ -7930,6 +8124,27 @@ UnionSelect:
 		endOffset := parser.endOffset(&yyS[yypt])
 		parser.setLastSelectFieldText(st, endOffset)
 		$$ = $2
+	}
+
+SetOpr:
+	"UNION" UnionOpt
+	{
+		var tp ast.SetOprType
+		tp = ast.Union
+		if $2 == false {
+			tp = ast.UnionAll
+		}
+		$$ = &tp
+	}
+|	"EXCEPT"
+	{
+		tp := ast.Except
+		$$ = &tp
+	}
+|	"INTERSECT"
+	{
+		tp := ast.Intersect
+		$$ = &tp
 	}
 
 UnionOpt:
@@ -8513,6 +8728,12 @@ AdminStmt:
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminReloadBindings,
+		}
+	}
+|	"ADMIN" "RELOAD" "STATISTICS"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminReloadStatistics,
 		}
 	}
 |	"ADMIN" "SHOW" "TELEMETRY"
@@ -9207,6 +9428,7 @@ Statement:
 |	CreateRoleStmt
 |	CreateBindingStmt
 |	CreateSequenceStmt
+|	CreateStatisticsStmt
 |	DoStmt
 |	DropDatabaseStmt
 |	DropIndexStmt
@@ -9215,6 +9437,7 @@ Statement:
 |	DropViewStmt
 |	DropUserStmt
 |	DropRoleStmt
+|	DropStatisticsStmt
 |	DropStatsStmt
 |	DropBindingStmt
 |	FlushStmt
@@ -9234,7 +9457,7 @@ Statement:
 |	RevokeStmt
 |	RevokeRoleStmt
 |	SelectStmt
-|	UnionStmt
+|	SetOprStmt
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
@@ -9260,7 +9483,7 @@ TraceableStmt:
 |	UpdateStmt
 |	InsertIntoStmt
 |	ReplaceIntoStmt
-|	UnionStmt
+|	SetOprStmt
 |	LoadDataStmt
 |	BeginTransactionStmt
 |	CommitStmt
@@ -9273,7 +9496,7 @@ ExplainableStmt:
 |	UpdateStmt
 |	InsertIntoStmt
 |	ReplaceIntoStmt
-|	UnionStmt
+|	SetOprStmt
 
 StatementList:
 	Statement
@@ -9626,6 +9849,10 @@ NumericType:
 		// TODO: check flen 0
 		x := types.NewFieldType($1.(byte))
 		x.Flen = $2.(int)
+		if $2.(int) != types.UnspecifiedLength && types.TiDBStrictIntegerDisplayWidth {
+			yylex.AppendError(yylex.Errorf("Integer display width is deprecated and will be removed in a future release."))
+			parser.lastErrorAsWarn()
+		}
 		for _, o := range $3.([]*ast.TypeOpt) {
 			if o.IsUnsigned {
 				x.Flag |= mysql.UnsignedFlag
@@ -9900,6 +10127,13 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
+		fieldLen := -1 // enum_flen = max(ele_flen)
+		for _, e := range x.Elems {
+			if len(e) > fieldLen {
+				fieldLen = len(e)
+			}
+		}
+		x.Flen = fieldLen
 		x.Charset = $5
 		$$ = x
 	}
@@ -9907,6 +10141,11 @@ StringType:
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
+		fieldLen := len(x.Elems) - 1 // set_flen = sum(ele_flen) + number_of_ele - 1
+		for _, e := range x.Elems {
+			fieldLen += len(e)
+		}
+		x.Flen = fieldLen
 		x.Charset = $5
 		$$ = x
 	}
