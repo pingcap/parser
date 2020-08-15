@@ -10123,7 +10123,7 @@ StringType:
 		}
 		$$ = x
 	}
-|	"ENUM" '(' StringList ')' OptCharset
+|	"ENUM" '(' StringList ')' OptCharsetWithOptBinary
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
@@ -10134,10 +10134,14 @@ StringType:
 			}
 		}
 		x.Flen = fieldLen
-		x.Charset = $5
+		opt := $5.(*ast.OptBinary)
+		x.Charset = opt.Charset
+		if opt.IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
 		$$ = x
 	}
-|	"SET" '(' StringList ')' OptCharset
+|	"SET" '(' StringList ')' OptCharsetWithOptBinary
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
@@ -10146,7 +10150,11 @@ StringType:
 			fieldLen += len(e)
 		}
 		x.Flen = fieldLen
-		x.Charset = $5
+		opt := $5.(*ast.OptBinary)
+		x.Charset = opt.Charset
+		if opt.IsBinary {
+			x.Flag |= mysql.BinaryFlag
+		}
 		$$ = x
 	}
 |	"JSON"
