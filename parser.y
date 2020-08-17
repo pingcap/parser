@@ -1186,7 +1186,6 @@ import (
 	PlacementCount                         "Placement rules count option"
 	PlacementLabelConstraints              "Placement rules label constraints option"
 	PlacementRole                          "Placement rules role option"
-	PlacementRoleOpt                       "Placement rules role option, optional"
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
@@ -1383,22 +1382,18 @@ PlacementRole:
 PlacementCount:
 	"REPLICAS" "=" LengthNum
 	{
-		$$ = $3
+		cnt := $3.(uint64)
+		if cnt == 0 {
+			yylex.AppendError(yylex.Errorf("Invalid placement option REPLICAS, it is not allowed to be 0"))
+			return 1
+		}
+		$$ = cnt
 	}
 
 PlacementLabelConstraints:
 	"CONSTRAINTS" "=" stringLit
 	{
 		$$ = $3
-	}
-
-PlacementRoleOpt:
-	{
-		$$ = ast.PlacementRoleNone
-	}
-|	PlacementRole
-	{
-		$$ = $1
 	}
 
 PlacementOptions:
@@ -1423,7 +1418,7 @@ PlacementOptions:
 |	PlacementOptions PlacementCount
 	{
 		spec := $1.(*ast.PlacementSpec)
-		if spec.Replicas > 0 {
+		if spec.Replicas != 0 {
 			yylex.AppendError(yylex.Errorf("Duplicate placement option REPLICAS"))
 			return 1
 		}
@@ -1464,7 +1459,7 @@ PlacementSpec:
 		spec.Tp = ast.PlacementAlter
 		$$ = spec
 	}
-|	"DROP" "PLACEMENT" "POLICY" PlacementRoleOpt
+|	"DROP" "PLACEMENT" "POLICY" PlacementRole
 	{
 		spec := &ast.PlacementSpec{Role: $4.(ast.PlacementRole)}
 		spec.Tp = ast.PlacementDrop
