@@ -89,8 +89,8 @@ var (
 )
 
 const (
-	BindingForDigest = iota
-	BindingForStmt
+	BindingForStmt = iota
+	BindingForDigest
 )
 
 type BindingType int
