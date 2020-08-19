@@ -356,6 +356,8 @@ type FuncCallExpr struct {
 	FnName model.CIStr
 	// Args is the function args.
 	Args []ExprNode
+	// Offset is used to get original text.
+	Offset int
 }
 
 // Restore implements Node interface.
