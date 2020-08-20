@@ -114,7 +114,9 @@ func (ec ErrClass) EqualClass(err error) bool {
 	}
 	if te, ok := e.(*Error); ok {
 		rfcCode := te.RFCCode()
-		if class, has := rfcCode2errClass[rfcCode]; has {
+		tags := strings.Split(string(rfcCode), ":")
+		class := tags[0]
+		if class, has := rfcCode2errClass[class]; has {
 			return class == ec
 		}
 	}
