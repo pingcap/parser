@@ -249,3 +249,11 @@ func Log(err error) {
 		log.Error("encountered error", zap.Error(err), zap.Stack("stack"))
 	}
 }
+
+func GetErrClass(e *Error) ErrClass {
+	rfcCode := e.RFCCode()
+	if ec, ok := rfcCode2errClass[rfcCode]; ok {
+		return ec
+	}
+	return ErrClass(-1)
+}
