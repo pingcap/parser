@@ -16,6 +16,7 @@ package terror
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
@@ -85,7 +86,7 @@ var (
 
 var errClass2Desc = make(map[ErrClass]string)
 var errCodeMap = make(map[ErrCode]*Error)
-var rfcCode2errClass = make(map[errors.RFCErrorCode]ErrClass)
+var rfcCode2errClass = make(map[string]ErrClass)
 
 // RegisterErrorClass registers new error class for terror.
 func RegisterErrorClass(classCode int, desc string) ErrClass {
@@ -140,7 +141,9 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 	var rfcCode = fmt.Sprintf("%s:%d", errClass2Desc[ec], code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
 	errCodeMap[code] = err
-	rfcCode2errClass[errors.RFCErrorCode(rfcCode)] = ec
+	tags := strings.Split(rfcCode, ":")
+	class := tags[0]
+	rfcCode2errClass[class] = ec
 	return err
 }
 
@@ -169,7 +172,9 @@ func ToSQLError(e *Error) *mysql.SQLError {
 var defaultMySQLErrorCode uint16
 
 func getMySQLErrorCode(e *Error) uint16 {
-	class, ok := rfcCode2errClass[e.RFCCode()]
+	tags := strings.Split(string(e.RFCCode()), ":")
+	className := tags[0]
+	class, ok := rfcCode2errClass[className]
 	if !ok {
 		log.Warn("Unknown error class", zap.Int("class", int(class)))
 		return defaultMySQLErrorCode
@@ -251,8 +256,9 @@ func Log(err error) {
 }
 
 func GetErrClass(e *Error) ErrClass {
-	rfcCode := e.RFCCode()
-	if ec, ok := rfcCode2errClass[rfcCode]; ok {
+	tags := strings.Split(string(e.RFCCode()), ":")
+	class := tags[0]
+	if ec, ok := rfcCode2errClass[class]; ok {
 		return ec
 	}
 	return ErrClass(-1)
