@@ -7870,7 +7870,7 @@ TableOptimizerHints:
 	}
 |	hintComment
 	{
-		hints, warns := parser.parseHint($1)
+		hints, warns := parser.ParseHint($1)
 		for _, w := range warns {
 			yylex.AppendError(w)
 			parser.lastErrorAsWarn()
@@ -10931,7 +10931,7 @@ CreateBindingStmt:
 	}
 |	"CREATE" GlobalScope "BINDING" "FOR" "DIGEST" stringLit "WITH" "HINTS" hintComment
 	{
-		hints, warns := parser.parseHint($9)
+		hints, warns := parser.ParseHint($9)
 		for _, w := range warns {
 			yylex.AppendError(w)
 		}

@@ -190,7 +190,7 @@ func (parser *Parser) endOffset(v *yySymType) int {
 	return offset
 }
 
-func (parser *Parser) parseHint(input string) ([]*ast.TableOptimizerHint, []error) {
+func (parser *Parser) ParseHint(input string) ([]*ast.TableOptimizerHint, []error) {
 	if parser.hintParser == nil {
 		parser.hintParser = newHintParser()
 	}
