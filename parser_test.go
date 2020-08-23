@@ -4290,6 +4290,32 @@ func (s *testParserSuite) TestTimestampDiffUnit(c *C) {
 	s.RunTest(c, table)
 }
 
+func (s *testParserSuite) TestFuncCallExprOffset(c *C) {
+	// Test case for offset field on func call expr.
+	parser := parser.New()
+	stmt, _, err := parser.Parse("SELECT s.a(), b();", "", "")
+	c.Assert(err, IsNil)
+	ss := stmt[0].(*ast.SelectStmt)
+	fields := ss.Fields.Fields
+	c.Assert(len(fields), Equals, 2)
+
+	{
+		// s.a()
+		expr := fields[0].Expr
+		f, ok := expr.(*ast.FuncCallExpr)
+		c.Assert(ok, IsTrue)
+		c.Assert(f.Offset, Equals, 7)
+	}
+
+	{
+		// b()
+		expr := fields[1].Expr
+		f, ok := expr.(*ast.FuncCallExpr)
+		c.Assert(ok, IsTrue)
+		c.Assert(f.Offset, Equals, 0)
+	}
+}
+
 func (s *testParserSuite) TestSessionManage(c *C) {
 	table := []testCase{
 		// Kill statement.
