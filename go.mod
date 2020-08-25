@@ -17,5 +17,3 @@ require (
 )
 
 go 1.13
-
-replace github.com/pingcap/errors => github.com/pingcap/errors v0.11.5-0.20200820105733-2b6fabf184ae
