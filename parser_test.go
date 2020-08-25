@@ -1843,9 +1843,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinctrow c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
-		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STD(`c1`),STD(`c1`),STD(DISTINCT `c1`) FROM `t`"},
+		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select std(c1, c2) from t`, false, ""},
-		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV(`c1`),STDDEV(`c1`),STDDEV(DISTINCT `c1`) FROM `t`"},
+		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select stddev(c1, c2) from t`, false, ""},
 		{`select stddev_pop(c1), stddev_pop(all c1), stddev_pop(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select stddev_pop(c1, c2) from t`, false, ""},
@@ -2587,7 +2587,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 CONSTRAINTS='ttt';", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY", true, "ALTER TABLE `t` ALTER PARTITION `p` DROP PLACEMENT POLICY"},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY ROLE=voter", true, "ALTER TABLE `t` ALTER PARTITION `p` DROP PLACEMENT POLICY ROLE=VOTER"},
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
@@ -3567,6 +3567,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "read_consistent_replica")
 	c.Assert(hints[1].HintName.L, Equals, "read_consistent_replica")
+
+	// Test TOPN_TO_COP
+	stmt, _, err = parser.Parse("select /*+ TOPN_TO_COP(), topn_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "topn_to_cop")
+	c.Assert(hints[1].HintName.L, Equals, "topn_to_cop")
 }
 
 func (s *testParserSuite) TestType(c *C) {
@@ -3589,6 +3599,8 @@ func (s *testParserSuite) TestType(c *C) {
 
 		// for enum and set type
 		{"create table t (c1 enum('a', 'b'), c2 set('a', 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum(0x61, 'b'), c2 set(0x61, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum(0b01100001, 'b'), c2 set(0b01100001, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
 		{"create table t (c1 enum)", false, ""},
 		{"create table t (c1 set)", false, ""},
 

@@ -1078,6 +1078,7 @@ import (
 	TableRefs                              "table references"
 	TableToTable                           "rename table to table"
 	TableToTableList                       "rename table to table by list"
+	TextStringList                         "text string list"
 	TimeUnit                               "Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
 	TimestampUnit                          "Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	TimestampBound                         "Timestamp bound for start transaction with timestamp mode"
@@ -1187,7 +1188,6 @@ import (
 	PlacementCount                         "Placement rules count option"
 	PlacementLabelConstraints              "Placement rules label constraints option"
 	PlacementRole                          "Placement rules role option"
-	PlacementRoleOpt                       "Placement rules role option, optional"
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
@@ -1265,6 +1265,7 @@ import (
 	StringName                      "string literal or identifier"
 	StringNameOrBRIEOptionKeyword   "string literal or identifier or keyword used for BRIE options"
 	Symbol                          "Constraint Symbol"
+	TextString                      "text string item"
 
 %precedence empty
 %precedence sqlBufferResult
@@ -1399,15 +1400,6 @@ PlacementLabelConstraints:
 		$$ = $3
 	}
 
-PlacementRoleOpt:
-	{
-		$$ = ast.PlacementRoleNone
-	}
-|	PlacementRole
-	{
-		$$ = $1
-	}
-
 PlacementOptions:
 	PlacementCount
 	{
@@ -1471,7 +1463,7 @@ PlacementSpec:
 		spec.Tp = ast.PlacementAlter
 		$$ = spec
 	}
-|	"DROP" "PLACEMENT" "POLICY" PlacementRoleOpt
+|	"DROP" "PLACEMENT" "POLICY" PlacementRole
 	{
 		spec := &ast.PlacementSpec{Role: $4.(ast.PlacementRole)}
 		spec.Tp = ast.PlacementDrop
@@ -6536,9 +6528,9 @@ SumExpr:
 |	builtinStddevPop '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
 	{
 		if $6 != nil {
-			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool), Spec: *($6.(*ast.WindowSpec))}
+			$$ = &ast.WindowFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool), Spec: *($6.(*ast.WindowSpec))}
 		} else {
-			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
+			$$ = &ast.AggregateFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 		}
 	}
 |	builtinStddevSamp '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
@@ -9855,7 +9847,7 @@ NumericType:
 		x := types.NewFieldType($1.(byte))
 		x.Flen = $2.(int)
 		if $2.(int) != types.UnspecifiedLength && types.TiDBStrictIntegerDisplayWidth {
-			yylex.AppendError(yylex.Errorf("Integer display width is deprecated and will be removed in a future release."))
+			yylex.AppendError(ErrWarnDeprecatedIntegerDisplayWidth)
 			parser.lastErrorAsWarn()
 		}
 		for _, o := range $3.([]*ast.TypeOpt) {
@@ -10128,7 +10120,7 @@ StringType:
 		}
 		$$ = x
 	}
-|	"ENUM" '(' StringList ')' OptCharset
+|	"ENUM" '(' TextStringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
@@ -10142,7 +10134,7 @@ StringType:
 		x.Charset = $5
 		$$ = x
 	}
-|	"SET" '(' StringList ')' OptCharset
+|	"SET" '(' TextStringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
@@ -10448,6 +10440,27 @@ StringList:
 		$$ = []string{$1}
 	}
 |	StringList ',' stringLit
+	{
+		$$ = append($1.([]string), $3)
+	}
+
+TextString:
+	stringLit
+|	hexLit
+	{
+		$$ = $1.(ast.BinaryLiteral).ToString()
+	}
+|	bitLit
+	{
+		$$ = $1.(ast.BinaryLiteral).ToString()
+	}
+
+TextStringList:
+	TextString
+	{
+		$$ = []string{$1}
+	}
+|	TextStringList ',' TextString
 	{
 		$$ = append($1.([]string), $3)
 	}
