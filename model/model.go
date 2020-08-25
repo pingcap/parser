@@ -72,6 +72,10 @@ func (s SchemaState) String() string {
 		return "public"
 	case StateReplicaOnly:
 		return "replica only"
+	case StateCreateIndexDeleteOnly:
+		return "create index delete only"
+	case StateCreateIndexWriteOnly:
+		return "create index write only"
 	default:
 		return "none"
 	}
