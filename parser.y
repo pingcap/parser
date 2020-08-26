@@ -7823,7 +7823,7 @@ FirstOrNext:
 
 FetchFirstOpt:
 	{
-		$$ = ast.NewValueExpr(1, parser.charset, parser.collation)
+		$$ = ast.NewValueExpr(uint64(1), parser.charset, parser.collation)
 	}
 |	LimitOption
 

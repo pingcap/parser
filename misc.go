@@ -567,6 +567,7 @@ var tokenMap = map[string]int{
 	"ROW_COUNT":                rowCount,
 	"ROW_FORMAT":               rowFormat,
 	"ROW":                      row,
+	"ROWS":                     rows,
 	"RTREE":                    rtree,
 	"SAMPLES":                  samples,
 	"SAN":                      san,
@@ -794,7 +795,6 @@ var windowFuncTokenMap = map[string]int{
 	"OVER":         over,
 	"PERCENT_RANK": percentRank,
 	"RANK":         rank,
-	"ROWS":         rows,
 	"ROW_NUMBER":   rowNumber,
 	"WINDOW":       window,
 }
