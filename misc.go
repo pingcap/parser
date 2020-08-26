@@ -322,6 +322,7 @@ var tokenMap = map[string]int{
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
 	"FAULTS":                   faultsSym,
+	"FETCH":                    fetch,
 	"FIELDS":                   fields,
 	"FILE":                     file,
 	"FIRST":                    first,
