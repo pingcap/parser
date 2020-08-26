@@ -114,10 +114,10 @@ func (ec ErrClass) EqualClass(err error) bool {
 	}
 	if te, ok := e.(*Error); ok {
 		rfcCode := te.RFCCode()
-		tags := strings.Split(string(rfcCode), ":")
-		class := tags[0]
-		if class, has := rfcCode2errClass[class]; has {
-			return class == ec
+		if index := strings.Index(string(rfcCode), ":"); index > 0 {
+			if class, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+				return class == ec
+			}
 		}
 	}
 	return false
@@ -140,11 +140,10 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 		ErrClassToMySQLCodes[ec] = clsMap
 	}
 	clsMap[code] = struct{}{}
-	var rfcCode = fmt.Sprintf("%s:%d", errClass2Desc[ec], code)
+	class := errClass2Desc[ec]
+	rfcCode := fmt.Sprintf("%s:%d", class, code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
 	errCodeMap[code] = err
-	tags := strings.Split(rfcCode, ":")
-	class := tags[0]
 	rfcCode2errClass[class] = ec
 	return err
 }
@@ -174,12 +173,15 @@ func ToSQLError(e *Error) *mysql.SQLError {
 var defaultMySQLErrorCode uint16
 
 func getMySQLErrorCode(e *Error) uint16 {
-	tags := strings.Split(string(e.RFCCode()), ":")
-	className := tags[0]
-	class, ok := rfcCode2errClass[className]
-	if !ok {
-		log.Warn("Unknown error class", zap.Int("class", int(class)))
-		return defaultMySQLErrorCode
+	rfcCode := e.RFCCode()
+	var class ErrClass
+	if index := strings.Index(string(rfcCode), ":"); index > 0 {
+		if ec, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+			class = ec
+		} else {
+			log.Warn("Unknown error class", zap.String("class", string(rfcCode)[:index]))
+			return defaultMySQLErrorCode
+		}
 	}
 	codeMap, ok := ErrClassToMySQLCodes[class]
 	if !ok {
@@ -258,10 +260,11 @@ func Log(err error) {
 }
 
 func GetErrClass(e *Error) ErrClass {
-	tags := strings.Split(string(e.RFCCode()), ":")
-	class := tags[0]
-	if ec, ok := rfcCode2errClass[class]; ok {
-		return ec
+	rfcCode := e.RFCCode()
+	if index := strings.Index(string(rfcCode), ":"); index > 0 {
+		if class, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+			return class
+		}
 	}
 	return ErrClass(-1)
 }
