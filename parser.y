@@ -5964,6 +5964,7 @@ SimpleExpr:
 		x := types.NewFieldType(mysql.TypeString)
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
+		x.Flag |= mysql.BinaryFlag
 		$$ = &ast.FuncCastExpr{
 			Expr:         $2,
 			Tp:           x,
@@ -6834,9 +6835,13 @@ CastType:
 	{
 		x := types.NewFieldType(mysql.TypeVarString)
 		x.Flen = $2.(int) // TODO: Flen should be the flen of expression
+		x.Charset = parser.charset
+		x.Collate = parser.collation
 		x.Charset = $3.(*ast.OptBinary).Charset
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
+			x.Charset = charset.CharsetBin
+			x.Collate = charset.CollationBin
 		}
 		if x.Charset == "" {
 			x.Charset = mysql.DefaultCharset
