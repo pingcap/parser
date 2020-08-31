@@ -215,6 +215,8 @@ func FindColumnInfo(cols []*ColumnInfo, name string) *ColumnInfo {
 // ExtraHandleID is the column ID of column which we need to append to schema to occupy the handle's position
 // for use of execution phase.
 const ExtraHandleID = -1
+// ExtraPartitionID is the column ID of column which store the partitionID decoded in global index values.
+const ExtraPidColID = -2
 
 const (
 	// TableInfoVersion0 means the table info version is 0.
