@@ -514,6 +514,12 @@ func (n *FuncCallExpr) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Args[i] = node.(ExprNode)
+		// in ifnull() and if() expressions,
+		// the remaining args would not be executed, so they cannot be directly folded
+		// here directly leave the expr
+		if i == 0 && (n.FnName.String() == "ifnull" || n.FnName.String() == "if") {
+			return v.Leave(newNode)
+		}
 	}
 	return v.Leave(n)
 }

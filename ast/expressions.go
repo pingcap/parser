@@ -335,20 +335,8 @@ func (n *CaseExpr) Accept(v Visitor) (Node, bool) {
 		}
 		n.Value = node.(ExprNode)
 	}
-	for i, val := range n.WhenClauses {
-		node, ok := val.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.WhenClauses[i] = node.(*WhenClause)
-	}
-	if n.ElseClause != nil {
-		node, ok := n.ElseClause.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.ElseClause = node.(ExprNode)
-	}
+	// the case ...when... args would not be executed, so they cannot be directly folded
+	// here directly leave the expr
 	return v.Leave(n)
 }
 
