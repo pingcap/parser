@@ -504,7 +504,9 @@ func (n *FuncCallExpr) specialFormatArgs(w io.Writer) bool {
 // Accept implements Node interface.
 func (n *FuncCallExpr) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
+	// in ifnull() and if() expressions, some args would not be executed, so they cannot be directly folded
+	// here directly leave the expr
+	if skipChildren || n.FnName.String() == "ifnull" || n.FnName.String() == "if"{
 		return v.Leave(newNode)
 	}
 	n = newNode.(*FuncCallExpr)
@@ -514,12 +516,6 @@ func (n *FuncCallExpr) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Args[i] = node.(ExprNode)
-		// in ifnull() and if() expressions,
-		// the remaining args would not be executed, so they cannot be directly folded
-		// here directly leave the expr
-		if i == 0 && (n.FnName.String() == "ifnull" || n.FnName.String() == "if") {
-			return v.Leave(n)
-		}
 	}
 	return v.Leave(n)
 }
