@@ -62,6 +62,8 @@ func (s SchemaState) String() string {
 		return "delete reorganization"
 	case StatePublic:
 		return "public"
+	case StateReplicaOnly:
+		return "replica only"
 	default:
 		return "none"
 	}
@@ -149,7 +151,7 @@ func (c *ColumnInfo) SetOriginDefaultValue(value interface{}) error {
 
 // GetOriginalDefaultValue gets the origin default value.
 func (c *ColumnInfo) GetOriginDefaultValue() interface{} {
-	if c.Tp == mysql.TypeBit {
+	if c.Tp == mysql.TypeBit && c.OriginDefaultValueBit != nil {
 		// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
 		// because the content before json.Marshal is INCONSISTENT with the content after json.Unmarshal.
 		return string(c.OriginDefaultValueBit)
@@ -722,7 +724,9 @@ type PartitionInfo struct {
 	Definitions []PartitionDefinition `json:"definitions"`
 	// AddingDefinitions is filled when adding a partition that is in the mid state.
 	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
-	Num               uint64                `json:"num"`
+	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
+	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
+	Num                 uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
