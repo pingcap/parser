@@ -190,7 +190,7 @@ func (ts *testFunctionsSuite) TestConvertCast(c *C) {
 	}{
 		{`SELECT CONVERT("abc", char(5) character set utf8)`, "utf8", "utf8_bin", ""},
 		{`SELECT CONVERT("abc", char(5))`, "utf8mb4", "utf8mb4_bin", ""},
-		{`SELECT CONVERT("abc", char(5) character set utf9)`, "","",  `[parser:1115]Unknown character set: 'utf9'`},
+		{`SELECT CONVERT("abc", char(5) character set utf9)`, "", "", `[parser:1115]Unknown character set: 'utf9'`},
 	}
 	for _, testCase := range cases {
 		stmt, err := parser.New().ParseOneStmt(testCase.SQL, "", "")
