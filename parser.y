@@ -6841,6 +6841,8 @@ CastType:
 		if x.Charset == "" {
 			x.Charset = mysql.DefaultCharset
 			x.Collate = mysql.DefaultCollationName
+		} else if x.Collate == "" {
+			x.Collate, _ = charset.GetDefaultCollation(x.Charset)
 		}
 		$$ = x
 	}
