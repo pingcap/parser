@@ -72,7 +72,7 @@ const (
 	ParseToJSONFlag        uint = 1 << 18 /* Internal: Used when we want to parse string to JSON in CAST */
 	IsBooleanFlag          uint = 1 << 19 /* Internal: Used for telling boolean literal from integer */
 	PreventNullInsertFlag  uint = 1 << 20 /* Prevent this Field from inserting NULL values */
-	IsTureWithKeepNullFlag uint = 1 << 21 /* Internal: Used for telling KeepNull attributes in ScalarFunction IsTure */
+	IsTrueWithKeepNullFlag uint = 1 << 21 /* Internal: Used for telling KeepNull attributes in ScalarFunction IsTrue */
 )
 
 // TypeInt24 bounds.
