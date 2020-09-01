@@ -64,7 +64,7 @@ func (s *testTErrorSuite) TestTError(c *C) {
 	c.Assert(optimizerErr.Equal(optimizerErr.FastGen("def: %s", "def")), IsTrue)
 	kvErr := ClassKV.New(1062, "key already exist")
 	e := kvErr.FastGen("Duplicate entry '%d' for key 'PRIMARY'", 1)
-	c.Assert(e.Error(), Equals, "[kv:1062] Duplicate entry '1' for key 'PRIMARY'")
+	c.Assert(e.Error(), Equals, "[kv:1062]Duplicate entry '1' for key 'PRIMARY'")
 	sqlErr := ToSQLError(errors.Cause(e).(*Error))
 	c.Assert(sqlErr.Message, Equals, "Duplicate entry '1' for key 'PRIMARY'")
 	c.Assert(sqlErr.Code, Equals, uint16(1062))

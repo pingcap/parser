@@ -35,6 +35,8 @@ github.com/pingcap/errors v0.11.5-0.20200820023525-77f66aa24026 h1:klbc7oP3/xRPe
 github.com/pingcap/errors v0.11.5-0.20200820023525-77f66aa24026/go.mod h1:g4vx//d6VakjJ0mk7iLBlKA8LFavV/sAVINT/1PFxeQ=
 github.com/pingcap/errors v0.11.5-0.20200820105733-2b6fabf184ae h1:LjL3t9xqp1kqwJwtlxPg7Qsxf/yDVP6WeIBwaUHEHm8=
 github.com/pingcap/errors v0.11.5-0.20200820105733-2b6fabf184ae/go.mod h1:g4vx//d6VakjJ0mk7iLBlKA8LFavV/sAVINT/1PFxeQ=
+github.com/pingcap/errors v0.11.5-0.20200901084736-22e4480db80c h1:eC9ijf5AaM3tp4PDuKFVKvijjWt5AYxW/HAKb3dDFz8=
+github.com/pingcap/errors v0.11.5-0.20200901084736-22e4480db80c/go.mod h1:g4vx//d6VakjJ0mk7iLBlKA8LFavV/sAVINT/1PFxeQ=
 github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9 h1:AJD9pZYm72vMgPcQDww9rkZ1DnWfl0pXV3BOWlkYIjA=
 github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9/go.mod h1:4rbK1p9ILyIfb6hU7OG2CiWSqMXnp3JMbiaVJ6mvoY8=
 github.com/pingcap/log v0.0.0-20200511115504-543df19646ad h1:SveG82rmu/GFxYanffxsSF503SiQV+2JLnWEiGiF+Tc=

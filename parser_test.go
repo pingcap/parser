@@ -3063,40 +3063,40 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 	c.Assert(err.Error(), Equals, "line 1 column 36 near \"> t2.a;\" ")
 
 	_, _, err = parser.Parse("create table t(f_year year(5))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1818] Supports only YEAR or YEAR(4) column")
+	c.Assert(err.Error(), Equals, "[parser:1818]Supports only YEAR or YEAR(4) column")
 
 	_, _, err = parser.Parse("select ifnull(a,0) & ifnull(a,0) like '55' ESCAPE '\\\\a' from t;", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1210] Incorrect arguments to ESCAPE")
+	c.Assert(err.Error(), Equals, "[parser:1210]Incorrect arguments to ESCAPE")
 
 	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Enclosed by '\\\\b';", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1083] Field separator argument is not what is expected; check the manual")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
 
 	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Escaped by '\\\\b';", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1083] Field separator argument is not what is expected; check the manual")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
 
 	_, _, err = parser.Parse("load data infile 'aaa' into table aaa FIELDS  Enclosed by '\\\\b' Escaped by '\\\\b' ;", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1083] Field separator argument is not what is expected; check the manual")
+	c.Assert(err.Error(), Equals, "[parser:1083]Field separator argument is not what is expected; check the manual")
 
 	_, _, err = parser.Parse("ALTER DATABASE `` CHARACTER SET = ''", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: ''")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: ''")
 
 	_, _, err = parser.Parse("ALTER DATABASE t CHARACTER SET = ''", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: ''")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: ''")
 
 	_, _, err = parser.Parse("ALTER SCHEMA t CHARACTER SET = 'SOME_INVALID_CHARSET'", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: 'SOME_INVALID_CHARSET'")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'SOME_INVALID_CHARSET'")
 
 	_, _, err = parser.Parse("ALTER DATABASE t COLLATE = ''", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1273] Unknown collation: ''")
+	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: ''")
 
 	_, _, err = parser.Parse("ALTER SCHEMA t COLLATE = 'SOME_INVALID_COLLATION'", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1273] Unknown collation: 'SOME_INVALID_COLLATION'")
+	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: 'SOME_INVALID_COLLATION'")
 
 	_, _, err = parser.Parse("ALTER DATABASE CHARSET = 'utf8mb4' COLLATE = 'utf8_bin'", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 24 near \"= 'utf8mb4' COLLATE = 'utf8_bin'\" ")
 
 	_, _, err = parser.Parse("ALTER DATABASE t ENCRYPTION = ''", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1525] Incorrect argument (should be Y or N) value: ''")
+	c.Assert(err.Error(), Equals, "[parser:1525]Incorrect argument (should be Y or N) value: ''")
 
 	_, _, err = parser.Parse("ALTER DATABASE", "", "")
 	c.Assert(err.Error(), Equals, "line 1 column 14 near \"\" ")
@@ -3105,46 +3105,46 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 	c.Assert(err.Error(), Equals, "line 1 column 26 near \"\" ")
 
 	_, _, err = parser.Parse("alter table t partition by range FIELDS(a)", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1492] For RANGE partitions each partition must be defined")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For RANGE partitions each partition must be defined")
 
 	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1492] For LIST partitions each partition must be defined")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
 
 	_, _, err = parser.Parse("alter table t partition by list FIELDS(a)", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1492] For LIST partitions each partition must be defined")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
 
 	_, _, err = parser.Parse("alter table t partition by list FIELDS(a,b,c)", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1492] For LIST partitions each partition must be defined")
+	c.Assert(err.Error(), Equals, "[ddl:1492]For LIST partitions each partition must be defined")
 
 	_, _, err = parser.Parse("alter table t lock = first", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1801] Unknown LOCK type 'first'")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'first'")
 
 	_, _, err = parser.Parse("alter table t lock = start", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1801] Unknown LOCK type 'start'")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'start'")
 
 	_, _, err = parser.Parse("alter table t lock = commit", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1801] Unknown LOCK type 'commit'")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'commit'")
 
 	_, _, err = parser.Parse("alter table t lock = binlog", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1801] Unknown LOCK type 'binlog'")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'binlog'")
 
 	_, _, err = parser.Parse("alter table t lock = randomStr123", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1801] Unknown LOCK type 'randomStr123'")
+	c.Assert(err.Error(), Equals, "[parser:1801]Unknown LOCK type 'randomStr123'")
 
 	_, _, err = parser.Parse("create table t (a longtext unicode)", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: 'ucs2'")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 
 	_, _, err = parser.Parse("create table t (a long byte, b text unicode)", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: 'ucs2'")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 
 	_, _, err = parser.Parse("create table t (a long ascii, b long unicode)", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: 'ucs2'")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 
 	_, _, err = parser.Parse("create table t (a text unicode, b mediumtext ascii, c int)", "", "")
-	c.Assert(err.Error(), Equals, "[parser:1115] Unknown character set: 'ucs2'")
+	c.Assert(err.Error(), Equals, "[parser:1115]Unknown character set: 'ucs2'")
 
 	_, _, err = parser.Parse("select 1 collate some_unknown_collation", "", "")
-	c.Assert(err.Error(), Equals, "[ddl:1273] Unknown collation: 'some_unknown_collation'")
+	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: 'some_unknown_collation'")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
