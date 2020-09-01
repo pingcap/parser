@@ -19,6 +19,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/modern-go/reflect2"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
 	"github.com/pingcap/parser/mysql"
@@ -230,10 +231,16 @@ func (e *Error) Location() (file string, line int) {
 
 // Error implements error interface.
 func (e *Error) Error() string {
+	if reflect2.IsNil(e) {
+		return "<nil>"
+	}
 	return fmt.Sprintf("[%s:%d]%s", e.class, e.code, e.getMsg())
 }
 
 func (e *Error) getMsg() string {
+	if reflect2.IsNil(e) {
+		return "<nil>"
+	}
 	if len(e.args) > 0 {
 		return fmt.Sprintf(e.message, e.args...)
 	}
