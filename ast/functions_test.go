@@ -180,6 +180,33 @@ func (ts *testFunctionsSuite) TestConvert(c *C) {
 	}
 }
 
+func (ts *testFunctionsSuite) TestConvertCast(c *C) {
+	// Test case for CONVERT(expr, type).
+	cases := []struct {
+		SQL          string
+		CharsetName  string
+		CollateName  string
+		ErrorMessage string
+	}{
+		{`SELECT CONVERT("abc", char(5) character set utf8)`, "utf8", "utf8_bin", ""},
+		{`SELECT CONVERT("abc", char(5))`, "utf8mb4", "utf8mb4_bin", ""},
+		{`SELECT CONVERT("abc", char(5) character set utf9)`, "","",  `[parser:1115]Unknown character set: 'utf9'`},
+	}
+	for _, testCase := range cases {
+		stmt, err := parser.New().ParseOneStmt(testCase.SQL, "", "")
+		if testCase.ErrorMessage != "" {
+			c.Assert(err.Error(), Equals, testCase.ErrorMessage)
+			continue
+		}
+		c.Assert(err, IsNil)
+
+		st := stmt.(*SelectStmt)
+		expr := st.Fields.Fields[0].Expr.(*FuncCastExpr)
+		c.Assert(expr.Tp.Charset, Equals, testCase.CharsetName)
+		c.Assert(expr.Tp.Collate, Equals, testCase.CollateName)
+	}
+}
+
 func (ts *testFunctionsSuite) TestChar(c *C) {
 	// Test case for CHAR(N USING charset_name)
 	cases := []struct {
