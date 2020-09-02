@@ -766,6 +766,7 @@ import (
 	SystemVariable         "System defined variable name"
 	UserVariable           "User defined variable name"
 	SubSelect              "Sub Select"
+	SubSelect2             "Sub Select2"
 	StringLiteral          "text literal"
 	ExpressionOpt          "Optional expression"
 	SignedLiteral          "Literal or NumLiteral with sign"
@@ -844,6 +845,8 @@ import (
 	UnlockTablesStmt     "Unlock tables statement"
 	UpdateStmt           "UPDATE statement"
 	SetOprStmt           "Union/Except/Intersect select statement"
+	SetOprStmt1          "Union/Except/Intersect select statement1"
+	SetOprStmt2          "Union/Except/Intersect select statement2"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
 	CreateViewSelectOpt  "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
@@ -1326,6 +1329,7 @@ import (
 %left labels
 %precedence lowerThanParenthese
 %precedence '(' ')'
+%precedence higherThanParenthese
 %precedence quick
 %precedence escape
 %precedence lowerThanComma
@@ -3737,14 +3741,14 @@ CreateTableSelectOpt:
 	{
 		$$ = &ast.CreateTableStmt{}
 	}
-|	SetOprStmt
+|	SetOprStmt1
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
 
 CreateViewSelectOpt:
-	SetOprStmt
-|	'(' SetOprStmt ')'
+	SetOprStmt1
+|	'(' SetOprStmt1 ')'
 	{
 		$$ = $2
 	}
@@ -5496,7 +5500,7 @@ InsertValues:
 			Lists:   $5.([][]ast.ExprNode),
 		}
 	}
-|	'(' ColumnNameListOpt ')' SetOprStmt
+|	'(' ColumnNameListOpt ')' SetOprStmt1
 	{
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(ast.ResultSetNode)}
 	}
@@ -5504,7 +5508,7 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Lists: $2.([][]ast.ExprNode)}
 	}
-|	SetOprStmt
+|	SetOprStmt1
 	{
 		$$ = &ast.InsertStmt{Select: $1.(ast.ResultSetNode)}
 	}
@@ -5905,7 +5909,7 @@ SimpleExpr:
 	{
 		$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
 	}
-|	SubSelect
+|	SubSelect2
 |	'(' Expression ')'
 	{
 		startOffset := parser.startOffset(&yyS[yypt-1])
@@ -7584,7 +7588,7 @@ TableFactor:
 		tn.IndexHints = $4.([]*ast.IndexHint)
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
-|	'(' SetOprStmt ')' TableAsName
+|	'(' SetOprStmt1 ')' TableAsName
 	{
 		$$ = &ast.TableSource{Source: $2.(ast.ResultSetNode), AsName: $4.(model.CIStr)}
 	}
@@ -7964,7 +7968,17 @@ SelectStmtIntoOption:
 
 // See https://dev.mysql.com/doc/refman/5.7/en/subqueries.html
 SubSelect:
-	'(' SetOprStmt ')'
+	'(' SetOprStmt1 ')'
+	{
+		s := $2.(ast.ResultSetNode)
+		src := parser.src
+		// See the implementation of yyParse function
+		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: s}
+	}
+
+SubSelect2:
+	'(' SetOprStmt2 ')'
 	{
 		s := $2.(ast.ResultSetNode)
 		src := parser.src
@@ -7992,10 +8006,7 @@ SelectLockOpt:
 		$$ = ast.SelectLockInShareMode
 	}
 
-// See https://dev.mysql.com/doc/refman/5.7/en/union.html
-// See https://mariadb.com/kb/en/intersect/
-// See https://mariadb.com/kb/en/except/
-SetOprStmt:
+SetOprStmt1:
 	SetOprClauseList %prec lowerThanParenthese
 	{
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $1.([]ast.Node)}}
@@ -8012,7 +8023,32 @@ SetOprStmt:
 			$$ = setOpr
 		}
 	}
-|	SetOprClauseList SetOpr '(' SetOprClauseList ')' OrderBy
+|	SetOprStmt
+
+SetOprStmt2:
+	SetOprClauseList %prec higherThanParenthese
+	{
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $1.([]ast.Node)}}
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && len(setOpr.SelectList.Selects) == 1 {
+			$$ = sel
+		} else {
+			if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+				setOpr.OrderBy = sel.OrderBy
+				setOpr.Limit = sel.Limit
+				sel.OrderBy = nil
+				sel.Limit = nil
+			}
+			$$ = setOpr
+		}
+	}
+|	SetOprStmt
+
+// See https://dev.mysql.com/doc/refman/5.7/en/union.html
+// See https://mariadb.com/kb/en/intersect/
+// See https://mariadb.com/kb/en/except/
+SetOprStmt:
+	SetOprClauseList SetOpr '(' SetOprClauseList ')' OrderBy
 	{
 		setOprList1 := $1.([]ast.Node)
 		setOprList2 := $4.([]ast.Node)
@@ -9478,7 +9514,7 @@ Statement:
 |	RecoverTableStmt
 |	RevokeStmt
 |	RevokeRoleStmt
-|	SetOprStmt
+|	SetOprStmt1
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
@@ -9503,7 +9539,7 @@ TraceableStmt:
 |	UpdateStmt
 |	InsertIntoStmt
 |	ReplaceIntoStmt
-|	SetOprStmt
+|	SetOprStmt1
 |	LoadDataStmt
 |	BeginTransactionStmt
 |	CommitStmt
@@ -9515,7 +9551,7 @@ ExplainableStmt:
 |	UpdateStmt
 |	InsertIntoStmt
 |	ReplaceIntoStmt
-|	SetOprStmt
+|	SetOprStmt1
 
 StatementList:
 	Statement
