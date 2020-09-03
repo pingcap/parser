@@ -128,12 +128,7 @@ func (ec ErrClass) NotEqualClass(err error) bool {
 	return !ec.EqualClass(err)
 }
 
-// New defines an *Error with an error code and an error message.
-// Usually used to create base *Error.
-// Attention:
-// this method is not goroutine-safe and
-// usually be used in global variable initializer
-func (ec ErrClass) New(code ErrCode, message string) *Error {
+func (ec ErrClass) initError(code ErrCode) string {
 	clsMap, ok := ErrClassToMySQLCodes[ec]
 	if !ok {
 		clsMap = make(map[ErrCode]struct{})
@@ -142,9 +137,28 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 	clsMap[code] = struct{}{}
 	class := errClass2Desc[ec]
 	rfcCode := fmt.Sprintf("%s:%d", class, code)
+	rfcCode2errClass[class] = ec
+	return rfcCode
+}
+
+// New defines an *Error with an error code and an error message.
+// Usually used to create base *Error.
+// Attention:
+// this method is not goroutine-safe and
+// usually be used in global variable initializer
+func (ec ErrClass) New(code ErrCode, message string) *Error {
+	rfcCode := ec.initError(code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
 	errCodeMap[code] = err
-	rfcCode2errClass[class] = ec
+	return err
+}
+
+// NewStdErr defines an *Error with an error code, an error
+// message and workaround to create standard error.
+func (ec ErrClass) NewStdErr(code ErrCode, message string, desc string, workaround string) *Error {
+	rfcCode := ec.initError(code)
+	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode), errors.Description(desc), errors.Workaround(workaround))
+	errCodeMap[code] = err
 	return err
 }
 
