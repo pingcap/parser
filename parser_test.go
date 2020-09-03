@@ -3040,6 +3040,11 @@ func (s *testParserSuite) TestHintError(c *C) {
 	stmt, _, err = parser.Parse("insert /*+ memory_quota(1 MB) */ into t select * from t;", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
+
+	stmt, warns, err = parser.Parse("SELECT id FROM tbl WHERE id = 0 FOR UPDATE /*+ xyz */", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(len(warns), Equals, 1)
+	c.Assert(warns[0], ErrorMatches, `.*near '/\*\+' at line 1`)
 }
 
 func (s *testParserSuite) TestErrorMsg(c *C) {
@@ -3610,6 +3615,7 @@ func (s *testParserSuite) TestType(c *C) {
 
 		// for enum and set type
 		{"create table t (c1 enum('a', 'b'), c2 set('a', 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum('a  ', 'b\t'), c2 set('a  ', 'b\t'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b\t'),`c2` SET('a','b\t'))"},
 		{"create table t (c1 enum('a', 'b') binary, c2 set('a', 'b') binary)", true, "CREATE TABLE `t` (`c1` ENUM('a','b') BINARY,`c2` SET('a','b') BINARY)"},
 		{"create table t (c1 enum(0x61, 'b'), c2 set(0x61, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
 		{"create table t (c1 enum(0b01100001, 'b'), c2 set(0b01100001, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
@@ -4441,6 +4447,10 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH 4 BUCKETS"},
 		{"analyze incremental table t index", true, "ANALYZE INCREMENTAL TABLE `t` INDEX"},
 		{"analyze incremental table t index idx", true, "ANALYZE INCREMENTAL TABLE `t` INDEX `idx`"},
+		{"analyze table t update histogram on b with 1024 buckets", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `b` WITH 1024 BUCKETS"},
+		{"analyze table t drop histogram on b", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `b`"},
+		{"analyze table t update histogram on c1, c2;", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `c1`,`c2`"},
+		{"analyze table t drop histogram on c1, c2;", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `c1`,`c2`"},
 	}
 	s.RunTest(c, table)
 }
