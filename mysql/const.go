@@ -594,14 +594,12 @@ func (m SQLMode) HasNoAutoCreateUserMode() bool {
 }
 
 // HasAllowInvalidDatesMode detects if 'ALLOW_INVALID_DATES' mode is set in SQLMode
-// SQL mode 'INVALID_DATES' was renamed to 'ALLOW_INVALID_DATES'.
-// see https://github.com/mysql/mysql-server/blob/f8cdce86448a211511e8a039c62580ae16cb96f5/sql/dd/impl/upgrade/dd.cc#L683
 func (m SQLMode) HasAllowInvalidDatesMode() bool {
-	return m&ModeInvalidDates == ModeInvalidDates
+	return m&ModeAllowInvalidDates == ModeAllowInvalidDates
 }
 
 // consts for sql modes.
-// see https://github.com/mysql/mysql-server/blob/7d10c82196c8e45554f27c00681474a9fb86d137/sql/system_variables.h#L99
+// see https://dev.mysql.com/doc/internals/en/query-event.html#q-sql-mode-code
 const (
 	ModeRealAsFloat SQLMode = 1 << iota
 	ModePipesAsConcat
@@ -635,7 +633,7 @@ const (
 	ModeHighNotPrecedence
 	ModeNoEngineSubstitution
 	ModePadCharToFullLength
-	ModeTimeTruncateFractional
+	ModeAllowInvalidDates
 	ModeNone = 0
 )
 
@@ -714,10 +712,7 @@ var Str2SQLMode = map[string]SQLMode{
 	"HIGH_NOT_PRECEDENCE":        ModeHighNotPrecedence,
 	"NO_ENGINE_SUBSTITUTION":     ModeNoEngineSubstitution,
 	"PAD_CHAR_TO_FULL_LENGTH":    ModePadCharToFullLength,
-	"TIME_TRUNCATE_FRACTIONAL":   ModeTimeTruncateFractional,
-	// SQL mode 'INVALID_DATES' was renamed to 'ALLOW_INVALID_DATES'.
-	// see https://github.com/mysql/mysql-server/blob/f8cdce86448a211511e8a039c62580ae16cb96f5/sql/dd/impl/upgrade/dd.cc#L683
-	"ALLOW_INVALID_DATES": ModeInvalidDates,
+	"ALLOW_INVALID_DATES":        ModeAllowInvalidDates,
 }
 
 // CombinationSQLMode is the special modes that provided as shorthand for combinations of mode values.

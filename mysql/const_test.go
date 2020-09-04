@@ -55,7 +55,6 @@ func (s *testConstSuite) TestPrivAllConsistency(c *C) {
 
 func (s *testConstSuite) TestSQLMode(c *C) {
 	// ref https://dev.mysql.com/doc/internals/en/query-event.html#q-sql-mode-code,
-	// https://github.com/mysql/mysql-server/blob/7d10c82196c8e45554f27c00681474a9fb86d137/sql/system_variables.h#L99
 	hardCode := []struct {
 		code  SQLMode
 		value int
