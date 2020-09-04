@@ -273,6 +273,10 @@ type TableInfo struct {
 	// enabled and the primary key is not a single integer column.
 	IsCommonHandle bool `json:"is_common_handle"`
 
+	// ForceOldPartition indicated whether use new OldPartition logic
+	// e.g. create a old partition table in test case.
+	ForceOldPartition bool `json:"force_old_partition"`
+
 	Comment         string `json:"comment"`
 	AutoIncID       int64  `json:"auto_inc_id"`
 	AutoIdCache     int64  `json:"auto_id_cache"`
