@@ -393,6 +393,7 @@ import (
 	global                "GLOBAL"
 	grants                "GRANTS"
 	hash                  "HASH"
+	histogram             "HISTOGRAM"
 	history               "HISTORY"
 	hosts                 "HOSTS"
 	hour                  "HOUR"
@@ -595,13 +596,14 @@ import (
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate               "ADDDATE"
+	approxCountDistinct   "APPROX_COUNT_DISTINCT"
+	approxPercentile      "APPROX_PERCENTILE"
 	bitAnd                "BIT_AND"
 	bitOr                 "BIT_OR"
 	bitXor                "BIT_XOR"
 	bound                 "BOUND"
 	cast                  "CAST"
 	copyKwd               "COPY"
-	approxCountDistinct   "APPROX_COUNT_DISTINCT"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
@@ -695,6 +697,7 @@ import (
 	builtinCast
 	builtinCount
 	builtinApproxCountDistinct
+	builtinApproxPercentile
 	builtinCurDate
 	builtinCurTime
 	builtinDateAdd
@@ -2371,6 +2374,23 @@ AnalyzeTableStmt:
 			IndexFlag:      true,
 			Incremental:    true,
 			AnalyzeOpts:    $9.([]ast.AnalyzeOpt),
+		}
+	}
+|	"ANALYZE" "TABLE" TableName "UPDATE" "HISTOGRAM" "ON" ColumnNameList AnalyzeOptionListOpt
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames:         []*ast.TableName{$3.(*ast.TableName)},
+			ColumnNames:        $7.([]*ast.ColumnName),
+			AnalyzeOpts:        $8.([]ast.AnalyzeOpt),
+			HistogramOperation: ast.HistogramOperationUpdate,
+		}
+	}
+|	"ANALYZE" "TABLE" TableName "DROP" "HISTOGRAM" "ON" ColumnNameList
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames:         []*ast.TableName{$3.(*ast.TableName)},
+			ColumnNames:        $7.([]*ast.ColumnName),
+			HistogramOperation: ast.HistogramOperationDrop,
 		}
 	}
 
@@ -5274,6 +5294,7 @@ UnReservedKeyword:
 |	"TRADITIONAL"
 |	"SQL_BUFFER_RESULT"
 |	"DIRECTORY"
+|	"HISTOGRAM"
 |	"HISTORY"
 |	"LIST"
 |	"NODEGROUP"
@@ -5406,12 +5427,13 @@ TiDBKeyword:
 
 NotKeywordToken:
 	"ADDDATE"
+|	"APPROX_COUNT_DISTINCT"
+|	"APPROX_PERCENTILE"
 |	"BIT_AND"
 |	"BIT_OR"
 |	"BIT_XOR"
 |	"CAST"
 |	"COPY"
-|	"APPROX_COUNT_DISTINCT"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
@@ -5940,6 +5962,7 @@ SimpleExpr:
 		x := types.NewFieldType(mysql.TypeString)
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
+		x.Flag |= mysql.BinaryFlag
 		$$ = &ast.FuncCastExpr{
 			Expr:         $2,
 			Tp:           x,
@@ -5957,10 +5980,13 @@ SimpleExpr:
 		if tp.Decimal == types.UnspecifiedLength {
 			tp.Decimal = defaultDecimal
 		}
+		explicitCharset := parser.explicitCharset
+		parser.explicitCharset = false
 		$$ = &ast.FuncCastExpr{
-			Expr:         $3,
-			Tp:           tp,
-			FunctionType: ast.CastFunction,
+			Expr:            $3,
+			Tp:              tp,
+			FunctionType:    ast.CastFunction,
+			ExplicitCharSet: explicitCharset,
 		}
 	}
 |	"CASE" ExpressionOpt WhenClauseList ElseOpt "END"
@@ -5985,10 +6011,13 @@ SimpleExpr:
 		if tp.Decimal == types.UnspecifiedLength {
 			tp.Decimal = defaultDecimal
 		}
+		explicitCharset := parser.explicitCharset
+		parser.explicitCharset = false
 		$$ = &ast.FuncCastExpr{
-			Expr:         $3,
-			Tp:           tp,
-			FunctionType: ast.CastConvertFunction,
+			Expr:            $3,
+			Tp:              tp,
+			FunctionType:    ast.CastConvertFunction,
+			ExplicitCharSet: explicitCharset,
 		}
 	}
 |	"CONVERT" '(' Expression "USING" CharsetName ')'
@@ -6414,6 +6443,14 @@ SumExpr:
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 		}
 	}
+|	builtinApproxCountDistinct '(' ExpressionList ')'
+	{
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode), Distinct: false}
+	}
+|	builtinApproxPercentile '(' ExpressionList ')'
+	{
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode)}
+	}
 |	builtinBitAnd '(' Expression ')' OptWindowingClause
 	{
 		if $5 != nil {
@@ -6490,10 +6527,6 @@ SumExpr:
 		} else {
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: args}
 		}
-	}
-|	builtinApproxCountDistinct '(' ExpressionList ')'
-	{
-		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode), Distinct: false}
 	}
 |	builtinGroupConcat '(' BuggyDefaultFalseDistinctOpt ExpressionList OrderByOptional OptGConcatSeparator ')' OptWindowingClause
 	{
@@ -6813,10 +6846,19 @@ CastType:
 		x.Charset = $3.(*ast.OptBinary).Charset
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
-		}
-		if x.Charset == "" {
-			x.Charset = mysql.DefaultCharset
-			x.Collate = mysql.DefaultCollationName
+			x.Charset = charset.CharsetBin
+			x.Collate = charset.CollationBin
+		} else if x.Charset != "" {
+			co, err := charset.GetDefaultCollation(x.Charset)
+			if err != nil {
+				yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", x.Charset))
+				return 1
+			}
+			x.Collate = co
+			parser.explicitCharset = true
+		} else {
+			x.Charset = parser.charset
+			x.Collate = parser.collation
 		}
 		$$ = x
 	}
@@ -10195,9 +10237,10 @@ StringType:
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
 		fieldLen := -1 // enum_flen = max(ele_flen)
-		for _, e := range x.Elems {
-			if len(e) > fieldLen {
-				fieldLen = len(e)
+		for i := range x.Elems {
+			x.Elems[i] = strings.TrimRight(x.Elems[i], " ")
+			if len(x.Elems[i]) > fieldLen {
+				fieldLen = len(x.Elems[i])
 			}
 		}
 		x.Flen = fieldLen
@@ -10213,8 +10256,9 @@ StringType:
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
 		fieldLen := len(x.Elems) - 1 // set_flen = sum(ele_flen) + number_of_ele - 1
-		for _, e := range x.Elems {
-			fieldLen += len(e)
+		for i := range x.Elems {
+			x.Elems[i] = strings.TrimRight(x.Elems[i], " ")
+			fieldLen += len(x.Elems[i])
 		}
 		x.Flen = fieldLen
 		opt := $5.(*ast.OptBinary)
