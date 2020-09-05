@@ -74,6 +74,8 @@ type Parser struct {
 	lexer      Scanner
 	hintParser *hintParser
 
+	explicitCharset bool
+
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
 	yylval yySymType
@@ -93,9 +95,11 @@ func New() *Parser {
 		panic("no parser driver (forgotten import?) https://github.com/pingcap/parser/issues/43")
 	}
 
-	return &Parser{
+	p := &Parser{
 		cache: make([]yySymType, 200),
 	}
+	p.EnableWindowFunc(true)
+	return p
 }
 
 // Parse parses a query string to raw ast.StmtNode.
