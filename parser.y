@@ -393,6 +393,7 @@ import (
 	global                "GLOBAL"
 	grants                "GRANTS"
 	hash                  "HASH"
+	histogram             "HISTOGRAM"
 	history               "HISTORY"
 	hosts                 "HOSTS"
 	hour                  "HOUR"
@@ -592,16 +593,18 @@ import (
 	without               "WITHOUT"
 	x509                  "X509"
 	yearType              "YEAR"
+	wait                  "WAIT"
 
 	/* The following tokens belong to NotKeywordToken. Notice: make sure these tokens are contained in NotKeywordToken. */
 	addDate               "ADDDATE"
+	approxCountDistinct   "APPROX_COUNT_DISTINCT"
+	approxPercentile      "APPROX_PERCENTILE"
 	bitAnd                "BIT_AND"
 	bitOr                 "BIT_OR"
 	bitXor                "BIT_XOR"
 	bound                 "BOUND"
 	cast                  "CAST"
 	copyKwd               "COPY"
-	approxCountDistinct   "APPROX_COUNT_DISTINCT"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
@@ -695,6 +698,7 @@ import (
 	builtinCast
 	builtinCount
 	builtinApproxCountDistinct
+	builtinApproxPercentile
 	builtinCurDate
 	builtinCurTime
 	builtinDateAdd
@@ -2365,6 +2369,23 @@ AnalyzeTableStmt:
 			IndexFlag:      true,
 			Incremental:    true,
 			AnalyzeOpts:    $9.([]ast.AnalyzeOpt),
+		}
+	}
+|	"ANALYZE" "TABLE" TableName "UPDATE" "HISTOGRAM" "ON" ColumnNameList AnalyzeOptionListOpt
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames:         []*ast.TableName{$3.(*ast.TableName)},
+			ColumnNames:        $7.([]*ast.ColumnName),
+			AnalyzeOpts:        $8.([]ast.AnalyzeOpt),
+			HistogramOperation: ast.HistogramOperationUpdate,
+		}
+	}
+|	"ANALYZE" "TABLE" TableName "DROP" "HISTOGRAM" "ON" ColumnNameList
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames:         []*ast.TableName{$3.(*ast.TableName)},
+			ColumnNames:        $7.([]*ast.ColumnName),
+			HistogramOperation: ast.HistogramOperationDrop,
 		}
 	}
 
@@ -5282,6 +5303,7 @@ UnReservedKeyword:
 |	"TRADITIONAL"
 |	"SQL_BUFFER_RESULT"
 |	"DIRECTORY"
+|	"HISTOGRAM"
 |	"HISTORY"
 |	"LIST"
 |	"NODEGROUP"
@@ -5374,6 +5396,7 @@ UnReservedKeyword:
 |	"CONSTRAINTS"
 |	"REPLICAS"
 |	"POLICY"
+|	"WAIT"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5414,12 +5437,13 @@ TiDBKeyword:
 
 NotKeywordToken:
 	"ADDDATE"
+|	"APPROX_COUNT_DISTINCT"
+|	"APPROX_PERCENTILE"
 |	"BIT_AND"
 |	"BIT_OR"
 |	"BIT_XOR"
 |	"CAST"
 |	"COPY"
-|	"APPROX_COUNT_DISTINCT"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
@@ -5964,6 +5988,7 @@ SimpleExpr:
 		x := types.NewFieldType(mysql.TypeString)
 		x.Charset = charset.CharsetBin
 		x.Collate = charset.CharsetBin
+		x.Flag |= mysql.BinaryFlag
 		$$ = &ast.FuncCastExpr{
 			Expr:         $2,
 			Tp:           x,
@@ -5981,10 +6006,13 @@ SimpleExpr:
 		if tp.Decimal == types.UnspecifiedLength {
 			tp.Decimal = defaultDecimal
 		}
+		explicitCharset := parser.explicitCharset
+		parser.explicitCharset = false
 		$$ = &ast.FuncCastExpr{
-			Expr:         $3,
-			Tp:           tp,
-			FunctionType: ast.CastFunction,
+			Expr:            $3,
+			Tp:              tp,
+			FunctionType:    ast.CastFunction,
+			ExplicitCharSet: explicitCharset,
 		}
 	}
 |	"CASE" ExpressionOpt WhenClauseList ElseOpt "END"
@@ -6009,10 +6037,13 @@ SimpleExpr:
 		if tp.Decimal == types.UnspecifiedLength {
 			tp.Decimal = defaultDecimal
 		}
+		explicitCharset := parser.explicitCharset
+		parser.explicitCharset = false
 		$$ = &ast.FuncCastExpr{
-			Expr:         $3,
-			Tp:           tp,
-			FunctionType: ast.CastConvertFunction,
+			Expr:            $3,
+			Tp:              tp,
+			FunctionType:    ast.CastConvertFunction,
+			ExplicitCharSet: explicitCharset,
 		}
 	}
 |	"CONVERT" '(' Expression "USING" CharsetName ')'
@@ -6438,6 +6469,14 @@ SumExpr:
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 		}
 	}
+|	builtinApproxCountDistinct '(' ExpressionList ')'
+	{
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode), Distinct: false}
+	}
+|	builtinApproxPercentile '(' ExpressionList ')'
+	{
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode)}
+	}
 |	builtinBitAnd '(' Expression ')' OptWindowingClause
 	{
 		if $5 != nil {
@@ -6514,10 +6553,6 @@ SumExpr:
 		} else {
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: args}
 		}
-	}
-|	builtinApproxCountDistinct '(' ExpressionList ')'
-	{
-		$$ = &ast.AggregateFuncExpr{F: $1, Args: $3.([]ast.ExprNode), Distinct: false}
 	}
 |	builtinGroupConcat '(' BuggyDefaultFalseDistinctOpt ExpressionList OrderByOptional OptGConcatSeparator ')' OptWindowingClause
 	{
@@ -6837,10 +6872,19 @@ CastType:
 		x.Charset = $3.(*ast.OptBinary).Charset
 		if $3.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
-		}
-		if x.Charset == "" {
-			x.Charset = mysql.DefaultCharset
-			x.Collate = mysql.DefaultCollationName
+			x.Charset = charset.CharsetBin
+			x.Collate = charset.CollationBin
+		} else if x.Charset != "" {
+			co, err := charset.GetDefaultCollation(x.Charset)
+			if err != nil {
+				yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", x.Charset))
+				return 1
+			}
+			x.Collate = co
+			parser.explicitCharset = true
+		} else {
+			x.Charset = parser.charset
+			x.Collate = parser.collation
 		}
 		$$ = x
 	}
@@ -7206,7 +7250,9 @@ SelectStmt:
 	SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
-		st.LockTp = $4.(ast.SelectLockType)
+		if $4 != nil {
+			st.LockInfo = $4.(*ast.SelectLockInfo)
+		}
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
 			src := parser.src
@@ -7215,7 +7261,7 @@ SelectStmt:
 				lastEnd = yyS[yypt-3].offset - 1
 			} else if $3 != nil {
 				lastEnd = yyS[yypt-2].offset - 1
-			} else if $4 != ast.SelectLockNone {
+			} else if st.LockInfo != nil && st.LockInfo.LockType != ast.SelectLockNone {
 				lastEnd = yyS[yypt-1].offset - 1
 			} else if $5 != nil {
 				lastEnd = yyS[yypt].offset - 1
@@ -7247,7 +7293,9 @@ SelectStmt:
 		if $3 != nil {
 			st.Limit = $3.(*ast.Limit)
 		}
-		st.LockTp = $4.(ast.SelectLockType)
+		if $4 != nil {
+			st.LockInfo = $4.(*ast.SelectLockInfo)
+		}
 		if $5 != nil {
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
@@ -7256,7 +7304,9 @@ SelectStmt:
 |	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
-		st.LockTp = $4.(ast.SelectLockType)
+		if $4 != nil {
+			st.LockInfo = $4.(*ast.SelectLockInfo)
+		}
 		if $2 != nil {
 			st.OrderBy = $2.(*ast.OrderByClause)
 		}
@@ -8019,19 +8069,26 @@ SubSelect:
 SelectLockOpt:
 	/* empty */
 	{
-		$$ = ast.SelectLockNone
+		$$ = nil
 	}
 |	"FOR" "UPDATE"
 	{
-		$$ = ast.SelectLockForUpdate
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdate}
 	}
 |	"FOR" "UPDATE" "NOWAIT"
 	{
-		$$ = ast.SelectLockForUpdateNoWait
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdateNoWait}
+	}
+|	"FOR" "UPDATE" "WAIT" NUM
+	{
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForUpdateWaitN,
+			WaitSec:  getUint64FromNUM($4),
+		}
 	}
 |	"LOCK" "IN" "SHARE" "MODE"
 	{
-		$$ = ast.SelectLockInShareMode
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockInShareMode}
 	}
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
@@ -8054,7 +8111,9 @@ SetOprStmt:
 			setOpr.Limit = $5.(*ast.Limit)
 		}
 		if $4 == nil && $5 == nil {
-			st.LockTp = $6.(ast.SelectLockType)
+			if $6 != nil {
+				st.LockInfo = $6.(*ast.SelectLockInfo)
+			}
 		}
 		$$ = setOpr
 	}
@@ -8074,7 +8133,9 @@ SetOprStmt:
 			setOpr.Limit = $5.(*ast.Limit)
 		}
 		if $4 == nil && $5 == nil {
-			st.LockTp = $6.(ast.SelectLockType)
+			if $6 != nil {
+				st.LockInfo = $6.(*ast.SelectLockInfo)
+			}
 		}
 		$$ = setOpr
 	}
@@ -8094,7 +8155,9 @@ SetOprStmt:
 			setOpr.Limit = $5.(*ast.Limit)
 		}
 		if $4 == nil && $5 == nil {
-			st.LockTp = $6.(ast.SelectLockType)
+			if $6 != nil {
+				st.LockInfo = $6.(*ast.SelectLockInfo)
+			}
 		}
 		$$ = setOpr
 	}
@@ -10152,9 +10215,10 @@ StringType:
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
 		fieldLen := -1 // enum_flen = max(ele_flen)
-		for _, e := range x.Elems {
-			if len(e) > fieldLen {
-				fieldLen = len(e)
+		for i := range x.Elems {
+			x.Elems[i] = strings.TrimRight(x.Elems[i], " ")
+			if len(x.Elems[i]) > fieldLen {
+				fieldLen = len(x.Elems[i])
 			}
 		}
 		x.Flen = fieldLen
@@ -10170,8 +10234,9 @@ StringType:
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
 		fieldLen := len(x.Elems) - 1 // set_flen = sum(ele_flen) + number_of_ele - 1
-		for _, e := range x.Elems {
-			fieldLen += len(e)
+		for i := range x.Elems {
+			x.Elems[i] = strings.TrimRight(x.Elems[i], " ")
+			fieldLen += len(x.Elems[i])
 		}
 		x.Flen = fieldLen
 		opt := $5.(*ast.OptBinary)
