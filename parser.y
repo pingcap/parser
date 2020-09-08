@@ -2732,7 +2732,7 @@ ColumnOption:
 	}
 |	"COMMENT" stringLit
 	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionComment, Expr: ast.NewValueExpr($2, parser.charset, parser.collation)}
+		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionComment, Expr: ast.NewValueExpr($2, "", "")}
 	}
 |	ConstraintKeywordOpt "CHECK" '(' Expression ')' EnforcedOrNotOrNotNullOpt
 	{
@@ -4638,7 +4638,7 @@ FuncDatetimePrecListOpt:
 FuncDatetimePrecList:
 	intLit
 	{
-		expr := ast.NewValueExpr($1, parser.charset, parser.collation)
+		expr := ast.NewValueExpr($1, "", "")
 		$$ = []ast.ExprNode{expr}
 	}
 
@@ -6049,7 +6049,7 @@ SimpleExpr:
 |	"CONVERT" '(' Expression "USING" CharsetName ')'
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/cast-functions.html#function_convert
-		charset1 := ast.NewValueExpr($5, parser.charset, parser.collation)
+		charset1 := ast.NewValueExpr($5, "", "")
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr($1),
 			Args:   []ast.ExprNode{$3, charset1},
@@ -6194,7 +6194,7 @@ FunctionCallKeyword:
 	}
 |	"CHAR" '(' ExpressionList "USING" CharsetName ')'
 	{
-		charset1 := ast.NewValueExpr($5, parser.charset, parser.collation)
+		charset1 := ast.NewValueExpr($5, "", "")
 		args := $3.([]ast.ExprNode)
 		$$ = &ast.FuncCallExpr{
 			FnName: model.NewCIStr(ast.CharFunc),
@@ -6203,17 +6203,17 @@ FunctionCallKeyword:
 	}
 |	"DATE" stringLit
 	{
-		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
+		expr := ast.NewValueExpr($2, "", "")
 		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.DateLiteral), Args: []ast.ExprNode{expr}}
 	}
 |	"TIME" stringLit
 	{
-		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
+		expr := ast.NewValueExpr($2, "", "")
 		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.TimeLiteral), Args: []ast.ExprNode{expr}}
 	}
 |	"TIMESTAMP" stringLit
 	{
-		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
+		expr := ast.NewValueExpr($2, "", "")
 		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.TimestampLiteral), Args: []ast.ExprNode{expr}}
 	}
 |	"INSERT" '(' ExpressionListOpt ')'
@@ -6655,11 +6655,11 @@ SumExpr:
 
 OptGConcatSeparator:
 	{
-		$$ = ast.NewValueExpr(",", parser.charset, parser.collation)
+		$$ = ast.NewValueExpr(",", "", "")
 	}
 |	"SEPARATOR" stringLit
 	{
-		$$ = ast.NewValueExpr($2, parser.charset, parser.collation)
+		$$ = ast.NewValueExpr($2, "", "")
 	}
 
 FunctionCallGeneric:
@@ -8476,22 +8476,22 @@ VariableAssignment:
 	{
 		$$ = &ast.VariableAssignment{
 			Name:  ast.SetNames,
-			Value: ast.NewValueExpr($2, parser.charset, parser.collation),
+			Value: ast.NewValueExpr($2, "", ""),
 		}
 	}
 |	"NAMES" CharsetName "COLLATE" "DEFAULT"
 	{
 		$$ = &ast.VariableAssignment{
 			Name:  ast.SetNames,
-			Value: ast.NewValueExpr($2, parser.charset, parser.collation),
+			Value: ast.NewValueExpr($2, "", ""),
 		}
 	}
 |	"NAMES" CharsetName "COLLATE" StringName
 	{
 		$$ = &ast.VariableAssignment{
 			Name:        ast.SetNames,
-			Value:       ast.NewValueExpr($2, parser.charset, parser.collation),
-			ExtendValue: ast.NewValueExpr($4, parser.charset, parser.collation),
+			Value:       ast.NewValueExpr($2, "", ""),
+			ExtendValue: ast.NewValueExpr($4, "", ""),
 		}
 	}
 |	"NAMES" "DEFAULT"
@@ -8507,7 +8507,7 @@ VariableAssignment:
 CharsetNameOrDefault:
 	CharsetName
 	{
-		$$ = ast.NewValueExpr($1, parser.charset, parser.collation)
+		$$ = ast.NewValueExpr($1, "", "")
 	}
 |	"DEFAULT"
 	{
