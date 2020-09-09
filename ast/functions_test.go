@@ -47,7 +47,7 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 		{"JSON_OBJECTAGG(attribute, value)", "JSON_OBJECTAGG(`attribute`, `value`)"},
 		{"ABS(-1024)", "ABS(-1024)"},
 		{"ACOS(3.14)", "ACOS(3.14)"},
-		{"CONV('a',16,2)", "CONV('a', 16, 2)"},
+		{"CONV('a',16,2)", "CONV(_UTF8MB4'a', 16, 2)"},
 		{"COS(PI())", "COS(PI())"},
 		{"RAND()", "RAND()"},
 		{"ADDDATE('2000-01-01', 1)", "ADDDATE('2000-01-01', INTERVAL 1 DAY)"},
@@ -105,7 +105,7 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 
 func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
+		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT(_UTF8MB4'Müller' USING )"},
 		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARSET UTF8)"},
 		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARSET UTF8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},

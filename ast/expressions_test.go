@@ -215,7 +215,7 @@ func (tc *testExpressionsSuite) TestBinaryOperationExpr(c *C) {
 
 func (tc *testExpressionsSuite) TestBinaryOperationExprWithFlags(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"'a'!=1", "'a' != 1"},
+		{"'a'!=1", "_UTF8MB4'a' != 1"},
 		{"a!=1", "`a` != 1"},
 		{"3<5", "3 < 5"},
 		{"10>5", "10 > 5"},
