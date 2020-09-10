@@ -4638,7 +4638,7 @@ FuncDatetimePrecListOpt:
 FuncDatetimePrecList:
 	intLit
 	{
-		expr := ast.NewValueExpr($1, "", "")
+		expr := ast.NewValueExpr($1, parser.charset, parser.collation)
 		$$ = []ast.ExprNode{expr}
 	}
 
