@@ -34,45 +34,46 @@ var (
 
 // List scalar function names.
 const (
-	LogicAnd   = "and"
-	Cast       = "cast"
-	LeftShift  = "leftshift"
-	RightShift = "rightshift"
-	LogicOr    = "or"
-	GE         = "ge"
-	LE         = "le"
-	EQ         = "eq"
-	NE         = "ne"
-	LT         = "lt"
-	GT         = "gt"
-	Plus       = "plus"
-	Minus      = "minus"
-	And        = "bitand"
-	Or         = "bitor"
-	Mod        = "mod"
-	Xor        = "bitxor"
-	Div        = "div"
-	Mul        = "mul"
-	UnaryNot   = "not" // Avoid name conflict with Not in github/pingcap/check.
-	BitNeg     = "bitneg"
-	IntDiv     = "intdiv"
-	LogicXor   = "xor"
-	NullEQ     = "nulleq"
-	UnaryPlus  = "unaryplus"
-	UnaryMinus = "unaryminus"
-	In         = "in"
-	Like       = "like"
-	Case       = "case"
-	Regexp     = "regexp"
-	IsNull     = "isnull"
-	IsTruth    = "istrue"  // Avoid name conflict with IsTrue in github/pingcap/check.
-	IsFalsity  = "isfalse" // Avoid name conflict with IsFalse in github/pingcap/check.
-	RowFunc    = "row"
-	SetVar     = "setvar"
-	GetVar     = "getvar"
-	Values     = "values"
-	BitCount   = "bit_count"
-	GetParam   = "getparam"
+	LogicAnd           = "and"
+	Cast               = "cast"
+	LeftShift          = "leftshift"
+	RightShift         = "rightshift"
+	LogicOr            = "or"
+	GE                 = "ge"
+	LE                 = "le"
+	EQ                 = "eq"
+	NE                 = "ne"
+	LT                 = "lt"
+	GT                 = "gt"
+	Plus               = "plus"
+	Minus              = "minus"
+	And                = "bitand"
+	Or                 = "bitor"
+	Mod                = "mod"
+	Xor                = "bitxor"
+	Div                = "div"
+	Mul                = "mul"
+	UnaryNot           = "not" // Avoid name conflict with Not in github/pingcap/check.
+	BitNeg             = "bitneg"
+	IntDiv             = "intdiv"
+	LogicXor           = "xor"
+	NullEQ             = "nulleq"
+	UnaryPlus          = "unaryplus"
+	UnaryMinus         = "unaryminus"
+	In                 = "in"
+	Like               = "like"
+	Case               = "case"
+	Regexp             = "regexp"
+	IsNull             = "isnull"
+	IsTruthWithoutNull = "istrue" // Avoid name conflict with IsTrue in github/pingcap/check.
+	IsTruthWithNull    = "istrue_with_null"
+	IsFalsity          = "isfalse" // Avoid name conflict with IsFalse in github/pingcap/check.
+	RowFunc            = "row"
+	SetVar             = "setvar"
+	GetVar             = "getvar"
+	Values             = "values"
+	BitCount           = "bit_count"
+	GetParam           = "getparam"
 
 	// common functions
 	Coalesce = "coalesce"
@@ -394,7 +395,9 @@ func (n *FuncCallExpr) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
 		ctx.WriteKeyWord(" USING ")
-		ctx.WriteKeyWord(n.Args[1].GetType().Charset)
+		if err := n.Args[1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
 	case "adddate", "subdate", "date_add", "date_sub":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args[0]")
