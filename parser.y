@@ -1082,7 +1082,6 @@ import (
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
 	TableRefs                              "table references"
-	TableStmtLimit                         "Table statement optional LIMIT clause"
 	TableToTable                           "rename table to table"
 	TableToTableList                       "rename table to table by list"
 	TextStringList                         "text string list"
@@ -11944,7 +11943,7 @@ EncryptionOpt:
  * TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
  ******************************************************************************/
 TableStmt:
-	"TABLE" TableName OrderByOptional TableStmtLimit
+	"TABLE" TableName OrderByOptional SelectStmtLimit
 	{
 		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
 		if $3 != nil {
@@ -11954,22 +11953,5 @@ TableStmt:
 			st.Limit = $4.(*ast.Limit)
 		}
 		$$ = st
-	}
-
-TableStmtLimit:
-	{
-		$$ = nil
-	}
-|	"LIMIT" LimitOption
-	{
-		$$ = &ast.Limit{Count: $2.(ast.ExprNode)}
-	}
-|	"LIMIT" LimitOption ',' LimitOption
-	{
-		$$ = &ast.Limit{Offset: $2.(ast.ExprNode), Count: $4.(ast.ExprNode)}
-	}
-|	"LIMIT" LimitOption "OFFSET" LimitOption
-	{
-		$$ = &ast.Limit{Offset: $4.(ast.ExprNode), Count: $2.(ast.ExprNode)}
 	}
 %%
