@@ -5560,7 +5560,7 @@ InsertValues:
 	}
 |	TableStmt
 	{
-
+		$$ = &ast.InsertStmt{TableStmt: $1.(*ast.TableStmt)}
 	}
 |	SetOprStmt
 	{

@@ -1464,6 +1464,7 @@ type InsertStmt struct {
 	Priority    mysql.PriorityEnum
 	OnDuplicate []*Assignment
 	Select      ResultSetNode
+	TableStmt   ResultSetNode
 	// TableHints represents the table level Optimizer Hint for join type.
 	TableHints     []*TableOptimizerHint
 	PartitionNames []model.CIStr
@@ -1552,6 +1553,12 @@ func (n *InsertStmt) Restore(ctx *format.RestoreCtx) error {
 			return errors.Errorf("Incorrect type for InsertStmt.Select: %T", v)
 		}
 	}
+	if n.TableStmt != nil {
+		ctx.WritePlain(" ")
+		if err := n.TableStmt.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore InsertStmt.Table")
+		}
+	}
 	if n.Setlist != nil {
 		ctx.WriteKeyWord(" SET ")
 		for i, v := range n.Setlist {
@@ -1592,6 +1599,14 @@ func (n *InsertStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Select = node.(ResultSetNode)
+	}
+
+	if n.TableStmt != nil {
+		node, ok := n.TableStmt.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableStmt = node.(ResultSetNode)
 	}
 
 	node, ok := n.Table.Accept(v)
