@@ -16,6 +16,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pingcap/parser/mysql"
 	"math"
 	"sync"
 	"time"
@@ -222,6 +223,11 @@ type Job struct {
 
 	// Priority is only used to set the operation priority of adding indices.
 	Priority int `json:"priority"`
+
+	// SQL Mode
+	sqlMode       mysql.SQLMode
+	warnings      []*terror.Error
+	warningsCount []int64
 }
 
 // FinishTableJob is called when a job is finished.
