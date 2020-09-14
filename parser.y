@@ -11935,8 +11935,10 @@ EncryptionOpt:
 		$$ = $1
 	}
 
+/*******************************************************************************
+ * TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
+ ******************************************************************************/
 TableStmt:
-	// TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
 	"TABLE" TableName OrderByOptional TableStmtLimit
 	{
 		st := &ast.TableStmt{Table: $2.(*ast.TableName)}

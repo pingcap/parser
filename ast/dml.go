@@ -1040,9 +1040,9 @@ type TableStmt struct {
 	dmlNode
 	resultSetNode
 
-	Table *TableName
+	Table   *TableName
 	OrderBy *OrderByClause
-	Limit *Limit
+	Limit   *Limit
 }
 
 func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
