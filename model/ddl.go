@@ -225,9 +225,9 @@ type Job struct {
 	Priority int `json:"priority"`
 
 	// SQL Mode
-	sqlMode       mysql.SQLMode
-	warnings      []*terror.Error
-	warningsCount []int64
+	SqlMode       mysql.SQLMode
+	Warnings      []*terror.Error
+	WarningsCount []int64
 }
 
 // FinishTableJob is called when a job is finished.
