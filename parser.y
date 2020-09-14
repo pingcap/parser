@@ -5558,6 +5558,10 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
 	}
+|	TableStmt
+	{
+
+	}
 |	SetOprStmt
 	{
 		$$ = &ast.InsertStmt{Select: $1.(*ast.SetOprStmt)}
@@ -9565,6 +9569,7 @@ Statement:
 |	UnlockTablesStmt
 |	LockTablesStmt
 |	ShutdownStmt
+|	TableStmt
 
 TraceableStmt:
 	SelectStmt
@@ -11958,6 +11963,10 @@ TableStmtLimit:
 |	"LIMIT" LimitOption
 	{
 		$$ = &ast.Limit{Count: $2.(ast.ExprNode)}
+	}
+|	"LIMIT" LimitOption ',' LimitOption
+	{
+		$$ = &ast.Limit{Offset: $2.(ast.ExprNode), Count: $4.(ast.ExprNode)}
 	}
 |	"LIMIT" LimitOption "OFFSET" LimitOption
 	{

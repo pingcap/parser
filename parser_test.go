@@ -506,7 +506,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"TABLE t ORDER BY b", true, "TABLE `t` ORDER BY `b`"},
 		{"TABLE t LIMIT 3", true, "TABLE `t` LIMIT 3"},
 		{"TABLE t ORDER BY b LIMIT 3", true, "TABLE `t` ORDER BY `b` LIMIT 3"},
-		{"TABLE t ORDER BY b LIMIT 3 OFFSET 2", true, "TABLE `t` ORDER BY `b` LIMIT 3 OFFSET 2"},
+		{"TABLE t ORDER BY b LIMIT 3 OFFSET 2", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
+		{"TABLE t ORDER BY b LIMIT 2,3", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
 		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
 		{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
 
