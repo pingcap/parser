@@ -501,6 +501,15 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 			SELECT * from tmp;
 		ROLLBACK;`, true, "START TRANSACTION; INSERT INTO `tmp` SELECT * FROM `bar`; SELECT * FROM `tmp`; ROLLBACK"},
 
+		// table statement
+		{"TABLE t", true, "TABLE `t`"},
+		{"TABLE t ORDER BY b", true, "TABLE `t` ORDER BY `b`"},
+		{"TABLE t LIMIT 3", true, "TABLE `t` LIMIT 3"},
+		{"TABLE t ORDER BY b LIMIT 3", true, "TABLE `t` ORDER BY `b` LIMIT 3"},
+		{"TABLE t ORDER BY b LIMIT 3 OFFSET 2", true, "TABLE `t` ORDER BY `b` LIMIT 3 OFFSET 2"},
+		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
+		{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
 		{"SELECT a.b.*.c FROM t", false, ""},

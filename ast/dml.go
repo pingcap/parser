@@ -30,6 +30,7 @@ var (
 	_ DMLNode = &ShowStmt{}
 	_ DMLNode = &LoadDataStmt{}
 	_ DMLNode = &SplitRegionStmt{}
+	_ DMLNode = &TableStmt{}
 
 	_ Node = &Assignment{}
 	_ Node = &ByItem{}
@@ -1023,6 +1024,69 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 		n.OrderBy = node.(*OrderByClause)
 	}
 
+	if n.Limit != nil {
+		node, ok := n.Limit.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Limit = node.(*Limit)
+	}
+
+	return v.Leave(n)
+}
+
+// TableStmt represents the table dml node.
+type TableStmt struct {
+	dmlNode
+	resultSetNode
+
+	Table *TableName
+	OrderBy *OrderByClause
+	Limit *Limit
+}
+
+func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("TABLE ")
+
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotatef(err, "An error occurred while restore TableStmt.Table")
+	}
+
+	if n.OrderBy != nil {
+		ctx.WritePlain(" ")
+		if err := n.OrderBy.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableStmt.OrderBy")
+		}
+	}
+
+	if n.Limit != nil {
+		ctx.WritePlain(" ")
+		if err := n.Limit.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableStmt.Limit")
+		}
+	}
+
+	return nil
+}
+
+func (n *TableStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*TableStmt)
+	node, ok := n.Table.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Table = node.(*TableName)
+	if n.OrderBy != nil {
+		node, ok := n.OrderBy.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.OrderBy = node.(*OrderByClause)
+	}
 	if n.Limit != nil {
 		node, ok := n.Limit.Accept(v)
 		if !ok {

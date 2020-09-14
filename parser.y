@@ -852,6 +852,7 @@ import (
 	ShutdownStmt         "SHUTDOWN statement"
 	CreateViewSelectOpt  "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	SetOprSelect         "Union/Except/Intersect (select) item"
+	TableStmt            "TABLE statement"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -1081,6 +1082,7 @@ import (
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
 	TableRefs                              "table references"
+	TableStmtLimit                         "Table statement optional LIMIT clause"
 	TableToTable                           "rename table to table"
 	TableToTableList                       "rename table to table by list"
 	TextStringList                         "text string list"
@@ -11931,5 +11933,32 @@ EncryptionOpt:
 			return 1
 		}
 		$$ = $1
+	}
+
+TableStmt:
+	// TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
+	"TABLE" TableName OrderByOptional TableStmtLimit
+	{
+		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
+		if $3 != nil {
+			st.OrderBy = $3.(*ast.OrderByClause)
+		}
+		if $4 != nil {
+			st.Limit = $4.(*ast.Limit)
+		}
+		$$ = st
+	}
+
+TableStmtLimit:
+	{
+		$$ = nil
+	}
+|	"LIMIT" LimitOption
+	{
+		$$ = &ast.Limit{Count: $2.(ast.ExprNode)}
+	}
+|	"LIMIT" LimitOption "OFFSET" LimitOption
+	{
+		$$ = &ast.Limit{Offset: $4.(ast.ExprNode), Count: $2.(ast.ExprNode)}
 	}
 %%
