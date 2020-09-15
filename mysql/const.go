@@ -211,6 +211,8 @@ const (
 	SuperPriv
 	// CreateUserPriv is the privilege to create user.
 	CreateUserPriv
+	// CreateTablespacePriv is the privilege to create tablespace.
+	CreateTablespacePriv
 	// TriggerPriv is not checked yet.
 	TriggerPriv
 	// DropPriv is the privilege to drop schema/table.
