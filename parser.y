@@ -11077,7 +11077,7 @@ DropBindingStmt:
 		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginSel:   selStmt,
+			OriginNode:  selStmt,
 			GlobalScope: $2.(bool),
 		}
 
@@ -11127,7 +11127,7 @@ DropBindingStmt:
 		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginNode:  SetOprStmt,
+			OriginNode:  setOprStmt,
 			HintedNode:  hintedSetOprStmt,
 			GlobalScope: $2.(bool),
 		}
