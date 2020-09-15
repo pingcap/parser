@@ -268,6 +268,17 @@ func (job *Job) GetRowCount() int64 {
 	return job.RowCount
 }
 
+// SetWarnings sets the warnings of rows handled.
+func (job *Job) SetWarnings(warnings []*terror.Error, warningsCount []int64) {
+	job.Warnings = warnings
+	job.WarningsCount = warningsCount
+}
+
+// GetWarnings gets the warnings of the rows handled.
+func (job *Job) GetWarnings() ([]*terror.Error, []int64) {
+	return job.Warnings, job.WarningsCount
+}
+
 // Encode encodes job with json format.
 // updateRawArgs is used to determine whether to update the raw args.
 func (job *Job) Encode(updateRawArgs bool) ([]byte, error) {
