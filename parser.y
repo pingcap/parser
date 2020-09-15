@@ -11095,8 +11095,40 @@ DropBindingStmt:
 		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginSel:   selStmt,
-			HintedSel:   hintedSelStmt,
+			OriginNode:  selStmt,
+			HintedNode:  hintedSelStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt
+	{
+		startOffset := parser.startOffset(&yyS[yypt])
+		setOprStmt := $5.(*ast.SetOprStmt)
+		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		x := &ast.DropBindingStmt{
+			OriginNode:  setOprStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt "USING" SetOprStmt
+	{
+		startOffset := parser.startOffset(&yyS[yypt-2])
+		endOffset := parser.startOffset(&yyS[yypt-1])
+		setOprStmt := $5.(*ast.SetOprStmt)
+		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+
+		startOffset = parser.startOffset(&yyS[yypt])
+		hintedSetOprStmt := $7.(*ast.SetOprStmt)
+		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		x := &ast.DropBindingStmt{
+			OriginNode:  SetOprStmt,
+			HintedNode:  hintedSetOprStmt,
 			GlobalScope: $2.(bool),
 		}
 

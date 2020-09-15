@@ -1504,9 +1504,9 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 	if !ok {
 		return n, false
 	}
-	switch stmt := selnode.(type) {
+	switch node := selnode.(type) {
 	case *SelectStmt:
-		n.OriginNode = stmt
+		n.OriginNode = node
 		hintedSelnode, ok := n.HintedNode.Accept(v)
 		if !ok {
 			return n, false
@@ -1514,7 +1514,7 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		n.HintedNode = hintedSelnode.(*SelectStmt)
 		return v.Leave(n)
 	case *SetOprStmt:
-		n.OriginNode = stmt
+		n.OriginNode = node
 		hintedSetOprNode, ok := n.HintedNode.Accept(v)
 		if !ok {
 			return n, false
@@ -1531,8 +1531,8 @@ type DropBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
-	OriginSel   StmtNode
-	HintedSel   StmtNode
+	OriginNode  StmtNode
+	HintedNode  StmtNode
 }
 
 func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1543,12 +1543,12 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
+	if err := n.OriginNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
-	if n.HintedSel != nil {
+	if n.HintedNode != nil {
 		ctx.WriteKeyWord(" USING ")
-		if err := n.HintedSel.Restore(ctx); err != nil {
+		if err := n.HintedNode.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
 	}
@@ -1561,19 +1561,34 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	selnode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	if n.HintedSel != nil {
-		selnode, ok = n.HintedSel.Accept(v)
-		if !ok {
-			return n, false
+	switch node := selnode.(type) {
+	case *SelectStmt:
+		n.OriginNode = node
+		if n.HintedNode != nil {
+			selnode, ok = n.HintedNode.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.HintedNode = selnode.(*SelectStmt)
 		}
-		n.HintedSel = selnode.(*SelectStmt)
+		return v.Leave(n)
+	case *SetOprStmt:
+		n.OriginNode = node
+		if n.HintedNode != nil {
+			selnode, ok = n.HintedNode.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.HintedNode = selnode.(*SetOprStmt)
+		}
+		return v.Leave(n)
+	default:
+		return n, false
 	}
-	return v.Leave(n)
 }
 
 // Extended statistics types.
