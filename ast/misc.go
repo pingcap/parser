@@ -1472,8 +1472,8 @@ type CreateBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
-	OriginSel   StmtNode
-	HintedSel   StmtNode
+	OriginNode  StmtNode
+	HintedNode  StmtNode
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1484,11 +1484,11 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
+	if err := n.OriginNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	ctx.WriteKeyWord(" USING ")
-	if err := n.HintedSel.Restore(ctx); err != nil {
+	if err := n.HintedNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -1500,17 +1500,30 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	selnode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	hintedSelnode, ok := n.HintedSel.Accept(v)
-	if !ok {
+	switch stmt := selnode.(type) {
+	case *SelectStmt:
+		n.OriginNode = stmt
+		hintedSelnode, ok := n.HintedNode.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.HintedNode = hintedSelnode.(*SelectStmt)
+		return v.Leave(n)
+	case *SetOprStmt:
+		n.OriginNode = stmt
+		hintedSetOprNode, ok := n.HintedNode.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.HintedNode = hintedSetOprNode.(*SetOprStmt)
+		return v.Leave(n)
+	default:
 		return n, false
 	}
-	n.HintedSel = hintedSelnode.(*SelectStmt)
-	return v.Leave(n)
 }
 
 // DropBindingStmt deletes sql binding hint.

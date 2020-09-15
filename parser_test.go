@@ -4176,8 +4176,8 @@ func (s *testParserSuite) TestBinding(c *C) {
 	c.Assert(err, IsNil)
 	v, ok := sms[0].(*ast.CreateBindingStmt)
 	c.Assert(ok, IsTrue)
-	c.Assert(v.OriginSel.Text(), Equals, "select * from t")
-	c.Assert(v.HintedSel.Text(), Equals, "select * from t use index(a)")
+	c.Assert(v.OriginNode.Text(), Equals, "select * from t")
+	c.Assert(v.HintedNode.Text(), Equals, "select * from t use index(a)")
 	c.Assert(v.GlobalScope, IsTrue)
 }
 
