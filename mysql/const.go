@@ -211,8 +211,6 @@ const (
 	SuperPriv
 	// CreateUserPriv is the privilege to create user.
 	CreateUserPriv
-	// CreateTablespacePriv is the privilege to create tablespace.
-	CreateTablespacePriv
 	// TriggerPriv is not checked yet.
 	TriggerPriv
 	// DropPriv is the privilege to drop schema/table.
@@ -255,6 +253,9 @@ const (
 
 	// AllPriv is the privilege for all actions.
 	AllPriv
+
+	// CreateTablespacePriv is the privilege to create tablespace.
+	CreateTablespacePriv
 )
 
 // AllPrivMask is the mask for PrivilegeType with all bits set to 1.
