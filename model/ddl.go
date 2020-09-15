@@ -16,12 +16,12 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pingcap/parser/mysql"
 	"math"
 	"sync"
 	"time"
 
 	"github.com/pingcap/errors"
+	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
 
