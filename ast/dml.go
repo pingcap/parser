@@ -1256,9 +1256,9 @@ type SetOprStmt struct {
 
 	SelectList *SetOprSelectList
 	// TODO: [a]fix here
-	TableList  *SetOprTableList
-	OrderBy    *OrderByClause
-	Limit      *Limit
+	TableList *SetOprTableList
+	OrderBy   *OrderByClause
+	Limit     *Limit
 }
 
 // TODO: [a]fix here
@@ -2574,6 +2574,7 @@ func (n *WindowSpec) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// TODO: [a]fix here, rename the SelectIntoType, now it use to specific select and table stmt
 type SelectIntoType int
 
 const (
@@ -2594,7 +2595,7 @@ type SelectIntoOption struct {
 // Restore implements Node interface.
 func (n *SelectIntoOption) Restore(ctx *format.RestoreCtx) error {
 	if n.Tp != SelectIntoOutfile {
-		// only support SELECT ... INTO OUTFILE now
+		// only support SELECT ... INTO OUTFILE and TABLE ... INTO OUTFILE now
 		return errors.New("Unsupported SelectionInto type")
 	}
 

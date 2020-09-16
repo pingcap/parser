@@ -20,9 +20,10 @@ func parse(sql string) (*ast.StmtNode, error) {
 
 func main() {
 	//astNode, err := parse("SELECT * FROM t1 UNION TABLE t2")
-	astNode, err := parse("TABLE t1 UNION TABLE t2")
+	//astNode, err := parse("TABLE t1 UNION TABLE t2")
 	//astNode, err := parse("TABLE t1 UNION SELECT * FROM t2")
 	//astNode, err := parse("SELECT * FROM t1 UNION SELECT * FROM t2")
+	astNode, err := parse("TABLE t1 INTO OUTFILE 'a.txt'")
 	if err != nil {
 		fmt.Printf("parse error: %v\n", err.Error())
 		return

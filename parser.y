@@ -8246,8 +8246,8 @@ SetOprTable:
 		st := $2.(*ast.TableStmt)
 		st.IsInBraces = true
 		// TODO: [a]fix here
-//		endOffset := parser.endOffset(&yyS[yypt])
-//		parser.setLastTableFieldText(st, endOffset)
+		//		endOffset := parser.endOffset(&yyS[yypt])
+		//		parser.setLastTableFieldText(st, endOffset)
 		$$ = $2
 	}
 
@@ -11987,8 +11987,8 @@ EncryptionOpt:
  * TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
  ******************************************************************************/
 TableStmt:
-	//	"TABLE" TableName SelectStmtFieldList OrderByOptional SelectStmtLimit
-	"TABLE" TableName OrderByOptional SelectStmtLimit
+	//	"TABLE" TableName SelectStmtFieldList OrderByOptional SelectStmtLimit SelectStmtIntoOption
+	"TABLE" TableName OrderByOptional SelectStmtLimit SelectStmtIntoOption
 	{
 		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
 		//		st := &ast.TableStmt{
@@ -12005,6 +12005,9 @@ TableStmt:
 		}
 		if $4 != nil {
 			st.Limit = $4.(*ast.Limit)
+		}
+		if $5 != nil {
+			st.TableIntoOpt = $5.(*ast.SelectIntoOption)
 		}
 		$$ = st
 	}

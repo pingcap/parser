@@ -509,6 +509,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"TABLE t ORDER BY b LIMIT 3 OFFSET 2", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
 		{"TABLE t ORDER BY b LIMIT 2,3", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
 		{"INSERT INTO ta TABLE tb", true, "INSERT INTO `ta` TABLE `tb`"},
+		{"INSERT INTO t.a TABLE t.b", true, "INSERT INTO `t`.`a` TABLE `t`.`b`"},
 		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
 		{"TABLE t1 EXCEPT TABLE t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
 		{"TABLE t1 INTERSECT TABLE t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
@@ -516,6 +517,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		//{"TABLE t1 EXCEPT (TABLE t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
 		//{"TABLE t1 INTERSECT (TABLE t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
 		//{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+		{"TABLE t1 INTO OUTFILE 'a.txt'", true, "TABLE `t1` INTO OUTFILE 'a.txt'"},
+		{"TABLE t ORDER BY a INTO OUTFILE '/tmp/abc'", true, "TABLE `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
 
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
