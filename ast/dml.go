@@ -1035,6 +1035,57 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// TODO: [a]fix here
+// SetOprTableList represents the table list in a union statement.
+type SetOprTableList struct {
+	node
+
+	Tables []*TableStmt
+}
+
+func (n *SetOprTableList) Restore(ctx *format.RestoreCtx) error {
+	for i, tableStmt := range n.Tables {
+		if i != 0 {
+			switch *tableStmt.AfterSetOperator {
+			case Union:
+				ctx.WriteKeyWord(" UNION ")
+			case UnionAll:
+				ctx.WriteKeyWord(" UNION ALL ")
+			case Except:
+				ctx.WriteKeyWord(" EXCEPT ")
+			case Intersect:
+				ctx.WriteKeyWord(" INTERSECT ")
+			}
+		}
+		if tableStmt.IsInBraces {
+			ctx.WritePlain("(")
+		}
+		if err := tableStmt.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetOprTableList.SelectStmt")
+		}
+		if tableStmt.IsInBraces {
+			ctx.WritePlain(")")
+		}
+	}
+	return nil
+}
+
+func (n *SetOprTableList) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*SetOprTableList)
+	for i, sel := range n.Tables {
+		node, ok := sel.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Tables[i] = node.(*TableStmt)
+	}
+	return v.Leave(n)
+}
+
 // TableStmt represents the table dml node.
 type TableStmt struct {
 	dmlNode
@@ -1043,6 +1094,15 @@ type TableStmt struct {
 	Table   *TableName
 	OrderBy *OrderByClause
 	Limit   *Limit
+	// TODO: [a]fix here
+	// Fields is the table expression list.
+	Fields *FieldList
+	// AfterSetOperator indicates the TableStmt after which type of set operator
+	AfterSetOperator *SetOprType
+	// IsInBraces indicates whether it's a stmt in brace.
+	IsInBraces bool
+	// TableIntoOpt is the table-into option.
+	TableIntoOpt *SelectIntoOption
 }
 
 func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1050,6 +1110,18 @@ func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
 
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotatef(err, "An error occurred while restore TableStmt.Table")
+	}
+
+	// TODO: [a]fix here
+	if n.Fields != nil {
+		for i, field := range n.Fields.Fields {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := field.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
+			}
+		}
 	}
 
 	if n.OrderBy != nil {
@@ -1063,6 +1135,13 @@ func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableStmt.Limit")
+		}
+	}
+
+	if n.TableIntoOpt != nil {
+		ctx.WritePlain(" ")
+		if err := n.TableIntoOpt.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableStmt.TableIntoOpt")
 		}
 	}
 
@@ -1080,6 +1159,14 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
+	// TODO: [a]fix here
+	if n.Fields != nil {
+		node, ok := n.Fields.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Fields = node.(*FieldList)
+	}
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
 		if !ok {
@@ -1168,14 +1255,28 @@ type SetOprStmt struct {
 	resultSetNode
 
 	SelectList *SetOprSelectList
+	// TODO: [a]fix here
+	TableList  *SetOprTableList
 	OrderBy    *OrderByClause
 	Limit      *Limit
 }
 
+// TODO: [a]fix here
 // Restore implements Node interface.
 func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
-	if err := n.SelectList.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
+	if n.SelectList != nil {
+		if err := n.SelectList.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
+		}
+	}
+	//if err := n.SelectList.Restore(ctx); err != nil {
+	//	return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
+	//}
+
+	if n.TableList != nil {
+		if err := n.TableList.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetOprStmt.TableList")
+		}
 	}
 
 	if n.OrderBy != nil {
@@ -1207,6 +1308,14 @@ func (n *SetOprStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.SelectList = node.(*SetOprSelectList)
+	}
+	// TODO: [a]fix here
+	if n.TableList != nil {
+		node, ok := n.TableList.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableList = node.(*SetOprTableList)
 	}
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)

@@ -853,6 +853,7 @@ import (
 	CreateViewSelectOpt  "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	SetOprSelect         "Union/Except/Intersect (select) item"
 	TableStmt            "TABLE statement"
+	SetOprTable          "Union/Except/Intersect (table) item"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -8186,6 +8187,18 @@ SetOprStmt:
 		}
 		$$ = setOpr
 	}
+|	SetOprClauseList SetOpr TableStmt
+	{
+		st := $3.(*ast.TableStmt)
+		setOpr := $1.(*ast.SetOprStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		// TODO: [a]fix here
+		//		lastTable := setOpr.TableList.Tables[len(setOpr.TableList.Tables)-1]
+		//		endOffset := parser.endOffset(&yyS[yypt-4])
+		//		parser.setLastTableFieldText(lastTable, endOffset)
+		setOpr.TableList.Tables = append(setOpr.TableList.Tables, st)
+		$$ = setOpr
+	}
 
 SetOprClauseList:
 	SetOprSelect
@@ -8205,6 +8218,37 @@ SetOprClauseList:
 		parser.setLastSelectFieldText(lastSelect, endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr
+	}
+|	SetOprTable
+	{
+		tableList := &ast.SetOprTableList{Tables: []*ast.TableStmt{$1.(*ast.TableStmt)}}
+		$$ = &ast.SetOprStmt{
+			TableList: tableList,
+		}
+	}
+|	SetOprClauseList SetOpr SetOprTable
+	{
+		setOpr := $1.(*ast.SetOprStmt)
+		st := $3.(*ast.TableStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		// TODO: [a]fix here
+		//		lastTable := setOpr.TableList.Tables[len(setOpr.TableList.Tables)-1]
+		//		endOffset := parser.endOffset(&yyS[yypt-1])
+		//		parser.setLastTableFieldText(lastTable, endOffset)
+		setOpr.TableList.Tables = append(setOpr.TableList.Tables, st)
+		$$ = setOpr
+	}
+
+SetOprTable:
+	TableStmt
+|	'(' TableStmt ')'
+	{
+		st := $2.(*ast.TableStmt)
+		st.IsInBraces = true
+		// TODO: [a]fix here
+//		endOffset := parser.endOffset(&yyS[yypt])
+//		parser.setLastTableFieldText(st, endOffset)
+		$$ = $2
 	}
 
 SetOprSelect:
@@ -11943,9 +11987,19 @@ EncryptionOpt:
  * TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
  ******************************************************************************/
 TableStmt:
+	//	"TABLE" TableName SelectStmtFieldList OrderByOptional SelectStmtLimit
 	"TABLE" TableName OrderByOptional SelectStmtLimit
 	{
 		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
+		//		st := &ast.TableStmt{
+		//			Table: $2.(*ast.TableName),
+		//			Fields: $3.(*ast.FieldList),
+		//		}
+		//		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+		//        if lastField.Expr != nil && lastField.AsName.O == "" {
+		//        	lastEnd := parser.endOffset(&yyS[yypt-2])
+		//        	lastField.SetText(parser.src[lastField.Offset:lastEnd])
+		//        }
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}

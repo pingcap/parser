@@ -510,7 +510,12 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"TABLE t ORDER BY b LIMIT 2,3", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
 		{"INSERT INTO ta TABLE tb", true, "INSERT INTO `ta` TABLE `tb`"},
 		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
-		{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+		{"TABLE t1 EXCEPT TABLE t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
+		{"TABLE t1 INTERSECT TABLE t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
+		//{"TABLE t1 UNION (TABLE t2)", true, "TABLE `t1` UNION (TABLE `t2`)"},
+		//{"TABLE t1 EXCEPT (TABLE t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
+		//{"TABLE t1 INTERSECT (TABLE t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
+		//{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
 
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
