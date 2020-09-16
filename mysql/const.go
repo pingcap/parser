@@ -256,6 +256,9 @@ const (
 
 	// AllPriv is the privilege for all actions.
 	AllPriv
+	/*
+	 *  Please add the new priv before AllPriv to keep the values consistent across versions.
+	 */
 )
 
 // AllPrivMask is the mask for PrivilegeType with all bits set to 1.
