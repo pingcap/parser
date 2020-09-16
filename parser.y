@@ -5702,6 +5702,38 @@ Literal:
 	{
 		$$ = ast.NewValueExpr($1, parser.charset, parser.collation)
 	}
+|	"UNDERSCORE_CHARSET" hexLit
+	{
+		co, err := charset.GetDefaultCollation($1)
+		if err != nil {
+			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
+			return 1
+		}
+		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
+		tp := expr.GetType()
+		tp.Charset = $1
+		tp.Collate = co
+		if tp.Collate == charset.CollationBin {
+			tp.Flag |= mysql.BinaryFlag
+		}
+		$$ = expr
+	}
+|	"UNDERSCORE_CHARSET" bitLit
+	{
+		co, err := charset.GetDefaultCollation($1)
+		if err != nil {
+			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
+			return 1
+		}
+		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
+		tp := expr.GetType()
+		tp.Charset = $1
+		tp.Collate = co
+		if tp.Collate == charset.CollationBin {
+			tp.Flag |= mysql.BinaryFlag
+		}
+		$$ = expr
+	}
 
 StringLiteral:
 	stringLit
@@ -11217,6 +11249,10 @@ PrivType:
 |	"CREATE" "USER"
 	{
 		$$ = mysql.CreateUserPriv
+	}
+|	"CREATE" "TABLESPACE"
+	{
+		$$ = mysql.CreateTablespacePriv
 	}
 |	"TRIGGER"
 	{

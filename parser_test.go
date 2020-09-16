@@ -28,6 +28,7 @@ import (
 	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/parser/test_driver"
 )
@@ -1193,6 +1194,10 @@ func (s *testParserSuite) TestExpression(c *C) {
 		{`select _binary"string";`, true, "SELECT _BINARY'string'"},
 		{"select N'string'", true, "SELECT _UTF8'string'"},
 		{"select n'string'", true, "SELECT _UTF8'string'"},
+		{"select _utf8 0xD0B1;", true, "SELECT _UTF8 x'd0b1'"},
+		{"select _utf8 X'D0B1';", true, "SELECT _UTF8 x'd0b1'"},
+		{"select _utf8 0b1101000010110001;", true, "SELECT _UTF8 b'1101000010110001'"},
+		{"select _utf8 B'1101000010110001';", true, "SELECT _UTF8 b'1101000010110001'"},
 		// for comparison
 		{"select 1 <=> 0, 1 <=> null, 1 = null", true, "SELECT 1<=>0,1<=>NULL,1=NULL"},
 		// for date literal
@@ -3736,6 +3741,8 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
 		{"GRANT SHUTDOWN ON *.* TO 'dev1'@'localhost';", true, "GRANT SHUTDOWN ON *.* TO `dev1`@`localhost`"},
 		{"GRANT CONFIG ON *.* TO 'dev1'@'localhost';", true, "GRANT CONFIG ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CREATE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CREATE TABLESPACE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE TABLESPACE ON *.* TO `dev1`@`localhost`"},
 
 		// for revoke statement
 		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
@@ -5392,4 +5399,16 @@ func (s *testParserSuite) TestStatisticsOps(c *C) {
 	c.Assert(v.Columns[0].Name, Equals, model.CIStr{O: "a", L: "a"})
 	c.Assert(v.Columns[1].Name, Equals, model.CIStr{O: "b", L: "b"})
 	c.Assert(v.Columns[2].Name, Equals, model.CIStr{O: "c", L: "c"})
+}
+
+func (s *testParserSuite) TestHighNotPrecedenceMode(c *C) {
+	p := parser.New()
+
+	sms, _, err := p.Parse("SELECT NOT 1 BETWEEN -5 AND 5", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	v1, ok := v.Fields.Fields[0].Expr.(*ast.UnaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(v1.Op, Equals, opcode.Not)
 }
