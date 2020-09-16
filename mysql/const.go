@@ -251,11 +251,11 @@ const (
 	// ConfigPriv is the privilege to enable the use SET CONFIG statements.
 	ConfigPriv
 
-	// AllPriv is the privilege for all actions.
-	AllPriv
-
 	// CreateTablespacePriv is the privilege to create tablespace.
 	CreateTablespacePriv
+
+	// AllPriv is the privilege for all actions.
+	AllPriv
 )
 
 // AllPrivMask is the mask for PrivilegeType with all bits set to 1.
