@@ -24,7 +24,10 @@ func main() {
 	//astNode, err := parse("TABLE t1 UNION SELECT * FROM t2")
 	//astNode, err := parse("SELECT * FROM t1 UNION SELECT * FROM t2")
 	//astNode, err := parse("CREATE TABLE ta TABLE tb")
-	astNode, err := parse("CREATE TABLE ta SELECT a FROM tb")
+	//astNode, err := parse("VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)")
+	//astNode, err := parse("select row(1, 1)")
+	//astNode, err := parse("VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)")
+	astNode, err := parse("VALUES row(1, 1), row(1, 1, 1)")
 	if err != nil {
 		fmt.Printf("parse error: %v\n", err.Error())
 		return

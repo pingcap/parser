@@ -31,6 +31,7 @@ var (
 	_ DMLNode = &LoadDataStmt{}
 	_ DMLNode = &SplitRegionStmt{}
 	_ DMLNode = &TableStmt{}
+	_ DMLNode = &ValuesStmt{}
 
 	_ Node = &Assignment{}
 	_ Node = &ByItem{}
@@ -2943,6 +2944,78 @@ func (n *SplitOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlain(")")
 	}
 	return nil
+}
+
+type ValuesStmt struct {
+	dmlNode
+	resultSetNode
+
+	//Lists *RowExpr
+	Fields  *FieldList
+	OrderBy *OrderByClause
+	Limit   *Limit
+}
+
+func (n *ValuesStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("VALUES ")
+	if n.Fields != nil {
+		for i, field := range n.Fields.Fields {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := field.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
+			}
+		}
+	}
+
+	if n.OrderBy != nil {
+		ctx.WritePlain(" ")
+		if err := n.OrderBy.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore ValuesStmt.OrderBy")
+		}
+	}
+
+	if n.Limit != nil {
+		ctx.WritePlain(" ")
+		if err := n.Limit.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore ValuesStmt.Limit")
+		}
+	}
+
+	return nil
+}
+
+func (n *ValuesStmt) Accept(v Visitor) (node Node, ok bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ValuesStmt)
+	if n.Fields != nil {
+		node, ok := n.Fields.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Fields = node.(*FieldList)
+	}
+
+	if n.OrderBy != nil {
+		node, ok := n.OrderBy.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.OrderBy = node.(*OrderByClause)
+	}
+	if n.Limit != nil {
+		node, ok := n.Limit.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Limit = node.(*Limit)
+	}
+
+	return v.Leave(n)
 }
 
 type FulltextSearchModifier int

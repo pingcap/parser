@@ -854,6 +854,7 @@ import (
 	SetOprSelect         "Union/Except/Intersect (select) item"
 	TableStmt            "TABLE statement"
 	SetOprTable          "Union/Except/Intersect (table) item"
+	ValuesStmt           "VALUES statement"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -5579,6 +5580,12 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Setlist: $2.([]*ast.Assignment)}
 	}
+|	"ROW" '(' ValuesList ')'
+	{
+		$$ = &ast.InsertStmt{
+			Lists: $3.([][]ast.ExprNode),
+		}
+	}
 
 ValueSym:
 	"VALUE"
@@ -9622,6 +9629,7 @@ Statement:
 |	LockTablesStmt
 |	ShutdownStmt
 |	TableStmt
+|	ValuesStmt
 
 TraceableStmt:
 	SelectStmt
@@ -12017,6 +12025,22 @@ TableStmt:
 		}
 		if $5 != nil {
 			st.TableIntoOpt = $5.(*ast.SelectIntoOption)
+		}
+		$$ = st
+	}
+
+/*******************************************************************************
+ * VALUES row_constructor_list [ORDER BY column_designator] [LIMIT BY number]
+ ******************************************************************************/
+ValuesStmt:
+	"VALUES" SelectStmtFieldList OrderByOptional SelectStmtLimit
+	{
+		st := &ast.ValuesStmt{Fields: $2.(*ast.FieldList)}
+		if $3 != nil {
+			st.OrderBy = $3.(*ast.OrderByClause)
+		}
+		if $4 != nil {
+			st.Limit = $4.(*ast.Limit)
 		}
 		$$ = st
 	}

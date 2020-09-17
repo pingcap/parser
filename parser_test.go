@@ -527,6 +527,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"CREATE VIEW v AS TABLE t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
 		{"CREATE VIEW v AS (TABLE t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
 
+		// values statement
+		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a`"},
+
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
 		{"SELECT a.b.*.c FROM t", false, ""},
