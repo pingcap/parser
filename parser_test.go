@@ -510,6 +510,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"TABLE t ORDER BY b LIMIT 2,3", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
 		{"INSERT INTO ta TABLE tb", true, "INSERT INTO `ta` TABLE `tb`"},
 		{"INSERT INTO t.a TABLE t.b", true, "INSERT INTO `t`.`a` TABLE `t`.`b`"},
+		{"REPLACE INTO ta TABLE tb", true, "REPLACE INTO `ta` TABLE `tb`"},
+		{"REPLACE INTO t.a TABLE t.b", true, "REPLACE INTO `t`.`a` TABLE `t`.`b`"},
 		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
 		{"TABLE t1 EXCEPT TABLE t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
 		{"TABLE t1 INTERSECT TABLE t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
@@ -519,6 +521,11 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		//{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
 		{"TABLE t1 INTO OUTFILE 'a.txt'", true, "TABLE `t1` INTO OUTFILE 'a.txt'"},
 		{"TABLE t ORDER BY a INTO OUTFILE '/tmp/abc'", true, "TABLE `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
+		{"CREATE TABLE t.a TABLE t.b", true, "CREATE TABLE `t`.`a` AS TABLE `t`.`b`"},
+		{"CREATE TABLE ta TABLE tb", true, "CREATE TABLE `ta` AS TABLE `tb`"},
+		{"CREATE TABLE ta (x INT) TABLE tb", true, "CREATE TABLE `ta` (`x` INT) AS TABLE `tb`"},
+		{"CREATE VIEW v AS TABLE t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
+		{"CREATE VIEW v AS (TABLE t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
 
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
@@ -2303,16 +2310,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table a (t int) like b", false, ""},
 		{"create table a (t int) like (b)", false, ""},
 		// Create table with select statement
-		{"create table a select * from b", true, "CREATE TABLE `a`  AS SELECT * FROM `b`"},
-		{"create table a as select * from b", true, "CREATE TABLE `a`  AS SELECT * FROM `b`"},
+		{"create table a select * from b", true, "CREATE TABLE `a` AS SELECT * FROM `b`"},
+		{"create table a as select * from b", true, "CREATE TABLE `a` AS SELECT * FROM `b`"},
 		{"create table a (m int, n datetime) as select * from b", true, "CREATE TABLE `a` (`m` INT,`n` DATETIME) AS SELECT * FROM `b`"},
 		{"create table a (unique(n)) as select n from b", true, "CREATE TABLE `a` (UNIQUE(`n`)) AS SELECT `n` FROM `b`"},
-		{"create table a ignore as select n from b", true, "CREATE TABLE `a`  IGNORE AS SELECT `n` FROM `b`"},
-		{"create table a replace as select n from b", true, "CREATE TABLE `a`  REPLACE AS SELECT `n` FROM `b`"},
+		{"create table a ignore as select n from b", true, "CREATE TABLE `a` IGNORE AS SELECT `n` FROM `b`"},
+		{"create table a replace as select n from b", true, "CREATE TABLE `a` REPLACE AS SELECT `n` FROM `b`"},
 		{"create table a (m int) replace as (select n as m from b union select n+1 as m from c group by 1 limit 2)", true, "CREATE TABLE `a` (`m` INT) REPLACE AS (SELECT `n` AS `m` FROM `b` UNION SELECT `n`+1 AS `m` FROM `c` GROUP BY 1 LIMIT 2)"},
 
 		// Create table with no option is valid for parser
-		{"create table a", true, "CREATE TABLE `a` "},
+		{"create table a", true, "CREATE TABLE `a`"},
 
 		{"create table t (a timestamp default now)", false, ""},
 		{"create table t (a timestamp default now())", true, "CREATE TABLE `t` (`a` TIMESTAMP DEFAULT CURRENT_TIMESTAMP())"},

@@ -3762,6 +3762,10 @@ CreateTableSelectOpt:
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
+|	TableStmt
+	{
+		$$ = &ast.CreateTableStmt{Select: $1}
+	}
 |	SetOprStmt
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
@@ -3780,6 +3784,11 @@ CreateViewSelectOpt:
 		$$ = $2
 	}
 |	'(' SetOprStmt ')'
+	{
+		$$ = $2
+	}
+|	TableStmt
+|	'(' TableStmt ')'
 	{
 		$$ = $2
 	}

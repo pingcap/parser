@@ -23,7 +23,8 @@ func main() {
 	//astNode, err := parse("TABLE t1 UNION TABLE t2")
 	//astNode, err := parse("TABLE t1 UNION SELECT * FROM t2")
 	//astNode, err := parse("SELECT * FROM t1 UNION SELECT * FROM t2")
-	astNode, err := parse("TABLE t1 INTO OUTFILE 'a.txt'")
+	//astNode, err := parse("CREATE TABLE ta TABLE tb")
+	astNode, err := parse("CREATE TABLE ta SELECT a FROM tb")
 	if err != nil {
 		fmt.Printf("parse error: %v\n", err.Error())
 		return
