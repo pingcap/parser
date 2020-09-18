@@ -192,11 +192,35 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 		},
 		{
 			input: `SET_VAR(sbs = 16M) SET_VAR(fkc=OFF) SET_VAR(os="mcb=off") set_var(abc=1)`,
-			errs: []string{
-				`.*Optimizer hint SET_VAR is not supported.*`,
-				`.*Optimizer hint SET_VAR is not supported.*`,
-				`.*Optimizer hint SET_VAR is not supported.*`,
-				`.*Optimizer hint set_var is not supported.*`,
+			output: []*ast.TableOptimizerHint{
+				{
+					HintName: model.NewCIStr("SET_VAR"),
+					HintData: ast.HintSetVar{
+						VarName: "sbs",
+						Value:   "16M",
+					},
+				},
+				{
+					HintName: model.NewCIStr("SET_VAR"),
+					HintData: ast.HintSetVar{
+						VarName: "fkc",
+						Value:   "OFF",
+					},
+				},
+				{
+					HintName: model.NewCIStr("SET_VAR"),
+					HintData: ast.HintSetVar{
+						VarName: "os",
+						Value:   "mcb=off",
+					},
+				},
+				{
+					HintName: model.NewCIStr("set_var"),
+					HintData: ast.HintSetVar{
+						VarName: "abc",
+						Value:   "1",
+					},
+				},
 			},
 		},
 		{
