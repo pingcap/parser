@@ -1036,7 +1036,6 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// TODO: [a]fix here
 // SetOprTableList represents the table list in a union statement.
 type SetOprTableList struct {
 	node
@@ -1095,9 +1094,6 @@ type TableStmt struct {
 	Table   *TableName
 	OrderBy *OrderByClause
 	Limit   *Limit
-	// TODO: [a]fix here
-	// Fields is the table expression list.
-	Fields *FieldList
 	// AfterSetOperator indicates the TableStmt after which type of set operator
 	AfterSetOperator *SetOprType
 	// IsInBraces indicates whether it's a stmt in brace.
@@ -1108,44 +1104,27 @@ type TableStmt struct {
 
 func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("TABLE ")
-
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotatef(err, "An error occurred while restore TableStmt.Table")
 	}
-
-	// TODO: [a]fix here
-	if n.Fields != nil {
-		for i, field := range n.Fields.Fields {
-			if i != 0 {
-				ctx.WritePlain(",")
-			}
-			if err := field.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
-			}
-		}
-	}
-
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableStmt.OrderBy")
 		}
 	}
-
 	if n.Limit != nil {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableStmt.Limit")
 		}
 	}
-
 	if n.TableIntoOpt != nil {
 		ctx.WritePlain(" ")
 		if err := n.TableIntoOpt.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableStmt.TableIntoOpt")
 		}
 	}
-
 	return nil
 }
 
@@ -1160,14 +1139,6 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Table = node.(*TableName)
-	// TODO: [a]fix here
-	if n.Fields != nil {
-		node, ok := n.Fields.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Fields = node.(*FieldList)
-	}
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
 		if !ok {
@@ -1182,7 +1153,6 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 		}
 		n.Limit = node.(*Limit)
 	}
-
 	return v.Leave(n)
 }
 
@@ -1256,13 +1226,11 @@ type SetOprStmt struct {
 	resultSetNode
 
 	SelectList *SetOprSelectList
-	// TODO: [a]fix here
-	TableList *SetOprTableList
-	OrderBy   *OrderByClause
-	Limit     *Limit
+	TableList  *SetOprTableList
+	OrderBy    *OrderByClause
+	Limit      *Limit
 }
 
-// TODO: [a]fix here
 // Restore implements Node interface.
 func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.SelectList != nil {
@@ -1270,23 +1238,17 @@ func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
 		}
 	}
-	//if err := n.SelectList.Restore(ctx); err != nil {
-	//	return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
-	//}
-
 	if n.TableList != nil {
 		if err := n.TableList.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SetOprStmt.TableList")
 		}
 	}
-
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SetOprStmt.OrderBy")
 		}
 	}
-
 	if n.Limit != nil {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
@@ -1310,7 +1272,6 @@ func (n *SetOprStmt) Accept(v Visitor) (Node, bool) {
 		}
 		n.SelectList = node.(*SetOprSelectList)
 	}
-	// TODO: [a]fix here
 	if n.TableList != nil {
 		node, ok := n.TableList.Accept(v)
 		if !ok {
@@ -2575,7 +2536,6 @@ func (n *WindowSpec) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// TODO: [a]fix here, rename the SelectIntoType, now it use to specific select and table stmt
 type SelectIntoType int
 
 const (
@@ -2950,7 +2910,6 @@ type ValuesStmt struct {
 	dmlNode
 	resultSetNode
 
-	//Lists *RowExpr
 	Fields  *FieldList
 	OrderBy *OrderByClause
 	Limit   *Limit

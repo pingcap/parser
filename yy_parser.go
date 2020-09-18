@@ -182,16 +182,6 @@ func (parser *Parser) setLastSelectFieldText(st *ast.SelectStmt, lastEnd int) {
 	}
 }
 
-// The select statement is not at the end of the whole statement, if the last
-// field text was set from its offset to the end of the src string, update
-// the last field text.
-func (parser *Parser) setLastTableFieldText(st *ast.TableStmt, lastEnd int) {
-	lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
-	if lastField.Offset+len(lastField.Text()) >= len(parser.src)-1 {
-		lastField.SetText(parser.src[lastField.Offset:lastEnd])
-	}
-}
-
 func (parser *Parser) startOffset(v *yySymType) int {
 	return v.offset
 }

@@ -8078,6 +8078,16 @@ SubSelect:
 		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: s}
 	}
+|	'(' TableStmt ')'
+	{
+		s := $2.(*ast.TableStmt)
+		//		endOffset := parser.endOffset(&yyS[yypt])
+		//		parser.setLastTableFieldText(s, endOffset)
+		//		src := parser.src
+		//		// See the implementation of yyParse function
+		//		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: s}
+	}
 |	'(' SetOprStmt ')'
 	{
 		s := $2.(*ast.SetOprStmt)
@@ -8208,10 +8218,6 @@ SetOprStmt:
 		st := $3.(*ast.TableStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		// TODO: [a]fix here
-		//		lastTable := setOpr.TableList.Tables[len(setOpr.TableList.Tables)-1]
-		//		endOffset := parser.endOffset(&yyS[yypt-4])
-		//		parser.setLastTableFieldText(lastTable, endOffset)
 		setOpr.TableList.Tables = append(setOpr.TableList.Tables, st)
 		$$ = setOpr
 	}
@@ -8247,10 +8253,6 @@ SetOprClauseList:
 		setOpr := $1.(*ast.SetOprStmt)
 		st := $3.(*ast.TableStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		// TODO: [a]fix here
-		//		lastTable := setOpr.TableList.Tables[len(setOpr.TableList.Tables)-1]
-		//		endOffset := parser.endOffset(&yyS[yypt-1])
-		//		parser.setLastTableFieldText(lastTable, endOffset)
 		setOpr.TableList.Tables = append(setOpr.TableList.Tables, st)
 		$$ = setOpr
 	}
@@ -8261,9 +8263,6 @@ SetOprTable:
 	{
 		st := $2.(*ast.TableStmt)
 		st.IsInBraces = true
-		// TODO: [a]fix here
-		//		endOffset := parser.endOffset(&yyS[yypt])
-		//		parser.setLastTableFieldText(st, endOffset)
 		$$ = $2
 	}
 
@@ -12008,15 +12007,6 @@ TableStmt:
 	"TABLE" TableName OrderByOptional SelectStmtLimit SelectStmtIntoOption
 	{
 		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
-		//		st := &ast.TableStmt{
-		//			Table: $2.(*ast.TableName),
-		//			Fields: $3.(*ast.FieldList),
-		//		}
-		//		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
-		//        if lastField.Expr != nil && lastField.AsName.O == "" {
-		//        	lastEnd := parser.endOffset(&yyS[yypt-2])
-		//        	lastField.SetText(parser.src[lastField.Offset:lastEnd])
-		//        }
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}
