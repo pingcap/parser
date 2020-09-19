@@ -855,6 +855,7 @@ import (
 	TableStmt            "TABLE statement"
 	SetOprTable          "Union/Except/Intersect (table) item"
 	ValuesStmt           "VALUES statement"
+	SetOprValues         "Union/Except/Intersect (values) item"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -5580,12 +5581,6 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Setlist: $2.([]*ast.Assignment)}
 	}
-|	"ROW" '(' ValuesList ')'
-	{
-		$$ = &ast.InsertStmt{
-			Lists: $3.([][]ast.ExprNode),
-		}
-	}
 
 ValueSym:
 	"VALUE"
@@ -5599,6 +5594,12 @@ ValuesList:
 |	ValuesList ',' RowValue
 	{
 		$$ = append($1.([][]ast.ExprNode), $3.([]ast.ExprNode))
+	}
+|	"ROW" '(' ValuesList ')'
+	{
+		$$ = &ast.InsertStmt{
+			Lists: $3.([][]ast.ExprNode),
+		}
 	}
 
 RowValue:
@@ -7221,8 +7222,8 @@ SelectStmtBasic:
 		st := &ast.SelectStmt{
 			SelectStmtOpts: $2.(*ast.SelectStmtOpts),
 			Distinct:       $2.(*ast.SelectStmtOpts).Distinct,
-			Fields:         $3.(*ast.FieldList),
 		}
+		st.Fields = $3.(*ast.FieldList)
 		if st.SelectStmtOpts.TableHints != nil {
 			st.TableHints = st.SelectStmtOpts.TableHints
 		}
@@ -8081,11 +8082,6 @@ SubSelect:
 |	'(' TableStmt ')'
 	{
 		s := $2.(*ast.TableStmt)
-		//		endOffset := parser.endOffset(&yyS[yypt])
-		//		parser.setLastTableFieldText(s, endOffset)
-		//		src := parser.src
-		//		// See the implementation of yyParse function
-		//		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: s}
 	}
 |	'(' SetOprStmt ')'
@@ -8134,7 +8130,7 @@ SetOprStmt:
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-4])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
+		parser.setLastSelectFieldText(lastSelect.(ast.SelectNode), endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		if $4 != nil {
 			setOpr.OrderBy = $4.(*ast.OrderByClause)
@@ -8156,7 +8152,7 @@ SetOprStmt:
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-4])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
+		parser.setLastSelectFieldText(lastSelect.(ast.SelectNode), endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		if $4 != nil {
 			setOpr.OrderBy = $4.(*ast.OrderByClause)
@@ -8178,7 +8174,7 @@ SetOprStmt:
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-4])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
+		parser.setLastSelectFieldText(lastSelect.(ast.SelectNode), endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		if $4 != nil {
 			setOpr.OrderBy = $4.(*ast.OrderByClause)
@@ -8198,7 +8194,7 @@ SetOprStmt:
 		setOpr := $1.(*ast.SetOprStmt)
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-5])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
+		parser.setLastSelectFieldText(lastSelect.(ast.SelectNode), endOffset)
 		st := $4.(*ast.SelectStmt)
 		st.IsInBraces = true
 		st.AfterSetOperator = $2.(*ast.SetOprType)
@@ -8218,14 +8214,37 @@ SetOprStmt:
 		st := $3.(*ast.TableStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.TableList.Tables = append(setOpr.TableList.Tables, st)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		$$ = setOpr
+	}
+|	SetOprClauseList SetOpr '(' TableStmt ')' OrderByOptional SelectStmtLimit
+	{
+		setOpr := $1.(*ast.SetOprStmt)
+		st := $4.(*ast.TableStmt)
+		st.IsInBraces = true
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		if $6 != nil {
+			setOpr.OrderBy = $6.(*ast.OrderByClause)
+		}
+		if $7 != nil {
+			setOpr.Limit = $7.(*ast.Limit)
+		}
+		$$ = setOpr
+	}
+|	SetOprClauseList SetOpr ValuesStmt
+	{
+		st := $3.(*ast.ValuesStmt)
+		setOpr := $1.(*ast.SetOprStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr
 	}
 
 SetOprClauseList:
 	SetOprSelect
 	{
-		selectList := &ast.SetOprSelectList{Selects: []*ast.SelectStmt{$1.(*ast.SelectStmt)}}
+		selectList := &ast.SetOprSelectList{Selects: []ast.SelectNode{$1.(*ast.SelectStmt)}}
 		$$ = &ast.SetOprStmt{
 			SelectList: selectList,
 		}
@@ -8237,15 +8256,15 @@ SetOprClauseList:
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-1])
-		parser.setLastSelectFieldText(lastSelect, endOffset)
+		parser.setLastSelectFieldText(lastSelect.(ast.SelectNode), endOffset)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr
 	}
 |	SetOprTable
 	{
-		tableList := &ast.SetOprTableList{Tables: []*ast.TableStmt{$1.(*ast.TableStmt)}}
+		selectList := &ast.SetOprSelectList{Selects: []ast.SelectNode{$1.(*ast.TableStmt)}}
 		$$ = &ast.SetOprStmt{
-			TableList: tableList,
+			SelectList: selectList,
 		}
 	}
 |	SetOprClauseList SetOpr SetOprTable
@@ -8253,7 +8272,7 @@ SetOprClauseList:
 		setOpr := $1.(*ast.SetOprStmt)
 		st := $3.(*ast.TableStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.TableList.Tables = append(setOpr.TableList.Tables, st)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr
 	}
 
@@ -8271,6 +8290,17 @@ SetOprSelect:
 |	'(' SelectStmt ')'
 	{
 		st := $2.(*ast.SelectStmt)
+		st.IsInBraces = true
+		endOffset := parser.endOffset(&yyS[yypt])
+		parser.setLastSelectFieldText(st, endOffset)
+		$$ = $2
+	}
+
+SetOprValues:
+	ValuesStmt
+|	'(' ValuesStmt ')'
+	{
+		st := $2.(*ast.ValuesStmt)
 		st.IsInBraces = true
 		endOffset := parser.endOffset(&yyS[yypt])
 		parser.setLastSelectFieldText(st, endOffset)
@@ -12004,9 +12034,11 @@ EncryptionOpt:
  ******************************************************************************/
 TableStmt:
 	//	"TABLE" TableName SelectStmtFieldList OrderByOptional SelectStmtLimit SelectStmtIntoOption
-	"TABLE" TableName OrderByOptional SelectStmtLimit SelectStmtIntoOption
+	"TABLE" SelectStmtFieldList OrderByOptional SelectStmtLimit SelectStmtIntoOption
 	{
-		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
+		//		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
+		st := &ast.TableStmt{}
+		st.Fields = $2.(*ast.FieldList)
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}
@@ -12025,7 +12057,8 @@ TableStmt:
 ValuesStmt:
 	"VALUES" SelectStmtFieldList OrderByOptional SelectStmtLimit
 	{
-		st := &ast.ValuesStmt{Fields: $2.(*ast.FieldList)}
+		st := &ast.ValuesStmt{}
+		st.Fields = $2.(*ast.FieldList)
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}

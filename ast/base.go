@@ -13,7 +13,10 @@
 
 package ast
 
-import "github.com/pingcap/parser/types"
+import (
+	"github.com/pingcap/parser/format"
+	"github.com/pingcap/parser/types"
+)
 
 // node is the struct implements node interface except for Accept method.
 // Node implementations should embed it in.
@@ -98,4 +101,34 @@ func (fn *funcNode) functionExpression() {}
 
 type resultSetNode struct {
 	resultFields []*ResultField
+}
+
+type SetNode struct {
+
+	// AfterSetOperator indicates the TableStmt after which type of set operator
+	AfterSetOperator *SetOprType
+	// IsInBraces indicates whether it's a stmt in brace.
+	IsInBraces bool
+	Fields     *FieldList
+}
+
+func (s *SetNode) RestoreOperator(ctx *format.RestoreCtx) {
+	switch *s.AfterSetOperator {
+	case Union:
+		ctx.WriteKeyWord(" UNION ")
+	case UnionAll:
+		ctx.WriteKeyWord(" UNION ALL ")
+	case Except:
+		ctx.WriteKeyWord(" EXCEPT ")
+	case Intersect:
+		ctx.WriteKeyWord(" INTERSECT ")
+	}
+}
+
+func (s *SetNode) HasBraces() bool {
+	return s.IsInBraces
+}
+
+func (s *SetNode) GetFields() *FieldList {
+	return s.Fields
 }

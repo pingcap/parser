@@ -515,10 +515,11 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
 		{"TABLE t1 EXCEPT TABLE t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
 		{"TABLE t1 INTERSECT TABLE t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
-		//{"TABLE t1 UNION (TABLE t2)", true, "TABLE `t1` UNION (TABLE `t2`)"},
-		//{"TABLE t1 EXCEPT (TABLE t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
-		//{"TABLE t1 INTERSECT (TABLE t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
-		//{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+		{"TABLE t1 UNION (TABLE t2)", true, "TABLE `t1` UNION (TABLE `t2`)"},
+		{"TABLE t1 EXCEPT (TABLE t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
+		{"TABLE t1 INTERSECT (TABLE t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
+		{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+		{"SELECT * FROM t1 UNION TABLE t2", true, "SELECT * FROM `t1` UNION TABLE `t2`"},
 		{"TABLE t1 INTO OUTFILE 'a.txt'", true, "TABLE `t1` INTO OUTFILE 'a.txt'"},
 		{"TABLE t ORDER BY a INTO OUTFILE '/tmp/abc'", true, "TABLE `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
 		{"CREATE TABLE t.a TABLE t.b", true, "CREATE TABLE `t`.`a` AS TABLE `t`.`b`"},
@@ -3967,7 +3968,7 @@ func (s *testParserSuite) TestUnionOrderBy(c *C) {
 		if ok {
 			var i int
 			for _, s := range us.SelectList.Selects {
-				c.Assert(s.OrderBy != nil, Equals, t.hasOrderBy[i])
+				c.Assert(s.(*ast.SelectStmt).OrderBy != nil, Equals, t.hasOrderBy[i])
 				i++
 			}
 			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])

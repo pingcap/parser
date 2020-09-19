@@ -782,6 +782,7 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 type SelectStmt struct {
 	dmlNode
 	resultSetNode
+	SetNode
 
 	// SelectStmtOpts wraps around select hints and switches.
 	*SelectStmtOpts
@@ -792,7 +793,7 @@ type SelectStmt struct {
 	// Where is the where clause in select statement.
 	Where ExprNode
 	// Fields is the select expression list.
-	Fields *FieldList
+	//Fields *FieldList
 	// GroupBy is the group by expression list.
 	GroupBy *GroupByClause
 	// Having is the having condition.
@@ -807,10 +808,10 @@ type SelectStmt struct {
 	LockInfo *SelectLockInfo
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
-	// AfterSetOperator indicates the SelectStmt after which type of set operator
-	AfterSetOperator *SetOprType
-	// IsInBraces indicates whether it's a stmt in brace.
-	IsInBraces bool
+	//// AfterSetOperator indicates the SelectStmt after which type of set operator
+	//AfterSetOperator *SetOprType
+	//// IsInBraces indicates whether it's a stmt in brace.
+	//IsInBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
@@ -1036,76 +1037,29 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// SetOprTableList represents the table list in a union statement.
-type SetOprTableList struct {
-	node
-
-	Tables []*TableStmt
-}
-
-func (n *SetOprTableList) Restore(ctx *format.RestoreCtx) error {
-	for i, tableStmt := range n.Tables {
-		if i != 0 {
-			switch *tableStmt.AfterSetOperator {
-			case Union:
-				ctx.WriteKeyWord(" UNION ")
-			case UnionAll:
-				ctx.WriteKeyWord(" UNION ALL ")
-			case Except:
-				ctx.WriteKeyWord(" EXCEPT ")
-			case Intersect:
-				ctx.WriteKeyWord(" INTERSECT ")
-			}
-		}
-		if tableStmt.IsInBraces {
-			ctx.WritePlain("(")
-		}
-		if err := tableStmt.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetOprTableList.SelectStmt")
-		}
-		if tableStmt.IsInBraces {
-			ctx.WritePlain(")")
-		}
-	}
-	return nil
-}
-
-func (n *SetOprTableList) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
-	n = newNode.(*SetOprTableList)
-	for i, sel := range n.Tables {
-		node, ok := sel.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Tables[i] = node.(*TableStmt)
-	}
-	return v.Leave(n)
-}
-
 // TableStmt represents the table dml node.
 type TableStmt struct {
 	dmlNode
 	resultSetNode
+	SetNode
 
-	Table   *TableName
 	OrderBy *OrderByClause
 	Limit   *Limit
-	// AfterSetOperator indicates the TableStmt after which type of set operator
-	AfterSetOperator *SetOprType
-	// IsInBraces indicates whether it's a stmt in brace.
-	IsInBraces bool
 	// TableIntoOpt is the table-into option.
 	TableIntoOpt *SelectIntoOption
 }
 
 func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("TABLE ")
-	if err := n.Table.Restore(ctx); err != nil {
-		return errors.Annotatef(err, "An error occurred while restore TableStmt.Table")
+	if n.Fields != nil {
+		for i, field := range n.Fields.Fields {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := field.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
+			}
+		}
 	}
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
@@ -1134,11 +1088,13 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*TableStmt)
-	node, ok := n.Table.Accept(v)
-	if !ok {
-		return n, false
+	if n.Fields != nil {
+		node, ok := n.Fields.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Fields = node.(*FieldList)
 	}
-	n.Table = node.(*TableName)
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
 		if !ok {
@@ -1156,35 +1112,34 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type SelectNode interface {
+	Node
+	RestoreOperator(ctx *format.RestoreCtx)
+	HasBraces() bool
+	GetFields() *FieldList
+}
+
 // SetOprSelectList represents the select list in a union statement.
 type SetOprSelectList struct {
 	node
 
-	Selects []*SelectStmt
+	//Selects []*SelectStmt
+	Selects []SelectNode
 }
 
 // Restore implements Node interface.
 func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
 	for i, selectStmt := range n.Selects {
 		if i != 0 {
-			switch *selectStmt.AfterSetOperator {
-			case Union:
-				ctx.WriteKeyWord(" UNION ")
-			case UnionAll:
-				ctx.WriteKeyWord(" UNION ALL ")
-			case Except:
-				ctx.WriteKeyWord(" EXCEPT ")
-			case Intersect:
-				ctx.WriteKeyWord(" INTERSECT ")
-			}
+			selectStmt.RestoreOperator(ctx)
 		}
-		if selectStmt.IsInBraces {
+		if selectStmt.HasBraces() {
 			ctx.WritePlain("(")
 		}
 		if err := selectStmt.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
 		}
-		if selectStmt.IsInBraces {
+		if selectStmt.HasBraces() {
 			ctx.WritePlain(")")
 		}
 	}
@@ -1203,7 +1158,14 @@ func (n *SetOprSelectList) Accept(v Visitor) (Node, bool) {
 		if !ok {
 			return n, false
 		}
-		n.Selects[i] = node.(*SelectStmt)
+		switch node.(type) {
+		case *SelectStmt:
+			n.Selects[i] = node.(*SelectStmt)
+		case *TableStmt:
+			n.Selects[i] = node.(*TableStmt)
+		case *ValuesStmt:
+			n.Selects[i] = node.(*ValuesStmt)
+		}
 	}
 	return v.Leave(n)
 }
@@ -1226,23 +1188,17 @@ type SetOprStmt struct {
 	resultSetNode
 
 	SelectList *SetOprSelectList
-	TableList  *SetOprTableList
-	OrderBy    *OrderByClause
-	Limit      *Limit
+	//TableList  *SetOprTableList
+	OrderBy *OrderByClause
+	Limit   *Limit
 }
 
 // Restore implements Node interface.
 func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
-	if n.SelectList != nil {
-		if err := n.SelectList.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
-		}
+	if err := n.SelectList.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
 	}
-	if n.TableList != nil {
-		if err := n.TableList.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetOprStmt.TableList")
-		}
-	}
+
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
@@ -1271,13 +1227,6 @@ func (n *SetOprStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.SelectList = node.(*SetOprSelectList)
-	}
-	if n.TableList != nil {
-		node, ok := n.TableList.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.TableList = node.(*SetOprTableList)
 	}
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
@@ -2909,6 +2858,7 @@ func (n *SplitOption) Restore(ctx *format.RestoreCtx) error {
 type ValuesStmt struct {
 	dmlNode
 	resultSetNode
+	SetNode
 
 	Fields  *FieldList
 	OrderBy *OrderByClause
