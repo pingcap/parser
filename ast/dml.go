@@ -571,7 +571,7 @@ func (n *SelectField) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// FieldList represents field list in select statement.
+// FieldList represents field list in select/values statement.
 type FieldList struct {
 	node
 
@@ -792,8 +792,6 @@ type SelectStmt struct {
 	From *TableRefsClause
 	// Where is the where clause in select statement.
 	Where ExprNode
-	// Fields is the select expression list.
-	//Fields *FieldList
 	// GroupBy is the group by expression list.
 	GroupBy *GroupByClause
 	// Having is the having condition.
@@ -808,10 +806,6 @@ type SelectStmt struct {
 	LockInfo *SelectLockInfo
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
-	//// AfterSetOperator indicates the SelectStmt after which type of set operator
-	//AfterSetOperator *SetOprType
-	//// IsInBraces indicates whether it's a stmt in brace.
-	//IsInBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
@@ -1112,19 +1106,11 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-type SelectNode interface {
-	Node
-	RestoreOperator(ctx *format.RestoreCtx)
-	HasBraces() bool
-	GetFields() *FieldList
-}
-
 // SetOprSelectList represents the select list in a union statement.
 type SetOprSelectList struct {
 	node
 
-	//Selects []*SelectStmt
-	Selects []SelectNode
+	Selects []SetOprNode
 }
 
 // Restore implements Node interface.
@@ -1188,7 +1174,6 @@ type SetOprStmt struct {
 	resultSetNode
 
 	SelectList *SetOprSelectList
-	//TableList  *SetOprTableList
 	OrderBy *OrderByClause
 	Limit   *Limit
 }

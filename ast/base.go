@@ -103,12 +103,15 @@ type resultSetNode struct {
 	resultFields []*ResultField
 }
 
+// SetNode implements parts of the SetOprNode interface. DML node which
+// combined with SetNode can be used in SetOprStmt.
 type SetNode struct {
-
-	// AfterSetOperator indicates the TableStmt after which type of set operator
+	// AfterSetOperator indicates the SelectStmt/TableStmt/ValuesStmt
+	// after which type of set operator
 	AfterSetOperator *SetOprType
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
+	// Fields is the expression list.
 	Fields     *FieldList
 }
 

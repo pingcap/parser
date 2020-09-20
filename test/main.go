@@ -19,7 +19,11 @@ func parse(sql string) (*ast.StmtNode, error) {
 
 func main() {
 	//astNode, err := parse("Select * from t1 UNION TABLE t2")
-	astNode, err := parse("VALUES ROW(1,2), ROW(4,5) UNION SELECT * FROM t")
+	//astNode, err := parse("SELECT * FROM t1 UNION VALUES ROW(1,2), ROW(4,5) UNION VALUES ROW(1,2), ROW(4,5)")
+	//astNode, err := parse("VALUES ROW(1,2), ROW(4,5) UNION VALUES ROW(1,2), ROW(4,5)")
+	//astNode, err := parse("TABLE t1, t2")
+	astNode, err := parse("VALUES t1, t2")
+	//astNode, err := parse("INSERT INTO x ROW(1,2), ROW(4,5)")
 	if err != nil {
 		fmt.Printf("parser error: %v\n", err.Error())
 		return
