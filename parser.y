@@ -1106,7 +1106,7 @@ import (
 	ValuesList                             "values list"
 	ValuesOpt                              "values optional"
 	ValuesStmtList                         "VALUES statement field list"
-	ValuesStmtField						   "VALUES statement field"
+	ValuesStmtField                        "VALUES statement field"
 	VariableAssignment                     "set variable value"
 	VariableAssignmentList                 "set variable value list"
 	ViewAlgorithm                          "view algorithm"

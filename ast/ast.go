@@ -167,6 +167,4 @@ type SetOprNode interface {
 	RestoreOperator(ctx *format.RestoreCtx)
 	// HasBraces is called to check whether the DML statement is enclosed in braces
 	HasBraces() bool
-	// GetFields will return the expression list of DML statement
-	GetFields() *FieldList
 }

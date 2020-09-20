@@ -789,7 +789,9 @@ type SelectStmt struct {
 	// Distinct represents whether the select has distinct option.
 	Distinct bool
 	// From is the from clause of the query.
-	From *TableRefsClause
+	// Fields is the expression list.
+	Fields *FieldList
+	From   *TableRefsClause
 	// Where is the where clause in select statement.
 	Where ExprNode
 	// GroupBy is the group by expression list.
@@ -1049,16 +1051,6 @@ func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TableStmt.Table")
 	}
-	if n.Fields != nil {
-		for i, field := range n.Fields.Fields {
-			if i != 0 {
-				ctx.WritePlain(",")
-			}
-			if err := field.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
-			}
-		}
-	}
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
@@ -1092,13 +1084,6 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Table = node.(*TableName)
-	}
-	if n.Fields != nil {
-		node, ok := n.Fields.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Fields = node.(*FieldList)
 	}
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
