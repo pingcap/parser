@@ -8232,17 +8232,6 @@ SetOprStmt:
 		}
 		$$ = setOpr
 	}
-|	SetOprClauseList SetOpr ValuesStmt
-	{
-		st := $3.(*ast.ValuesStmt)
-		setOpr := $1.(*ast.SetOprStmt)
-		st.AfterSetOperator = $2.(*ast.SetOprType)
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
-        endOffset := parser.endOffset(&yyS[yypt-1])
-        parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
-        setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
-		$$ = setOpr
-	}
 
 SetOprClauseList:
 	SetOprSelect
@@ -8278,24 +8267,6 @@ SetOprClauseList:
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr
 	}
-//| 	SetOprValues
-//	{
-//		selectList := &ast.SetOprSelectList{Selects: []ast.SetOprNode{$1.(*ast.ValuesStmt)}}
-//        $$ = &ast.SetOprStmt{
-//        	SelectList: selectList,
-//        }
-//	}
-//|	SetOprClauseList SetOpr SetOprValues
-//	{
-//		setOpr := $1.(*ast.SetOprStmt)
-//		st := $3.(*ast.ValuesStmt)
-//		st.AfterSetOperator = $2.(*ast.SetOprType)
-//		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
-//		endOffset := parser.endOffset(&yyS[yypt-1])
-//		parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
-//		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
-//		$$ = setOpr
-//	}
 
 SetOprTable:
 	TableStmt
@@ -12054,12 +12025,9 @@ EncryptionOpt:
  * TABLE table_name [ORDER BY column_name] [LIMIT number [OFFSET number]]
  ******************************************************************************/
 TableStmt:
-//		"TABLE" TableName SelectStmtFieldList OrderByOptional SelectStmtLimit SelectStmtIntoOption
-	"TABLE" SelectStmtFieldList OrderByOptional SelectStmtLimit SelectStmtIntoOption
+	"TABLE" TableName OrderByOptional SelectStmtLimit SelectStmtIntoOption
 	{
-//				st := &ast.TableStmt{Table: $2.(*ast.TableName)}
-		st := &ast.TableStmt{}
-		st.Fields = $2.(*ast.FieldList)
+		st := &ast.TableStmt{Table: $2.(*ast.TableName)}
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}

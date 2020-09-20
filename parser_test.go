@@ -503,6 +503,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		// table statement
 		{"TABLE t", true, "TABLE `t`"},
+		{"TABLE t1, t2", false, ""},
 		{"TABLE t ORDER BY b", true, "TABLE `t` ORDER BY `b`"},
 		{"TABLE t LIMIT 3", true, "TABLE `t` LIMIT 3"},
 		{"TABLE t ORDER BY b LIMIT 3", true, "TABLE `t` ORDER BY `b` LIMIT 3"},

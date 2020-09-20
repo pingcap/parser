@@ -112,7 +112,7 @@ type SetNode struct {
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
 	// Fields is the expression list.
-	Fields     *FieldList
+	Fields *FieldList
 }
 
 func (s *SetNode) RestoreOperator(ctx *format.RestoreCtx) {

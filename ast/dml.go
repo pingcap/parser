@@ -1037,6 +1037,7 @@ type TableStmt struct {
 	resultSetNode
 	SetNode
 
+	Table   *TableName
 	OrderBy *OrderByClause
 	Limit   *Limit
 	// TableIntoOpt is the table-into option.
@@ -1045,6 +1046,9 @@ type TableStmt struct {
 
 func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("TABLE ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableStmt.Table")
+	}
 	if n.Fields != nil {
 		for i, field := range n.Fields.Fields {
 			if i != 0 {
@@ -1082,6 +1086,13 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*TableStmt)
+	if n.Table != nil {
+		node, ok := n.Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Table = node.(*TableName)
+	}
 	if n.Fields != nil {
 		node, ok := n.Fields.Accept(v)
 		if !ok {
@@ -1174,8 +1185,8 @@ type SetOprStmt struct {
 	resultSetNode
 
 	SelectList *SetOprSelectList
-	OrderBy *OrderByClause
-	Limit   *Limit
+	OrderBy    *OrderByClause
+	Limit      *Limit
 }
 
 // Restore implements Node interface.
