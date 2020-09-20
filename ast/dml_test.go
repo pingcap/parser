@@ -57,7 +57,7 @@ func (ts *testDMLSuite) TestDMLVisitorCover(c *C) {
 		{&UpdateStmt{TableRefs: tableRefsClause}, 1, 1},
 		{&SelectStmt{}, 0, 0},
 		{&FieldList{}, 0, 0},
-		{&SetOprSelectList{}, 0, 0},
+		{&SetOprNodeList{}, 0, 0},
 		{&WindowSpec{}, 0, 0},
 		{&PartitionByClause{}, 0, 0},
 		{&FrameClause{}, 0, 0},

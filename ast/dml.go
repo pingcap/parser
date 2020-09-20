@@ -46,7 +46,7 @@ var (
 	_ Node = &TableName{}
 	_ Node = &TableRefsClause{}
 	_ Node = &TableSource{}
-	_ Node = &SetOprSelectList{}
+	_ Node = &SetOprNodeList{}
 	_ Node = &WildCardField{}
 	_ Node = &WindowSpec{}
 	_ Node = &PartitionByClause{}
@@ -571,7 +571,7 @@ func (n *SelectField) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// FieldList represents field list in select/values statement.
+// FieldList represents field list in select statement.
 type FieldList struct {
 	node
 
@@ -788,10 +788,10 @@ type SelectStmt struct {
 	*SelectStmtOpts
 	// Distinct represents whether the select has distinct option.
 	Distinct bool
-	// From is the from clause of the query.
 	// Fields is the expression list.
 	Fields *FieldList
-	From   *TableRefsClause
+	// From is the from clause of the query.
+	From *TableRefsClause
 	// Where is the where clause in select statement.
 	Where ExprNode
 	// GroupBy is the group by expression list.
@@ -1102,15 +1102,15 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// SetOprSelectList represents the select list in a union statement.
-type SetOprSelectList struct {
+// SetOprNodeList represents the operation nodes list in a SetOpr statement.
+type SetOprNodeList struct {
 	node
 
 	Selects []SetOprNode
 }
 
 // Restore implements Node interface.
-func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
+func (n *SetOprNodeList) Restore(ctx *format.RestoreCtx) error {
 	for i, selectStmt := range n.Selects {
 		if i != 0 {
 			selectStmt.RestoreOperator(ctx)
@@ -1119,7 +1119,7 @@ func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlain("(")
 		}
 		if err := selectStmt.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
+			return errors.Annotate(err, "An error occurred while restore SetOprNodeList.SelectStmt")
 		}
 		if selectStmt.HasBraces() {
 			ctx.WritePlain(")")
@@ -1129,12 +1129,12 @@ func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
 }
 
 // Accept implements Node Accept interface.
-func (n *SetOprSelectList) Accept(v Visitor) (Node, bool) {
+func (n *SetOprNodeList) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
-	n = newNode.(*SetOprSelectList)
+	n = newNode.(*SetOprNodeList)
 	for i, sel := range n.Selects {
 		node, ok := sel.Accept(v)
 		if !ok {
@@ -1169,15 +1169,15 @@ type SetOprStmt struct {
 	dmlNode
 	resultSetNode
 
-	SelectList *SetOprSelectList
+	SetOprList *SetOprNodeList
 	OrderBy    *OrderByClause
 	Limit      *Limit
 }
 
 // Restore implements Node interface.
 func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
-	if err := n.SelectList.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore SetOprStmt.SelectList")
+	if err := n.SetOprList.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore SetOprStmt.SetOprList")
 	}
 
 	if n.OrderBy != nil {
@@ -1202,12 +1202,12 @@ func (n *SetOprStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*SetOprStmt)
-	if n.SelectList != nil {
-		node, ok := n.SelectList.Accept(v)
+	if n.SetOprList != nil {
+		node, ok := n.SetOprList.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.SelectList = node.(*SetOprSelectList)
+		n.SetOprList = node.(*SetOprNodeList)
 	}
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
@@ -2836,12 +2836,13 @@ func (n *SplitOption) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
+// ValuesStmt represents the values dml node.
 type ValuesStmt struct {
 	dmlNode
 	resultSetNode
 	SetNode
 
-	//Fields  *ValuesFieldList
+	// Lists refer to the row_constructor_list
 	Lists   []*RowExpr
 	OrderBy *OrderByClause
 	Limit   *Limit
@@ -2849,16 +2850,6 @@ type ValuesStmt struct {
 
 func (n *ValuesStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("VALUES ")
-	//if n.Fields != nil {
-	//	for i, field := range n.Fields.Fields {
-	//		if i != 0 {
-	//			ctx.WritePlain(", ")
-	//		}
-	//		if err := field.Restore(ctx); err != nil {
-	//			return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
-	//		}
-	//	}
-	//}
 	for i, v := range n.Lists {
 		if err := v.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore ValuesStmt.OrderBy")
@@ -2867,14 +2858,12 @@ func (n *ValuesStmt) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlain(", ")
 		}
 	}
-
 	if n.OrderBy != nil {
 		ctx.WritePlain(" ")
 		if err := n.OrderBy.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore ValuesStmt.OrderBy")
 		}
 	}
-
 	if n.Limit != nil {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
@@ -2891,14 +2880,6 @@ func (n *ValuesStmt) Accept(v Visitor) (node Node, ok bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*ValuesStmt)
-	//if n.Fields != nil {
-	//	node, ok := n.Fields.Accept(v)
-	//	if !ok {
-	//		return n, false
-	//	}
-	//	//n.Fields = node.(*FieldList)
-	//	n.Fields = node.(*ValuesFieldList)
-	//}
 	for i, list := range n.Lists {
 		node, ok := list.Accept(v)
 		if !ok {
@@ -2906,7 +2887,6 @@ func (n *ValuesStmt) Accept(v Visitor) (node Node, ok bool) {
 		}
 		n.Lists[i] = node.(*RowExpr)
 	}
-
 	if n.OrderBy != nil {
 		node, ok := n.OrderBy.Accept(v)
 		if !ok {
@@ -2921,7 +2901,6 @@ func (n *ValuesStmt) Accept(v Visitor) (node Node, ok bool) {
 		}
 		n.Limit = node.(*Limit)
 	}
-
 	return v.Leave(n)
 }
 

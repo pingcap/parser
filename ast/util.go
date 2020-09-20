@@ -42,7 +42,7 @@ func IsReadOnly(node Node) bool {
 	case *DoStmt, *ShowStmt:
 		return true
 	case *SetOprStmt:
-		for _, sel := range node.(*SetOprStmt).SelectList.Selects {
+		for _, sel := range node.(*SetOprStmt).SetOprList.Selects {
 			if !IsReadOnly(sel) {
 				return false
 			}

@@ -8119,10 +8119,10 @@ SetOprStmt:
 		st := $3.(*ast.SelectStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		lastSelect := setOpr.SetOprList.Selects[len(setOpr.SetOprList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-4])
 		parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		if $4 != nil {
 			setOpr.OrderBy = $4.(*ast.OrderByClause)
 		}
@@ -8141,10 +8141,10 @@ SetOprStmt:
 		st := $3.(*ast.SelectStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		lastSelect := setOpr.SetOprList.Selects[len(setOpr.SetOprList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-4])
 		parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		if $4 != nil {
 			setOpr.OrderBy = $4.(*ast.OrderByClause)
 		}
@@ -8163,10 +8163,10 @@ SetOprStmt:
 		st := $3.(*ast.SelectStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		lastSelect := setOpr.SetOprList.Selects[len(setOpr.SetOprList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-4])
 		parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		if $4 != nil {
 			setOpr.OrderBy = $4.(*ast.OrderByClause)
 		}
@@ -8183,7 +8183,7 @@ SetOprStmt:
 |	SetOprClauseList SetOpr '(' SelectStmt ')' OrderByOptional SelectStmtLimit
 	{
 		setOpr := $1.(*ast.SetOprStmt)
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		lastSelect := setOpr.SetOprList.Selects[len(setOpr.SetOprList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-5])
 		parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
 		st := $4.(*ast.SelectStmt)
@@ -8191,7 +8191,7 @@ SetOprStmt:
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		endOffset = parser.endOffset(&yyS[yypt-2])
 		parser.setLastSelectFieldText(st, endOffset)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		if $6 != nil {
 			setOpr.OrderBy = $6.(*ast.OrderByClause)
 		}
@@ -8205,7 +8205,7 @@ SetOprStmt:
 		st := $3.(*ast.TableStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		$$ = setOpr
 	}
 |	SetOprClauseList SetOpr '(' TableStmt ')' OrderByOptional SelectStmtLimit
@@ -8214,7 +8214,7 @@ SetOprStmt:
 		st := $4.(*ast.TableStmt)
 		st.IsInBraces = true
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		if $6 != nil {
 			setOpr.OrderBy = $6.(*ast.OrderByClause)
 		}
@@ -8228,7 +8228,7 @@ SetOprStmt:
 		st := $3.(*ast.ValuesStmt)
 		setOpr := $1.(*ast.SetOprStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		$$ = setOpr
 	}
 |	SetOprClauseList SetOpr '(' ValuesStmt ')' OrderByOptional SelectStmtLimit
@@ -8237,7 +8237,7 @@ SetOprStmt:
 		st := $4.(*ast.ValuesStmt)
 		st.IsInBraces = true
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		if $6 != nil {
 			setOpr.OrderBy = $6.(*ast.OrderByClause)
 		}
@@ -8250,9 +8250,9 @@ SetOprStmt:
 SetOprClauseList:
 	SetOprSelect
 	{
-		selectList := &ast.SetOprSelectList{Selects: []ast.SetOprNode{$1.(*ast.SelectStmt)}}
+		setList := &ast.SetOprNodeList{Selects: []ast.SetOprNode{$1.(*ast.SelectStmt)}}
 		$$ = &ast.SetOprStmt{
-			SelectList: selectList,
+			SetOprList: setList,
 		}
 	}
 |	SetOprClauseList SetOpr SetOprSelect
@@ -8260,17 +8260,17 @@ SetOprClauseList:
 		setOpr := $1.(*ast.SetOprStmt)
 		st := $3.(*ast.SelectStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		lastSelect := setOpr.SetOprList.Selects[len(setOpr.SetOprList.Selects)-1]
 		endOffset := parser.endOffset(&yyS[yypt-1])
 		parser.setLastSelectFieldText(lastSelect.(ast.SetOprNode), endOffset)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		$$ = setOpr
 	}
 |	SetOprTable
 	{
-		selectList := &ast.SetOprSelectList{Selects: []ast.SetOprNode{$1.(*ast.TableStmt)}}
+		setList := &ast.SetOprNodeList{Selects: []ast.SetOprNode{$1.(*ast.TableStmt)}}
 		$$ = &ast.SetOprStmt{
-			SelectList: selectList,
+			SetOprList: setList,
 		}
 	}
 |	SetOprClauseList SetOpr SetOprTable
@@ -8278,14 +8278,14 @@ SetOprClauseList:
 		setOpr := $1.(*ast.SetOprStmt)
 		st := $3.(*ast.TableStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		$$ = setOpr
 	}
 |	SetOprValues
 	{
-		selectList := &ast.SetOprSelectList{Selects: []ast.SetOprNode{$1.(*ast.ValuesStmt)}}
+		setList := &ast.SetOprNodeList{Selects: []ast.SetOprNode{$1.(*ast.ValuesStmt)}}
 		$$ = &ast.SetOprStmt{
-			SelectList: selectList,
+			SetOprList: setList,
 		}
 	}
 |	SetOprClauseList SetOpr SetOprValues
@@ -8293,7 +8293,7 @@ SetOprClauseList:
 		setOpr := $1.(*ast.SetOprStmt)
 		st := $3.(*ast.ValuesStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
-		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		setOpr.SetOprList.Selects = append(setOpr.SetOprList.Selects, st)
 		$$ = setOpr
 	}
 
@@ -8323,8 +8323,6 @@ SetOprValues:
 	{
 		st := $2.(*ast.ValuesStmt)
 		st.IsInBraces = true
-		endOffset := parser.endOffset(&yyS[yypt])
-		parser.setLastSelectFieldText(st, endOffset)
 		$$ = $2
 	}
 
@@ -12076,7 +12074,6 @@ ValuesStmt:
 	"VALUES" ValuesStmtList OrderByOptional SelectStmtLimit
 	{
 		st := &ast.ValuesStmt{Lists: $2.([]*ast.RowExpr)}
-		//		st.Fields = $2.(*ast.FieldList)
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}
