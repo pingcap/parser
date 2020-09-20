@@ -1105,6 +1105,8 @@ import (
 	Values                                 "values"
 	ValuesList                             "values list"
 	ValuesOpt                              "values optional"
+	ValuesStmtList                         "VALUES statement field list"
+	ValuesStmtField						   "VALUES statement field"
 	VariableAssignment                     "set variable value"
 	VariableAssignmentList                 "set variable value list"
 	ViewAlgorithm                          "view algorithm"
@@ -5595,12 +5597,6 @@ ValuesList:
 	{
 		$$ = append($1.([][]ast.ExprNode), $3.([]ast.ExprNode))
 	}
-|	"ROW" '(' ValuesList ')'
-	{
-		$$ = &ast.InsertStmt{
-			Lists: $3.([][]ast.ExprNode),
-		}
-	}
 
 RowValue:
 	'(' ValuesOpt ')'
@@ -8079,11 +8075,6 @@ SubSelect:
 		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: s}
 	}
-|	'(' TableStmt ')'
-	{
-		s := $2.(*ast.TableStmt)
-		$$ = &ast.SubqueryExpr{Query: s}
-	}
 |	'(' SetOprStmt ')'
 	{
 		s := $2.(*ast.SetOprStmt)
@@ -8232,6 +8223,29 @@ SetOprStmt:
 		}
 		$$ = setOpr
 	}
+|	SetOprClauseList SetOpr ValuesStmt
+	{
+		st := $3.(*ast.ValuesStmt)
+		setOpr := $1.(*ast.SetOprStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		$$ = setOpr
+	}
+|	SetOprClauseList SetOpr '(' ValuesStmt ')' OrderByOptional SelectStmtLimit
+	{
+		setOpr := $1.(*ast.SetOprStmt)
+		st := $4.(*ast.ValuesStmt)
+		st.IsInBraces = true
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		if $6 != nil {
+			setOpr.OrderBy = $6.(*ast.OrderByClause)
+		}
+		if $7 != nil {
+			setOpr.Limit = $7.(*ast.Limit)
+		}
+		$$ = setOpr
+	}
 
 SetOprClauseList:
 	SetOprSelect
@@ -8263,6 +8277,21 @@ SetOprClauseList:
 	{
 		setOpr := $1.(*ast.SetOprStmt)
 		st := $3.(*ast.TableStmt)
+		st.AfterSetOperator = $2.(*ast.SetOprType)
+		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
+		$$ = setOpr
+	}
+|	SetOprValues
+	{
+		selectList := &ast.SetOprSelectList{Selects: []ast.SetOprNode{$1.(*ast.ValuesStmt)}}
+		$$ = &ast.SetOprStmt{
+			SelectList: selectList,
+		}
+	}
+|	SetOprClauseList SetOpr SetOprValues
+	{
+		setOpr := $1.(*ast.SetOprStmt)
+		st := $3.(*ast.ValuesStmt)
 		st.AfterSetOperator = $2.(*ast.SetOprType)
 		setOpr.SelectList.Selects = append(setOpr.SelectList.Selects, st)
 		$$ = setOpr
@@ -12044,10 +12073,10 @@ TableStmt:
  * VALUES row_constructor_list [ORDER BY column_designator] [LIMIT BY number]
  ******************************************************************************/
 ValuesStmt:
-	"VALUES" SelectStmtFieldList OrderByOptional SelectStmtLimit
+	"VALUES" ValuesStmtList OrderByOptional SelectStmtLimit
 	{
-		st := &ast.ValuesStmt{}
-		st.Fields = $2.(*ast.FieldList)
+		st := &ast.ValuesStmt{Lists: $2.([]*ast.RowExpr)}
+		//		st.Fields = $2.(*ast.FieldList)
 		if $3 != nil {
 			st.OrderBy = $3.(*ast.OrderByClause)
 		}
@@ -12055,5 +12084,22 @@ ValuesStmt:
 			st.Limit = $4.(*ast.Limit)
 		}
 		$$ = st
+	}
+
+ValuesStmtList:
+	ValuesStmtField
+	{
+		$$ = append([]*ast.RowExpr{}, $1.(*ast.RowExpr))
+	}
+|	ValuesStmtList ',' ValuesStmtField
+	{
+		$$ = append($1.([]*ast.RowExpr), $3.(*ast.RowExpr))
+	}
+
+ValuesStmtField:
+	"ROW" '(' ExpressionList ',' Expression ')'
+	{
+		values := append($3.([]ast.ExprNode), $5)
+		$$ = &ast.RowExpr{Values: values}
 	}
 %%

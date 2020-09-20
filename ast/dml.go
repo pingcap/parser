@@ -2856,21 +2856,30 @@ type ValuesStmt struct {
 	resultSetNode
 	SetNode
 
-	Fields  *FieldList
+	//Fields  *ValuesFieldList
+	Lists   []*RowExpr
 	OrderBy *OrderByClause
 	Limit   *Limit
 }
 
 func (n *ValuesStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("VALUES ")
-	if n.Fields != nil {
-		for i, field := range n.Fields.Fields {
-			if i != 0 {
-				ctx.WritePlain(", ")
-			}
-			if err := field.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
-			}
+	//if n.Fields != nil {
+	//	for i, field := range n.Fields.Fields {
+	//		if i != 0 {
+	//			ctx.WritePlain(", ")
+	//		}
+	//		if err := field.Restore(ctx); err != nil {
+	//			return errors.Annotatef(err, "An error occurred while restore TableStmt.Fields[%d]", i)
+	//		}
+	//	}
+	//}
+	for i, v := range n.Lists {
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore ValuesStmt.OrderBy")
+		}
+		if i != len(n.Lists)-1 {
+			ctx.WritePlain(", ")
 		}
 	}
 
@@ -2897,12 +2906,20 @@ func (n *ValuesStmt) Accept(v Visitor) (node Node, ok bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*ValuesStmt)
-	if n.Fields != nil {
-		node, ok := n.Fields.Accept(v)
+	//if n.Fields != nil {
+	//	node, ok := n.Fields.Accept(v)
+	//	if !ok {
+	//		return n, false
+	//	}
+	//	//n.Fields = node.(*FieldList)
+	//	n.Fields = node.(*ValuesFieldList)
+	//}
+	for i, list := range n.Lists {
+		node, ok := list.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.Fields = node.(*FieldList)
+		n.Lists[i] = node.(*RowExpr)
 	}
 
 	if n.OrderBy != nil {
