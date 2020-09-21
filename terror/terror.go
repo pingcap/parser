@@ -85,7 +85,6 @@ var (
 )
 
 var errClass2Desc = make(map[ErrClass]string)
-var errCodeMap = make(map[ErrCode]*Error)
 var rfcCode2errClass = make(map[string]ErrClass)
 
 // RegisterErrorClass registers new error class for terror.
@@ -149,16 +148,17 @@ func (ec ErrClass) initError(code ErrCode) string {
 func (ec ErrClass) New(code ErrCode, message string) *Error {
 	rfcCode := ec.initError(code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
-	errCodeMap[code] = err
 	return err
 }
 
 // NewStdErr defines an *Error with an error code, an error
 // message and workaround to create standard error.
+// Attention:
+// this method is not goroutine-safe and
+// usually be used in global variable initializer
 func (ec ErrClass) NewStdErr(code ErrCode, message string, desc string, workaround string) *Error {
 	rfcCode := ec.initError(code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode), errors.Description(desc), errors.Workaround(workaround))
-	errCodeMap[code] = err
 	return err
 }
 
