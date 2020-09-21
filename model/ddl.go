@@ -224,8 +224,7 @@ type Job struct {
 	// Priority is only used to set the operation priority of adding indices.
 	Priority int `json:"priority"`
 
-	// SQL Mode
-	SqlMode       mysql.SQLMode
+	SQLMode       mysql.SQLMode
 	Warnings      []*terror.Error
 	WarningsCount []int64
 }
