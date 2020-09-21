@@ -8257,7 +8257,7 @@ SetOprClause:
 |	'(' SetOprClauseList ')'
 	{
 		setList := []ast.Node{&ast.SetOprSelectList{Selects: $2.([]ast.Node)}}
-		if sel, isSelect := setList[0].(*ast.SelectStmt); isSelect && len(setList) == 1 {
+		if sel, isSelect := setList[0].(*ast.SetOprSelectList).Selects[0].(*ast.SelectStmt); isSelect && len(setList) == 1 {
 			endOffset := parser.endOffset(&yyS[yypt])
 			parser.setLastSelectFieldText(sel, endOffset)
 			sel.IsInBraces = true
