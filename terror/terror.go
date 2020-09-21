@@ -193,7 +193,7 @@ func getMySQLErrorCode(e *Error) uint16 {
 		if ec, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
 			class = ec
 		} else {
-			log.Warn("Unknown error class", zap.String("class", string(rfcCode)[:index]))
+			log.Warn("Unknown RFC error code", zap.String("RFCCode", string(rfcCode)))
 			return defaultMySQLErrorCode
 		}
 	}
