@@ -788,12 +788,12 @@ type SelectStmt struct {
 	*SelectStmtOpts
 	// Distinct represents whether the select has distinct option.
 	Distinct bool
-	// Fields is the expression list.
-	Fields *FieldList
 	// From is the from clause of the query.
 	From *TableRefsClause
 	// Where is the where clause in select statement.
 	Where ExprNode
+	// Fields is the select expression list.
+	Fields *FieldList
 	// GroupBy is the group by expression list.
 	GroupBy *GroupByClause
 	// Having is the having condition.
@@ -808,6 +808,10 @@ type SelectStmt struct {
 	LockInfo *SelectLockInfo
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
+	// AfterSetOperator indicates the SelectStmt after which type of set operator
+	AfterSetOperator *SetOprType
+	// IsInBraces indicates whether it's a stmt in brace.
+	IsInBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
@@ -816,6 +820,12 @@ type SelectStmt struct {
 
 // Restore implements Node interface.
 func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.IsInBraces {
+		ctx.WritePlain("(")
+		defer func() {
+			ctx.WritePlain(")")
+		}()
+	}
 	ctx.WriteKeyWord("SELECT ")
 
 	if n.SelectStmtOpts.Priority > 0 {
@@ -1099,34 +1109,64 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 		}
 		n.Limit = node.(*Limit)
 	}
+
 	return v.Leave(n)
 }
 
+//// SetOprSelectList represents the select list in a union statement.
+//type SetOprSelectList struct {
 // SetOprNodeList represents the operation nodes list in a SetOpr statement.
 type SetOprNodeList struct {
 	node
 
-	Selects []SetOprNode
+	AfterSetOperator *SetOprType
+	Selects          []Node
+	//Selects []SetOprNode
 }
 
 // Restore implements Node interface.
-func (n *SetOprNodeList) Restore(ctx *format.RestoreCtx) error {
-	for i, selectStmt := range n.Selects {
-		if i != 0 {
-			selectStmt.RestoreOperator(ctx)
-		}
-		if selectStmt.HasBraces() {
+func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
+	for i, stmt := range n.Selects {
+		switch selectStmt := stmt.(type) {
+		case *SelectStmt:
+			if i != 0 {
+				ctx.WriteKeyWord(" " + selectStmt.AfterSetOperator.String() + " ")
+			}
+			if err := selectStmt.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
+			}
+		case *SetOprSelectList:
+			if i != 0 {
+				ctx.WriteKeyWord(" " + selectStmt.AfterSetOperator.String() + " ")
+			}
 			ctx.WritePlain("(")
-		}
-		if err := selectStmt.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetOprNodeList.SelectStmt")
-		}
-		if selectStmt.HasBraces() {
+			err := selectStmt.Restore(ctx)
+			if err != nil {
+				return err
+			}
 			ctx.WritePlain(")")
 		}
 	}
 	return nil
 }
+
+//func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
+//	for i, selectStmt := range n.Selects {
+//		if i != 0 {
+//			selectStmt.RestoreOperator(ctx)
+//		}
+//		if selectStmt.HasBraces() {
+//			ctx.WritePlain("(")
+//		}
+//		if err := selectStmt.Restore(ctx); err != nil {
+//			return errors.Annotate(err, "An error occurred while restore SetOprNodeList.SelectStmt")
+//		}
+//		if selectStmt.HasBraces() {
+//			ctx.WritePlain(")")
+//		}
+//	}
+//	return nil
+//}
 
 // Accept implements Node Accept interface.
 func (n *SetOprNodeList) Accept(v Visitor) (Node, bool) {
@@ -1158,8 +1198,28 @@ const (
 	Union SetOprType = iota
 	UnionAll
 	Except
+	ExceptAll
 	Intersect
+	IntersectAll
 )
+
+func (s *SetOprType) String() string {
+	switch *s {
+	case Union:
+		return "UNION"
+	case UnionAll:
+		return "UNION ALL"
+	case Except:
+		return "EXCEPT"
+	case ExceptAll:
+		return "EXCEPT ALL"
+	case Intersect:
+		return "INTERSECT"
+	case IntersectAll:
+		return "INTERSECT ALL"
+	}
+	return ""
+}
 
 // SetOprStmt represents "union/except/intersect statement"
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
@@ -1186,6 +1246,7 @@ func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while restore SetOprStmt.OrderBy")
 		}
 	}
+
 	if n.Limit != nil {
 		ctx.WritePlain(" ")
 		if err := n.Limit.Restore(ctx); err != nil {
