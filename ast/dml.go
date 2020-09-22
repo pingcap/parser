@@ -808,8 +808,6 @@ type SelectStmt struct {
 	LockInfo *SelectLockInfo
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
-	// AfterSetOperator indicates the SelectStmt after which type of set operator
-	AfterSetOperator *SetOprType
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
@@ -1052,11 +1050,19 @@ type TableStmt struct {
 	Table   *TableName
 	OrderBy *OrderByClause
 	Limit   *Limit
+	// IsInBraces indicates whether it's a stmt in brace.
+	IsInBraces bool
 	// TableIntoOpt is the table-into option.
 	TableIntoOpt *SelectIntoOption
 }
 
 func (n *TableStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.IsInBraces {
+		ctx.WritePlain("(")
+		defer func() {
+			ctx.WritePlain(")")
+		}()
+	}
 	ctx.WriteKeyWord("TABLE ")
 	if err := n.Table.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TableStmt.Table")
@@ -1113,60 +1119,39 @@ func (n *TableStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-//// SetOprSelectList represents the select list in a union statement.
-//type SetOprSelectList struct {
 // SetOprNodeList represents the operation nodes list in a SetOpr statement.
 type SetOprNodeList struct {
 	node
+	SetNode
 
-	AfterSetOperator *SetOprType
-	Selects          []Node
-	//Selects []SetOprNode
+	Selects []SetOprNode
 }
 
 // Restore implements Node interface.
-func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
+func (n *SetOprNodeList) Restore(ctx *format.RestoreCtx) error {
 	for i, stmt := range n.Selects {
-		switch selectStmt := stmt.(type) {
-		case *SelectStmt:
+		switch operatorStmt := stmt.(type) {
+		case *SetOprNodeList:
 			if i != 0 {
-				ctx.WriteKeyWord(" " + selectStmt.AfterSetOperator.String() + " ")
-			}
-			if err := selectStmt.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
-			}
-		case *SetOprSelectList:
-			if i != 0 {
-				ctx.WriteKeyWord(" " + selectStmt.AfterSetOperator.String() + " ")
+				ctx.WriteKeyWord(" " + operatorStmt.AfterSetOperator.String() + " ")
 			}
 			ctx.WritePlain("(")
-			err := selectStmt.Restore(ctx)
+			err := operatorStmt.Restore(ctx)
 			if err != nil {
 				return err
 			}
 			ctx.WritePlain(")")
+		default:
+			if i != 0 {
+				operatorStmt.RestoreOperator(ctx)
+			}
+			if err := operatorStmt.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
+			}
 		}
 	}
 	return nil
 }
-
-//func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
-//	for i, selectStmt := range n.Selects {
-//		if i != 0 {
-//			selectStmt.RestoreOperator(ctx)
-//		}
-//		if selectStmt.HasBraces() {
-//			ctx.WritePlain("(")
-//		}
-//		if err := selectStmt.Restore(ctx); err != nil {
-//			return errors.Annotate(err, "An error occurred while restore SetOprNodeList.SelectStmt")
-//		}
-//		if selectStmt.HasBraces() {
-//			ctx.WritePlain(")")
-//		}
-//	}
-//	return nil
-//}
 
 // Accept implements Node Accept interface.
 func (n *SetOprNodeList) Accept(v Visitor) (Node, bool) {
@@ -2906,10 +2891,18 @@ type ValuesStmt struct {
 	// Lists refer to the row_constructor_list
 	Lists   []*RowExpr
 	OrderBy *OrderByClause
-	Limit   *Limit
+	// IsInBraces indicates whether it's a stmt in brace.
+	IsInBraces bool
+	Limit      *Limit
 }
 
 func (n *ValuesStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.IsInBraces {
+		ctx.WritePlain("(")
+		defer func() {
+			ctx.WritePlain(")")
+		}()
+	}
 	ctx.WriteKeyWord("VALUES ")
 	for i, v := range n.Lists {
 		if err := v.Restore(ctx); err != nil {

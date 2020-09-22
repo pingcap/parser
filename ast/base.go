@@ -109,23 +109,12 @@ type SetNode struct {
 	// AfterSetOperator indicates the SelectStmt/TableStmt/ValuesStmt
 	// after which type of set operator
 	AfterSetOperator *SetOprType
-	// IsInBraces indicates whether it's a stmt in brace.
-	IsInBraces bool
 }
 
 func (s *SetNode) RestoreOperator(ctx *format.RestoreCtx) {
-	switch *s.AfterSetOperator {
-	case Union:
-		ctx.WriteKeyWord(" UNION ")
-	case UnionAll:
-		ctx.WriteKeyWord(" UNION ALL ")
-	case Except:
-		ctx.WriteKeyWord(" EXCEPT ")
-	case Intersect:
-		ctx.WriteKeyWord(" INTERSECT ")
-	}
+	ctx.WriteKeyWord(" " + s.AfterSetOperator.String() + " ")
 }
 
-func (s *SetNode) HasBraces() bool {
-	return s.IsInBraces
+func (s *SetNode) SetOperator(opr *SetOprType) {
+	s.AfterSetOperator = opr
 }

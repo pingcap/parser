@@ -160,11 +160,11 @@ type Visitor interface {
 }
 
 // SetOprNode represents a DML statement node which can be used in SetOprStmt
-// Implementations include SelectStmt, TableStmt, ValuesStmt.
+// Implementations include SelectStmt, TableStmt, ValuesStmt and SetOprNodeList
 type SetOprNode interface {
 	Node
 	// RestoreOperator is called to restore the set operator
 	RestoreOperator(ctx *format.RestoreCtx)
-	// HasBraces is called to check whether the DML statement is enclosed in braces
-	HasBraces() bool
+	// SetOperator is called to set a set operator
+	SetOperator(opr *SetOprType)
 }

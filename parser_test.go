@@ -504,6 +504,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		// table statement
 		{"TABLE t", true, "TABLE `t`"},
+		{"(TABLE t)", true, "(TABLE `t`)"},
 		{"TABLE t1, t2", false, ""},
 		{"TABLE t ORDER BY b", true, "TABLE `t` ORDER BY `b`"},
 		{"TABLE t LIMIT 3", true, "TABLE `t` LIMIT 3"},
@@ -514,21 +515,14 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"INSERT INTO t.a TABLE t.b", true, "INSERT INTO `t`.`a` TABLE `t`.`b`"},
 		{"REPLACE INTO ta TABLE tb", true, "REPLACE INTO `ta` TABLE `tb`"},
 		{"REPLACE INTO t.a TABLE t.b", true, "REPLACE INTO `t`.`a` TABLE `t`.`b`"},
-		{"TABLE t1 UNION TABLE t2", true, "TABLE `t1` UNION TABLE `t2`"},
-		{"TABLE t1 EXCEPT TABLE t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
-		{"TABLE t1 INTERSECT TABLE t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
-		{"TABLE t1 UNION (TABLE t2)", true, "TABLE `t1` UNION (TABLE `t2`)"},
-		{"TABLE t1 EXCEPT (TABLE t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
-		{"TABLE t1 INTERSECT (TABLE t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
-		{"TABLE t1 UNION SELECT * FROM t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
-		{"SELECT * FROM t1 UNION TABLE t2", true, "SELECT * FROM `t1` UNION TABLE `t2`"},
 		{"TABLE t1 INTO OUTFILE 'a.txt'", true, "TABLE `t1` INTO OUTFILE 'a.txt'"},
 		{"TABLE t ORDER BY a INTO OUTFILE '/tmp/abc'", true, "TABLE `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
 		{"CREATE TABLE t.a TABLE t.b", true, "CREATE TABLE `t`.`a` AS TABLE `t`.`b`"},
 		{"CREATE TABLE ta TABLE tb", true, "CREATE TABLE `ta` AS TABLE `tb`"},
 		{"CREATE TABLE ta (x INT) TABLE tb", true, "CREATE TABLE `ta` (`x` INT) AS TABLE `tb`"},
 		{"CREATE VIEW v AS TABLE t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
-		{"CREATE VIEW v AS (TABLE t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
+		{"CREATE VIEW v AS (TABLE t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (TABLE `t`)"},
+		{"SELECT * FROM t1 WHERE a IN (TABLE t2)", true, "SELECT * FROM `t1` WHERE `a` IN (TABLE `t2`)"},
 
 		// values statement
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)"},
@@ -536,12 +530,6 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) LIMIT 3", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) LIMIT 3"},
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a`"},
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a LIMIT 2", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a` LIMIT 2"},
-		{"VALUES ROW(1,-2,3), ROW(5,7,9) UNION VALUES ROW(1,-2,3), ROW(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
-		{"VALUES ROW(1,-2,3), ROW(5,7,9) UNION (VALUES ROW(1,-2,3), ROW(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION (VALUES ROW(1,-2,3), ROW(5,7,9))"},
-		{"VALUES ROW(1,-2,3), ROW(5,7,9) UNION SELECT * FROM t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION SELECT * FROM `t`"},
-		{"VALUES ROW(1,-2,3), ROW(5,7,9) UNION TABLE t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION TABLE `t`"},
-		{"SELECT * FROM t UNION VALUES ROW(1,-2,3), ROW(5,7,9)", true, "SELECT * FROM `t` UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
-		{"TABLE t UNION VALUES ROW(1,-2,3), ROW(5,7,9)", true, "TABLE `t` UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
 
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
@@ -3925,6 +3913,20 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"insert into t select c1 from t1 union select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 union select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual union select 1 as b from dual order by a", true, "SELECT 2 AS `a` UNION SELECT 1 AS `b` ORDER BY `a`"},
+		{"table t1 union table t2", true, "TABLE `t1` UNION TABLE `t2`"},
+		{"table t1 union (table t2)", true, "TABLE `t1` UNION (TABLE `t2`)"},
+		{"table t1 union select * from t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+		{"select * from t1 union table t2", true, "SELECT * FROM `t1` UNION TABLE `t2`"},
+		{"table t1 union (select c2 from t2) order by c1 limit 1", true, "TABLE `t1` UNION (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"select c1 from t1 union (table t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` UNION (TABLE `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) union table t2 union (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) UNION TABLE `t2` UNION (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(table t1) union select c2 from t2 union (table t3) order by c1 limit 1", true, "(TABLE `t1`) UNION SELECT `c2` FROM `t2` UNION (TABLE `t3`) ORDER BY `c1` LIMIT 1"},
+		{"values row(1,-2,3), row(5,7,9) union values row(1,-2,3), row(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"values row(1,-2,3), row(5,7,9) union (values row(1,-2,3), row(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION (VALUES ROW(1,-2,3), ROW(5,7,9))"},
+		{"values row(1,-2,3), row(5,7,9) union select * from t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION SELECT * FROM `t`"},
+		{"values row(1,-2,3), row(5,7,9) union table t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION TABLE `t`"},
+		{"select * from t union values row(1,-2,3), row(5,7,9)", true, "SELECT * FROM `t` UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"table t union values row(1,-2,3), row(5,7,9)", true, "TABLE `t` UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
 		// except
 		{"select c1 from t1 except select c2 from t2", true, "SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
 		{"select c1 from t1 except (select c2 from t2)", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`)"},
@@ -3941,6 +3943,20 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"insert into t select c1 from t1 except select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 except select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual except select 1 as b from dual order by a", true, "SELECT 2 AS `a` EXCEPT SELECT 1 AS `b` ORDER BY `a`"},
+		{"table t1 except table t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
+		{"table t1 except (table t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
+		{"table t1 except select * from t2", true, "TABLE `t1` EXCEPT SELECT * FROM `t2`"},
+		{"select * from t1 except table t2", true, "SELECT * FROM `t1` EXCEPT TABLE `t2`"},
+		{"table t1 except (select c2 from t2) order by c1 limit 1", true, "TABLE `t1` EXCEPT (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"select c1 from t1 except (table t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` EXCEPT (TABLE `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) except table t2 except (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) EXCEPT TABLE `t2` EXCEPT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(table t1) except select c2 from t2 except (table t3) order by c1 limit 1", true, "(TABLE `t1`) EXCEPT SELECT `c2` FROM `t2` EXCEPT (TABLE `t3`) ORDER BY `c1` LIMIT 1"},
+		{"values row(1,-2,3), row(5,7,9) except values row(1,-2,3), row(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"values row(1,-2,3), row(5,7,9) except (values row(1,-2,3), row(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT (VALUES ROW(1,-2,3), ROW(5,7,9))"},
+		{"values row(1,-2,3), row(5,7,9) except select * from t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT SELECT * FROM `t`"},
+		{"values row(1,-2,3), row(5,7,9) except table t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT TABLE `t`"},
+		{"select * from t except values row(1,-2,3), row(5,7,9)", true, "SELECT * FROM `t` EXCEPT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"table t except values row(1,-2,3), row(5,7,9)", true, "TABLE `t` EXCEPT VALUES ROW(1,-2,3), ROW(5,7,9)"},
 		// intersect
 		{"select c1 from t1 intersect select c2 from t2", true, "SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
 		{"select c1 from t1 intersect (select c2 from t2)", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`)"},
@@ -3957,6 +3973,20 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"insert into t select c1 from t1 intersect select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 intersect select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual intersect select 1 as b from dual order by a", true, "SELECT 2 AS `a` INTERSECT SELECT 1 AS `b` ORDER BY `a`"},
+		{"table t1 intersect table t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
+		{"table t1 intersect (table t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
+		{"table t1 intersect select * from t2", true, "TABLE `t1` INTERSECT SELECT * FROM `t2`"},
+		{"select * from t1 intersect table t2", true, "SELECT * FROM `t1` INTERSECT TABLE `t2`"},
+		{"table t1 intersect (select c2 from t2) order by c1 limit 1", true, "TABLE `t1` INTERSECT (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"select c1 from t1 intersect (table t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` INTERSECT (TABLE `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) intersect table t2 intersect (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT TABLE `t2` INTERSECT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(table t1) intersect select c2 from t2 intersect (table t3) order by c1 limit 1", true, "(TABLE `t1`) INTERSECT SELECT `c2` FROM `t2` INTERSECT (TABLE `t3`) ORDER BY `c1` LIMIT 1"},
+		{"values row(1,-2,3), row(5,7,9) intersect values row(1,-2,3), row(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"values row(1,-2,3), row(5,7,9) intersect (values row(1,-2,3), row(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT (VALUES ROW(1,-2,3), ROW(5,7,9))"},
+		{"values row(1,-2,3), row(5,7,9) intersect select * from t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT SELECT * FROM `t`"},
+		{"values row(1,-2,3), row(5,7,9) intersect table t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT TABLE `t`"},
+		{"select * from t intersect values row(1,-2,3), row(5,7,9)", true, "SELECT * FROM `t` INTERSECT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"table t intersect values row(1,-2,3), row(5,7,9)", true, "TABLE `t` INTERSECT VALUES ROW(1,-2,3), ROW(5,7,9)"},
 		// mixture of union, except and intersect
 		{"(select c1 from t1) intersect select c2 from t2 union (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT SELECT `c2` FROM `t2` UNION (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
 		{"(select c1 from t1) union all select c2 from t2 except (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) UNION ALL SELECT `c2` FROM `t2` EXCEPT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
@@ -3976,7 +4006,7 @@ func checkOrderBy(c *C, s ast.Node, hasOrderBy []bool, i int) int {
 	case *ast.SelectStmt:
 		c.Assert(x.OrderBy != nil, Equals, hasOrderBy[i])
 		return i + 1
-	case *ast.SetOprSelectList:
+	case *ast.SetOprNodeList:
 		for _, sel := range x.Selects {
 			i = checkOrderBy(c, sel, hasOrderBy, i)
 		}
@@ -4006,11 +4036,11 @@ func (s *testParserSuite) TestUnionOrderBy(c *C) {
 		us, ok := stmt[0].(*ast.SetOprStmt)
 		if ok {
 			var i int
-			for _, s := range us.SelectList.Selects {
+			for _, s := range us.SetOprList.Selects {
 				i = checkOrderBy(c, s, t.hasOrderBy, i)
-			//for _, s := range us.SetOprList.Selects {
-			//	c.Assert(s.(*ast.SelectStmt).OrderBy != nil, Equals, t.hasOrderBy[i])
-			//	i++
+				//for _, s := range us.SetOprList.Selects {
+				//	c.Assert(s.(*ast.SelectStmt).OrderBy != nil, Equals, t.hasOrderBy[i])
+				//	i++
 			}
 			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])
 		}

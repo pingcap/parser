@@ -177,15 +177,10 @@ func ParseErrorWith(errstr string, lineno int) error {
 // The select statement is not at the end of the whole statement, if the last
 // field text was set from its offset to the end of the src string, update
 // the last field text.
-func (parser *Parser) setLastSelectFieldText(st ast.SetOprNode, lastEnd int) {
-	switch st.(type) {
-	case *ast.SelectStmt:
-		fields := st.(*ast.SelectStmt).Fields
-		lastField := fields.Fields[len(fields.Fields)-1]
-		if lastField.Offset+len(lastField.Text()) >= len(parser.src)-1 {
-			lastField.SetText(parser.src[lastField.Offset:lastEnd])
-		}
-	default:
+func (parser *Parser) setLastSelectFieldText(st *ast.SelectStmt, lastEnd int) {
+	lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+	if lastField.Offset+len(lastField.Text()) >= len(parser.src)-1 {
+		lastField.SetText(parser.src[lastField.Offset:lastEnd])
 	}
 }
 
