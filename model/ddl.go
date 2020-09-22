@@ -176,6 +176,10 @@ type DDLReorgMeta struct {
 	// EndHandle is the last handle of the adding indices table.
 	// We should only backfill indices in the range [startHandle, EndHandle].
 	EndHandle int64 `json:"end_handle"`
+
+	SQLMode       mysql.SQLMode                    `json:"sql_mode"`
+	Warnings      map[errors.ErrorID]*terror.Error `json:"warnings"`
+	WarningsCount map[errors.ErrorID]int64         `json:"warnings_count"`
 }
 
 // NewDDLReorgMeta new a DDLReorgMeta.
@@ -223,10 +227,6 @@ type Job struct {
 
 	// Priority is only used to set the operation priority of adding indices.
 	Priority int `json:"priority"`
-
-	SQLMode       mysql.SQLMode
-	Warnings      []*terror.Error
-	WarningsCount []int64
 }
 
 // FinishTableJob is called when a job is finished.
