@@ -11082,34 +11082,17 @@ RoleSpecList:
  *      CREATE GLOBAL BINDING FOR select Col1,Col2 from table USING select Col1,Col2 from table use index(Col1)
  *******************************************************************/
 CreateBindingStmt:
-	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
+	"CREATE" GlobalScope "BINDING" "FOR" SetOprStmt1 "USING" SetOprStmt1
 	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
 		endOffset := parser.startOffset(&yyS[yypt-1])
-		selStmt := $5.(*ast.SelectStmt)
-		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
-
-		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSelStmt := $7.(*ast.SelectStmt)
-		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
-
-		x := &ast.CreateBindingStmt{
-			OriginNode:  selStmt,
-			HintedNode:  hintedSelStmt,
-			GlobalScope: $2.(bool),
-		}
-
-		$$ = x
-	}
-|	"CREATE" GlobalScope "BINDING" "FOR" SetOprStmt "USING" SetOprStmt
-	{
-		startOffset := parser.startOffset(&yyS[yypt-2])
-		endOffset := parser.startOffset(&yyS[yypt-1])
-		setOprStmt := $5.(*ast.SetOprStmt)
+		//setOprStmt := $5.(*ast.SetOprStmt)
+		setOprStmt := $5
 		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSetOprStmt := $7.(*ast.SetOprStmt)
+		//hintedSetOprStmt := $7.(*ast.SetOprStmt)
+		hintedSetOprStmt := $7
 		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.CreateBindingStmt{
@@ -11129,42 +11112,10 @@ CreateBindingStmt:
  *      DROP GLOBAL BINDING FOR select Col1,Col2 from table
  *******************************************************************/
 DropBindingStmt:
-	"DROP" GlobalScope "BINDING" "FOR" SelectStmt
+	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt1
 	{
 		startOffset := parser.startOffset(&yyS[yypt])
-		selStmt := $5.(*ast.SelectStmt)
-		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
-
-		x := &ast.DropBindingStmt{
-			OriginNode:  selStmt,
-			GlobalScope: $2.(bool),
-		}
-
-		$$ = x
-	}
-|	"DROP" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
-	{
-		startOffset := parser.startOffset(&yyS[yypt-2])
-		endOffset := parser.startOffset(&yyS[yypt-1])
-		selStmt := $5.(*ast.SelectStmt)
-		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
-
-		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSelStmt := $7.(*ast.SelectStmt)
-		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
-
-		x := &ast.DropBindingStmt{
-			OriginNode:  selStmt,
-			HintedNode:  hintedSelStmt,
-			GlobalScope: $2.(bool),
-		}
-
-		$$ = x
-	}
-|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt
-	{
-		startOffset := parser.startOffset(&yyS[yypt])
-		setOprStmt := $5.(*ast.SetOprStmt)
+		setOprStmt := $5
 		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
@@ -11174,15 +11125,15 @@ DropBindingStmt:
 
 		$$ = x
 	}
-|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt "USING" SetOprStmt
+|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt1 "USING" SetOprStmt1
 	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
 		endOffset := parser.startOffset(&yyS[yypt-1])
-		setOprStmt := $5.(*ast.SetOprStmt)
+		setOprStmt := $5
 		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSetOprStmt := $7.(*ast.SetOprStmt)
+		hintedSetOprStmt := $7
 		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
