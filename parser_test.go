@@ -4038,9 +4038,6 @@ func (s *testParserSuite) TestUnionOrderBy(c *C) {
 			var i int
 			for _, s := range us.SetOprList.Selects {
 				i = checkOrderBy(c, s, t.hasOrderBy, i)
-				//for _, s := range us.SetOprList.Selects {
-				//	c.Assert(s.(*ast.SelectStmt).OrderBy != nil, Equals, t.hasOrderBy[i])
-				//	i++
 			}
 			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])
 		}
