@@ -268,14 +268,14 @@ func (job *Job) GetRowCount() int64 {
 }
 
 // SetWarnings sets the warnings of rows handled.
-func (job *Job) SetWarnings(warnings []*terror.Error, warningsCount []int64) {
-	job.Warnings = warnings
-	job.WarningsCount = warningsCount
+func (job *Job) SetWarnings(warnings map[errors.ErrorID]*terror.Error, warningsCount map[errors.ErrorID]int64) {
+	job.ReorgMeta.Warnings = warnings
+	job.ReorgMeta.WarningsCount = warningsCount
 }
 
 // GetWarnings gets the warnings of the rows handled.
-func (job *Job) GetWarnings() ([]*terror.Error, []int64) {
-	return job.Warnings, job.WarningsCount
+func (job *Job) GetWarnings() (map[errors.ErrorID]*terror.Error, map[errors.ErrorID]int64) {
+	return job.ReorgMeta.Warnings, job.ReorgMeta.WarningsCount
 }
 
 // Encode encodes job with json format.
