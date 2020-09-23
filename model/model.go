@@ -729,10 +729,11 @@ func (p PartitionType) String() string {
 
 // PartitionInfo provides table partition info.
 type PartitionInfo struct {
-	Type    PartitionType  `json:"type"`
-	Expr    string         `json:"expr"`
-	Columns []CIStr        `json:"columns"`
-	SubPart *PartitionInfo `json:"sub_part"`
+	Type      PartitionType         `json:"type"`
+	Expr      string                `json:"expr"`
+	Columns   []CIStr               `json:"columns"`
+	SubPart   *PartitionInfo        `json:"sub_part"`
+	ParentDef []PartitionDefinition `json:"parent_def"`
 
 	// User may already creates table with partition but table partition is not
 	// yet supported back then. When Enable is true, write/read need use tid
