@@ -158,6 +158,8 @@ var tokenMap = map[string]int{
 	"ANALYZE":                  analyze,
 	"AND":                      and,
 	"ANY":                      any,
+	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
+	"APPROX_PERCENTILE":        approxPercentile,
 	"AS":                       as,
 	"ASC":                      asc,
 	"ASCII":                    ascii,
@@ -234,7 +236,6 @@ var tokenMap = map[string]int{
 	"CONVERT":                  convert,
 	"COPY":                     copyKwd,
 	"CORRELATION":              correlation,
-	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
 	"CPU":                      cpu,
 	"CREATE":                   create,
 	"CROSS":                    cross,
@@ -352,6 +353,7 @@ var tokenMap = map[string]int{
 	"HAVING":                   having,
 	"HIGH_PRIORITY":            highPriority,
 	"HISTORY":                  history,
+	"HISTOGRAM":                histogram,
 	"HOSTS":                    hosts,
 	"HOUR_MICROSECOND":         hourMicrosecond,
 	"HOUR_MINUTE":              hourMinute,
@@ -395,6 +397,7 @@ var tokenMap = map[string]int{
 	"JOB":                      job,
 	"JOBS":                     jobs,
 	"JOIN":                     join,
+	"JSON_ARRAYAGG":            jsonArrayagg,
 	"JSON_OBJECTAGG":           jsonObjectAgg,
 	"JSON":                     jsonType,
 	"KEY_BLOCK_SIZE":           keyBlockSize,
@@ -743,6 +746,7 @@ var tokenMap = map[string]int{
 	"YEAR_MONTH":               yearMonth,
 	"YEAR":                     yearType,
 	"ZEROFILL":                 zerofill,
+	"WAIT":                     wait,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details
@@ -754,6 +758,7 @@ var btFuncTokenMap = map[string]int{
 	"CAST":                  builtinCast,
 	"COUNT":                 builtinCount,
 	"APPROX_COUNT_DISTINCT": builtinApproxCountDistinct,
+	"APPROX_PERCENTILE":     builtinApproxPercentile,
 	"CURDATE":               builtinCurDate,
 	"CURTIME":               builtinCurTime,
 	"DATE_ADD":              builtinDateAdd,
@@ -852,7 +857,7 @@ var hintTokenMap = map[string]int{
 
 	// TiDB hint names
 	"AGG_TO_COP":              hintAggToCop,
-	"TOPN_TO_COP":             hintTopNToCop,
+	"LIMIT_TO_COP":            hintLimitToCop,
 	"IGNORE_PLAN_CACHE":       hintIgnorePlanCache,
 	"HASH_AGG":                hintHashAgg,
 	"IGNORE_INDEX":            hintIgnoreIndex,
