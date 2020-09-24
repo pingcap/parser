@@ -760,6 +760,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// for https://github.com/pingcap/tidb/issues/320
 		{`(select 1);`, true, "(SELECT 1)"},
 
+		// for https://github.com/pingcap/parser/issues/963
+		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`='')"},
+		{"select min(b) b from (select min(t.b) b from t where t.a = '') as t1;", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`='') AS `t1`"},
+
 		// for https://github.com/pingcap/tidb/issues/1050
 		{`SELECT /*!40001 SQL_NO_CACHE */ * FROM test WHERE 1 limit 0, 2000;`, true, "SELECT SQL_NO_CACHE * FROM `test` WHERE 1 LIMIT 0,2000"},
 
@@ -1879,6 +1883,10 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select var_pop(c1, c2) from t`, false, ""},
 		{`select var_samp(c1), var_samp(all c1), var_samp(distinct c1) from t`, true, "SELECT VAR_SAMP(`c1`),VAR_SAMP(`c1`),VAR_SAMP(DISTINCT `c1`) FROM `t`"},
 		{`select var_samp(c1, c2) from t`, false, ""},
+		{`select json_arrayagg(c2) from t group by c1`, true, "SELECT JSON_ARRAYAGG(`c2`) FROM `t` GROUP BY `c1`"},
+		{`select json_arrayagg(c1, c2) from t group by c1`, false, ""},
+		{`select json_arrayagg(distinct c2) from t group by c1`, false, "SELECT JSON_ARRAYAGG(DISTINCT `c2`) FROM `t` GROUP BY `c1`"},
+		{`select json_arrayagg(all c2) from t group by c1`, true, "SELECT JSON_ARRAYAGG(`c2`) FROM `t` GROUP BY `c1`"},
 		{`select json_objectagg(c1, c2) from t group by c1`, true, "SELECT JSON_OBJECTAGG(`c1`, `c2`) FROM `t` GROUP BY `c1`"},
 		{`select json_objectagg(c1, c2, c3) from t group by c1`, false, ""},
 		{`select json_objectagg(distinct c1, c2) from t group by c1`, false, "SELECT JSON_OBJECTAGG(DISTINCT `c1`, `c2`) FROM `t` GROUP BY `c1`"},
@@ -4199,6 +4207,14 @@ func (s *testParserSuite) TestBinding(c *C) {
 		{"drop session binding for select * from t using select * from t use index(a)", true, "DROP SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"show global bindings", true, "SHOW GLOBAL BINDINGS"},
 		{"show session bindings", true, "SHOW SESSION BINDINGS"},
+		{"create global binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"create session binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop global binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop session binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "DROP SESSION BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop global binding for select * from t union all select * from t", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create session binding for select 1 union select 2 intersect select 3 using select 1 union select 2 intersect select 3", true, "CREATE SESSION BINDING FOR SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 USING SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"},
+		{"drop session binding for select 1 union select 2 intersect select 3 using select 1 union select 2 intersect select 3", true, "DROP SESSION BINDING FOR SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 USING SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"},
+		{"drop session binding for select 1 union select 2 intersect select 3", true, "DROP SESSION BINDING FOR SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"},
 	}
 	s.RunTest(c, table)
 
@@ -4207,8 +4223,8 @@ func (s *testParserSuite) TestBinding(c *C) {
 	c.Assert(err, IsNil)
 	v, ok := sms[0].(*ast.CreateBindingStmt)
 	c.Assert(ok, IsTrue)
-	c.Assert(v.OriginSel.Text(), Equals, "select * from t")
-	c.Assert(v.HintedSel.Text(), Equals, "select * from t use index(a)")
+	c.Assert(v.OriginNode.Text(), Equals, "select * from t")
+	c.Assert(v.HintedNode.Text(), Equals, "select * from t use index(a)")
 	c.Assert(v.GlobalScope, IsTrue)
 }
 
