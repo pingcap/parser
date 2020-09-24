@@ -648,6 +648,7 @@ import (
 	varSamp               "VAR_SAMP"
 	exprPushdownBlacklist "EXPR_PUSHDOWN_BLACKLIST"
 	optRuleBlacklist      "OPT_RULE_BLACKLIST"
+	jsonArrayagg          "JSON_ARRAYAGG"
 	jsonObjectAgg         "JSON_OBJECTAGG"
 	tls                   "TLS"
 	follower              "FOLLOWER"
@@ -5481,6 +5482,7 @@ NotKeywordToken:
 |	"STRONG"
 |	"FLASHBACK"
 |	"JSON_OBJECTAGG"
+|	"JSON_ARRAYAGG"
 |	"TLS"
 |	"FOLLOWER"
 |	"LEADER"
@@ -6628,6 +6630,22 @@ SumExpr:
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
+|	"JSON_ARRAYAGG" '(' Expression ')' OptWindowingClause
+	{
+		if $5 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$3}, Spec: *($5.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}}
+		}
+	}
+|	"JSON_ARRAYAGG" '(' "ALL" Expression ')' OptWindowingClause
+	{
+		if $6 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Spec: *($6.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}}
+		}
+	}
 |	"JSON_OBJECTAGG" '(' Expression ',' Expression ')' OptWindowingClause
 	{
 		if $7 != nil {
@@ -7670,7 +7688,7 @@ TableFactor:
 		tn.IndexHints = $4.([]*ast.IndexHint)
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
-|	'(' SetOprStmt1 ')' TableAsName
+|	'(' SetOprStmt1 ')' TableAsNameOpt
 	{
 		if st, isSel := $2.(*ast.SelectStmt); isSel {
 			endOffset := parser.endOffset(&yyS[yypt-1])
