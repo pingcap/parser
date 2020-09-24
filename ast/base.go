@@ -14,7 +14,6 @@
 package ast
 
 import (
-	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/types"
 )
 
@@ -101,20 +100,4 @@ func (fn *funcNode) functionExpression() {}
 
 type resultSetNode struct {
 	resultFields []*ResultField
-}
-
-// SetNode implements parts of the SetOprNode interface. DML node which
-// combined with SetNode can be used in SetOprStmt.
-type SetNode struct {
-	// AfterSetOperator indicates the SelectStmt/TableStmt/ValuesStmt
-	// after which type of set operator
-	AfterSetOperator *SetOprType
-}
-
-func (s *SetNode) RestoreOperator(ctx *format.RestoreCtx) {
-	ctx.WriteKeyWord(" " + s.AfterSetOperator.String() + " ")
-}
-
-func (s *SetNode) SetOperator(opr *SetOprType) {
-	s.AfterSetOperator = opr
 }

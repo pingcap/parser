@@ -525,11 +525,21 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"SELECT * FROM t1 WHERE a IN (TABLE t2)", true, "SELECT * FROM `t1` WHERE `a` IN (TABLE `t2`)"},
 
 		// values statement
+		{"VALUES ROW(1)", true, "VALUES ROW(1)"},
+		{"VALUES ROW()", true, "VALUES ROW()"},
+		{"VALUES ROW(1, default)", true, "VALUES ROW(1,DEFAULT)"},
+		{"VALUES ROW(1), ROW(2,3)", true, "VALUES ROW(1), ROW(2,3)"},
+		{"VALUES (1,2)", false, ""},
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)"},
 		{"VALUES ROW(1,s,3.1), ROW(5,y,9.9)", true, "VALUES ROW(1,`s`,3.1), ROW(5,`y`,9.9)"},
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) LIMIT 3", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) LIMIT 3"},
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a`"},
 		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a LIMIT 2", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a` LIMIT 2"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9) INTO OUTFILE 'a.txt'", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTO OUTFILE 'a.txt'"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9) ORDER BY a INTO OUTFILE '/tmp/abc'", true, "VALUES ROW(1,-2,3), ROW(5,7,9) ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
+		{"CREATE TABLE ta VALUES ROW(1)", true, "CREATE TABLE `ta` AS VALUES ROW(1)"},
+		{"CREATE TABLE ta AS VALUES ROW(1)", true, "CREATE TABLE `ta` AS VALUES ROW(1)"},
+		{"CREATE VIEW a AS VALUES ROW(1)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS VALUES ROW(1)"},
 
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
@@ -4014,7 +4024,7 @@ func checkOrderBy(c *C, s ast.Node, hasOrderBy []bool, i int) int {
 	case *ast.SelectStmt:
 		c.Assert(x.OrderBy != nil, Equals, hasOrderBy[i])
 		return i + 1
-	case *ast.SetOprNodeList:
+	case *ast.SetOprSelectList:
 		for _, sel := range x.Selects {
 			i = checkOrderBy(c, sel, hasOrderBy, i)
 		}
@@ -4044,7 +4054,7 @@ func (s *testParserSuite) TestUnionOrderBy(c *C) {
 		us, ok := stmt[0].(*ast.SetOprStmt)
 		if ok {
 			var i int
-			for _, s := range us.SetOprList.Selects {
+			for _, s := range us.SelectList.Selects {
 				i = checkOrderBy(c, s, t.hasOrderBy, i)
 			}
 			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])

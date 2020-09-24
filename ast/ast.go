@@ -158,13 +158,3 @@ type Visitor interface {
 	// ok returns false to stop visiting.
 	Leave(n Node) (node Node, ok bool)
 }
-
-// SetOprNode represents a DML statement node which can be used in SetOprStmt
-// Implementations include SelectStmt, TableStmt, ValuesStmt and SetOprNodeList
-type SetOprNode interface {
-	Node
-	// RestoreOperator is called to restore the set operator
-	RestoreOperator(ctx *format.RestoreCtx)
-	// SetOperator is called to set a set operator
-	SetOperator(opr *SetOprType)
-}
