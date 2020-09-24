@@ -648,6 +648,7 @@ import (
 	varSamp               "VAR_SAMP"
 	exprPushdownBlacklist "EXPR_PUSHDOWN_BLACKLIST"
 	optRuleBlacklist      "OPT_RULE_BLACKLIST"
+	jsonArrayagg          "JSON_ARRAYAGG"
 	jsonObjectAgg         "JSON_OBJECTAGG"
 	tls                   "TLS"
 	follower              "FOLLOWER"
@@ -5481,6 +5482,7 @@ NotKeywordToken:
 |	"STRONG"
 |	"FLASHBACK"
 |	"JSON_OBJECTAGG"
+|	"JSON_ARRAYAGG"
 |	"TLS"
 |	"FOLLOWER"
 |	"LEADER"
@@ -6628,6 +6630,22 @@ SumExpr:
 	{
 		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 	}
+|	"JSON_ARRAYAGG" '(' Expression ')' OptWindowingClause
+	{
+		if $5 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$3}, Spec: *($5.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}}
+		}
+	}
+|	"JSON_ARRAYAGG" '(' "ALL" Expression ')' OptWindowingClause
+	{
+		if $6 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Spec: *($6.(*ast.WindowSpec))}
+		} else {
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}}
+		}
+	}
 |	"JSON_OBJECTAGG" '(' Expression ',' Expression ')' OptWindowingClause
 	{
 		if $7 != nil {
@@ -7670,7 +7688,7 @@ TableFactor:
 		tn.IndexHints = $4.([]*ast.IndexHint)
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
-|	'(' SetOprStmt1 ')' TableAsName
+|	'(' SetOprStmt1 ')' TableAsNameOpt
 	{
 		if st, isSel := $2.(*ast.SelectStmt); isSel {
 			endOffset := parser.endOffset(&yyS[yypt-1])
@@ -11082,20 +11100,22 @@ RoleSpecList:
  *      CREATE GLOBAL BINDING FOR select Col1,Col2 from table USING select Col1,Col2 from table use index(Col1)
  *******************************************************************/
 CreateBindingStmt:
-	"CREATE" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
+	"CREATE" GlobalScope "BINDING" "FOR" SetOprStmt1 "USING" SetOprStmt1
 	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
 		endOffset := parser.startOffset(&yyS[yypt-1])
-		selStmt := $5.(*ast.SelectStmt)
-		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		//setOprStmt := $5.(*ast.SetOprStmt)
+		setOprStmt := $5
+		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSelStmt := $7.(*ast.SelectStmt)
-		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		//hintedSetOprStmt := $7.(*ast.SetOprStmt)
+		hintedSetOprStmt := $7
+		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.CreateBindingStmt{
-			OriginSel:   selStmt,
-			HintedSel:   hintedSelStmt,
+			OriginNode:  setOprStmt,
+			HintedNode:  hintedSetOprStmt,
 			GlobalScope: $2.(bool),
 		}
 
@@ -11110,33 +11130,33 @@ CreateBindingStmt:
  *      DROP GLOBAL BINDING FOR select Col1,Col2 from table
  *******************************************************************/
 DropBindingStmt:
-	"DROP" GlobalScope "BINDING" "FOR" SelectStmt
+	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt1
 	{
 		startOffset := parser.startOffset(&yyS[yypt])
-		selStmt := $5.(*ast.SelectStmt)
-		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		setOprStmt := $5
+		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginSel:   selStmt,
+			OriginNode:  setOprStmt,
 			GlobalScope: $2.(bool),
 		}
 
 		$$ = x
 	}
-|	"DROP" GlobalScope "BINDING" "FOR" SelectStmt "USING" SelectStmt
+|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt1 "USING" SetOprStmt1
 	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
 		endOffset := parser.startOffset(&yyS[yypt-1])
-		selStmt := $5.(*ast.SelectStmt)
-		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		setOprStmt := $5
+		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSelStmt := $7.(*ast.SelectStmt)
-		hintedSelStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		hintedSetOprStmt := $7
+		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginSel:   selStmt,
-			HintedSel:   hintedSelStmt,
+			OriginNode:  setOprStmt,
+			HintedNode:  hintedSetOprStmt,
 			GlobalScope: $2.(bool),
 		}
 
