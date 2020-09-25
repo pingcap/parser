@@ -786,11 +786,11 @@ const (
 func (s *SelectStmtKind) String() string {
 	switch *s {
 	case SelectStmtKindSelect:
-		return "SELECT "
+		return "SELECT"
 	case SelectStmtKindTable:
-		return "TABLE "
+		return "TABLE"
 	case SelectStmtKindValues:
-		return "VALUES "
+		return "VALUES"
 	}
 	return ""
 }
@@ -848,6 +848,7 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 		}()
 	}
 	ctx.WriteKeyWord(n.Kind.String())
+	ctx.WritePlain(" ")
 	switch n.Kind {
 	case SelectStmtKindSelect:
 		if n.SelectStmtOpts.Priority > 0 {
@@ -947,7 +948,7 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	case SelectStmtKindValues:
 		for i, v := range n.Lists {
 			if err := v.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore ValuesStmt.OrderBy")
+				return errors.Annotatef(err, "An error occurred while restore SelectStmt.Lists[%d]", i)
 			}
 			if i != len(n.Lists)-1 {
 				ctx.WritePlain(", ")

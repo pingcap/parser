@@ -1027,7 +1027,7 @@ import (
 	RoleSpecList                           "Rolename and auth option list"
 	RowFormat                              "Row format option"
 	RowValue                               "Row value"
-	RowStmt                                "Row constructor statement"
+	RowStmt                                "Row constructor"
 	RowStmtField                           "elements in RowStmt"
 	SelectLockOpt                          "FOR UPDATE or LOCK IN SHARE MODE,"
 	SelectStmtCalcFoundRows                "SELECT statement optional SQL_CALC_FOUND_ROWS"
