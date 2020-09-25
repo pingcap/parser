@@ -151,7 +151,7 @@ func (c *ColumnInfo) SetOriginDefaultValue(value interface{}) error {
 
 // GetOriginalDefaultValue gets the origin default value.
 func (c *ColumnInfo) GetOriginDefaultValue() interface{} {
-	if c.Tp == mysql.TypeBit {
+	if c.Tp == mysql.TypeBit && c.OriginDefaultValueBit != nil {
 		// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
 		// because the content before json.Marshal is INCONSISTENT with the content after json.Unmarshal.
 		return string(c.OriginDefaultValueBit)
@@ -216,6 +216,9 @@ func FindColumnInfo(cols []*ColumnInfo, name string) *ColumnInfo {
 // for use of execution phase.
 const ExtraHandleID = -1
 
+// ExtraPartitionID is the column ID of column which store the partitionID decoded in global index values.
+const ExtraPidColID = -2
+
 const (
 	// TableInfoVersion0 means the table info version is 0.
 	// Upgrade from v2.1.1 or v2.1.2 to v2.1.3 and later, and then execute a "change/modify column" statement
@@ -248,6 +251,9 @@ const (
 
 // ExtraHandleName is the name of ExtraHandle Column.
 var ExtraHandleName = NewCIStr("_tidb_rowid")
+
+// ExtraPartitionIdName is the name of ExtraPartitionId Column.
+var ExtraPartitionIdName = NewCIStr("_tidb_pid")
 
 // TableInfo provides meta data describing a DB table.
 type TableInfo struct {
@@ -312,6 +318,10 @@ type TableInfo struct {
 
 	// TiFlashReplica means the TiFlash replica info.
 	TiFlashReplica *TiFlashReplicaInfo `json:"tiflash_replica"`
+
+	// IsColumnar means the table is column-oriented.
+	// It's true when the engine of the table is TiFlash only.
+	IsColumnar bool `json:"is_columnar"`
 }
 
 // TableLockInfo provides meta data describing a table lock.
@@ -555,6 +565,17 @@ func NewExtraHandleColInfo() *ColumnInfo {
 	return colInfo
 }
 
+// NewExtraPartitionIDColInfo mocks a column info for extra partition id column.
+func NewExtraPartitionIDColInfo() *ColumnInfo {
+	colInfo := &ColumnInfo{
+		ID:   ExtraPidColID,
+		Name: ExtraPartitionIdName,
+	}
+	colInfo.Tp = mysql.TypeLonglong
+	colInfo.Flen, colInfo.Decimal = mysql.GetDefaultFieldLengthAndDecimal(mysql.TypeLonglong)
+	return colInfo
+}
+
 // ColumnIsInIndex checks whether c is included in any indices of t.
 func (t *TableInfo) ColumnIsInIndex(c *ColumnInfo) bool {
 	for _, index := range t.Indices {
@@ -720,7 +741,9 @@ type PartitionInfo struct {
 	Definitions []PartitionDefinition `json:"definitions"`
 	// AddingDefinitions is filled when adding a partition that is in the mid state.
 	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
-	Num               uint64                `json:"num"`
+	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
+	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
+	Num                 uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
