@@ -208,7 +208,7 @@ func (d *sqlDigester) reduceOptimizerHint(tok *token) (reduced bool) {
 }
 
 func (d *sqlDigester) reduceLit(currTok *token) {
-	if !d.isLit(*currTok) && currTok.tok != paramMarker {
+	if !d.isLit(*currTok) {
 		return
 	}
 	// count(*) => count(?)
@@ -286,7 +286,7 @@ func (d *sqlDigester) isGenericList(last2 []token) (generic bool) {
 		return false
 	}
 	switch last2[0].tok {
-	case genericSymbol, genericSymbolList, paramMarker:
+	case genericSymbol, genericSymbolList:
 		generic = true
 	default:
 	}
@@ -331,7 +331,7 @@ func (d *sqlDigester) isStarParam() (starParam bool) {
 
 func (d *sqlDigester) isLit(t token) (beLit bool) {
 	tok := t.tok
-	if d.isNumLit(tok) || tok == stringLit || tok == bitLit {
+	if d.isNumLit(tok) || tok == stringLit || tok == bitLit || tok == paramMarker {
 		beLit = true
 	} else if t.lit == "*" {
 		beLit = true
