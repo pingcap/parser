@@ -208,7 +208,7 @@ func (d *sqlDigester) reduceOptimizerHint(tok *token) (reduced bool) {
 }
 
 func (d *sqlDigester) reduceLit(currTok *token) {
-	if !d.isLit(*currTok) {
+	if !d.isLit(*currTok) && currTok.tok != paramMarker {
 		return
 	}
 	// count(*) => count(?)
@@ -286,7 +286,7 @@ func (d *sqlDigester) isGenericList(last2 []token) (generic bool) {
 		return false
 	}
 	switch last2[0].tok {
-	case genericSymbol, genericSymbolList:
+	case genericSymbol, genericSymbolList, paramMarker:
 		generic = true
 	default:
 	}
