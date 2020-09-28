@@ -1028,7 +1028,6 @@ import (
 	RowFormat                              "Row format option"
 	RowValue                               "Row value"
 	RowStmt                                "Row constructor"
-	RowStmtField                           "elements in RowStmt"
 	SelectLockOpt                          "FOR UPDATE or LOCK IN SHARE MODE,"
 	SelectStmtCalcFoundRows                "SELECT statement optional SQL_CALC_FOUND_ROWS"
 	SelectStmtSQLBigResult                 "SELECT statement optional SQL_BIG_RESULT"
@@ -12072,19 +12071,8 @@ ValuesStmtList:
 	}
 
 RowStmt:
-	"ROW" RowStmtField %prec higherThanComma
+	"ROW" RowValue
 	{
-		$$ = $2
-	}
-
-RowStmtField:
-	RowValue
-	{
-		$$ = &ast.RowExpr{Values: $1.([]ast.ExprNode)}
-	}
-|	RowStmtField ',' RowValue
-	{
-		values := append($1.([]ast.ExprNode), $3.(ast.ExprNode))
-		$$ = &ast.RowExpr{Values: values}
+		$$ = &ast.RowExpr{Values: $2.([]ast.ExprNode)}
 	}
 %%
