@@ -775,7 +775,27 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// SelectStmt represents the select query node.
+type SelectStmtKind uint8
+
+const (
+	SelectStmtKindSelect SelectStmtKind = iota
+	SelectStmtKindTable
+	SelectStmtKindValues
+)
+
+func (s *SelectStmtKind) String() string {
+	switch *s {
+	case SelectStmtKindSelect:
+		return "SELECT"
+	case SelectStmtKindTable:
+		return "TABLE"
+	case SelectStmtKindValues:
+		return "VALUES"
+	}
+	return ""
+}
+
+// SelectStmt represents a select/table/values query node.
 // See https://dev.mysql.com/doc/refman/5.7/en/select.html
 type SelectStmt struct {
 	dmlNode
@@ -805,107 +825,133 @@ type SelectStmt struct {
 	LockInfo *SelectLockInfo
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
-	// AfterSetOperator indicates the SelectStmt after which type of set operator
-	AfterSetOperator *SetOprType
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
 	SelectIntoOpt *SelectIntoOption
+	// AfterSetOperator indicates the SelectStmt after which type of set operator
+	AfterSetOperator *SetOprType
+	// Kind refer to three kind of statement: SelectStmt, TableStmt and ValuesStmt
+	Kind SelectStmtKind
+	// Lists is filled only when Kind == SelectStmtKindValues
+	Lists []*RowExpr
 }
 
 // Restore implements Node interface.
 func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
-	ctx.WriteKeyWord("SELECT ")
-
-	if n.SelectStmtOpts.Priority > 0 {
-		ctx.WriteKeyWord(mysql.Priority2Str[n.SelectStmtOpts.Priority])
-		ctx.WritePlain(" ")
+	if n.IsInBraces {
+		ctx.WritePlain("(")
+		defer func() {
+			ctx.WritePlain(")")
+		}()
 	}
+	ctx.WriteKeyWord(n.Kind.String())
+	ctx.WritePlain(" ")
+	switch n.Kind {
+	case SelectStmtKindSelect:
+		if n.SelectStmtOpts.Priority > 0 {
+			ctx.WriteKeyWord(mysql.Priority2Str[n.SelectStmtOpts.Priority])
+			ctx.WritePlain(" ")
+		}
 
-	if n.SelectStmtOpts.SQLSmallResult {
-		ctx.WriteKeyWord("SQL_SMALL_RESULT ")
-	}
+		if n.SelectStmtOpts.SQLSmallResult {
+			ctx.WriteKeyWord("SQL_SMALL_RESULT ")
+		}
 
-	if n.SelectStmtOpts.SQLBigResult {
-		ctx.WriteKeyWord("SQL_BIG_RESULT ")
-	}
+		if n.SelectStmtOpts.SQLBigResult {
+			ctx.WriteKeyWord("SQL_BIG_RESULT ")
+		}
 
-	if n.SelectStmtOpts.SQLBufferResult {
-		ctx.WriteKeyWord("SQL_BUFFER_RESULT ")
-	}
+		if n.SelectStmtOpts.SQLBufferResult {
+			ctx.WriteKeyWord("SQL_BUFFER_RESULT ")
+		}
 
-	if !n.SelectStmtOpts.SQLCache {
-		ctx.WriteKeyWord("SQL_NO_CACHE ")
-	}
+		if !n.SelectStmtOpts.SQLCache {
+			ctx.WriteKeyWord("SQL_NO_CACHE ")
+		}
 
-	if n.TableHints != nil && len(n.TableHints) != 0 {
-		ctx.WritePlain("/*+ ")
-		for i, tableHint := range n.TableHints {
-			if err := tableHint.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]", i)
+		if n.TableHints != nil && len(n.TableHints) != 0 {
+			ctx.WritePlain("/*+ ")
+			for i, tableHint := range n.TableHints {
+				if err := tableHint.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]", i)
+				}
+			}
+			ctx.WritePlain("*/ ")
+		}
+
+		if n.Distinct {
+			ctx.WriteKeyWord("DISTINCT ")
+		}
+		if n.SelectStmtOpts.StraightJoin {
+			ctx.WriteKeyWord("STRAIGHT_JOIN ")
+		}
+		if n.Fields != nil {
+			for i, field := range n.Fields.Fields {
+				if i != 0 {
+					ctx.WritePlain(",")
+				}
+				if err := field.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore SelectStmt.Fields[%d]", i)
+				}
 			}
 		}
-		ctx.WritePlain("*/ ")
-	}
 
-	if n.Distinct {
-		ctx.WriteKeyWord("DISTINCT ")
-	}
-	if n.SelectStmtOpts.StraightJoin {
-		ctx.WriteKeyWord("STRAIGHT_JOIN ")
-	}
-	if n.Fields != nil {
-		for i, field := range n.Fields.Fields {
-			if i != 0 {
-				ctx.WritePlain(",")
-			}
-			if err := field.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SelectStmt.Fields[%d]", i)
+		if n.From != nil {
+			ctx.WriteKeyWord(" FROM ")
+			if err := n.From.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SelectStmt.From")
 			}
 		}
-	}
 
-	if n.From != nil {
-		ctx.WriteKeyWord(" FROM ")
+		if n.From == nil && n.Where != nil {
+			ctx.WriteKeyWord(" FROM DUAL")
+		}
+		if n.Where != nil {
+			ctx.WriteKeyWord(" WHERE ")
+			if err := n.Where.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SelectStmt.Where")
+			}
+		}
+
+		if n.GroupBy != nil {
+			ctx.WritePlain(" ")
+			if err := n.GroupBy.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SelectStmt.GroupBy")
+			}
+		}
+
+		if n.Having != nil {
+			ctx.WritePlain(" ")
+			if err := n.Having.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SelectStmt.Having")
+			}
+		}
+
+		if n.WindowSpecs != nil {
+			ctx.WriteKeyWord(" WINDOW ")
+			for i, windowsSpec := range n.WindowSpecs {
+				if i != 0 {
+					ctx.WritePlain(",")
+				}
+				if err := windowsSpec.Restore(ctx); err != nil {
+					return errors.Annotatef(err, "An error occurred while restore SelectStmt.WindowSpec[%d]", i)
+				}
+			}
+		}
+	case SelectStmtKindTable:
 		if err := n.From.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SelectStmt.From")
 		}
-	}
-
-	if n.From == nil && n.Where != nil {
-		ctx.WriteKeyWord(" FROM DUAL")
-	}
-	if n.Where != nil {
-		ctx.WriteKeyWord(" WHERE ")
-		if err := n.Where.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SelectStmt.Where")
-		}
-	}
-
-	if n.GroupBy != nil {
-		ctx.WritePlain(" ")
-		if err := n.GroupBy.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SelectStmt.GroupBy")
-		}
-	}
-
-	if n.Having != nil {
-		ctx.WritePlain(" ")
-		if err := n.Having.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SelectStmt.Having")
-		}
-	}
-
-	if n.WindowSpecs != nil {
-		ctx.WriteKeyWord(" WINDOW ")
-		for i, windowsSpec := range n.WindowSpecs {
-			if i != 0 {
-				ctx.WritePlain(",")
+	case SelectStmtKindValues:
+		for i, v := range n.Lists {
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore SelectStmt.Lists[%d]", i)
 			}
-			if err := windowsSpec.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore SelectStmt.WindowSpec[%d]", i)
+			if i != len(n.Lists)-1 {
+				ctx.WritePlain(", ")
 			}
 		}
 	}
@@ -1007,6 +1053,14 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 		n.Having = node.(*HavingClause)
 	}
 
+	for i, list := range n.Lists {
+		node, ok := list.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Lists[i] = node.(*RowExpr)
+	}
+
 	for i, spec := range n.WindowSpecs {
 		node, ok := spec.Accept(v)
 		if !ok {
@@ -1034,35 +1088,34 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// SetOprSelectList represents the select list in a union statement.
+// SetOprSelectList represents the SelectStmt/TableStmt/ValuesStmt list in a union statement.
 type SetOprSelectList struct {
 	node
 
-	Selects []*SelectStmt
+	AfterSetOperator *SetOprType
+	Selects          []Node
 }
 
 // Restore implements Node interface.
 func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
-	for i, selectStmt := range n.Selects {
-		if i != 0 {
-			switch *selectStmt.AfterSetOperator {
-			case Union:
-				ctx.WriteKeyWord(" UNION ")
-			case UnionAll:
-				ctx.WriteKeyWord(" UNION ALL ")
-			case Except:
-				ctx.WriteKeyWord(" EXCEPT ")
-			case Intersect:
-				ctx.WriteKeyWord(" INTERSECT ")
+	for i, stmt := range n.Selects {
+		switch selectStmt := stmt.(type) {
+		case *SelectStmt:
+			if i != 0 {
+				ctx.WriteKeyWord(" " + selectStmt.AfterSetOperator.String() + " ")
 			}
-		}
-		if selectStmt.IsInBraces {
+			if err := selectStmt.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
+			}
+		case *SetOprSelectList:
+			if i != 0 {
+				ctx.WriteKeyWord(" " + selectStmt.AfterSetOperator.String() + " ")
+			}
 			ctx.WritePlain("(")
-		}
-		if err := selectStmt.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SetOprSelectList.SelectStmt")
-		}
-		if selectStmt.IsInBraces {
+			err := selectStmt.Restore(ctx)
+			if err != nil {
+				return err
+			}
 			ctx.WritePlain(")")
 		}
 	}
@@ -1081,7 +1134,7 @@ func (n *SetOprSelectList) Accept(v Visitor) (Node, bool) {
 		if !ok {
 			return n, false
 		}
-		n.Selects[i] = node.(*SelectStmt)
+		n.Selects[i] = node
 	}
 	return v.Leave(n)
 }
@@ -1092,8 +1145,28 @@ const (
 	Union SetOprType = iota
 	UnionAll
 	Except
+	ExceptAll
 	Intersect
+	IntersectAll
 )
+
+func (s *SetOprType) String() string {
+	switch *s {
+	case Union:
+		return "UNION"
+	case UnionAll:
+		return "UNION ALL"
+	case Except:
+		return "EXCEPT"
+	case ExceptAll:
+		return "EXCEPT ALL"
+	case Intersect:
+		return "INTERSECT"
+	case IntersectAll:
+		return "INTERSECT ALL"
+	}
+	return ""
+}
 
 // SetOprStmt represents "union/except/intersect statement"
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
@@ -2406,7 +2479,7 @@ type SelectIntoOption struct {
 // Restore implements Node interface.
 func (n *SelectIntoOption) Restore(ctx *format.RestoreCtx) error {
 	if n.Tp != SelectIntoOutfile {
-		// only support SELECT ... INTO OUTFILE now
+		// only support SELECT/TABLE/VALUES ... INTO OUTFILE statement now
 		return errors.New("Unsupported SelectionInto type")
 	}
 
