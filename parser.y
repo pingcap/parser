@@ -10499,14 +10499,14 @@ OptBinary:
 |	"BINARY" OptCharset
 	{
 		$$ = &ast.OptBinary{
-			IsBinary: true,
+			IsBinary: false,
 			Charset:  $2,
 		}
 	}
 |	CharsetKw CharsetName OptBinMod
 	{
 		$$ = &ast.OptBinary{
-			IsBinary: $3.(bool),
+			IsBinary: false,
 			Charset:  $2,
 		}
 	}
