@@ -800,8 +800,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{`(select 1);`, true, "(SELECT 1)"},
 
 		// for https://github.com/pingcap/parser/issues/963
-		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`='')"},
-		{"select min(b) b from (select min(t.b) b from t where t.a = '') as t1;", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`='') AS `t1`"},
+		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`=_UTF8MB4'')"},
+		{"select min(b) b from (select min(t.b) b from t where t.a = '') as t1;", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`=_UTF8MB4'') AS `t1`"},
 
 		// for https://github.com/pingcap/tidb/issues/1050
 		{`SELECT /*!40001 SQL_NO_CACHE */ * FROM test WHERE 1 limit 0, 2000;`, true, "SELECT SQL_NO_CACHE * FROM `test` WHERE 1 LIMIT 0,2000"},
@@ -1686,8 +1686,8 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`SELECT RELEASE_ALL_LOCKS();`, true, "SELECT RELEASE_ALL_LOCKS()"},
 		{`SELECT UUID();`, true, "SELECT UUID()"},
 		{`SELECT UUID_SHORT()`, true, "SELECT UUID_SHORT()"},
-		{`SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db')`, true, "SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db')"},
-		{`SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db', 1)`, true, "SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db', 1)"},
+		{`SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db')`, true, "SELECT UUID_TO_BIN(_UTF8MB4'6ccd780c-baba-1026-9564-5b8c656024db')"},
+		{`SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db', 1)`, true, "SELECT UUID_TO_BIN(_UTF8MB4'6ccd780c-baba-1026-9564-5b8c656024db', 1)"},
 		{`SELECT BIN_TO_UUID(0x6ccd780cbaba102695645b8c656024db)`, true, "SELECT BIN_TO_UUID(x'6ccd780cbaba102695645b8c656024db')"},
 		{`SELECT BIN_TO_UUID(0x6ccd780cbaba102695645b8c656024db, 1)`, true, "SELECT BIN_TO_UUID(x'6ccd780cbaba102695645b8c656024db', 1)"},
 		// test illegal arguments
