@@ -289,6 +289,11 @@ const (
 	MaxDoublePrecisionLength = 53
 )
 
+const (
+	SumPrecisionIncrement = 22
+	AVGPrecisionIncrement = 4
+)
+
 // MySQL max type field length.
 const (
 	MaxFieldCharLength    = 255
