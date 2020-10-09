@@ -205,11 +205,11 @@ const (
 	// CharsetLatin1 is a single byte charset.
 	CharsetLatin1 = "latin1"
 	// CollationLatin1 is the default collation for CharsetLatin1.
-	CollationLatin1 = "latin1_bin"
-	CharsetGBK      = "gbk"
-	CollationGBK    = "gbk_bin"
-	CharsetGB18030      = "gb18030"
-	CollationGB18030    = "gb18030_bin"
+	CollationLatin1  = "latin1_bin"
+	CharsetGBK       = "gbk"
+	CollationGBK     = "gbk_bin"
+	CharsetGB18030   = "gb18030"
+	CollationGB18030 = "gb18030_bin"
 )
 
 var collations = []*Collation{
