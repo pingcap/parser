@@ -11987,7 +11987,7 @@ DropSequenceStmt:
  *	[ START [ WITH | = ] start ]
  *	[ CACHE [=] cache | NOCACHE | NO CACHE]
  *	[ CYCLE | NOCYCLE | NO CYCLE]
- *	[ RESTART [WITH | = ] start ]
+ *	[ RESTART [WITH | = ] restart ]
  ********************************************************************************************/
 AlterSequenceStmt:
 	"ALTER" "SEQUENCE" IfExists TableName AlterSequenceOptionList
