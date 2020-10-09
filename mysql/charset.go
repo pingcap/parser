@@ -29,6 +29,10 @@ func CharsetNameToID(charset string) uint8 {
 		return ASCIIDefaultCollationID
 	} else if charset == "latin1" {
 		return Latin1DefaultCollationID
+	} else if charset == "gbk" {
+		return GBKDefaultCollationID
+	} else if charset == "gbk" {
+		return GB18030DefaultCollationID
 	} else {
 		return CharsetIDs[charset]
 	}
@@ -76,6 +80,7 @@ var CharsetIDs = map[string]uint8{
 	"geostd8":  92,
 	"cp932":    95,
 	"eucjpms":  97,
+	"gb13080":  100,
 }
 
 // Charsets maps charset name to its default collation name.
@@ -120,6 +125,7 @@ var Charsets = map[string]string{
 	"geostd8":  "geostd8_general_ci",
 	"cp932":    "cp932_japanese_ci",
 	"eucjpms":  "eucjpms_japanese_ci",
+	"gb18030":  "gb18030_bin",
 }
 
 // Collations maps MySQL collation ID to its name.
@@ -343,6 +349,7 @@ var Collations = map[uint8]string{
 	245: "utf8mb4_croatian_ci",
 	246: "utf8mb4_unicode_520_ci",
 	247: "utf8mb4_vietnamese_ci",
+	249: "gb18030_bin",
 	255: "utf8mb4_0900_ai_ci",
 }
 
@@ -567,6 +574,7 @@ var CollationNames = map[string]uint8{
 	"utf8mb4_croatian_ci":      245,
 	"utf8mb4_unicode_520_ci":   246,
 	"utf8mb4_vietnamese_ci":    247,
+	"gb18030_bin":              249,
 	"utf8mb4_0900_ai_ci":       255,
 }
 
@@ -584,6 +592,8 @@ const (
 	BinaryDefaultCollationID  = 63
 	UTF8DefaultCollation      = "utf8_bin"
 	UTF8MB4DefaultCollation   = "utf8mb4_bin"
+	GBKDefaultCollationID     = 87
+	GB18030DefaultCollationID = 249
 	DefaultCollationName      = UTF8MB4DefaultCollation
 
 	// MaxBytesOfCharacter, is the max bytes length of a character,
