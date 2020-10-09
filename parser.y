@@ -11975,6 +11975,20 @@ DropSequenceStmt:
 		}
 	}
 
+/********************************************************************************************
+ *
+ *  Alter Sequence Statement
+ *
+ *  Example:
+ *	ALTER SEQUENCE [IF EXISTS] sequence_name
+ *	[ INCREMENT [ BY | = ] increment ]
+ *	[ MINVALUE [=] minvalue | NO MINVALUE | NOMINVALUE ]
+ *	[ MAXVALUE [=] maxvalue | NO MAXVALUE | NOMAXVALUE ]
+ *	[ START [ WITH | = ] start ]
+ *	[ CACHE [=] cache | NOCACHE | NO CACHE]
+ *	[ CYCLE | NOCYCLE | NO CYCLE]
+ *	[ RESTART [WITH | = ] start ]
+ ********************************************************************************************/
 AlterSequenceStmt:
 	"ALTER" "SEQUENCE" IfExists TableName AlterSequenceOptionList
 	{
