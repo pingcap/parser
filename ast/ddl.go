@@ -25,6 +25,7 @@ import (
 
 var (
 	_ DDLNode = &AlterTableStmt{}
+	_ DDLNode = &AlterSequenceStmt{}
 	_ DDLNode = &CreateDatabaseStmt{}
 	_ DDLNode = &CreateIndexStmt{}
 	_ DDLNode = &CreateTableStmt{}
@@ -2037,12 +2038,16 @@ const (
 	SequenceCache
 	SequenceNoCycle
 	SequenceCycle
+	// SequenceRestart is only used in alter sequence statement.
+	SequenceRestart
 )
 
 // SequenceOption is used for parsing sequence option from SQL.
 type SequenceOption struct {
 	Tp       SequenceOptionType
 	IntValue int64
+	// SequenceRestart is only used for restart option in alter sequence statement.
+	NoValue bool
 }
 
 func (n *SequenceOption) Restore(ctx *format.RestoreCtx) error {
@@ -2072,6 +2077,12 @@ func (n *SequenceOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("NOCYCLE")
 	case SequenceCycle:
 		ctx.WriteKeyWord("CYCLE")
+	case SequenceRestart:
+		ctx.WriteKeyWord("RESTART")
+		if !n.NoValue {
+			ctx.WriteKeyWord(" ")
+			ctx.WritePlainf("%d", n.IntValue)
+		}
 	default:
 		return errors.Errorf("invalid SequenceOption: %d", n.Tp)
 	}
@@ -3543,5 +3554,48 @@ func (n *PlacementSpec) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*PlacementSpec)
+	return v.Leave(n)
+}
+
+// AlterSequenceStmt is a statement to alter sequence option.
+type AlterSequenceStmt struct {
+	ddlNode
+
+	// sequence name
+	Name *TableName
+
+	IfExists   bool
+	SeqOptions []*SequenceOption
+}
+
+func (n *AlterSequenceStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("ALTER SEQUENCE ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	if err := n.Name.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore AlterSequenceStmt.Table")
+	}
+	for i, option := range n.SeqOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing AlterSequenceStmt SequenceOption: [%v]", i)
+		}
+	}
+	return nil
+
+}
+
+func (n *AlterSequenceStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AlterSequenceStmt)
+	node, ok := n.Name.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Name = node.(*TableName)
 	return v.Leave(n)
 }
