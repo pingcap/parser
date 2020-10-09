@@ -7,7 +7,6 @@ require (
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8
 	github.com/cznic/strutil v0.0.0-20171016134553-529a34b1c186
 	github.com/cznic/y v0.0.0-20170802143616-045f81c6662a
-	github.com/davecgh/go-spew v1.1.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
 	github.com/pingcap/errors v0.11.5-0.20200902104258-eba4f1d8f6de
