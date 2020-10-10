@@ -2040,14 +2040,13 @@ const (
 	SequenceCycle
 	// SequenceRestart is only used in alter sequence statement.
 	SequenceRestart
+	SequenceRestartWith
 )
 
 // SequenceOption is used for parsing sequence option from SQL.
 type SequenceOption struct {
 	Tp       SequenceOptionType
 	IntValue int64
-	// SequenceRestart is only used for restart option in alter sequence statement.
-	NoValue bool
 }
 
 func (n *SequenceOption) Restore(ctx *format.RestoreCtx) error {
@@ -2079,10 +2078,9 @@ func (n *SequenceOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("CYCLE")
 	case SequenceRestart:
 		ctx.WriteKeyWord("RESTART")
-		if !n.NoValue {
-			ctx.WriteKeyWord(" ")
-			ctx.WritePlainf("%d", n.IntValue)
-		}
+	case SequenceRestartWith:
+		ctx.WriteKeyWord("RESTART WITH ")
+		ctx.WritePlainf("%d", n.IntValue)
 	default:
 		return errors.Errorf("invalid SequenceOption: %d", n.Tp)
 	}

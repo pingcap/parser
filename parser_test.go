@@ -3075,7 +3075,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle", true, "ALTER SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE"},
 		{"alter sequence if exists seq2 increment = 2", true, "ALTER SEQUENCE IF EXISTS `seq2` INCREMENT BY 2"},
 		{"alter sequence seq restart", true, "ALTER SEQUENCE `seq` RESTART"},
-		{"alter sequence seq start with 3 restart with 5", true, "ALTER SEQUENCE `seq` START WITH 3 RESTART 5"},
+		{"alter sequence seq start with 3 restart with 5", true, "ALTER SEQUENCE `seq` START WITH 3 RESTART WITH 5"},
 	}
 	s.RunTest(c, table)
 }

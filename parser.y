@@ -12013,15 +12013,15 @@ AlterSequenceOption:
 	SequenceOption
 |	"RESTART"
 	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceRestart, NoValue: true}
+		$$ = &ast.SequenceOption{Tp: ast.SequenceRestart}
 	}
 |	"RESTART" EqOpt SignedNum
 	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceRestart, IntValue: $3.(int64)}
+		$$ = &ast.SequenceOption{Tp: ast.SequenceRestartWith, IntValue: $3.(int64)}
 	}
 |	"RESTART" "WITH" SignedNum
 	{
-		$$ = &ast.SequenceOption{Tp: ast.SequenceRestart, IntValue: $3.(int64)}
+		$$ = &ast.SequenceOption{Tp: ast.SequenceRestartWith, IntValue: $3.(int64)}
 	}
 
 /********************************************************************
