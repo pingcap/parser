@@ -468,27 +468,26 @@ type SelectLockInfo struct {
 }
 
 // String implements fmt.Stringer.
-func (n SelectLockType) String() (string, error) {
+func (n SelectLockType) String() string {
 	switch n {
 	case SelectLockNone:
-		return "none", nil
+		return "none"
 	case SelectLockForUpdate:
-		return "for update", nil
+		return "for update"
 	case SelectLockForShare:
-		return "for share", nil
+		return "for share"
 	case SelectLockForUpdateNoWait:
-		return "for update nowait", nil
+		return "for update nowait"
 	case SelectLockForUpdateWaitN:
-		return "for update wait", nil
+		return "for update wait"
 	case SelectLockForShareNoWait:
-		return "for share nowait", nil
+		return "for share nowait"
 	case SelectLockForUpdateSkipLocked:
-		return "for update skip locked", nil
+		return "for update skip locked"
 	case SelectLockForShareSkipLocked:
-		return "for share skip locked", nil
-	default:
-		return "", errors.New("unsupported select lock type")
+		return "for share skip locked"
 	}
+	return "unsupported select lock type"
 }
 
 // WildCardField is a special type of select field content.
@@ -981,18 +980,14 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	}
 
 	if n.LockInfo != nil {
-		lockType, err := n.LockInfo.LockType.String()
-		if err != nil {
-			return errors.Annotate(err, "An error occurred while restore SelectStmt.LockInfo")
-		}
 		ctx.WritePlain(" ")
 		switch n.LockInfo.LockType {
 		case SelectLockNone:
 		case SelectLockForUpdateWaitN:
-			ctx.WriteKeyWord(lockType)
+			ctx.WriteKeyWord(n.LockInfo.LockType.String())
 			ctx.WritePlainf(" %d", n.LockInfo.WaitSec)
 		default:
-			ctx.WriteKeyWord(lockType)
+			ctx.WriteKeyWord(n.LockInfo.LockType.String())
 		}
 	}
 
