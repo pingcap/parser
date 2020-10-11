@@ -28,6 +28,7 @@ import (
 	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/parser/test_driver"
 )
@@ -582,6 +583,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"SELECT * from t for update skip locked", true, "SELECT * FROM `t` FOR UPDATE SKIP LOCKED"},
 		{"SELECT * from t for share skip locked", true, "SELECT * FROM `t` FOR SHARE SKIP LOCKED"},
 		{"SELECT * from t lock in share mode skip locked", false, ""},
+		{"SELECT * from t for update wait 5", true, "SELECT * FROM `t` FOR UPDATE WAIT 5"},
+		{"SELECT * from t limit 1 for update wait 11", true, "SELECT * FROM `t` LIMIT 1 FOR UPDATE WAIT 11"},
 
 		// select into outfile
 		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
@@ -741,6 +744,14 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		// for select with where clause
 		{"SELECT * FROM t WHERE 1 = 1", true, "SELECT * FROM `t` WHERE 1=1"},
+
+		// for select with FETCH FIRST syntax
+		{"SELECT * FROM t FETCH FIRST 5 ROW ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH NEXT 5 ROW ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH FIRST 5 ROWS ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH NEXT 5 ROWS ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH FIRST ROW ONLY", true, "SELECT * FROM `t` LIMIT 1"},
+		{"SELECT * FROM t FETCH NEXT ROW ONLY", true, "SELECT * FROM `t` LIMIT 1"},
 
 		// for dual
 		{"select 1 from dual", true, "SELECT 1"},
@@ -1188,6 +1199,10 @@ func (s *testParserSuite) TestExpression(c *C) {
 		{`select _binary"string";`, true, "SELECT _BINARY'string'"},
 		{"select N'string'", true, "SELECT _UTF8'string'"},
 		{"select n'string'", true, "SELECT _UTF8'string'"},
+		{"select _utf8 0xD0B1;", true, "SELECT _UTF8 x'd0b1'"},
+		{"select _utf8 X'D0B1';", true, "SELECT _UTF8 x'd0b1'"},
+		{"select _utf8 0b1101000010110001;", true, "SELECT _UTF8 b'1101000010110001'"},
+		{"select _utf8 B'1101000010110001';", true, "SELECT _UTF8 b'1101000010110001'"},
 		// for comparison
 		{"select 1 <=> 0, 1 <=> null, 1 = null", true, "SELECT 1<=>0,1<=>NULL,1=NULL"},
 		// for date literal
@@ -1843,14 +1858,17 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select approx_count_distinct(c1) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`) FROM `t`"},
 		{`select approx_count_distinct(c1, c2) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, `c2`) FROM `t`"},
 		{`select approx_count_distinct(c1, 123) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, 123) FROM `t`"},
+		{`select approx_percentile(c1) from t;`, true, "SELECT APPROX_PERCENTILE(`c1`) FROM `t`"},
+		{`select approx_percentile(c1, c2) from t;`, true, "SELECT APPROX_PERCENTILE(`c1`, `c2`) FROM `t`"},
+		{`select approx_percentile(c1, 123) from t;`, true, "SELECT APPROX_PERCENTILE(`c1`, 123) FROM `t`"},
 		{`select group_concat(c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(c2,c1 SEPARATOR ';') from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ';') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinctrow c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
-		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STD(`c1`),STD(`c1`),STD(DISTINCT `c1`) FROM `t`"},
+		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select std(c1, c2) from t`, false, ""},
-		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV(`c1`),STDDEV(`c1`),STDDEV(DISTINCT `c1`) FROM `t`"},
+		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select stddev(c1, c2) from t`, false, ""},
 		{`select stddev_pop(c1), stddev_pop(all c1), stddev_pop(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select stddev_pop(c1, c2) from t`, false, ""},
@@ -2579,20 +2597,24 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t reorganize partition no_write_to_binlog remove into (partition p0 VALUES LESS THAN (1991));", true, "ALTER TABLE `t` REORGANIZE PARTITION NO_WRITE_TO_BINLOG `remove` INTO (PARTITION `p0` VALUES LESS THAN (1991))"},
 
 		// alter placement rules
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='-zone=zone1' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='-zone=zone1' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1,-zone=zone2' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1,-zone=zone2' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=FOLLOWER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=FOLLOWER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY ROLE=LEARNER CONSTRAINTS='+zone=zone1' REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=LEARNER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY REPLICAS=1 CONSTRAINTS='+zone=zone1' ROLE=VOTER", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=VOTER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str,str2' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str,str2' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=FOLLOWER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=FOLLOWER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY ROLE=LEARNER CONSTRAINTS='str' REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEARNER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY REPLICAS=1 CONSTRAINTS='str' ROLE=VOTER", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=VOTER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS= ROLE=follower REPLICAS=1;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=-1;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=0;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=1 REPLICAS=2;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=1 ROLE=voter;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=1 CONSTRAINTS='ttt';", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='' ROLE=follower REPLICAS=1;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=0;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 REPLICAS=2;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 ROLE=voter;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 CONSTRAINTS='ttt';", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY ROLE=voter", true, "ALTER TABLE `t` ALTER PARTITION `p` DROP PLACEMENT POLICY ROLE=VOTER"},
+		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
@@ -3030,6 +3052,11 @@ func (s *testParserSuite) TestHintError(c *C) {
 	stmt, _, err = parser.Parse("insert /*+ memory_quota(1 MB) */ into t select * from t;", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
+
+	stmt, warns, err = parser.Parse("SELECT id FROM tbl WHERE id = 0 FOR UPDATE /*+ xyz */", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(len(warns), Equals, 1)
+	c.Assert(warns[0], ErrorMatches, `.*near '/\*\+' at line 1`)
 }
 
 func (s *testParserSuite) TestErrorMsg(c *C) {
@@ -3568,6 +3595,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "read_consistent_replica")
 	c.Assert(hints[1].HintName.L, Equals, "read_consistent_replica")
+
+	// Test LIMIT_TO_COP
+	stmt, _, err = parser.Parse("select /*+ LIMIT_TO_COP(), limit_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "limit_to_cop")
+	c.Assert(hints[1].HintName.L, Equals, "limit_to_cop")
 }
 
 func (s *testParserSuite) TestType(c *C) {
@@ -3590,6 +3627,10 @@ func (s *testParserSuite) TestType(c *C) {
 
 		// for enum and set type
 		{"create table t (c1 enum('a', 'b'), c2 set('a', 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum('a  ', 'b\t'), c2 set('a  ', 'b\t'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b\t'),`c2` SET('a','b\t'))"},
+		{"create table t (c1 enum('a', 'b') binary, c2 set('a', 'b') binary)", true, "CREATE TABLE `t` (`c1` ENUM('a','b') BINARY,`c2` SET('a','b') BINARY)"},
+		{"create table t (c1 enum(0x61, 'b'), c2 set(0x61, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum(0b01100001, 'b'), c2 set(0b01100001, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
 		{"create table t (c1 enum)", false, ""},
 		{"create table t (c1 set)", false, ""},
 
@@ -3705,6 +3746,8 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
 		{"GRANT SHUTDOWN ON *.* TO 'dev1'@'localhost';", true, "GRANT SHUTDOWN ON *.* TO `dev1`@`localhost`"},
 		{"GRANT CONFIG ON *.* TO 'dev1'@'localhost';", true, "GRANT CONFIG ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CREATE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CREATE TABLESPACE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE TABLESPACE ON *.* TO `dev1`@`localhost`"},
 
 		// for revoke statement
 		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
@@ -4418,6 +4461,10 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH 4 BUCKETS"},
 		{"analyze incremental table t index", true, "ANALYZE INCREMENTAL TABLE `t` INDEX"},
 		{"analyze incremental table t index idx", true, "ANALYZE INCREMENTAL TABLE `t` INDEX `idx`"},
+		{"analyze table t update histogram on b with 1024 buckets", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `b` WITH 1024 BUCKETS"},
+		{"analyze table t drop histogram on b", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `b`"},
+		{"analyze table t update histogram on c1, c2;", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `c1`,`c2`"},
+		{"analyze table t drop histogram on c1, c2;", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `c1`,`c2`"},
 	}
 	s.RunTest(c, table)
 }
@@ -5306,4 +5353,46 @@ func (s *testParserSuite) TestBRIE(c *C) {
 	}
 
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestStatisticsOps(c *C) {
+	table := []testCase{
+		{"create statistics stats1 (cardinality) on t(a,b,c)", true, "CREATE STATISTICS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"create statistics stats2 (dependency) on t(a,b)", true, "CREATE STATISTICS `stats2` (DEPENDENCY) ON `t`(`a`, `b`)"},
+		{"create statistics stats3 (correlation) on t(a,b)", true, "CREATE STATISTICS `stats3` (CORRELATION) ON `t`(`a`, `b`)"},
+		{"create statistics stats3 on t(a,b)", false, ""},
+		{"create statistics if not exists stats1 (cardinality) on t(a,b,c)", true, "CREATE STATISTICS IF NOT EXISTS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"create statistics if not exists stats2 (dependency) on t(a,b)", true, "CREATE STATISTICS IF NOT EXISTS `stats2` (DEPENDENCY) ON `t`(`a`, `b`)"},
+		{"create statistics if not exists stats3 (correlation) on t(a,b)", true, "CREATE STATISTICS IF NOT EXISTS `stats3` (CORRELATION) ON `t`(`a`, `b`)"},
+		{"create statistics if not exists stats3 on t(a,b)", false, ""},
+		{"create statistics stats1(cardinality) on t(a,b,c)", true, "CREATE STATISTICS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"drop statistics stats1", true, "DROP STATISTICS `stats1`"},
+	}
+	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("create statistics if not exists stats1 (cardinality) on t(a,b,c)", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.CreateStatisticsStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.IfNotExists, IsTrue)
+	c.Assert(v.StatsName, Equals, "stats1")
+	c.Assert(v.StatsType, Equals, ast.StatsTypeCardinality)
+	c.Assert(v.Table.Name, Equals, model.CIStr{O: "t", L: "t"})
+	c.Assert(len(v.Columns), Equals, 3)
+	c.Assert(v.Columns[0].Name, Equals, model.CIStr{O: "a", L: "a"})
+	c.Assert(v.Columns[1].Name, Equals, model.CIStr{O: "b", L: "b"})
+	c.Assert(v.Columns[2].Name, Equals, model.CIStr{O: "c", L: "c"})
+}
+
+func (s *testParserSuite) TestHighNotPrecedenceMode(c *C) {
+	p := parser.New()
+
+	sms, _, err := p.Parse("SELECT NOT 1 BETWEEN -5 AND 5", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	v1, ok := v.Fields.Fields[0].Expr.(*ast.UnaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(v1.Op, Equals, opcode.Not)
 }
