@@ -1029,9 +1029,8 @@ import (
 	RoleSpecList                           "Rolename and auth option list"
 	RowFormat                              "Row format option"
 	RowValue                               "Row value"
-	SelectLockOpt                          "FOR UPDATE or FOR SHARE or LOCK IN SHARE MODE,"
 	RowStmt                                "Row constructor"
-	SelectLockOpt                          "FOR UPDATE or LOCK IN SHARE MODE,"
+	SelectLockOpt                          "SELECT lock options"
 	SelectStmtCalcFoundRows                "SELECT statement optional SQL_CALC_FOUND_ROWS"
 	SelectStmtSQLBigResult                 "SELECT statement optional SQL_BIG_RESULT"
 	SelectStmtSQLBufferResult              "SELECT statement optional SQL_BUFFER_RESULT"
@@ -8148,7 +8147,7 @@ SubSelect2:
 		$$ = &ast.SubqueryExpr{Query: rs}
 	}
 
-// See https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-reads.html
+// See https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html
 SelectLockOpt:
 	/* empty */
 	{
@@ -8160,7 +8159,7 @@ SelectLockOpt:
 	}
 |	"FOR" "SHARE"
 	{
-		$$ = ast.SelectLockForShare
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
 	}
 |	"FOR" "UPDATE" "NOWAIT"
 	{
@@ -8175,19 +8174,19 @@ SelectLockOpt:
 	}
 |	"FOR" "SHARE" "NOWAIT"
 	{
-		$$ = ast.SelectLockForShareNoWait
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareNoWait}
 	}
 |	"FOR" "UPDATE" "SKIP" "LOCKED"
 	{
-		$$ = ast.SelectLockForUpdateSkipLocked
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdateSkipLocked}
 	}
 |	"FOR" "SHARE" "SKIP" "LOCKED"
 	{
-		$$ = ast.SelectLockForShareSkipLocked
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareSkipLocked}
 	}
 |	"LOCK" "IN" "SHARE" "MODE"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockInShareMode}
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
 	}
 
 SetOprStmt1:
