@@ -689,11 +689,11 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 
 // PartitionDefinition defines a single partition.
 type PartitionDefinition struct {
-	ID       int64    `json:"id"`
-	Name     CIStr    `json:"name"`
-	LessThan []string `json:"less_than"`
-	InValues []string `json:"in_values"`
-	Comment  string   `json:"comment,omitempty"`
+	ID       int64      `json:"id"`
+	Name     CIStr      `json:"name"`
+	LessThan []string   `json:"less_than"`
+	InValues [][]string `json:"in_values"`
+	Comment  string     `json:"comment,omitempty"`
 }
 
 // IndexColumn provides index column info.
