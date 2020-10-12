@@ -3076,6 +3076,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter sequence if exists seq2 increment = 2", true, "ALTER SEQUENCE IF EXISTS `seq2` INCREMENT BY 2"},
 		{"alter sequence seq restart", true, "ALTER SEQUENCE `seq` RESTART"},
 		{"alter sequence seq start with 3 restart with 5", true, "ALTER SEQUENCE `seq` START WITH 3 RESTART WITH 5"},
+		{"alter sequence seq restart = 5", true, "ALTER SEQUENCE `seq` RESTART WITH 5"},
+		{"create sequence seq restart = 5", false, ""},
 	}
 	s.RunTest(c, table)
 }
