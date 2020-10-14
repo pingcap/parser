@@ -754,6 +754,21 @@ type PartitionInfo struct {
 	} `json:"-"`
 }
 
+// Clone clones partition info.
+// it doesn't copy sync.Once or cached value.
+func (pi *PartitionInfo) Clone() *PartitionInfo {
+	return &PartitionInfo{
+		Type:                pi.Type,
+		Expr:                pi.Expr,
+		Columns:             pi.Columns,
+		Enable:              pi.Enable,
+		Definitions:         pi.Definitions,
+		AddingDefinitions:   pi.AddingDefinitions,
+		DroppingDefinitions: pi.DroppingDefinitions,
+		Num:                 pi.Num,
+	}
+}
+
 // GetNameByID gets the partition name by ID.
 func (pi *PartitionInfo) GetNameByID(id int64) string {
 	for _, def := range pi.Definitions {
