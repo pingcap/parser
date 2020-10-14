@@ -203,6 +203,9 @@ type Job struct {
 	// RowCount means the number of rows that are processed.
 	RowCount int64         `json:"row_count"`
 	Mu       sync.Mutex    `json:"-"`
+	// CtxVars are variables attached to the job. It is for internal usage.
+	// E.g. passing arguments between functions by one single *Job pointer.
+	CtxVars  []interface{} `json:"-"`
 	Args     []interface{} `json:"-"`
 	// RawArgs : We must use json raw message to delay parsing special args.
 	RawArgs     json.RawMessage `json:"raw_args"`
