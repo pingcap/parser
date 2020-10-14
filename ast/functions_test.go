@@ -105,7 +105,8 @@ func (ts *testFunctionsSuite) TestFuncCallExprRestore(c *C) {
 
 func (ts *testFunctionsSuite) TestFuncCastExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
-		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING UTF8MB4)"},
+		{"CONVERT('Müller' USING UtF8)", "CONVERT('Müller' USING 'utf8')"},
+		{"CONVERT('Müller' USING UtF8Mb4)", "CONVERT('Müller' USING 'utf8mb4')"},
 		{"CONVERT('Müller', CHAR(32) CHARACTER SET UtF8)", "CONVERT('Müller', CHAR(32) CHARSET UTF8)"},
 		{"CAST('test' AS CHAR CHARACTER SET UtF8)", "CAST('test' AS CHAR CHARSET UTF8)"},
 		{"BINARY 'New York'", "BINARY 'New York'"},
@@ -130,8 +131,8 @@ func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {
 		{"MIN(DISTINCT test_score)", "MIN(DISTINCT `test_score`)"},
 		{"MAX(test_score)", "MAX(`test_score`)"},
 		{"MAX(DISTINCT test_score)", "MAX(DISTINCT `test_score`)"},
-		{"STD(test_score)", "STD(`test_score`)"},
-		{"STDDEV(test_score)", "STDDEV(`test_score`)"},
+		{"STD(test_score)", "STDDEV_POP(`test_score`)"},
+		{"STDDEV(test_score)", "STDDEV_POP(`test_score`)"},
 		{"STDDEV_POP(test_score)", "STDDEV_POP(`test_score`)"},
 		{"STDDEV_SAMP(test_score)", "STDDEV_SAMP(`test_score`)"},
 		{"SUM(test_score)", "SUM(`test_score`)"},

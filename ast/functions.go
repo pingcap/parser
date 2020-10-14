@@ -34,45 +34,46 @@ var (
 
 // List scalar function names.
 const (
-	LogicAnd   = "and"
-	Cast       = "cast"
-	LeftShift  = "leftshift"
-	RightShift = "rightshift"
-	LogicOr    = "or"
-	GE         = "ge"
-	LE         = "le"
-	EQ         = "eq"
-	NE         = "ne"
-	LT         = "lt"
-	GT         = "gt"
-	Plus       = "plus"
-	Minus      = "minus"
-	And        = "bitand"
-	Or         = "bitor"
-	Mod        = "mod"
-	Xor        = "bitxor"
-	Div        = "div"
-	Mul        = "mul"
-	UnaryNot   = "not" // Avoid name conflict with Not in github/pingcap/check.
-	BitNeg     = "bitneg"
-	IntDiv     = "intdiv"
-	LogicXor   = "xor"
-	NullEQ     = "nulleq"
-	UnaryPlus  = "unaryplus"
-	UnaryMinus = "unaryminus"
-	In         = "in"
-	Like       = "like"
-	Case       = "case"
-	Regexp     = "regexp"
-	IsNull     = "isnull"
-	IsTruth    = "istrue"  // Avoid name conflict with IsTrue in github/pingcap/check.
-	IsFalsity  = "isfalse" // Avoid name conflict with IsFalse in github/pingcap/check.
-	RowFunc    = "row"
-	SetVar     = "setvar"
-	GetVar     = "getvar"
-	Values     = "values"
-	BitCount   = "bit_count"
-	GetParam   = "getparam"
+	LogicAnd           = "and"
+	Cast               = "cast"
+	LeftShift          = "leftshift"
+	RightShift         = "rightshift"
+	LogicOr            = "or"
+	GE                 = "ge"
+	LE                 = "le"
+	EQ                 = "eq"
+	NE                 = "ne"
+	LT                 = "lt"
+	GT                 = "gt"
+	Plus               = "plus"
+	Minus              = "minus"
+	And                = "bitand"
+	Or                 = "bitor"
+	Mod                = "mod"
+	Xor                = "bitxor"
+	Div                = "div"
+	Mul                = "mul"
+	UnaryNot           = "not" // Avoid name conflict with Not in github/pingcap/check.
+	BitNeg             = "bitneg"
+	IntDiv             = "intdiv"
+	LogicXor           = "xor"
+	NullEQ             = "nulleq"
+	UnaryPlus          = "unaryplus"
+	UnaryMinus         = "unaryminus"
+	In                 = "in"
+	Like               = "like"
+	Case               = "case"
+	Regexp             = "regexp"
+	IsNull             = "isnull"
+	IsTruthWithoutNull = "istrue" // Avoid name conflict with IsTrue in github/pingcap/check.
+	IsTruthWithNull    = "istrue_with_null"
+	IsFalsity          = "isfalse" // Avoid name conflict with IsFalse in github/pingcap/check.
+	RowFunc            = "row"
+	SetVar             = "setvar"
+	GetVar             = "getvar"
+	Values             = "values"
+	BitCount           = "bit_count"
+	GetParam           = "getparam"
 
 	// common functions
 	Coalesce = "coalesce"
@@ -276,6 +277,8 @@ const (
 	Sleep           = "sleep"
 	UUID            = "uuid"
 	UUIDShort       = "uuid_short"
+	UUIDToBin       = "uuid_to_bin"
+	BinToUUID       = "bin_to_uuid"
 	// get_lock() and release_lock() is parsed but do nothing.
 	// It is used for preventing error in Ruby's activerecord migrations.
 	GetLock     = "get_lock"
@@ -394,7 +397,9 @@ func (n *FuncCallExpr) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
 		ctx.WriteKeyWord(" USING ")
-		ctx.WriteKeyWord(n.Args[1].GetType().Charset)
+		if err := n.Args[1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
+		}
 	case "adddate", "subdate", "date_add", "date_sub":
 		if err := n.Args[0].Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args[0]")
@@ -538,6 +543,8 @@ type FuncCastExpr struct {
 	Tp *types.FieldType
 	// FunctionType is either Cast, Convert or Binary.
 	FunctionType CastFunctionType
+	// ExplicitCharSet is true when charset is explicit indicated.
+	ExplicitCharSet bool
 }
 
 // Restore implements Node interface.
@@ -550,7 +557,7 @@ func (n *FuncCastExpr) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
 		ctx.WriteKeyWord(" AS ")
-		n.Tp.RestoreAsCastType(ctx)
+		n.Tp.RestoreAsCastType(ctx, n.ExplicitCharSet)
 		ctx.WritePlain(")")
 	case CastConvertFunction:
 		ctx.WriteKeyWord("CONVERT")
@@ -559,7 +566,7 @@ func (n *FuncCastExpr) Restore(ctx *format.RestoreCtx) error {
 			return errors.Annotatef(err, "An error occurred while restore FuncCastExpr.Expr")
 		}
 		ctx.WritePlain(", ")
-		n.Tp.RestoreAsCastType(ctx)
+		n.Tp.RestoreAsCastType(ctx, n.ExplicitCharSet)
 		ctx.WritePlain(")")
 	case CastBinaryOperator:
 		ctx.WriteKeyWord("BINARY ")
@@ -577,13 +584,13 @@ func (n *FuncCastExpr) Format(w io.Writer) {
 		fmt.Fprint(w, "CAST(")
 		n.Expr.Format(w)
 		fmt.Fprint(w, " AS ")
-		n.Tp.FormatAsCastType(w)
+		n.Tp.FormatAsCastType(w, n.ExplicitCharSet)
 		fmt.Fprint(w, ")")
 	case CastConvertFunction:
 		fmt.Fprint(w, "CONVERT(")
 		n.Expr.Format(w)
 		fmt.Fprint(w, ", ")
-		n.Tp.FormatAsCastType(w)
+		n.Tp.FormatAsCastType(w, n.ExplicitCharSet)
 		fmt.Fprint(w, ")")
 	case CastBinaryOperator:
 		fmt.Fprint(w, "BINARY ")
@@ -700,14 +707,18 @@ const (
 	AggFuncVarPop = "var_pop"
 	// AggFuncVarSamp is the name of var_samp function
 	AggFuncVarSamp = "var_samp"
-	// AggFuncStddevPop is the name of stddev_pop function
+	// AggFuncStddevPop is the name of stddev_pop/std/stddev function
 	AggFuncStddevPop = "stddev_pop"
 	// AggFuncStddevSamp is the name of stddev_samp function
 	AggFuncStddevSamp = "stddev_samp"
+	// AggFuncJsonArrayagg is the name of json_arrayagg function
+	AggFuncJsonArrayagg = "json_arrayagg"
 	// AggFuncJsonObjectAgg is the name of json_objectagg function
 	AggFuncJsonObjectAgg = "json_objectagg"
 	// AggFuncApproxCountDistinct is the name of approx_count_distinct function.
 	AggFuncApproxCountDistinct = "approx_count_distinct"
+	// AggFuncApproxPercentile is the name of approx_percentile function.
+	AggFuncApproxPercentile = "approx_percentile"
 )
 
 // AggregateFuncExpr represents aggregate function expression.

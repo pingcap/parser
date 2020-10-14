@@ -24,8 +24,11 @@ const (
 func IsReadOnly(node Node) bool {
 	switch st := node.(type) {
 	case *SelectStmt:
-		if st.LockTp == SelectLockForUpdate || st.LockTp == SelectLockForUpdateNoWait {
-			return false
+		if st.LockInfo != nil {
+			switch st.LockInfo.LockType {
+			case SelectLockForUpdate, SelectLockForUpdateNoWait, SelectLockForUpdateWaitN:
+				return false
+			}
 		}
 
 		checker := readOnlyChecker{
@@ -40,6 +43,13 @@ func IsReadOnly(node Node) bool {
 		return true
 	case *SetOprStmt:
 		for _, sel := range node.(*SetOprStmt).SelectList.Selects {
+			if !IsReadOnly(sel) {
+				return false
+			}
+		}
+		return true
+	case *SetOprSelectList:
+		for _, sel := range node.(*SetOprSelectList).Selects {
 			if !IsReadOnly(sel) {
 				return false
 			}

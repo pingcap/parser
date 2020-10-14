@@ -74,6 +74,8 @@ type Parser struct {
 	lexer      Scanner
 	hintParser *hintParser
 
+	explicitCharset bool
+
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
 	yylval yySymType
@@ -84,7 +86,7 @@ type stmtTexter interface {
 	stmtText() string
 }
 
-// New returns a Parser object.
+// New returns a Parser object with default SQL mode.
 func New() *Parser {
 	if ast.NewValueExpr == nil ||
 		ast.NewParamMarkerExpr == nil ||
@@ -93,9 +95,13 @@ func New() *Parser {
 		panic("no parser driver (forgotten import?) https://github.com/pingcap/parser/issues/43")
 	}
 
-	return &Parser{
+	p := &Parser{
 		cache: make([]yySymType, 200),
 	}
+	p.EnableWindowFunc(true)
+	mode, _ := mysql.GetSQLMode(mysql.DefaultSQLMode)
+	p.SetSQLMode(mode)
+	return p
 }
 
 // Parse parses a query string to raw ast.StmtNode.
@@ -172,6 +178,9 @@ func ParseErrorWith(errstr string, lineno int) error {
 // field text was set from its offset to the end of the src string, update
 // the last field text.
 func (parser *Parser) setLastSelectFieldText(st *ast.SelectStmt, lastEnd int) {
+	if st.Kind != ast.SelectStmtKindSelect {
+		return
+	}
 	lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 	if lastField.Offset+len(lastField.Text()) >= len(parser.src)-1 {
 		lastField.SetText(parser.src[lastField.Offset:lastEnd])

@@ -158,6 +158,8 @@ var tokenMap = map[string]int{
 	"ANALYZE":                  analyze,
 	"AND":                      and,
 	"ANY":                      any,
+	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
+	"APPROX_PERCENTILE":        approxPercentile,
 	"AS":                       as,
 	"ASC":                      asc,
 	"ASCII":                    ascii,
@@ -234,7 +236,6 @@ var tokenMap = map[string]int{
 	"CONVERT":                  convert,
 	"COPY":                     copyKwd,
 	"CORRELATION":              correlation,
-	"APPROX_COUNT_DISTINCT":    approxCountDistinct,
 	"CPU":                      cpu,
 	"CREATE":                   create,
 	"CROSS":                    cross,
@@ -323,6 +324,7 @@ var tokenMap = map[string]int{
 	"EXTRACT":                  extract,
 	"FALSE":                    falseKwd,
 	"FAULTS":                   faultsSym,
+	"FETCH":                    fetch,
 	"FIELDS":                   fields,
 	"FILE":                     file,
 	"FIRST":                    first,
@@ -351,8 +353,8 @@ var tokenMap = map[string]int{
 	"HASH":                     hash,
 	"HAVING":                   having,
 	"HIGH_PRIORITY":            highPriority,
-	"HINTS":                    hints,
 	"HISTORY":                  history,
+	"HISTOGRAM":                histogram,
 	"HOSTS":                    hosts,
 	"HOUR_MICROSECOND":         hourMicrosecond,
 	"HOUR_MINUTE":              hourMinute,
@@ -396,6 +398,7 @@ var tokenMap = map[string]int{
 	"JOB":                      job,
 	"JOBS":                     jobs,
 	"JOIN":                     join,
+	"JSON_ARRAYAGG":            jsonArrayagg,
 	"JSON_OBJECTAGG":           jsonObjectAgg,
 	"JSON":                     jsonType,
 	"KEY_BLOCK_SIZE":           keyBlockSize,
@@ -568,6 +571,7 @@ var tokenMap = map[string]int{
 	"ROW_COUNT":                rowCount,
 	"ROW_FORMAT":               rowFormat,
 	"ROW":                      row,
+	"ROWS":                     rows,
 	"RTREE":                    rtree,
 	"SAMPLES":                  samples,
 	"SAN":                      san,
@@ -743,6 +747,7 @@ var tokenMap = map[string]int{
 	"YEAR_MONTH":               yearMonth,
 	"YEAR":                     yearType,
 	"ZEROFILL":                 zerofill,
+	"WAIT":                     wait,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details
@@ -754,6 +759,7 @@ var btFuncTokenMap = map[string]int{
 	"CAST":                  builtinCast,
 	"COUNT":                 builtinCount,
 	"APPROX_COUNT_DISTINCT": builtinApproxCountDistinct,
+	"APPROX_PERCENTILE":     builtinApproxPercentile,
 	"CURDATE":               builtinCurDate,
 	"CURTIME":               builtinCurTime,
 	"DATE_ADD":              builtinDateAdd,
@@ -795,7 +801,6 @@ var windowFuncTokenMap = map[string]int{
 	"OVER":         over,
 	"PERCENT_RANK": percentRank,
 	"RANK":         rank,
-	"ROWS":         rows,
 	"ROW_NUMBER":   rowNumber,
 	"WINDOW":       window,
 }
@@ -820,7 +825,6 @@ var hintedTokens = map[int]struct{}{
 	deleteKwd: {},
 	create:    {},
 	partition: {},
-	hints:     {},
 }
 
 var hintTokenMap = map[string]int{
@@ -854,6 +858,7 @@ var hintTokenMap = map[string]int{
 
 	// TiDB hint names
 	"AGG_TO_COP":              hintAggToCop,
+	"LIMIT_TO_COP":            hintLimitToCop,
 	"IGNORE_PLAN_CACHE":       hintIgnorePlanCache,
 	"HASH_AGG":                hintHashAgg,
 	"IGNORE_INDEX":            hintIgnoreIndex,
