@@ -3581,7 +3581,6 @@ func (n *AlterSequenceStmt) Restore(ctx *format.RestoreCtx) error {
 		}
 	}
 	return nil
-
 }
 
 func (n *AlterSequenceStmt) Accept(v Visitor) (Node, bool) {
