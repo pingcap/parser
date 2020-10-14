@@ -751,7 +751,7 @@ type PartitionInfo struct {
 		sync.Once
 		// Items will be assign []ast.ExprNode, but use interface{} to reduce cycle.
 		Items interface{}
-	}
+	} `json:"-"`
 }
 
 // GetNameByID gets the partition name by ID.
