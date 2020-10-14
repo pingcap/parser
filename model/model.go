@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pingcap/errors"
@@ -744,6 +745,13 @@ type PartitionInfo struct {
 	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
 	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
 	Num                 uint64                `json:"num"`
+
+	// ExtractExprCache is filled when first time get partition expr AST.
+	ExtractExprCache struct {
+		sync.Once
+		// Items will be assign []ast.ExprNode, but use interface{} to reduce cycle.
+		Items interface{}
+	}
 }
 
 // GetNameByID gets the partition name by ID.
