@@ -826,6 +826,7 @@ var hintedTokens = map[int]struct{}{
 	deleteKwd: {},
 	create:    {},
 	partition: {},
+	using:     {},
 }
 
 var hintTokenMap = map[string]int{
