@@ -77,6 +77,8 @@ const (
 	ActionDropCheckConstraint           ActionType = 44
 	ActionAlterCheckConstraint          ActionType = 45
 	ActionAlterTableAlterPartition      ActionType = 46
+	ActionAddIndices                    ActionType = 47
+	ActionDropIndices                   ActionType = 48
 )
 
 const (
@@ -132,6 +134,8 @@ var actionMap = map[ActionType]string{
 	ActionDropCheckConstraint:           "drop check constraint",
 	ActionAlterCheckConstraint:          "alter check constraint",
 	ActionAlterTableAlterPartition:      "alter partition",
+	ActionAddIndices:                    "add multi-indices",
+	ActionDropIndices:                   "drop multi-indices",
 }
 
 // String return current ddl action in string
