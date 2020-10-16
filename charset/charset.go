@@ -421,6 +421,7 @@ var collations = []*Collation{
 	{246, "utf8mb4", "utf8mb4_unicode_520_ci", false},
 	{247, "utf8mb4", "utf8mb4_vietnamese_ci", false},
 	{255, "utf8mb4", "utf8mb4_0900_ai_ci", false},
+	{2048, "utf8mb4", "utf8mb4_general_zh_ci", false},
 }
 
 // init method always puts to the end of file.
@@ -438,6 +439,7 @@ func init() {
 
 	for _, c := range collations {
 		collationsIDMap[c.ID] = c
+		collationsNameMap[c.Name] = c
 
 		if _, ok := supportedCollationNames[c.Name]; ok {
 			supportedCollations = append(supportedCollations, c)
@@ -446,9 +448,5 @@ func init() {
 		if charset, ok := charsets[c.CharsetName]; ok {
 			charset.Collations[c.Name] = c
 		}
-	}
-
-	for id, name := range mysql.Collations {
-		collationsNameMap[name] = collationsIDMap[int(id)]
 	}
 }
