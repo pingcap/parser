@@ -3081,7 +3081,6 @@ func (s *testParserSuite) TestDDL(c *C) {
 
 		// for issue 18149
 		{"create table t (a int, index ``(a))", true, "CREATE TABLE `t` (`a` INT,INDEX ``(`a`))"},
-		{"create index `` on t (a)", true, "CREATE INDEX `` ON `t` (`a`)"},
 	}
 	s.RunTest(c, table)
 }
