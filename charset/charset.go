@@ -177,6 +177,16 @@ func GetCollationByName(name string) (*Collation, error) {
 	return collation, nil
 }
 
+// GetCollationByID returns collations by given id.
+func GetCollationByID(id int) (*Collation, error) {
+	collation, ok := collationsIDMap[id]
+	if !ok {
+		return nil, errors.Errorf("Unknown collation id %d", id)
+	}
+
+	return collation, nil
+}
+
 const (
 	// CharsetBin is used for marking binary charset.
 	CharsetBin = "binary"
