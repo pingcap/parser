@@ -2883,7 +2883,6 @@ ConstraintElem:
 		indexName := $3.([]interface{})[0].(*ast.NullString)
 		c.IfEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
-
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
@@ -2902,11 +2901,7 @@ ConstraintElem:
 			Keys: $5.([]*ast.IndexPartSpecification),
 		}
 		indexName := $3.(*ast.NullString)
-		if indexName.Valid == false {
-			c.IfEmptyIndex = true
-		} else {
-			c.IfEmptyIndex = false
-		}
+		c.IfEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 
 		if $7 != nil {
@@ -2925,11 +2920,7 @@ ConstraintElem:
 			c.Option = $7.(*ast.IndexOption)
 		}
 		indexName := $3.([]interface{})[0].(*ast.NullString)
-		if indexName.Valid == false {
-			c.IfEmptyIndex = true
-		} else {
-			c.IfEmptyIndex = false
-		}
+		c.IfEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 		if indexType := $3.([]interface{})[1]; indexType != nil {
 			if c.Option == nil {
@@ -2949,11 +2940,7 @@ ConstraintElem:
 			c.Option = $7.(*ast.IndexOption)
 		}
 		indexName := $3.([]interface{})[0].(*ast.NullString)
-		if indexName.Valid == false {
-			c.IfEmptyIndex = true
-		} else {
-			c.IfEmptyIndex = false
-		}
+		c.IfEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 
 		if indexType := $3.([]interface{})[1]; indexType != nil {
@@ -2973,11 +2960,7 @@ ConstraintElem:
 			Refer:       $8.(*ast.ReferenceDef),
 		}
 		indexName := $4.(*ast.NullString)
-		if indexName.Valid == false {
-			c.IfEmptyIndex = true
-		} else {
-			c.IfEmptyIndex = false
-		}
+		c.IfEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 
 		$$ = c
@@ -4977,16 +4960,9 @@ IndexName:
 	}
 |	Identifier
 	{
-		if len($1) == 0 {
-			$$ = &ast.NullString{
-				String: $1,
-				Valid:  false,
-			}
-		} else {
-			$$ = &ast.NullString{
-				String: $1,
-				Valid:  true,
-			}
+		$$ = &ast.NullString{
+			String: $1,
+			Valid:  len($1) != 0,
 		}
 	}
 
@@ -5081,11 +5057,7 @@ IndexNameAndTypeOpt:
 	}
 |	Identifier "TYPE" IndexTypeName
 	{
-		if len($1) == 0 {
-			$$ = []interface{}{&ast.NullString{String: $1, Valid: false}, $3}
-		} else {
-			$$ = []interface{}{&ast.NullString{String: $1, Valid: true}, $3}
-		}
+		$$ = []interface{}{&ast.NullString{String: $1, Valid: len($1) != 0}, $3}
 	}
 
 IndexTypeOpt:
