@@ -2881,11 +2881,7 @@ ConstraintElem:
 			Keys: $5.([]*ast.IndexPartSpecification),
 		}
 		indexName := $3.([]interface{})[0].(*ast.NullString)
-		if indexName.Valid == false {
-			c.IfEmptyIndex = true
-		} else {
-			c.IfEmptyIndex = false
-		}
+		c.IfEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 
 		if $7 != nil {
