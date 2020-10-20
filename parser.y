@@ -3533,6 +3533,12 @@ PartDefValuesOpt:
 		}
 		$$ = &ast.PartitionDefinitionClauseIn{Values: values}
 	}
+|	"VALUES" "IN" '(' "DEFAULT" ')'
+	{
+		exprs := []ast.ExprNode{&ast.DefaultValueExpr{}}
+		values := [][]ast.ExprNode{exprs}
+		$$ = &ast.PartitionDefinitionClauseIn{Values: values}
+	}
 |	"HISTORY"
 	{
 		$$ = &ast.PartitionDefinitionClauseHistory{Current: false}
