@@ -3539,6 +3539,25 @@ PartDefValuesOpt:
 		values := [][]ast.ExprNode{exprs}
 		$$ = &ast.PartitionDefinitionClauseIn{Values: values}
 	}
+|	"VALUES" '(' MaxValueOrExpressionList ')'
+	{
+		exprs := $3.([]ast.ExprNode)
+		values := make([][]ast.ExprNode, 0, len(exprs))
+		for _, expr := range exprs {
+			if row, ok := expr.(*ast.RowExpr); ok {
+				values = append(values, row.Values)
+			} else {
+				values = append(values, []ast.ExprNode{expr})
+			}
+		}
+		$$ = &ast.PartitionDefinitionClauseIn{Values: values}
+	}
+|	"VALUES" '(' "DEFAULT" ')'
+	{
+		exprs := []ast.ExprNode{&ast.DefaultValueExpr{}}
+		values := [][]ast.ExprNode{exprs}
+		$$ = &ast.PartitionDefinitionClauseIn{Values: values}
+	}
 |	"HISTORY"
 	{
 		$$ = &ast.PartitionDefinitionClauseHistory{Current: false}
