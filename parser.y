@@ -2877,12 +2877,11 @@ ConstraintElem:
 	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:   ast.ConstraintPrimaryKey,
-			Keys: $5.([]*ast.IndexPartSpecification),
+			Tp:           ast.ConstraintPrimaryKey,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.([]interface{})[0].(*ast.NullString).String,
+			IsEmptyIndex: !$3.([]interface{})[0].(*ast.NullString).Valid,
 		}
-		indexName := $3.([]interface{})[0].(*ast.NullString)
-		c.IsEmptyIndex = !indexName.Valid
-		c.Name = indexName.String
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
@@ -2910,16 +2909,15 @@ ConstraintElem:
 |	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			IfNotExists: $2.(bool),
-			Tp:          ast.ConstraintIndex,
-			Keys:        $5.([]*ast.IndexPartSpecification),
+			IfNotExists:  $2.(bool),
+			Tp:           ast.ConstraintIndex,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.([]interface{})[0].(*ast.NullString).String,
+			IsEmptyIndex: !$3.([]interface{})[0].(*ast.NullString).Valid,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
-		indexName := $3.([]interface{})[0].(*ast.NullString)
-		c.IsEmptyIndex = !indexName.Valid
-		c.Name = indexName.String
 		if indexType := $3.([]interface{})[1]; indexType != nil {
 			if c.Option == nil {
 				c.Option = &ast.IndexOption{}
@@ -2931,15 +2929,14 @@ ConstraintElem:
 |	"UNIQUE" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:   ast.ConstraintUniq,
-			Keys: $5.([]*ast.IndexPartSpecification),
+			Tp:           ast.ConstraintUniq,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.([]interface{})[0].(*ast.NullString).String,
+			IsEmptyIndex: !$3.([]interface{})[0].(*ast.NullString).Valid,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
-		indexName := $3.([]interface{})[0].(*ast.NullString)
-		c.IsEmptyIndex = !indexName.Valid
-		c.Name = indexName.String
 
 		if indexType := $3.([]interface{})[1]; indexType != nil {
 			if c.Option == nil {
@@ -2951,16 +2948,14 @@ ConstraintElem:
 	}
 |	"FOREIGN" "KEY" IfNotExists IndexName '(' IndexPartSpecificationList ')' ReferDef
 	{
-		c := &ast.Constraint{
-			IfNotExists: $3.(bool),
-			Tp:          ast.ConstraintForeignKey,
-			Keys:        $6.([]*ast.IndexPartSpecification),
-			Refer:       $8.(*ast.ReferenceDef),
+		$$ = &ast.Constraint{
+			IfNotExists:  $3.(bool),
+			Tp:           ast.ConstraintForeignKey,
+			Keys:         $6.([]*ast.IndexPartSpecification),
+			Name:         $4.(*ast.NullString).String,
+			Refer:        $8.(*ast.ReferenceDef),
+			IsEmptyIndex: !$4.(*ast.NullString).Valid,
 		}
-		indexName := $4.(*ast.NullString)
-		c.IsEmptyIndex = !indexName.Valid
-		c.Name = indexName.String
-		$$ = c
 	}
 |	"CHECK" '(' Expression ')' EnforcedOrNotOpt
 	{
