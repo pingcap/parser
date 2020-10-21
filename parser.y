@@ -2881,7 +2881,7 @@ ConstraintElem:
 			Keys: $5.([]*ast.IndexPartSpecification),
 		}
 		indexName := $3.([]interface{})[0].(*ast.NullString)
-		c.IfEmptyIndex = !indexName.Valid
+		c.IsEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2897,13 +2897,11 @@ ConstraintElem:
 |	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:   ast.ConstraintFulltext,
-			Keys: $5.([]*ast.IndexPartSpecification),
+			Tp:           ast.ConstraintFulltext,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.(*ast.NullString).String,
+			IsEmptyIndex: !$3.(*ast.NullString).Valid,
 		}
-		indexName := $3.(*ast.NullString)
-		c.IfEmptyIndex = !indexName.Valid
-		c.Name = indexName.String
-
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
@@ -2920,7 +2918,7 @@ ConstraintElem:
 			c.Option = $7.(*ast.IndexOption)
 		}
 		indexName := $3.([]interface{})[0].(*ast.NullString)
-		c.IfEmptyIndex = !indexName.Valid
+		c.IsEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 		if indexType := $3.([]interface{})[1]; indexType != nil {
 			if c.Option == nil {
@@ -2940,7 +2938,7 @@ ConstraintElem:
 			c.Option = $7.(*ast.IndexOption)
 		}
 		indexName := $3.([]interface{})[0].(*ast.NullString)
-		c.IfEmptyIndex = !indexName.Valid
+		c.IsEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
 
 		if indexType := $3.([]interface{})[1]; indexType != nil {
@@ -2960,9 +2958,8 @@ ConstraintElem:
 			Refer:       $8.(*ast.ReferenceDef),
 		}
 		indexName := $4.(*ast.NullString)
-		c.IfEmptyIndex = !indexName.Valid
+		c.IsEmptyIndex = !indexName.Valid
 		c.Name = indexName.String
-
 		$$ = c
 	}
 |	"CHECK" '(' Expression ')' EnforcedOrNotOpt

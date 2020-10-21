@@ -720,7 +720,7 @@ type Constraint struct {
 	InColumn bool // Used for Check
 
 	InColumnName string // Used for Check
-	IfEmptyIndex bool   // Used for Check
+	IsEmptyIndex bool   // Used for Check
 }
 
 // Restore implements Node interface.
@@ -778,7 +778,7 @@ func (n *Constraint) Restore(ctx *format.RestoreCtx) error {
 		if n.IfNotExists {
 			ctx.WriteKeyWord("IF NOT EXISTS ")
 		}
-	} else if n.Name != "" || n.IfEmptyIndex {
+	} else if n.Name != "" || n.IsEmptyIndex {
 		ctx.WritePlain(" ")
 		ctx.WriteName(n.Name)
 	}
