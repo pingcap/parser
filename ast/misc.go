@@ -1567,6 +1567,8 @@ type DropBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
+	BindingTp   BindingType
+	StmtDigest  string
 	OriginNode  StmtNode
 	HintedNode  StmtNode
 }

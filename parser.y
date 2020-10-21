@@ -11229,6 +11229,15 @@ DropBindingStmt:
 
 		$$ = x
 	}
+|	"DROP" GlobalScope "BINDING" "FOR" stringLit
+	{
+		x := &ast.DropBindingStmt{
+			GlobalScope: $2.(bool),
+			StmtDigest:  $5,
+		}
+
+		$$ = x
+	}
 
 /*************************************************************************************
  * Grant statement
