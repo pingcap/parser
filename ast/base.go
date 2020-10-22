@@ -24,10 +24,12 @@ type node struct {
 	offset int
 }
 
+// SetOriginTextPosition implements Node interface.
 func (n *node) SetOriginTextPosition(offset int) {
 	n.offset = offset
 }
 
+// OriginTextPosition implements Node interface.
 func (n *node) OriginTextPosition() int {
 	return n.offset
 }
