@@ -397,6 +397,7 @@ var tokenMap = map[string]int{
 	"JOB":                      job,
 	"JOBS":                     jobs,
 	"JOIN":                     join,
+	"JSON_ARRAYAGG":            jsonArrayagg,
 	"JSON_OBJECTAGG":           jsonObjectAgg,
 	"JSON":                     jsonType,
 	"KEY_BLOCK_SIZE":           keyBlockSize,
@@ -556,6 +557,7 @@ var tokenMap = map[string]int{
 	"REQUIRE":                  require,
 	"RESET":                    reset,
 	"RESPECT":                  respect,
+	"RESTART":                  restart,
 	"RESTORE":                  restore,
 	"RESTORES":                 restores,
 	"RESTRICT":                 restrict,
@@ -856,7 +858,7 @@ var hintTokenMap = map[string]int{
 
 	// TiDB hint names
 	"AGG_TO_COP":              hintAggToCop,
-	"TOPN_TO_COP":             hintTopNToCop,
+	"LIMIT_TO_COP":            hintLimitToCop,
 	"IGNORE_PLAN_CACHE":       hintIgnorePlanCache,
 	"HASH_AGG":                hintHashAgg,
 	"IGNORE_INDEX":            hintIgnoreIndex,

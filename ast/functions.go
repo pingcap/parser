@@ -277,6 +277,8 @@ const (
 	Sleep           = "sleep"
 	UUID            = "uuid"
 	UUIDShort       = "uuid_short"
+	UUIDToBin       = "uuid_to_bin"
+	BinToUUID       = "bin_to_uuid"
 	// get_lock() and release_lock() is parsed but do nothing.
 	// It is used for preventing error in Ruby's activerecord migrations.
 	GetLock     = "get_lock"
@@ -709,6 +711,8 @@ const (
 	AggFuncStddevPop = "stddev_pop"
 	// AggFuncStddevSamp is the name of stddev_samp function
 	AggFuncStddevSamp = "stddev_samp"
+	// AggFuncJsonArrayagg is the name of json_arrayagg function
+	AggFuncJsonArrayagg = "json_arrayagg"
 	// AggFuncJsonObjectAgg is the name of json_objectagg function
 	AggFuncJsonObjectAgg = "json_objectagg"
 	// AggFuncApproxCountDistinct is the name of approx_count_distinct function.
