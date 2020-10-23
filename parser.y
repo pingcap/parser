@@ -2880,7 +2880,7 @@ ConstraintElem:
 			Tp:           ast.ConstraintPrimaryKey,
 			Keys:         $5.([]*ast.IndexPartSpecification),
 			Name:         $3.([]interface{})[0].(*ast.NullString).String,
-			IsEmptyIndex: !$3.([]interface{})[0].(*ast.NullString).Valid,
+			IsEmptyIndex: $3.([]interface{})[0].(*ast.NullString).Valid,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2899,7 +2899,7 @@ ConstraintElem:
 			Tp:           ast.ConstraintFulltext,
 			Keys:         $5.([]*ast.IndexPartSpecification),
 			Name:         $3.(*ast.NullString).String,
-			IsEmptyIndex: !$3.(*ast.NullString).Valid,
+			IsEmptyIndex: $3.(*ast.NullString).Valid,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2913,7 +2913,7 @@ ConstraintElem:
 			Tp:           ast.ConstraintIndex,
 			Keys:         $5.([]*ast.IndexPartSpecification),
 			Name:         $3.([]interface{})[0].(*ast.NullString).String,
-			IsEmptyIndex: !$3.([]interface{})[0].(*ast.NullString).Valid,
+			IsEmptyIndex: $3.([]interface{})[0].(*ast.NullString).Valid,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2932,7 +2932,7 @@ ConstraintElem:
 			Tp:           ast.ConstraintUniq,
 			Keys:         $5.([]*ast.IndexPartSpecification),
 			Name:         $3.([]interface{})[0].(*ast.NullString).String,
-			IsEmptyIndex: !$3.([]interface{})[0].(*ast.NullString).Valid,
+			IsEmptyIndex: $3.([]interface{})[0].(*ast.NullString).Valid,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2954,7 +2954,7 @@ ConstraintElem:
 			Keys:         $6.([]*ast.IndexPartSpecification),
 			Name:         $4.(*ast.NullString).String,
 			Refer:        $8.(*ast.ReferenceDef),
-			IsEmptyIndex: !$4.(*ast.NullString).Valid,
+			IsEmptyIndex: $4.(*ast.NullString).Valid,
 		}
 	}
 |	"CHECK" '(' Expression ')' EnforcedOrNotOpt
@@ -4947,14 +4947,14 @@ IndexName:
 	{
 		$$ = &ast.NullString{
 			String: "",
-			Valid:  true,
+			Valid:  false,
 		}
 	}
 |	Identifier
 	{
 		$$ = &ast.NullString{
 			String: $1,
-			Valid:  len($1) != 0,
+			Valid:  len($1) == 0,
 		}
 	}
 
@@ -5049,7 +5049,7 @@ IndexNameAndTypeOpt:
 	}
 |	Identifier "TYPE" IndexTypeName
 	{
-		$$ = []interface{}{&ast.NullString{String: $1, Valid: len($1) != 0}, $3}
+		$$ = []interface{}{&ast.NullString{String: $1, Valid: len($1) == 0}, $3}
 	}
 
 IndexTypeOpt:

@@ -57,7 +57,7 @@ type CharsetOpt struct {
 // NullString represents a string that may be nil.
 type NullString struct {
 	String string
-	Valid  bool // Valid is true if String is not NULL
+	Valid  bool // Valid is true if String is nil
 }
 
 // DatabaseOptionType is the type for database options.
