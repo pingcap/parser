@@ -5529,7 +5529,7 @@ func (s *testParserSuite) TestHighNotPrecedenceMode(c *C) {
 	err = sms[0].Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
 	c.Assert(err, IsNil)
 	restoreSQL := sb.String()
-	c.Assert(restoreSQL, Equals, "SELECT not 1 BETWEEN -5 AND 5")
+	c.Assert(restoreSQL, Equals, "SELECT NOT 1 BETWEEN -5 AND 5")
 	sb.Reset()
 
 	sms, _, err = p.Parse("SELECT !1 BETWEEN -5 AND 5", "", "")

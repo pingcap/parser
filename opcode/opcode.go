@@ -160,7 +160,7 @@ var ops = [...]struct {
 	Not: {
 		name:      "not",
 		literal:   "not ",
-		isKeyword: false,
+		isKeyword: true,
 	},
 	Not2: {
 		name:      "!",
