@@ -54,7 +54,7 @@ type CharsetOpt struct {
 	Col string
 }
 
-// NullString  is the non-terminal symbol
+// NullString represents a string that may be nil.
 type NullString struct {
 	String string
 	Valid  bool // Valid is true if String is not NULL
