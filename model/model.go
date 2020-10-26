@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pingcap/errors"
@@ -744,6 +745,28 @@ type PartitionInfo struct {
 	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
 	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
 	Num                 uint64                `json:"num"`
+
+	// ByExprCache is filled when first time get partition expr.
+	ByExprCache struct {
+		sync.Once
+		// Items will be assign []expression.Expression, but use interface{} to reduce cycle.
+		Items interface{}
+	} `json:"-"`
+}
+
+// Clone clones partition info.
+// it doesn't copy sync.Once or cached value.
+func (pi *PartitionInfo) Clone() *PartitionInfo {
+	return &PartitionInfo{
+		Type:                pi.Type,
+		Expr:                pi.Expr,
+		Columns:             pi.Columns,
+		Enable:              pi.Enable,
+		Definitions:         pi.Definitions,
+		AddingDefinitions:   pi.AddingDefinitions,
+		DroppingDefinitions: pi.DroppingDefinitions,
+		Num:                 pi.Num,
+	}
 }
 
 // GetNameByID gets the partition name by ID.
