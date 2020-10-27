@@ -775,6 +775,76 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type SampleMethodType int8
+
+const (
+	SampleMethodSystemNone SampleMethodType = iota
+	SampleMethodSystem
+	SampleMethodBernoulli
+	SampleMethodTiDBRegion
+)
+
+type SampleClauseUnitType int8
+
+const (
+	SampleClauseUnitTypeDefault SampleClauseUnitType = iota
+	SampleClauseUnitTypeRow
+	SampleClauseUnitTypePercent
+)
+
+type SampleClause struct {
+	node
+	SampleMethod     SampleMethodType
+	Expr             ExprNode
+	SampleClauseUnit SampleClauseUnitType
+	RepeatableSeed   uint64
+}
+
+func (s *SampleClause) Restore(ctx *format.RestoreCtx) error {
+	switch s.SampleMethod {
+	case SampleMethodBernoulli:
+		ctx.WriteKeyWord("BERNOULLI ")
+	case SampleMethodSystem:
+		ctx.WriteKeyWord("SYSTEM ")
+	case SampleMethodTiDBRegion:
+		ctx.WriteKeyWord("REGION ")
+	}
+	ctx.WritePlain("(")
+	if s.Expr != nil {
+		if err := s.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SampleClause.Expr")
+		}
+	}
+	switch s.SampleClauseUnit {
+	case SampleClauseUnitTypeDefault:
+	case SampleClauseUnitTypePercent:
+		ctx.WriteKeyWord(" PERCENT")
+	case SampleClauseUnitTypeRow:
+		ctx.WriteKeyWord(" ROWS")
+
+	}
+	ctx.WritePlain(")")
+	if s.RepeatableSeed != 0 {
+		ctx.WriteKeyWord(" REPEATABLE")
+		ctx.WritePlainf("(%d)", s.RepeatableSeed)
+	}
+	return nil
+}
+
+func (s *SampleClause) Accept(v Visitor) (node Node, ok bool) {
+	newNode, skipChildren := v.Enter(s)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	s = newNode.(*SampleClause)
+	node, ok = s.Expr.Accept(v)
+	if !ok {
+		return s, false
+	}
+	s.Expr = node.(ExprNode)
+	return v.Leave(s)
+}
+
 type SelectStmtKind uint8
 
 const (
@@ -837,6 +907,8 @@ type SelectStmt struct {
 	Kind SelectStmtKind
 	// Lists is filled only when Kind == SelectStmtKindValues
 	Lists []*RowExpr
+	// TableSample is the table sample clause.
+	TableSample *SampleClause
 }
 
 // Restore implements Node interface.
@@ -909,6 +981,13 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 		if n.From == nil && n.Where != nil {
 			ctx.WriteKeyWord(" FROM DUAL")
 		}
+		if n.TableSample != nil {
+			ctx.WriteKeyWord(" TABLESAMPLE ")
+			if err := n.TableSample.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore SelectStmt.TableSample")
+			}
+		}
+
 		if n.Where != nil {
 			ctx.WriteKeyWord(" WHERE ")
 			if err := n.Where.Restore(ctx); err != nil {
@@ -1027,6 +1106,13 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.From = node.(*TableRefsClause)
+	}
+	if n.TableSample != nil {
+		node, ok := n.TableSample.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableSample = node.(*SampleClause)
 	}
 
 	if n.Where != nil {

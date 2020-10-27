@@ -71,7 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "until", "placement",
+		"match", "until", "placement", "tablesample",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -4621,6 +4621,44 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t drop histogram on b", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `b`"},
 		{"analyze table t update histogram on c1, c2;", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `c1`,`c2`"},
 		{"analyze table t drop histogram on c1, c2;", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `c1`,`c2`"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestTableSample(c *C) {
+	table := []testCase{
+		// positive test cases
+		{"select * from tbl tablesample system (50);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (50)"},
+		{"select * from tbl tablesample system (50 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (50 PERCENT)"},
+		{"select * from tbl tablesample system (49.9 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (49.9 PERCENT)"},
+		{"select * from tbl tablesample system (120 rows);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (120 ROWS)"},
+		{"select * from tbl tablesample bernoulli (50);", true, "SELECT * FROM `tbl` TABLESAMPLE BERNOULLI (50)"},
+		{"select * from tbl tablesample (50);", true, "SELECT * FROM `tbl` TABLESAMPLE (50)"},
+		{"select * from tbl tablesample (50) repeatable (123456789);", true, "SELECT * FROM `tbl` TABLESAMPLE (50) REPEATABLE(123456789)"},
+		{"select * from tbl as a tablesample (50);", true, "SELECT * FROM `tbl` AS `a` TABLESAMPLE (50)"},
+		{"select * from tbl `tablesample` tablesample (50);", true, "SELECT * FROM `tbl` AS `tablesample` TABLESAMPLE (50)"},
+		{"select * from tbl tablesample (50) where id > 20;", true, "SELECT * FROM `tbl` TABLESAMPLE (50) WHERE `id`>20"},
+		{"select * from tbl partition (p0) tablesample (50);", true, "SELECT * FROM `tbl` PARTITION(`p0`) TABLESAMPLE (50)"},
+		{"select * from tbl tablesample (0 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 PERCENT)"},
+		{"select * from tbl tablesample (100 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (100 PERCENT)"},
+		{"select * from tbl tablesample (0 rows);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 ROWS)"},
+		{"select * from tbl tablesample ('34');", true, "SELECT * FROM `tbl` TABLESAMPLE ('34')"},
+
+		// need discussion
+		{"select * from tbl1 tablesample (10), tbl2 tablesample (20);", false, ""},
+		{"select * from tbl1 a tablesample (10) join tbl2 b tablesample (20) on a.id <> b.id;", false, ""},
+
+		// negative test cases
+		{"select * from tbl tablesample system(50) a;", false, ""},
+		{"select * from tbl tablesample (50) partition (p0);", false, ""},
+		{"select * from tbl where id > 20 tablesample system(50);", false, ""},
+		{"select * from (select * from tbl) a tablesample system(50);", false, ""},
+		{"select * from tbl tablesample system(50) tablesample system(50);", false, ""},
+		{"select * from tbl tablesample system(50, 50);", false, ""},
+		{"select * from tbl tablesample dhfksdlfljcoew(50);", false, ""},
+		{"select * from tbl tablesample system;", false, ""},
+		{"select * from tbl tablesample system (33) repeatable;", false, ""},
+		{"select 1 from dual tablesample system (50);", false, ""},
 	}
 	s.RunTest(c, table)
 }

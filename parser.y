@@ -243,6 +243,7 @@ import (
 	starting          "STARTING"
 	straightJoin      "STRAIGHT_JOIN"
 	tableKwd          "TABLE"
+	tableSample       "TABLESAMPLE"
 	stored            "STORED"
 	terminated        "TERMINATED"
 	then              "THEN"
@@ -302,6 +303,7 @@ import (
 	backup                "BACKUP"
 	backups               "BACKUPS"
 	begin                 "BEGIN"
+	bernoulli             "BERNOULLI"
 	binding               "BINDING"
 	bindings              "BINDINGS"
 	binlog                "BINLOG"
@@ -471,6 +473,7 @@ import (
 	partitioning          "PARTITIONING"
 	partitions            "PARTITIONS"
 	password              "PASSWORD"
+	percent               "PERCENT"
 	per_db                "PER_DB"
 	per_table             "PER_TABLE"
 	pipesAsOr
@@ -560,6 +563,7 @@ import (
 	super                 "SUPER"
 	swaps                 "SWAPS"
 	switchesSym           "SWITCHES"
+	system                "SYSTEM"
 	systemTime            "SYSTEM_TIME"
 	tableChecksum         "TABLE_CHECKSUM"
 	tables                "TABLES"
@@ -1046,6 +1050,7 @@ import (
 	SelectStmtBasic                        "SELECT statement from constant value"
 	SelectStmtFromDualTable                "SELECT statement from dual table"
 	SelectStmtFromTable                    "SELECT statement from table"
+	SelectStmtFromTableSample              "SELECT statement from table sample"
 	SelectStmtGroup                        "SELECT statement optional GROUP BY clause"
 	SelectStmtIntoOption                   "SELECT statement into clause"
 	SequenceOption                         "Create sequence option"
@@ -1091,6 +1096,8 @@ import (
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
 	TableRefs                              "table references"
+	TableSampleMethodOpt                   "table sample method optional"
+	TableSampleUnitOpt                     "table sample unit optional"
 	TableToTable                           "rename table to table"
 	TableToTableList                       "rename table to table by list"
 	TextStringList                         "text string list"
@@ -1158,6 +1165,7 @@ import (
 	InOrNotOp                              "In predicate"
 	LikeOrNotOp                            "Like predicate"
 	RegexpOrNotOp                          "Regexp predicate"
+	RepeatableOpt                          "Repeatable optional in sample clause"
 	NumericType                            "Numeric types"
 	IntegerType                            "Integer Types types"
 	BooleanType                            "Boolean Types types"
@@ -5397,6 +5405,9 @@ UnReservedKeyword:
 |	"REPLICAS"
 |	"POLICY"
 |	"WAIT"
+|	"BERNOULLI"
+|	"SYSTEM"
+|	"PERCENT"
 
 TiDBKeyword:
 	"ADMIN"
@@ -7280,6 +7291,74 @@ SelectStmtFromTable:
 		$$ = st
 	}
 
+SelectStmtFromTableSample:
+	SelectStmtBasic "FROM" TableName PartitionNameListOpt TableAsNameOpt "TABLESAMPLE" TableSampleMethodOpt '(' Expression TableSampleUnitOpt ')' RepeatableOpt WhereClauseOptional
+	{
+		st := $1.(*ast.SelectStmt)
+		tn := $3.(*ast.TableName)
+		tn.PartitionNames = $4.([]model.CIStr)
+		st.From = &ast.TableRefsClause{TableRefs: &ast.Join{
+			Left: &ast.TableSource{Source: tn, AsName: $5.(model.CIStr)},
+		}}
+		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
+		if lastField.Expr != nil && lastField.AsName.O == "" {
+			lastEnd := parser.endOffset(&yyS[yypt-11])
+			lastField.SetText(parser.src[lastField.Offset:lastEnd])
+		}
+		var tableSample ast.SampleClause
+		tableSample.SampleMethod = $7.(ast.SampleMethodType)
+		tableSample.Expr = ast.NewValueExpr($9, parser.charset, parser.collation)
+		tableSample.SampleClauseUnit = $10.(ast.SampleClauseUnitType)
+		tableSample.RepeatableSeed = $12.(uint64)
+		if $13 != nil {
+			st.Where = $13.(ast.ExprNode)
+		}
+		st.TableSample = &tableSample
+		$$ = st
+	}
+
+TableSampleMethodOpt:
+	/* empty */ %prec empty
+	{
+		$$ = ast.SampleMethodSystemNone
+	}
+|	"SYSTEM"
+	{
+		$$ = ast.SampleMethodSystem
+	}
+|	"BERNOULLI"
+	{
+		$$ = ast.SampleMethodBernoulli
+	}
+|	"REGIONS"
+	{
+		$$ = ast.SampleMethodTiDBRegion
+	}
+
+TableSampleUnitOpt:
+	/* emtpy */ %prec empty
+	{
+		$$ = ast.SampleClauseUnitTypeDefault
+	}
+|	"ROWS"
+	{
+		$$ = ast.SampleClauseUnitTypeRow
+	}
+|	"PERCENT"
+	{
+		$$ = ast.SampleClauseUnitTypePercent
+	}
+
+RepeatableOpt:
+	/* empty */ %prec empty
+	{
+		$$ = uint64(0)
+	}
+|	"REPEATABLE" '(' LengthNum ')'
+	{
+		$$ = $3
+	}
+
 SelectStmt:
 	SelectStmtBasic OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
 	{
@@ -7349,6 +7428,14 @@ SelectStmt:
 		}
 		if $5 != nil {
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
+		}
+		$$ = st
+	}
+|	SelectStmtFromTableSample OrderByOptional
+	{
+		st := $1.(*ast.SelectStmt)
+		if $2 != nil {
+			st.OrderBy = $2.(*ast.OrderByClause)
 		}
 		$$ = st
 	}
