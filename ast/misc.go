@@ -1581,14 +1581,19 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginNode.Restore(ctx); err != nil {
-		return errors.Trace(err)
-	}
-	if n.HintedNode != nil {
-		ctx.WriteKeyWord(" USING ")
-		if err := n.HintedNode.Restore(ctx); err != nil {
+	switch n.BindingTp {
+	case BindingForStmt:
+		if err := n.OriginNode.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
+		if n.HintedNode != nil {
+			ctx.WriteKeyWord(" USING ")
+			if err := n.HintedNode.Restore(ctx); err != nil {
+				return errors.Trace(err)
+			}
+		}
+	case BindingForDigest:
+		ctx.WriteString(n.StmtDigest)
 	}
 	return nil
 }
@@ -1599,34 +1604,38 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginNode.Accept(v)
-	if !ok {
-		return n, false
-	}
-	switch node := selnode.(type) {
-	case *SelectStmt:
-		n.OriginNode = node
-		if n.HintedNode != nil {
-			selnode, ok = n.HintedNode.Accept(v)
-			if !ok {
-				return n, false
-			}
-			n.HintedNode = selnode.(*SelectStmt)
+	switch n.BindingTp {
+	case BindingForStmt:
+		selnode, ok := n.OriginNode.Accept(v)
+		if !ok {
+			return n, false
 		}
-		return v.Leave(n)
-	case *SetOprStmt:
-		n.OriginNode = node
-		if n.HintedNode != nil {
-			selnode, ok = n.HintedNode.Accept(v)
-			if !ok {
-				return n, false
+		switch node := selnode.(type) {
+		case *SelectStmt:
+			n.OriginNode = node
+			if n.HintedNode != nil {
+				selnode, ok = n.HintedNode.Accept(v)
+				if !ok {
+					return n, false
+				}
+				n.HintedNode = selnode.(*SelectStmt)
 			}
-			n.HintedNode = selnode.(*SetOprStmt)
+			return v.Leave(n)
+		case *SetOprStmt:
+			n.OriginNode = node
+			if n.HintedNode != nil {
+				selnode, ok = n.HintedNode.Accept(v)
+				if !ok {
+					return n, false
+				}
+				n.HintedNode = selnode.(*SetOprStmt)
+			}
+			return v.Leave(n)
 		}
-		return v.Leave(n)
-	default:
-		return n, false
+	case BindingForDigest:
+		return n, true
 	}
+	return n, false
 }
 
 // Extended statistics types.

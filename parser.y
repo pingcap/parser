@@ -11204,6 +11204,7 @@ DropBindingStmt:
 		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForStmt,
 			OriginNode:  setOprStmt,
 			GlobalScope: $2.(bool),
 		}
@@ -11222,6 +11223,7 @@ DropBindingStmt:
 		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForStmt,
 			OriginNode:  setOprStmt,
 			HintedNode:  hintedSetOprStmt,
 			GlobalScope: $2.(bool),
@@ -11232,6 +11234,7 @@ DropBindingStmt:
 |	"DROP" GlobalScope "BINDING" "FOR" stringLit
 	{
 		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForDigest,
 			GlobalScope: $2.(bool),
 			StmtDigest:  $5,
 		}
