@@ -975,6 +975,7 @@ import (
 	LoadDataSetList                        "Load data specifications"
 	LoadDataSetItem                        "Single load data specification"
 	LocalOpt                               "Local opt"
+	ReadWriteClause                        "Alter table read only/write clause"
 	LockClause                             "Alter table lock clause"
 	LogTypeOpt                             "Optional log type used in FLUSH statements"
 	NumLiteral                             "Num/Int/Float/Decimal Literal"
@@ -1935,6 +1936,13 @@ AlterTableSpec:
 			ToKey:   model.NewCIStr($5),
 		}
 	}
+|	ReadWriteClause
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:       ast.AlterTableReadWrite,
+			ReadOnly: $1.(bool),
+		}
+	}
 |	LockClause
 	{
 		$$ = &ast.AlterTableSpec{
@@ -2092,6 +2100,16 @@ AlgorithmClause:
 	{
 		yylex.AppendError(ErrUnknownAlterAlgorithm.GenWithStackByArgs($1))
 		return 1
+	}
+
+ReadWriteClause:
+	"READ" "ONLY"
+	{
+		$$ = true
+	}
+|	"READ" "WRITE"
+	{
+		$$ = false
 	}
 
 LockClause:

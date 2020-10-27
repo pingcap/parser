@@ -2165,6 +2165,7 @@ const (
 	AlterTableRenameColumn
 	AlterTableRenameTable
 	AlterTableAlterColumn
+	AlterTableReadWrite
 	AlterTableLock
 	AlterTableAlgorithm
 	AlterTableRenameIndex
@@ -2284,6 +2285,7 @@ type AlterTableSpec struct {
 	OldColumnName   *ColumnName
 	NewColumnName   *ColumnName
 	Position        *ColumnPosition
+	ReadOnly        bool
 	LockType        LockType
 	Algorithm       AlgorithmType
 	Comment         string
@@ -2498,6 +2500,13 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 			}
 		} else {
 			ctx.WriteKeyWord(" DROP DEFAULT")
+		}
+	case AlterTableReadWrite:
+		ctx.WriteKeyWord("READ ")
+		if n.ReadOnly {
+			ctx.WriteKeyWord("ONLY")
+		} else {
+			ctx.WriteKeyWord("WRITE")
 		}
 	case AlterTableLock:
 		ctx.WriteKeyWord("LOCK ")
