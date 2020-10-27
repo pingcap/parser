@@ -89,24 +89,24 @@ func (s *testCacheableSuite) TestUnionReadOnly(c *C) {
 
 	setOprStmt := &SetOprStmt{
 		SelectList: &SetOprSelectList{
-			Selects: []*SelectStmt{selectReadOnly, selectReadOnly},
+			Selects: []Node{selectReadOnly, selectReadOnly},
 		},
 	}
 	c.Assert(IsReadOnly(setOprStmt), IsTrue)
 
-	setOprStmt.SelectList.Selects = []*SelectStmt{selectReadOnly, selectReadOnly, selectReadOnly}
+	setOprStmt.SelectList.Selects = []Node{selectReadOnly, selectReadOnly, selectReadOnly}
 	c.Assert(IsReadOnly(setOprStmt), IsTrue)
 
-	setOprStmt.SelectList.Selects = []*SelectStmt{selectReadOnly, selectForUpdate}
+	setOprStmt.SelectList.Selects = []Node{selectReadOnly, selectForUpdate}
 	c.Assert(IsReadOnly(setOprStmt), IsFalse)
 
-	setOprStmt.SelectList.Selects = []*SelectStmt{selectReadOnly, selectForUpdateNoWait}
+	setOprStmt.SelectList.Selects = []Node{selectReadOnly, selectForUpdateNoWait}
 	c.Assert(IsReadOnly(setOprStmt), IsFalse)
 
-	setOprStmt.SelectList.Selects = []*SelectStmt{selectForUpdate, selectForUpdateNoWait}
+	setOprStmt.SelectList.Selects = []Node{selectForUpdate, selectForUpdateNoWait}
 	c.Assert(IsReadOnly(setOprStmt), IsFalse)
 
-	setOprStmt.SelectList.Selects = []*SelectStmt{selectReadOnly, selectForUpdate, selectForUpdateNoWait}
+	setOprStmt.SelectList.Selects = []Node{selectReadOnly, selectForUpdate, selectForUpdateNoWait}
 	c.Assert(IsReadOnly(setOprStmt), IsFalse)
 }
 
@@ -125,6 +125,7 @@ type nodeTextCleaner struct {
 // Enter implements Visitor interface.
 func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 	in.SetText("")
+	in.SetOriginTextPosition(0)
 	switch node := in.(type) {
 	case *Constraint:
 		if node.Option != nil {
