@@ -11231,12 +11231,12 @@ DropBindingStmt:
 
 		$$ = x
 	}
-|	"DROP" GlobalScope "BINDING" "FOR" stringLit
+|	"DROP" GlobalScope "BINDING" "FOR" "DIGEST" stringLit
 	{
 		x := &ast.DropBindingStmt{
 			BindingTp:   ast.BindingForDigest,
 			GlobalScope: $2.(bool),
-			StmtDigest:  $5,
+			StmtDigest:  $6,
 		}
 
 		$$ = x

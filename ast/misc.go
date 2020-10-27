@@ -1593,6 +1593,7 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 			}
 		}
 	case BindingForDigest:
+		ctx.WriteKeyWord("DIGEST ")
 		ctx.WriteString(n.StmtDigest)
 	}
 	return nil
