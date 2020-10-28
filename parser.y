@@ -7320,19 +7320,19 @@ SelectStmtFromTableSample:
 TableSampleMethodOpt:
 	/* empty */ %prec empty
 	{
-		$$ = ast.SampleMethodSystemNone
+		$$ = ast.SampleMethodTypeNone
 	}
 |	"SYSTEM"
 	{
-		$$ = ast.SampleMethodSystem
+		$$ = ast.SampleMethodTypeSystem
 	}
 |	"BERNOULLI"
 	{
-		$$ = ast.SampleMethodBernoulli
+		$$ = ast.SampleMethodTypeBernoulli
 	}
 |	"REGIONS"
 	{
-		$$ = ast.SampleMethodTiDBRegion
+		$$ = ast.SampleMethodTypeTiDBRegion
 	}
 
 TableSampleUnitOpt:

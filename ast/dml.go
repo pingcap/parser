@@ -778,10 +778,10 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 type SampleMethodType int8
 
 const (
-	SampleMethodSystemNone SampleMethodType = iota
-	SampleMethodSystem
-	SampleMethodBernoulli
-	SampleMethodTiDBRegion
+	SampleMethodTypeNone SampleMethodType = iota
+	SampleMethodTypeSystem
+	SampleMethodTypeBernoulli
+	SampleMethodTypeTiDBRegion
 )
 
 type SampleClauseUnitType int8
@@ -802,11 +802,11 @@ type SampleClause struct {
 
 func (s *SampleClause) Restore(ctx *format.RestoreCtx) error {
 	switch s.SampleMethod {
-	case SampleMethodBernoulli:
+	case SampleMethodTypeBernoulli:
 		ctx.WriteKeyWord("BERNOULLI ")
-	case SampleMethodSystem:
+	case SampleMethodTypeSystem:
 		ctx.WriteKeyWord("SYSTEM ")
-	case SampleMethodTiDBRegion:
+	case SampleMethodTypeTiDBRegion:
 		ctx.WriteKeyWord("REGION ")
 	}
 	ctx.WritePlain("(")
