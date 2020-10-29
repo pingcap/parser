@@ -4643,10 +4643,10 @@ func (s *testParserSuite) TestTableSample(c *C) {
 		{"select * from tbl tablesample (100 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (100 PERCENT)"},
 		{"select * from tbl tablesample (0 rows);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 ROWS)"},
 		{"select * from tbl tablesample ('34');", true, "SELECT * FROM `tbl` TABLESAMPLE ('34')"},
-
-		// need discussion
-		{"select * from tbl1 tablesample (10), tbl2 tablesample (20);", false, ""},
-		{"select * from tbl1 a tablesample (10) join tbl2 b tablesample (20) on a.id <> b.id;", false, ""},
+		{"select * from tbl1 tablesample (10), tbl2 tablesample (20);", true, "SELECT * FROM (`tbl1` TABLESAMPLE (10)) JOIN `tbl2` TABLESAMPLE (20)"},
+		{"select * from tbl1 a tablesample (10) join tbl2 b tablesample (20) on a.id <> b.id;", true, "SELECT * FROM `tbl1` AS `a` TABLESAMPLE (10) JOIN `tbl2` AS `b` TABLESAMPLE (20) ON `a`.`id`!=`b`.`id`"},
+		{"select * from demo tablesample bernoulli(50) limit 1 into outfile '/tmp/sample.csv';", true, "SELECT * FROM `demo` TABLESAMPLE BERNOULLI (50) LIMIT 1 INTO OUTFILE '/tmp/sample.csv'"},
+		{"select * from demo tablesample bernoulli(50) order by a, b into outfile '/tmp/sample.csv';", true, "SELECT * FROM `demo` TABLESAMPLE BERNOULLI (50) ORDER BY `a`,`b` INTO OUTFILE '/tmp/sample.csv'"},
 
 		// negative test cases
 		{"select * from tbl tablesample system(50) a;", false, ""},
@@ -4661,6 +4661,26 @@ func (s *testParserSuite) TestTableSample(c *C) {
 		{"select 1 from dual tablesample system (50);", false, ""},
 	}
 	s.RunTest(c, table)
+	p := parser.New()
+	cases := []string{
+		"select * from tbl tablesample (33.3 + 44.4);",
+		"select * from tbl tablesample (33.3 + 44.4 percent);",
+		"select * from tbl tablesample (33 + 44 rows);",
+		"select * from tbl tablesample (33 + 44 rows) repeatable (55 + 66);",
+		"select * from tbl tablesample (200);",
+		"select * from tbl tablesample (-10);",
+		"select * from tbl tablesample (null);",
+		"select * from tbl tablesample (33.3 rows);",
+		"select * from tbl tablesample (-4 rows);",
+		"select * from tbl tablesample (50) repeatable ('ssss');",
+		"delete from tbl using tbl2 tablesample(10 rows) repeatable (111) where tbl.id = tbl2.id",
+		"update tbl tablesample regions() set id = '1'",
+	}
+	for _, sql := range cases {
+		comment := Commentf("source %v", sql)
+		_, err := p.ParseOneStmt(sql, "", "")
+		c.Assert(err, IsNil, comment)
+	}
 }
 
 func (s *testParserSuite) TestGeneratedColumn(c *C) {

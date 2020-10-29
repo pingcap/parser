@@ -184,6 +184,7 @@ type TableName struct {
 
 	IndexHints     []*IndexHint
 	PartitionNames []model.CIStr
+	TableSample    *TableSample
 }
 
 // Restore implements Node interface.
@@ -216,14 +217,25 @@ func (n *TableName) restoreIndexHints(ctx *format.RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing IndexHints")
 		}
 	}
+	return nil
+}
 
+func (n *TableName) restoreTableSample(ctx *format.RestoreCtx) error {
+	if n.TableSample != nil {
+		if err := n.TableSample.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing TableName.TableSample")
+		}
+	}
 	return nil
 }
 
 func (n *TableName) Restore(ctx *format.RestoreCtx) error {
 	n.restoreName(ctx)
 	n.restorePartitions(ctx)
-	return n.restoreIndexHints(ctx)
+	if err := n.restoreIndexHints(ctx); err != nil {
+		return err
+	}
+	return n.restoreTableSample(ctx)
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -302,6 +314,13 @@ func (n *TableName) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*TableName)
+	if n.TableSample != nil {
+		newTs, ok := n.TableSample.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableSample = newTs.(*TableSample)
+	}
 	return v.Leave(n)
 }
 
@@ -408,6 +427,9 @@ func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
 		}
 		if err := tn.restoreIndexHints(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).IndexHints")
+		}
+		if err := tn.restoreTableSample(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).TableSample")
 		}
 
 		if needParen {
@@ -792,15 +814,16 @@ const (
 	SampleClauseUnitTypePercent
 )
 
-type SampleClause struct {
+type TableSample struct {
 	node
 	SampleMethod     SampleMethodType
 	Expr             ExprNode
 	SampleClauseUnit SampleClauseUnitType
-	RepeatableSeed   uint64
+	RepeatableSeed   ExprNode
 }
 
-func (s *SampleClause) Restore(ctx *format.RestoreCtx) error {
+func (s *TableSample) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord(" TABLESAMPLE ")
 	switch s.SampleMethod {
 	case SampleMethodTypeBernoulli:
 		ctx.WriteKeyWord("BERNOULLI ")
@@ -812,7 +835,7 @@ func (s *SampleClause) Restore(ctx *format.RestoreCtx) error {
 	ctx.WritePlain("(")
 	if s.Expr != nil {
 		if err := s.Expr.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore SampleClause.Expr")
+			return errors.Annotate(err, "An error occurred while restore TableSample.Expr")
 		}
 	}
 	switch s.SampleClauseUnit {
@@ -824,24 +847,37 @@ func (s *SampleClause) Restore(ctx *format.RestoreCtx) error {
 
 	}
 	ctx.WritePlain(")")
-	if s.RepeatableSeed != 0 {
+	if s.RepeatableSeed != nil {
 		ctx.WriteKeyWord(" REPEATABLE")
-		ctx.WritePlainf("(%d)", s.RepeatableSeed)
+		ctx.WritePlain("(")
+		if err := s.RepeatableSeed.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableSample.Expr")
+		}
+		ctx.WritePlain(")")
 	}
 	return nil
 }
 
-func (s *SampleClause) Accept(v Visitor) (node Node, ok bool) {
+func (s *TableSample) Accept(v Visitor) (node Node, ok bool) {
 	newNode, skipChildren := v.Enter(s)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
-	s = newNode.(*SampleClause)
-	node, ok = s.Expr.Accept(v)
-	if !ok {
-		return s, false
+	s = newNode.(*TableSample)
+	if s.Expr != nil {
+		node, ok = s.Expr.Accept(v)
+		if !ok {
+			return s, false
+		}
+		s.Expr = node.(ExprNode)
 	}
-	s.Expr = node.(ExprNode)
+	if s.RepeatableSeed != nil {
+		node, ok = s.RepeatableSeed.Accept(v)
+		if !ok {
+			return s, false
+		}
+		s.RepeatableSeed = node.(ExprNode)
+	}
 	return v.Leave(s)
 }
 
@@ -907,8 +943,6 @@ type SelectStmt struct {
 	Kind SelectStmtKind
 	// Lists is filled only when Kind == SelectStmtKindValues
 	Lists []*RowExpr
-	// TableSample is the table sample clause.
-	TableSample *SampleClause
 }
 
 // Restore implements Node interface.
@@ -980,12 +1014,6 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 
 		if n.From == nil && n.Where != nil {
 			ctx.WriteKeyWord(" FROM DUAL")
-		}
-		if n.TableSample != nil {
-			ctx.WriteKeyWord(" TABLESAMPLE ")
-			if err := n.TableSample.Restore(ctx); err != nil {
-				return errors.Annotate(err, "An error occurred while restore SelectStmt.TableSample")
-			}
 		}
 
 		if n.Where != nil {
@@ -1106,13 +1134,6 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.From = node.(*TableRefsClause)
-	}
-	if n.TableSample != nil {
-		node, ok := n.TableSample.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.TableSample = node.(*SampleClause)
 	}
 
 	if n.Where != nil {

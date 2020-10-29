@@ -786,6 +786,7 @@ import (
 	NextValueForSequence   "Default nextval expression"
 	FunctionNameSequence   "Function with sequence function call"
 	WindowFuncCall         "WINDOW function call"
+	RepeatableOpt          "Repeatable optional in sample clause"
 
 %type	<statement>
 	AdminStmt            "Check table statement or show ddl statement"
@@ -1050,7 +1051,6 @@ import (
 	SelectStmtBasic                        "SELECT statement from constant value"
 	SelectStmtFromDualTable                "SELECT statement from dual table"
 	SelectStmtFromTable                    "SELECT statement from table"
-	SelectStmtFromTableSample              "SELECT statement from table sample"
 	SelectStmtGroup                        "SELECT statement optional GROUP BY clause"
 	SelectStmtIntoOption                   "SELECT statement into clause"
 	SequenceOption                         "Create sequence option"
@@ -1096,6 +1096,7 @@ import (
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
 	TableRefs                              "table references"
+	TableSampleOpt                         "table sample clause optional"
 	TableSampleMethodOpt                   "table sample method optional"
 	TableSampleUnitOpt                     "table sample unit optional"
 	TableToTable                           "rename table to table"
@@ -1165,7 +1166,6 @@ import (
 	InOrNotOp                              "In predicate"
 	LikeOrNotOp                            "Like predicate"
 	RegexpOrNotOp                          "Regexp predicate"
-	RepeatableOpt                          "Repeatable optional in sample clause"
 	NumericType                            "Numeric types"
 	IntegerType                            "Integer Types types"
 	BooleanType                            "Boolean Types types"
@@ -7291,34 +7291,38 @@ SelectStmtFromTable:
 		$$ = st
 	}
 
-SelectStmtFromTableSample:
-	SelectStmtBasic "FROM" TableName PartitionNameListOpt TableAsNameOpt "TABLESAMPLE" TableSampleMethodOpt '(' Expression TableSampleUnitOpt ')' RepeatableOpt WhereClauseOptional
+TableSampleOpt:
+	%prec empty
 	{
-		st := $1.(*ast.SelectStmt)
-		tn := $3.(*ast.TableName)
-		tn.PartitionNames = $4.([]model.CIStr)
-		st.From = &ast.TableRefsClause{TableRefs: &ast.Join{
-			Left: &ast.TableSource{Source: tn, AsName: $5.(model.CIStr)},
-		}}
-		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
-		if lastField.Expr != nil && lastField.AsName.O == "" {
-			lastEnd := parser.endOffset(&yyS[yypt-11])
-			lastField.SetText(parser.src[lastField.Offset:lastEnd])
+		$$ = nil
+	}
+|	"TABLESAMPLE" TableSampleMethodOpt '(' Expression TableSampleUnitOpt ')' RepeatableOpt
+	{
+		var repSeed ast.ExprNode
+		if $7 != nil {
+			repSeed = ast.NewValueExpr($7, parser.charset, parser.collation)
 		}
-		var tableSample ast.SampleClause
-		tableSample.SampleMethod = $7.(ast.SampleMethodType)
-		tableSample.Expr = ast.NewValueExpr($9, parser.charset, parser.collation)
-		tableSample.SampleClauseUnit = $10.(ast.SampleClauseUnitType)
-		tableSample.RepeatableSeed = $12.(uint64)
-		if $13 != nil {
-			st.Where = $13.(ast.ExprNode)
+		$$ = &ast.TableSample{
+			SampleMethod:     $2.(ast.SampleMethodType),
+			Expr:             ast.NewValueExpr($4, parser.charset, parser.collation),
+			SampleClauseUnit: $5.(ast.SampleClauseUnitType),
+			RepeatableSeed:   repSeed,
 		}
-		st.TableSample = &tableSample
-		$$ = st
+	}
+|	"TABLESAMPLE" TableSampleMethodOpt '(' ')' RepeatableOpt
+	{
+		var repSeed ast.ExprNode
+		if $5 != nil {
+			repSeed = ast.NewValueExpr($5, parser.charset, parser.collation)
+		}
+		$$ = &ast.TableSample{
+			SampleMethod:   $2.(ast.SampleMethodType),
+			RepeatableSeed: repSeed,
+		}
 	}
 
 TableSampleMethodOpt:
-	/* empty */ %prec empty
+	%prec empty
 	{
 		$$ = ast.SampleMethodTypeNone
 	}
@@ -7336,7 +7340,7 @@ TableSampleMethodOpt:
 	}
 
 TableSampleUnitOpt:
-	/* emtpy */ %prec empty
+	%prec empty
 	{
 		$$ = ast.SampleClauseUnitTypeDefault
 	}
@@ -7350,11 +7354,11 @@ TableSampleUnitOpt:
 	}
 
 RepeatableOpt:
-	/* empty */ %prec empty
+	%prec empty
 	{
-		$$ = uint64(0)
+		$$ = nil
 	}
-|	"REPEATABLE" '(' LengthNum ')'
+|	"REPEATABLE" '(' Expression ')'
 	{
 		$$ = $3
 	}
@@ -7428,14 +7432,6 @@ SelectStmt:
 		}
 		if $5 != nil {
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
-		}
-		$$ = st
-	}
-|	SelectStmtFromTableSample OrderByOptional
-	{
-		st := $1.(*ast.SelectStmt)
-		if $2 != nil {
-			st.OrderBy = $2.(*ast.OrderByClause)
 		}
 		$$ = st
 	}
@@ -7817,11 +7813,14 @@ TableRef:
 |	JoinTable
 
 TableFactor:
-	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
+	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt TableSampleOpt
 	{
 		tn := $1.(*ast.TableName)
 		tn.PartitionNames = $2.([]model.CIStr)
 		tn.IndexHints = $4.([]*ast.IndexHint)
+		if $5 != nil {
+			tn.TableSample = $5.(*ast.TableSample)
+		}
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
 |	'(' SetOprStmt1 ')' TableAsNameOpt
