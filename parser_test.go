@@ -4301,6 +4301,8 @@ func (s *testParserSuite) TestBinding(c *C) {
 		{"drop session binding for select * from t", true, "DROP SESSION BINDING FOR SELECT * FROM `t`"},
 		{"drop session binding for digest 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663'", true, "DROP SESSION BINDING FOR DIGEST 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663'"},
 		{"drop global binding for digest 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663'", true, "DROP GLOBAL BINDING FOR DIGEST 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663'"},
+		{"drop session binding for digest 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' using /*+ USE_INDEX(@`sel_1` `mysql`.`t` ) */", true, "DROP SESSION BINDING FOR DIGEST 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' USING /*+ USE_INDEX(@`sel_1` `mysql`.`t` ) */"},
+		{"drop global binding for digest 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' using /*+ USE_INDEX(@`sel_1` `mysql`.`t` ) */", true, "DROP GLOBAL BINDING FOR DIGEST 'faf387319a3edeb547801682c32bc796b088985b4fd97ceb04e36295be419663' USING /*+ USE_INDEX(@`sel_1` `mysql`.`t` ) */"},
 		{"drop global binding for select * from t using select * from t use index(a)", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"drop session binding for select * from t using select * from t use index(a)", true, "DROP SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"show global bindings", true, "SHOW GLOBAL BINDINGS"},

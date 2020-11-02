@@ -1573,6 +1573,7 @@ type DropBindingStmt struct {
 	StmtDigest  string
 	OriginNode  StmtNode
 	HintedNode  StmtNode
+	Hints       []*TableOptimizerHint
 }
 
 func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1597,6 +1598,16 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 	case BindingForDigest:
 		ctx.WriteKeyWord("DIGEST ")
 		ctx.WriteString(n.StmtDigest)
+		if len(n.Hints) > 0 {
+			ctx.WriteKeyWord(" USING ")
+			ctx.WritePlain("/*+ ")
+			for _, hint := range n.Hints {
+				if err := hint.Restore(ctx); err != nil {
+					return errors.Trace(err)
+				}
+			}
+			ctx.WritePlain(" */")
+		}
 	}
 	return nil
 }

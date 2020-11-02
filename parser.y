@@ -11254,6 +11254,22 @@ DropBindingStmt:
 
 		$$ = x
 	}
+|	"DROP" GlobalScope "BINDING" "FOR" "DIGEST" stringLit "USING" hintComment
+	{
+		hints, warns := parser.ParseHint($8)
+		for _, w := range warns {
+			yylex.AppendError(w)
+			parser.lastErrorAsWarn()
+		}
+		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForDigest,
+			GlobalScope: $2.(bool),
+			StmtDigest:  $6,
+			Hints:       hints,
+		}
+
+		$$ = x
+	}
 
 /*************************************************************************************
  * Grant statement
