@@ -1873,6 +1873,7 @@ const (
 	ShowProfile
 	ShowProfiles
 	ShowMasterStatus
+	ShowSlaveStatus
 	ShowPrivileges
 	ShowErrors
 	ShowBindings
@@ -2013,6 +2014,8 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		}
 	case ShowMasterStatus:
 		ctx.WriteKeyWord("MASTER STATUS")
+	case ShowSlaveStatus:
+		ctx.WriteKeyWord("SLAVE STATUS")
 	case ShowProcessList:
 		restoreOptFull()
 		ctx.WriteKeyWord("PROCESSLIST")

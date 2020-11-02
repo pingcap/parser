@@ -8723,6 +8723,12 @@ ShowStmt:
 			Tp: ast.ShowMasterStatus,
 		}
 	}
+|	"SHOW" "SLAVE" "STATUS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp: ast.ShowSlaveStatus,
+		}
+	}
 |	"SHOW" OptFull "PROCESSLIST"
 	{
 		$$ = &ast.ShowStmt{

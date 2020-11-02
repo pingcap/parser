@@ -862,6 +862,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"SHOW STATUS", true, "SHOW SESSION STATUS"},
 		{"SHOW GLOBAL STATUS", true, "SHOW GLOBAL STATUS"},
 		{"SHOW SESSION STATUS", true, "SHOW SESSION STATUS"},
+		{"SHOW ENGINES", true, "SHOW ENGINES"},
+		{"SHOW ENGINE INNODB STATUS", true, "SHOW ENGINE `INNODB` STATUS"}, // MySQL SHOW ENGINE STATUS support (Added Nov 2020)
+		{"SHOW ENGINE INNODB MUTEX", true, "SHOW ENGINE `INNODB` MUTEX"},   // MySQL SHOW ENGINE MUTEX support (Added Nov 2020)
 		{`SHOW STATUS LIKE 'Up%'`, true, "SHOW SESSION STATUS LIKE 'Up%'"},
 		{`SHOW STATUS WHERE Variable_name`, true, "SHOW SESSION STATUS WHERE `Variable_name`"},
 		{`SHOW STATUS WHERE Variable_name LIKE 'Up%'`, true, "SHOW SESSION STATUS WHERE `Variable_name` LIKE 'Up%'"},
@@ -897,6 +900,7 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{`SHOW PROFILE CPU FOR QUERY 2 LIMIT 1,1`, true, "SHOW PROFILE CPU FOR QUERY 2 LIMIT 1,1"},
 		{`SHOW PROFILE CPU, MEMORY, BLOCK IO, CONTEXT SWITCHES, PAGE FAULTS, IPC, SWAPS, SOURCE FOR QUERY 1 limit 100`, true, "SHOW PROFILE CPU, MEMORY, BLOCK IO, CONTEXT SWITCHES, PAGE FAULTS, IPC, SWAPS, SOURCE FOR QUERY 1 LIMIT 100"},
 		{`SHOW MASTER STATUS`, true, "SHOW MASTER STATUS"},
+		{`SHOW SLAVE STATUS`, true, "SHOW SLAVE STATUS"}, // MySQL SHOW SLAVE STATUS support (Added Nov 2020)
 		{`SHOW PRIVILEGES`, true, "SHOW PRIVILEGES"},
 		// for show character set
 		{"show character set;", true, "SHOW CHARSET"},
@@ -4633,6 +4637,7 @@ func (s *testParserSuite) TestWindowFunctions(c *C) {
 	s.RunTest(c, table)
 }
 
+// MySQL Spatial Data Support (Added 03 May 2020)
 func (s *testParserSuite) TestSpatialDataType(c *C) {
 	table := []testCase{
 		{"CREATE SPATIAL INDEX g ON geom (g);", true, "CREATE SPATIAL INDEX `g` ON `geom` (`g`)"},
