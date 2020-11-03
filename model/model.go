@@ -748,9 +748,10 @@ type PartitionInfo struct {
 
 // GetNameByID gets the partition name by ID.
 func (pi *PartitionInfo) GetNameByID(id int64) string {
-	for _, def := range pi.Definitions {
-		if id == def.ID {
-			return def.Name.L
+	definitions := pi.Definitions
+	for i := range definitions {
+		if id == definitions[i].ID {
+			return definitions[i].Name.L
 		}
 	}
 	return ""
@@ -776,8 +777,9 @@ func (ci *PartitionDefinition) Clone() PartitionDefinition {
 // FindPartitionDefinitionByName finds PartitionDefinition by name.
 func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
 	lowConstrName := strings.ToLower(partitionDefinitionName)
-	for i, pd := range t.Partition.Definitions {
-		if pd.Name.L == lowConstrName {
+	definitions := t.Partition.Definitions
+	for i := range definitions {
+		if definitions[i].Name.L == lowConstrName {
 			return &t.Partition.Definitions[i]
 		}
 	}
