@@ -2165,7 +2165,7 @@ const (
 	AlterTableRenameColumn
 	AlterTableRenameTable
 	AlterTableAlterColumn
-	AlterTableReadWrite
+	AlterTableAccessMode
 	AlterTableLock
 	AlterTableAlgorithm
 	AlterTableRenameIndex
@@ -2501,7 +2501,7 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 		} else {
 			ctx.WriteKeyWord(" DROP DEFAULT")
 		}
-	case AlterTableReadWrite:
+	case AlterTableAccessMode:
 		ctx.WriteKeyWord("READ ")
 		if n.ReadOnly {
 			ctx.WriteKeyWord("ONLY")

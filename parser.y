@@ -975,7 +975,7 @@ import (
 	LoadDataSetList                        "Load data specifications"
 	LoadDataSetItem                        "Single load data specification"
 	LocalOpt                               "Local opt"
-	ReadWriteClause                        "Alter table read only/write clause"
+	AccessMode                             "Access mode (READ ONLY/READ WRITE)"
 	LockClause                             "Alter table lock clause"
 	LogTypeOpt                             "Optional log type used in FLUSH statements"
 	NumLiteral                             "Num/Int/Float/Decimal Literal"
@@ -1936,10 +1936,10 @@ AlterTableSpec:
 			ToKey:   model.NewCIStr($5),
 		}
 	}
-|	ReadWriteClause
+|	AccessMode
 	{
 		$$ = &ast.AlterTableSpec{
-			Tp:       ast.AlterTableReadWrite,
+			Tp:       ast.AlterTableAccessMode,
 			ReadOnly: $1.(bool),
 		}
 	}
@@ -2102,7 +2102,7 @@ AlgorithmClause:
 		return 1
 	}
 
-ReadWriteClause:
+AccessMode:
 	"READ" "ONLY"
 	{
 		$$ = true
@@ -2506,19 +2506,15 @@ BeginTransactionStmt:
 	{
 		$$ = &ast.BeginStmt{}
 	}
-|	"START" "TRANSACTION" "READ" "WRITE"
+|	"START" "TRANSACTION" AccessMode
 	{
-		$$ = &ast.BeginStmt{}
+		$$ = &ast.BeginStmt{
+			ReadOnly: $3.(bool),
+		}
 	}
 |	"START" "TRANSACTION" "WITH" "CONSISTENT" "SNAPSHOT"
 	{
 		$$ = &ast.BeginStmt{}
-	}
-|	"START" "TRANSACTION" "READ" "ONLY"
-	{
-		$$ = &ast.BeginStmt{
-			ReadOnly: true,
-		}
 	}
 |	"START" "TRANSACTION" "READ" "ONLY" "WITH" "TIMESTAMP" "BOUND" TimestampBound
 	{
