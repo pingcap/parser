@@ -503,6 +503,14 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"SELECT a FROM t", true, "SELECT `a` FROM `t`"},
 		{"SELECT a.b.c.d FROM t", false, ""},
 
+		// call statement - MySQL Call Statement Support (Added Nov 2020)
+		{"CALL sp", true, "CALL `sp`()"},
+		{"CALL sp()", true, "CALL `sp`()"},
+		{"CALL sp(1,2)", true, "CALL `sp`(1,2)"},
+		{"CALL a.sp(1,2)", true, "CALL `a`.`sp`(1,2)"},
+		{"CALL a.b.sp(1,2)", false, ""},
+		{"CALL p, sp(1,2)", false, ""},
+
 		// do statement
 		{"DO 1", true, "DO 1"},
 		{"DO 1, sleep(1)", true, "DO 1, SLEEP(1)"},

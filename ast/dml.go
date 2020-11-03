@@ -50,6 +50,7 @@ var (
 	_ Node = &PartitionByClause{}
 	_ Node = &FrameClause{}
 	_ Node = &FrameBound{}
+	_ Node = &ProcedureName{}
 )
 
 // JoinType is join type, including cross/left/right/full.
@@ -226,6 +227,16 @@ func (n *TableName) Restore(ctx *format.RestoreCtx) error {
 	return n.restoreIndexHints(ctx)
 }
 
+// Accept implements Node Accept interface.
+func (n *TableName) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*TableName)
+	return v.Leave(n)
+}
+
 // IndexHintType is the type for index hint use, ignore or force.
 type IndexHintType int
 
@@ -293,16 +304,6 @@ func (n *IndexHint) Restore(ctx *format.RestoreCtx) error {
 	ctx.WritePlain(")")
 
 	return nil
-}
-
-// Accept implements Node Accept interface.
-func (n *TableName) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
-	n = newNode.(*TableName)
-	return v.Leave(n)
 }
 
 // DeleteTableList is the tablelist used in delete statement multi-table mode.
@@ -2747,3 +2748,73 @@ const (
 	TimestampBoundReadTimestamp
 	TimestampBoundMinReadTimestamp
 )
+
+type CallStmt struct {
+	dmlNode
+
+	ProcedureName *ProcedureName
+	Parameters    []ExprNode
+}
+
+func (n *CallStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("CALL ")
+	if err := n.ProcedureName.Restore(ctx); err != nil {
+		return errors.Annotatef(err, "An error occurred while restore CallStmt.ProcedureName[%v]")
+	}
+
+	ctx.WritePlain("(")
+	for j, v := range n.Parameters {
+		if j != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CallStmt.Parameters[%v]", j)
+		}
+	}
+	ctx.WritePlain(")")
+	return nil
+}
+
+func (n *CallStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	n = newNode.(*CallStmt)
+	for i, val := range n.Parameters {
+		node, ok := val.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Parameters[i] = node.(ExprNode)
+	}
+
+	return v.Leave(n)
+}
+
+// ProcedureName represents a store procedure.
+type ProcedureName struct {
+	node
+
+	Schema model.CIStr
+	Name   model.CIStr
+}
+
+func (n *ProcedureName) Restore(ctx *format.RestoreCtx) error {
+	if n.Schema.String() != "" {
+		ctx.WriteName(n.Schema.String())
+		ctx.WritePlain(".")
+	}
+	ctx.WriteName(n.Name.String())
+	return nil
+}
+
+func (n *ProcedureName) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*ProcedureName)
+	return v.Leave(n)
+}
