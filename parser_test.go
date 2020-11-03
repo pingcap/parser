@@ -963,6 +963,13 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"show backup", true, "SHOW BACKUP"},
 		{"show restore like 'r0001'", true, "SHOW RESTORE LIKE 'r0001'"},
 		{"show backup where start_time > now() - interval 10 hour", true, "SHOW BACKUP WHERE `start_time`>DATE_SUB(NOW(), INTERVAL 10 HOUR)"},
+		// for show binlog/relaylog events - MySQL Binary Log Support (Added Nov 2020)
+		{"show binlog events", true, "SHOW BINLOG EVENTS"},
+		{"show binlog events in '__binlog__' from 1 limit 10", true, "SHOW BINLOG EVENTS IN '__binlog__' FROM 1 LIMIT 10"},
+		{"show relaylog events", true, "SHOW RELAYLOG EVENTS"},
+		{"show relaylog events in '__binlog__' from 1 limit 10 for channel 'log'", true, "SHOW RELAYLOG EVENTS IN '__binlog__' FROM 1 LIMIT 10 FOR CHANNEL 'log'"},
+		{"show binary logs", true, "SHOW BINARY LOGS"},
+		{"show master logs", true, "SHOW MASTER LOGS"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},

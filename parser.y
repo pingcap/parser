@@ -318,6 +318,7 @@ import (
 	cache                   "CACHE"
 	capture                 "CAPTURE"
 	cascaded                "CASCADED"
+	channel                 "CHANNEL"
 	charsetKwd              "CHARSET"
 	checksum                "CHECKSUM"
 	cipher                  "CIPHER"
@@ -488,6 +489,7 @@ import (
 	rebuild                 "REBUILD"
 	recover                 "RECOVER"
 	redundant               "REDUNDANT"
+	relaylog                "RELAYLOG"
 	reload                  "RELOAD"
 	remove                  "REMOVE"
 	reorganize              "REORGANIZE"
@@ -1192,6 +1194,9 @@ import (
 	BRIEIntegerOptionName                  "Name of a BRIE option which takes an integer as input"
 	BRIEStringOptionName                   "Name of a BRIE option which takes a string as input"
 	ProcedureName                          "Procedure Name"
+	InFileOpt                              "[IN 'log_name']"
+	FromPosOpt                             "[FROM pos]"
+	ForChannelOpt                          "[FOR CHANNEL channel]"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -5243,6 +5248,8 @@ UnReservedKeyword:
 |	"GEOMETRYCOLLECTION"
 |	"SRID"
 |	"MUTEX"
+|	"RELAYLOG"
+|	"CHANNEL"
 
 TiDBKeyword:
 	"ADMIN"
@@ -8798,6 +8805,70 @@ ShowStmt:
 		$$ = &ast.ShowStmt{
 			Tp: ast.ShowBuiltins,
 		}
+	}
+|	"SHOW" "BINLOG" "EVENTS" InFileOpt FromPosOpt SelectStmtLimit
+	{
+		v := &ast.ShowStmt{
+			Tp:       ast.ShowBinlogEvents,
+			LogName:  $4.(string),
+			LogPos:   $5.(int64),
+		}
+		if $6 != nil {
+			v.LogLimit = $6.(*ast.Limit)
+		}
+		$$ = v
+	}
+|	"SHOW" "RELAYLOG" "EVENTS" InFileOpt FromPosOpt SelectStmtLimit ForChannelOpt
+	{
+		v := &ast.ShowStmt{
+			Tp:         ast.ShowRelayLogEvents,
+			LogName:    $4.(string),
+			LogPos:     $5.(int64),
+			LogChannel: $7.(string),
+		}
+		if $6 != nil {
+			v.LogLimit = $6.(*ast.Limit)
+		}
+		$$ = v
+	}
+|	"SHOW" "BINARY" "LOGS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp: ast.ShowBinaryLogs,
+		}
+	}
+|	"SHOW" "MASTER" "LOGS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp: ast.ShowMasterLogs,
+		}
+	}
+
+FromPosOpt:
+	{
+		$$ = int64(0)
+	}
+|	"FROM" SignedNum
+	{
+		$$ = $2
+	}
+
+InFileOpt:
+	{
+		$$ = ""
+	}
+|	"IN" stringLit
+	{
+		$$ = $2
+	}
+
+ForChannelOpt:
+	{
+		$$ = ""
+	}
+|	"FOR" "CHANNEL" stringLit
+	{
+		$$ = $3
 	}
 
 ShowProfileTypesOpt:
