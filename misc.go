@@ -457,6 +457,7 @@ var tokenMap = map[string]int{
 	"MULTIPOINT":                 multiPointType,
 	"MULTILINESTRING":            multiLineStringType,
 	"MULTIPOLYGON":               multiPolygonType,
+	"MUTEX":                      mutex,
 	"NAMES":                      names,
 	"NATIONAL":                   national,
 	"NATURAL":                    natural,

@@ -1844,6 +1844,8 @@ type ShowStmtType int
 const (
 	ShowNone = iota
 	ShowEngines
+	ShowEngineStatus
+	ShowEngineMutex
 	ShowDatabases
 	ShowTables
 	ShowTableStatus
@@ -1912,7 +1914,8 @@ type ShowStmt struct {
 	Table       *TableName  // Used for showing columns.
 	Column      *ColumnName // Used for `desc table column`.
 	IndexName   model.CIStr
-	Flag        int // Some flag parsed from sql, such as FULL.
+	EngineName  model.CIStr // Used for `show engine ... status`.
+	Flag        int         // Some flag parsed from sql, such as FULL.
 	Full        bool
 	User        *auth.UserIdentity   // Used for show grants/create user.
 	Roles       []*auth.RoleIdentity // Used for show grants .. using
@@ -2091,6 +2094,14 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		switch n.Tp {
 		case ShowEngines:
 			ctx.WriteKeyWord("ENGINES")
+		case ShowEngineStatus:
+			ctx.WriteKeyWord("ENGINE ")
+			ctx.WriteName(n.EngineName.String())
+			ctx.WriteKeyWord(" STATUS")
+		case ShowEngineMutex:
+			ctx.WriteKeyWord("ENGINE ")
+			ctx.WriteName(n.EngineName.String())
+			ctx.WriteKeyWord(" MUTEX")
 		case ShowConfig:
 			ctx.WriteKeyWord("CONFIG")
 		case ShowDatabases:

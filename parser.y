@@ -440,6 +440,7 @@ import (
 	multiPointType          "MULTIPOINT"
 	multiLineStringType     "MULTILINESTRING"
 	multiPolygonType        "MULTIPOLYGON"
+	mutex                   "MUTEX"
 	names                   "NAMES"
 	national                "NATIONAL"
 	ncharType               "NCHAR"
@@ -5214,6 +5215,7 @@ UnReservedKeyword:
 |	"MULTIPOLYGON"
 |	"GEOMETRYCOLLECTION"
 |	"SRID"
+|	"MUTEX"
 
 TiDBKeyword:
 	"ADMIN"
@@ -8862,6 +8864,20 @@ ShowTargetFilterable:
 	"ENGINES"
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowEngines}
+	}
+|	"ENGINE" Identifier "MUTEX"
+	{
+		$$ = &ast.ShowStmt{
+			Tp:         ast.ShowEngineMutex,
+			EngineName: model.NewCIStr($2),
+		}
+	}
+|	"ENGINE" Identifier "STATUS"
+	{
+		$$ = &ast.ShowStmt{
+			Tp:         ast.ShowEngineStatus,
+			EngineName: model.NewCIStr($2),
+		}
 	}
 |	"DATABASES"
 	{
