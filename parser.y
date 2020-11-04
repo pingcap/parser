@@ -7510,7 +7510,7 @@ TableFactor:
 		tn.IndexHints = $4.([]*ast.IndexHint)
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
-|	'(' SelectStmt ')' TableAsName
+|	'(' SelectStmt ')' TableAsNameOpt
 	{
 		st := $2.(*ast.SelectStmt)
 		endOffset := parser.endOffset(&yyS[yypt-1])
