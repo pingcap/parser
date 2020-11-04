@@ -49,7 +49,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 
 	reservedKws := []string{
 		"add", "all", "alter", "analyze", "and", "as", "asc", "between", "bigint",
-		"binary", "blob", "both", "by", "cascade", "case", "change", "character", "check", "collate",
+		"binary", "blob", "both", "by", "call", "cascade", "case", "change", "character", "check", "collate",
 		"column", "constraint", "convert", "create", "cross", "current_date", "current_time",
 		"current_timestamp", "current_user", "database", "databases", "day_hour", "day_microsecond",
 		"day_minute", "day_second", "decimal", "default", "delete", "desc", "describe",
@@ -1151,6 +1151,12 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for change statement
 		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true, "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8250'"},
 		{"change drainer to node_state ='paused' for node_id '127.0.0.1:8249'", true, "CHANGE DRAINER TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8249'"},
+
+		// for call statement
+		{"call ", false, ""},
+		{"call test", true, "CALL TEST()"},
+		{"call test()", true, "CALL TEST()"},
+		{"call test(1, 'test', true)", true, "CALL TEST(1, 'test', TRUE)"},
 	}
 	s.RunTest(c, table)
 }

@@ -83,6 +83,7 @@ import (
 	blobType          "BLOB"
 	both              "BOTH"
 	by                "BY"
+	call              "CALL"
 	cascade           "CASCADE"
 	caseKwd           "CASE"
 	change            "CHANGE"
@@ -782,6 +783,7 @@ import (
 	NextValueForSequence   "Default nextval expression"
 	FunctionNameSequence   "Function with sequence function call"
 	WindowFuncCall         "WINDOW function call"
+	ProcedureCall          "Procedure call with Identifier or identifier"
 
 %type	<statement>
 	AdminStmt              "Check table statement or show ddl statement"
@@ -828,6 +830,7 @@ import (
 	GrantStmt              "Grant statement"
 	GrantRoleStmt          "Grant role statement"
 	InsertIntoStmt         "INSERT INTO statement"
+	CallStmt               "CALL statement"
 	IndexAdviseStmt        "INDEX ADVISE statement"
 	KillStmt               "Kill statement"
 	LoadDataStmt           "Load data statement"
@@ -5521,6 +5524,45 @@ NotKeywordToken:
 
 /************************************************************************************
  *
+ *  Call Statements
+ *
+ **********************************************************************************/
+CallStmt:
+	"CALL" ProcedureCall
+	{
+		$$ = &ast.CallStmt{
+			Procedure: $2.(*ast.FuncCallExpr),
+		}
+	}
+
+ProcedureCall:
+	identifier
+	{
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{},
+		}
+	}
+|	Identifier '.' Identifier
+	{
+		var tp ast.FuncCallExprType
+		if isInTokenMap($3) {
+			tp = ast.FuncCallExprTypeKeyword
+		} else {
+			tp = ast.FuncCallExprTypeGeneric
+		}
+
+		$$ = &ast.FuncCallExpr{
+			Tp:     tp,
+			Schema: model.NewCIStr($1),
+			FnName: model.NewCIStr($3),
+			Args:   []ast.ExprNode{},
+		}
+	}
+|	FunctionCallGeneric
+
+/************************************************************************************
+ *
  *  Insert Statements
  *
  *  TODO: support PARTITION
@@ -9684,6 +9726,7 @@ Statement:
 |	FlashbackTableStmt
 |	GrantStmt
 |	GrantRoleStmt
+|	CallStmt
 |	InsertIntoStmt
 |	IndexAdviseStmt
 |	KillStmt
