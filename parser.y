@@ -5545,15 +5545,8 @@ ProcedureCall:
 	}
 |	Identifier '.' Identifier
 	{
-		var tp ast.FuncCallExprType
-		if isInTokenMap($3) {
-			tp = ast.FuncCallExprTypeKeyword
-		} else {
-			tp = ast.FuncCallExprTypeGeneric
-		}
-
 		$$ = &ast.FuncCallExpr{
-			Tp:     tp,
+			Tp:     ast.FuncCallExprTypeGeneric,
 			Schema: model.NewCIStr($1),
 			FnName: model.NewCIStr($3),
 			Args:   []ast.ExprNode{},
