@@ -1154,9 +1154,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 
 		// for call statement
 		{"call ", false, ""},
-		{"call test", true, "CALL TEST()"},
-		{"call test()", true, "CALL TEST()"},
-		{"call test(1, 'test', true)", true, "CALL TEST(1, 'test', TRUE)"},
+		{"call test", true, "CALL `test`()"},
+		{"call test()", true, "CALL `test`()"},
+		{"call test(1, 'test', true)", true, "CALL `test`(1, 'test', TRUE)"},
 		{"call x.y;", true, "CALL `x`.`y`()"},
 		{"call x.y();", true, "CALL `x`.`y`()"},
 		{"call x.y('p', 'q', 'r');", true, "CALL `x`.`y`('p', 'q', 'r')"},

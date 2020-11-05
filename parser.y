@@ -5539,6 +5539,7 @@ ProcedureCall:
 	identifier
 	{
 		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
 			FnName: model.NewCIStr($1),
 			Args:   []ast.ExprNode{},
 		}
@@ -5552,7 +5553,23 @@ ProcedureCall:
 			Args:   []ast.ExprNode{},
 		}
 	}
-|	FunctionCallGeneric
+|	identifier '(' ExpressionListOpt ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
+			FnName: model.NewCIStr($1),
+			Args:   $3.([]ast.ExprNode),
+		}
+	}
+|	Identifier '.' Identifier '(' ExpressionListOpt ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
+			Schema: model.NewCIStr($1),
+			FnName: model.NewCIStr($3),
+			Args:   $5.([]ast.ExprNode),
+		}
+	}
 
 /************************************************************************************
  *
