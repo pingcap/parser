@@ -4630,6 +4630,10 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 	_, _, err = parser.Parse(createTableStr, "", "")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "[parser:1149]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use")
+
+	createTableStr = `CREATE TABLE t (c_double double(10, 2))`
+	_, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestAnalyze(c *C) {
