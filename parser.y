@@ -321,6 +321,7 @@ import (
 	cipher                "CIPHER"
 	cleanup               "CLEANUP"
 	client                "CLIENT"
+	clientErrorsSummary   "CLIENT_ERRORS_SUMMARY"
 	coalesce              "COALESCE"
 	collation             "COLLATION"
 	columnFormat          "COLUMN_FORMAT"
@@ -5420,6 +5421,7 @@ UnReservedKeyword:
 |	"REPLICAS"
 |	"POLICY"
 |	"WAIT"
+|	"CLIENT_ERRORS_SUMMARY"
 
 TiDBKeyword:
 	"ADMIN"
@@ -9583,6 +9585,12 @@ FlushOption:
 			Tp:       ast.FlushTables,
 			Tables:   $2.([]*ast.TableName),
 			ReadLock: $3.(bool),
+		}
+	}
+|	"CLIENT_ERRORS_SUMMARY"
+	{
+		$$ = &ast.FlushStmt{
+			Tp: ast.FlushClientErrorsSummary,
 		}
 	}
 
