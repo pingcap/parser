@@ -220,22 +220,19 @@ func (n *TableName) restoreIndexHints(ctx *format.RestoreCtx) error {
 	return nil
 }
 
-func (n *TableName) restoreTableSample(ctx *format.RestoreCtx) error {
-	if n.TableSample != nil {
-		if err := n.TableSample.Restore(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while splicing TableName.TableSample")
-		}
-	}
-	return nil
-}
-
 func (n *TableName) Restore(ctx *format.RestoreCtx) error {
 	n.restoreName(ctx)
 	n.restorePartitions(ctx)
 	if err := n.restoreIndexHints(ctx); err != nil {
 		return err
 	}
-	return n.restoreTableSample(ctx)
+	if n.TableSample != nil {
+		ctx.WritePlain(" ")
+		if err := n.TableSample.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing TableName.TableSample")
+		}
+	}
+	return nil
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -428,8 +425,11 @@ func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
 		if err := tn.restoreIndexHints(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).IndexHints")
 		}
-		if err := tn.restoreTableSample(ctx); err != nil {
-			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).TableSample")
+		if tn.TableSample != nil {
+			ctx.WritePlain(" ")
+			if err := tn.TableSample.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while splicing TableName.TableSample")
+			}
 		}
 
 		if needParen {
@@ -823,7 +823,7 @@ type TableSample struct {
 }
 
 func (s *TableSample) Restore(ctx *format.RestoreCtx) error {
-	ctx.WriteKeyWord(" TABLESAMPLE ")
+	ctx.WriteKeyWord("TABLESAMPLE ")
 	switch s.SampleMethod {
 	case SampleMethodTypeBernoulli:
 		ctx.WriteKeyWord("BERNOULLI ")
