@@ -65,6 +65,11 @@ func TrimComment(txt string) string {
 	return specCodeEnd.ReplaceAllString(txt, "")
 }
 
+type ParserConfig struct {
+	EnableWindowFunction  bool
+	StrictDoubleTypeCheck bool
+}
+
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
 type Parser struct {
 	charset    string
@@ -117,6 +122,11 @@ func New() *Parser {
 
 func (parser *Parser) SetStrictDoubleTypeCheck(val bool) {
 	parser.strictDoubleFieldType = val
+}
+
+func (parser *Parser) SetParserConfig(config ParserConfig) {
+	parser.EnableWindowFunc(config.EnableWindowFunction)
+	parser.SetStrictDoubleTypeCheck(config.StrictDoubleTypeCheck)
 }
 
 // Parse parses a query string to raw ast.StmtNode.
