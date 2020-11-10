@@ -10136,7 +10136,7 @@ NumericType:
 		fopt := $2.(*ast.FloatOpt)
 		x := types.NewFieldType($1.(byte))
 		// check for a double(10) for syntax error
-		if x.Tp == mysql.TypeDouble {
+		if x.Tp == mysql.TypeDouble && parser.strictDoubleFieldType {
 			if fopt.Flen != types.UnspecifiedLength && fopt.Decimal == types.UnspecifiedLength {
 				yylex.AppendError(ErrSyntax)
 				return 1

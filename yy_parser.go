@@ -74,7 +74,8 @@ type Parser struct {
 	lexer      Scanner
 	hintParser *hintParser
 
-	explicitCharset bool
+	explicitCharset       bool
+	strictDoubleFieldType bool
 
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
@@ -108,9 +109,14 @@ func New() *Parser {
 		cache: make([]yySymType, 200),
 	}
 	p.EnableWindowFunc(true)
+	p.SetStrictDoubleTypeCheck(true)
 	mode, _ := mysql.GetSQLMode(mysql.DefaultSQLMode)
 	p.SetSQLMode(mode)
 	return p
+}
+
+func (parser *Parser) SetStrictDoubleTypeCheck(val bool) {
+	parser.strictDoubleFieldType = val
 }
 
 // Parse parses a query string to raw ast.StmtNode.
