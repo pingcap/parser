@@ -4570,7 +4570,7 @@ MaxValueOrExpression:
 	{
 		$$ = &ast.MaxValueExpr{}
 	}
-|	Expression
+|	SimpleExpr
 
 FulltextSearchModifierOpt:
 	/* empty */
