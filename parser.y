@@ -83,6 +83,7 @@ import (
 	blobType          "BLOB"
 	both              "BOTH"
 	by                "BY"
+	call              "CALL"
 	cascade           "CASCADE"
 	caseKwd           "CASE"
 	change            "CHANGE"
@@ -243,6 +244,7 @@ import (
 	starting          "STARTING"
 	straightJoin      "STRAIGHT_JOIN"
 	tableKwd          "TABLE"
+	tableSample       "TABLESAMPLE"
 	stored            "STORED"
 	terminated        "TERMINATED"
 	then              "THEN"
@@ -302,6 +304,7 @@ import (
 	backup                "BACKUP"
 	backups               "BACKUPS"
 	begin                 "BEGIN"
+	bernoulli             "BERNOULLI"
 	binding               "BINDING"
 	bindings              "BINDINGS"
 	binlog                "BINLOG"
@@ -471,6 +474,7 @@ import (
 	partitioning          "PARTITIONING"
 	partitions            "PARTITIONS"
 	password              "PASSWORD"
+	percent               "PERCENT"
 	per_db                "PER_DB"
 	per_table             "PER_TABLE"
 	pipesAsOr
@@ -560,6 +564,7 @@ import (
 	super                 "SUPER"
 	swaps                 "SWAPS"
 	switchesSym           "SWITCHES"
+	system                "SYSTEM"
 	systemTime            "SYSTEM_TIME"
 	tableChecksum         "TABLE_CHECKSUM"
 	tables                "TABLES"
@@ -782,81 +787,87 @@ import (
 	NextValueForSequence   "Default nextval expression"
 	FunctionNameSequence   "Function with sequence function call"
 	WindowFuncCall         "WINDOW function call"
+	RepeatableOpt          "Repeatable optional in sample clause"
+	ProcedureCall          "Procedure call with Identifier or identifier"
 
 %type	<statement>
-	AdminStmt            "Check table statement or show ddl statement"
-	AlterDatabaseStmt    "Alter database statement"
-	AlterTableStmt       "Alter table statement"
-	AlterUserStmt        "Alter user statement"
-	AlterInstanceStmt    "Alter instance statement"
-	AlterSequenceStmt    "Alter sequence statement"
-	AnalyzeTableStmt     "Analyze table statement"
-	BeginTransactionStmt "BEGIN TRANSACTION statement"
-	BinlogStmt           "Binlog base64 statement"
-	BRIEStmt             "BACKUP or RESTORE statement"
-	CommitStmt           "COMMIT statement"
-	CreateTableStmt      "CREATE TABLE statement"
-	CreateViewStmt       "CREATE VIEW  statement"
-	CreateUserStmt       "CREATE User statement"
-	CreateRoleStmt       "CREATE Role statement"
-	CreateDatabaseStmt   "Create Database Statement"
-	CreateIndexStmt      "CREATE INDEX statement"
-	CreateBindingStmt    "CREATE BINDING  statement"
-	CreateSequenceStmt   "CREATE SEQUENCE statement"
-	CreateStatisticsStmt "CREATE STATISTICS statement"
-	DoStmt               "Do statement"
-	DropDatabaseStmt     "DROP DATABASE statement"
-	DropIndexStmt        "DROP INDEX statement"
-	DropStatisticsStmt   "DROP STATISTICS statement"
-	DropStatsStmt        "DROP STATS statement"
-	DropTableStmt        "DROP TABLE statement"
-	DropSequenceStmt     "DROP SEQUENCE statement"
-	DropUserStmt         "DROP USER"
-	DropRoleStmt         "DROP ROLE"
-	DropViewStmt         "DROP VIEW statement"
-	DropBindingStmt      "DROP BINDING  statement"
-	DeallocateStmt       "Deallocate prepared statement"
-	DeleteFromStmt       "DELETE FROM statement"
-	EmptyStmt            "empty statement"
-	ExecuteStmt          "Execute statement"
-	ExplainStmt          "EXPLAIN statement"
-	ExplainableStmt      "explainable statement"
-	FlushStmt            "Flush statement"
-	FlashbackTableStmt   "Flashback table statement"
-	GrantStmt            "Grant statement"
-	GrantRoleStmt        "Grant role statement"
-	InsertIntoStmt       "INSERT INTO statement"
-	IndexAdviseStmt      "INDEX ADVISE statement"
-	KillStmt             "Kill statement"
-	LoadDataStmt         "Load data statement"
-	LoadStatsStmt        "Load statistic statement"
-	LockTablesStmt       "Lock tables statement"
-	PreparedStmt         "PreparedStmt"
-	SelectStmt           "SELECT statement"
-	RenameTableStmt      "rename table statement"
-	ReplaceIntoStmt      "REPLACE INTO statement"
-	RecoverTableStmt     "recover table statement"
-	RevokeStmt           "Revoke statement"
-	RevokeRoleStmt       "Revoke role statement"
-	RollbackStmt         "ROLLBACK statement"
-	SplitRegionStmt      "Split index region statement"
-	SetStmt              "Set variable statement"
-	ChangeStmt           "Change statement"
-	SetRoleStmt          "Set active role statement"
-	SetDefaultRoleStmt   "Set default statement for some user"
-	ShowStmt             "Show engines/databases/tables/user/columns/warnings/status statement"
-	Statement            "statement"
-	TraceStmt            "TRACE statement"
-	TraceableStmt        "traceable statement"
-	TruncateTableStmt    "TRUNCATE TABLE statement"
-	UnlockTablesStmt     "Unlock tables statement"
-	UpdateStmt           "UPDATE statement"
-	SetOprStmt           "Union/Except/Intersect select statement"
-	SetOprStmt1          "Union/Except/Intersect select statement1"
-	SetOprStmt2          "Union/Except/Intersect select statement2"
-	UseStmt              "USE statement"
-	ShutdownStmt         "SHUTDOWN statement"
-	CreateViewSelectOpt  "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
+	AdminStmt              "Check table statement or show ddl statement"
+	AlterDatabaseStmt      "Alter database statement"
+	AlterTableStmt         "Alter table statement"
+	AlterUserStmt          "Alter user statement"
+	AlterInstanceStmt      "Alter instance statement"
+	AlterSequenceStmt      "Alter sequence statement"
+	AnalyzeTableStmt       "Analyze table statement"
+	BeginTransactionStmt   "BEGIN TRANSACTION statement"
+	BinlogStmt             "Binlog base64 statement"
+	BRIEStmt               "BACKUP or RESTORE statement"
+	CommitStmt             "COMMIT statement"
+	CreateTableStmt        "CREATE TABLE statement"
+	CreateViewStmt         "CREATE VIEW  statement"
+	CreateUserStmt         "CREATE User statement"
+	CreateRoleStmt         "CREATE Role statement"
+	CreateDatabaseStmt     "Create Database Statement"
+	CreateIndexStmt        "CREATE INDEX statement"
+	CreateBindingStmt      "CREATE BINDING  statement"
+	CreateSequenceStmt     "CREATE SEQUENCE statement"
+	CreateStatisticsStmt   "CREATE STATISTICS statement"
+	DoStmt                 "Do statement"
+	DropDatabaseStmt       "DROP DATABASE statement"
+	DropIndexStmt          "DROP INDEX statement"
+	DropStatisticsStmt     "DROP STATISTICS statement"
+	DropStatsStmt          "DROP STATS statement"
+	DropTableStmt          "DROP TABLE statement"
+	DropSequenceStmt       "DROP SEQUENCE statement"
+	DropUserStmt           "DROP USER"
+	DropRoleStmt           "DROP ROLE"
+	DropViewStmt           "DROP VIEW statement"
+	DropBindingStmt        "DROP BINDING  statement"
+	DeallocateStmt         "Deallocate prepared statement"
+	DeleteFromStmt         "DELETE FROM statement"
+	DeleteWithoutUsingStmt "Normal DELETE statement"
+	DeleteWithUsingStmt    "DELETE USING statement"
+	EmptyStmt              "empty statement"
+	ExecuteStmt            "Execute statement"
+	ExplainStmt            "EXPLAIN statement"
+	ExplainableStmt        "explainable statement"
+	FlushStmt              "Flush statement"
+	FlashbackTableStmt     "Flashback table statement"
+	GrantStmt              "Grant statement"
+	GrantRoleStmt          "Grant role statement"
+	InsertIntoStmt         "INSERT INTO statement"
+	CallStmt               "CALL statement"
+	IndexAdviseStmt        "INDEX ADVISE statement"
+	KillStmt               "Kill statement"
+	LoadDataStmt           "Load data statement"
+	LoadStatsStmt          "Load statistic statement"
+	LockTablesStmt         "Lock tables statement"
+	PreparedStmt           "PreparedStmt"
+	SelectStmt             "SELECT statement"
+	RenameTableStmt        "rename table statement"
+	ReplaceIntoStmt        "REPLACE INTO statement"
+	RecoverTableStmt       "recover table statement"
+	RevokeStmt             "Revoke statement"
+	RevokeRoleStmt         "Revoke role statement"
+	RollbackStmt           "ROLLBACK statement"
+	SplitRegionStmt        "Split index region statement"
+	SetStmt                "Set variable statement"
+	ChangeStmt             "Change statement"
+	SetRoleStmt            "Set active role statement"
+	SetDefaultRoleStmt     "Set default statement for some user"
+	ShowStmt               "Show engines/databases/tables/user/columns/warnings/status statement"
+	Statement              "statement"
+	TraceStmt              "TRACE statement"
+	TraceableStmt          "traceable statement"
+	TruncateTableStmt      "TRUNCATE TABLE statement"
+	UnlockTablesStmt       "Unlock tables statement"
+	UpdateStmt             "UPDATE statement"
+	SetOprStmt             "Union/Except/Intersect select statement"
+	SetOprStmt1            "Union/Except/Intersect select statement1"
+	SetOprStmt2            "Union/Except/Intersect select statement2"
+	UseStmt                "USE statement"
+	ShutdownStmt           "SHUTDOWN statement"
+	CreateViewSelectOpt    "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
+	BindableStmt           "Statement that can be created binding on"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -957,6 +968,7 @@ import (
 	IndexOption                            "Index Option"
 	IndexOptionList                        "Index Option List or empty"
 	IndexType                              "index type"
+	IndexName                              "index name"
 	IndexTypeName                          "index type name"
 	IndexTypeOpt                           "optional index type"
 	IndexPartSpecification                 "Index column name or expression"
@@ -1091,6 +1103,9 @@ import (
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
 	TableRefs                              "table references"
+	TableSampleOpt                         "table sample clause optional"
+	TableSampleMethodOpt                   "table sample method optional"
+	TableSampleUnitOpt                     "table sample unit optional"
 	TableToTable                           "rename table to table"
 	TableToTableList                       "rename table to table by list"
 	TextStringList                         "text string list"
@@ -1271,7 +1286,6 @@ import (
 	FieldTerminator                 "Field terminator"
 	FlashbackToNewName              "Flashback to new name"
 	HashString                      "Hashed string"
-	IndexName                       "index name"
 	LikeEscapeOpt                   "like escape option"
 	LinesTerminated                 "Lines terminated by"
 	OptCharset                      "Optional Character setting"
@@ -2189,15 +2203,14 @@ Symbol:
 /**************************************RenameTableStmt***************************************
  * See http://dev.mysql.com/doc/refman/5.7/en/rename-table.html
  *
- * TODO: refactor this when you are going to add full support for multiple schema changes.
- * Currently it is only useful for syncer which depends heavily on tidb parser to do some dirty work.
+ * RENAME TABLE
+ *     tbl_name TO new_tbl_name
+ *     [, tbl_name2 TO new_tbl_name2] ...
  *******************************************************************************************/
 RenameTableStmt:
 	"RENAME" "TABLE" TableToTableList
 	{
 		$$ = &ast.RenameTableStmt{
-			OldTable:      $3.([]*ast.TableToTable)[0].OldTable,
-			NewTable:      $3.([]*ast.TableToTable)[0].NewTable,
 			TableToTables: $3.([]*ast.TableToTable),
 		}
 	}
@@ -2877,9 +2890,10 @@ ConstraintElem:
 	"PRIMARY" "KEY" IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:   ast.ConstraintPrimaryKey,
-			Keys: $5.([]*ast.IndexPartSpecification),
-			Name: $3.([]interface{})[0].(string),
+			Tp:           ast.ConstraintPrimaryKey,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.([]interface{})[0].(*ast.NullString).String,
+			IsEmptyIndex: $3.([]interface{})[0].(*ast.NullString).Empty,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2895,9 +2909,10 @@ ConstraintElem:
 |	"FULLTEXT" KeyOrIndexOpt IndexName '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:   ast.ConstraintFulltext,
-			Keys: $5.([]*ast.IndexPartSpecification),
-			Name: $3,
+			Tp:           ast.ConstraintFulltext,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.(*ast.NullString).String,
+			IsEmptyIndex: $3.(*ast.NullString).Empty,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
@@ -2907,14 +2922,15 @@ ConstraintElem:
 |	KeyOrIndex IfNotExists IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			IfNotExists: $2.(bool),
-			Tp:          ast.ConstraintIndex,
-			Keys:        $5.([]*ast.IndexPartSpecification),
+			IfNotExists:  $2.(bool),
+			Tp:           ast.ConstraintIndex,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.([]interface{})[0].(*ast.NullString).String,
+			IsEmptyIndex: $3.([]interface{})[0].(*ast.NullString).Empty,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
-		c.Name = $3.([]interface{})[0].(string)
 		if indexType := $3.([]interface{})[1]; indexType != nil {
 			if c.Option == nil {
 				c.Option = &ast.IndexOption{}
@@ -2926,13 +2942,15 @@ ConstraintElem:
 |	"UNIQUE" KeyOrIndexOpt IndexNameAndTypeOpt '(' IndexPartSpecificationList ')' IndexOptionList
 	{
 		c := &ast.Constraint{
-			Tp:   ast.ConstraintUniq,
-			Keys: $5.([]*ast.IndexPartSpecification),
+			Tp:           ast.ConstraintUniq,
+			Keys:         $5.([]*ast.IndexPartSpecification),
+			Name:         $3.([]interface{})[0].(*ast.NullString).String,
+			IsEmptyIndex: $3.([]interface{})[0].(*ast.NullString).Empty,
 		}
 		if $7 != nil {
 			c.Option = $7.(*ast.IndexOption)
 		}
-		c.Name = $3.([]interface{})[0].(string)
+
 		if indexType := $3.([]interface{})[1]; indexType != nil {
 			if c.Option == nil {
 				c.Option = &ast.IndexOption{}
@@ -2944,11 +2962,12 @@ ConstraintElem:
 |	"FOREIGN" "KEY" IfNotExists IndexName '(' IndexPartSpecificationList ')' ReferDef
 	{
 		$$ = &ast.Constraint{
-			IfNotExists: $3.(bool),
-			Tp:          ast.ConstraintForeignKey,
-			Keys:        $6.([]*ast.IndexPartSpecification),
-			Name:        $4,
-			Refer:       $8.(*ast.ReferenceDef),
+			IfNotExists:  $3.(bool),
+			Tp:           ast.ConstraintForeignKey,
+			Keys:         $6.([]*ast.IndexPartSpecification),
+			Name:         $4.(*ast.NullString).String,
+			Refer:        $8.(*ast.ReferenceDef),
+			IsEmptyIndex: $4.(*ast.NullString).Empty,
 		}
 	}
 |	"CHECK" '(' Expression ')' EnforcedOrNotOpt
@@ -3932,7 +3951,7 @@ DoStmt:
  *  Delete Statement
  *
  *******************************************************************/
-DeleteFromStmt:
+DeleteWithoutUsingStmt:
 	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
 	{
 		// Single Table
@@ -3981,7 +4000,9 @@ DeleteFromStmt:
 		}
 		$$ = x
 	}
-|	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableAliasRefList "USING" TableRefs WhereClauseOptional
+
+DeleteWithUsingStmt:
+	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableAliasRefList "USING" TableRefs WhereClauseOptional
 	{
 		// Multiple Table
 		x := &ast.DeleteStmt{
@@ -4000,6 +4021,10 @@ DeleteFromStmt:
 		}
 		$$ = x
 	}
+
+DeleteFromStmt:
+	DeleteWithoutUsingStmt
+|	DeleteWithUsingStmt
 
 DatabaseSym:
 	"DATABASE"
@@ -4939,9 +4964,18 @@ IgnoreOptional:
 
 IndexName:
 	{
-		$$ = ""
+		$$ = &ast.NullString{
+			String: "",
+			Empty:  false,
+		}
 	}
 |	Identifier
+	{
+		$$ = &ast.NullString{
+			String: $1,
+			Empty:  len($1) == 0,
+		}
+	}
 
 IndexOptionList:
 	{
@@ -5034,7 +5068,7 @@ IndexNameAndTypeOpt:
 	}
 |	Identifier "TYPE" IndexTypeName
 	{
-		$$ = []interface{}{$1, $3}
+		$$ = []interface{}{&ast.NullString{String: $1, Empty: len($1) == 0}, $3}
 	}
 
 IndexTypeOpt:
@@ -5397,6 +5431,9 @@ UnReservedKeyword:
 |	"REPLICAS"
 |	"POLICY"
 |	"WAIT"
+|	"BERNOULLI"
+|	"SYSTEM"
+|	"PERCENT"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5495,6 +5532,55 @@ NotKeywordToken:
 |	"LEADER"
 |	"LEARNER"
 |	"VOTER"
+
+/************************************************************************************
+ *
+ *  Call Statements
+ *
+ **********************************************************************************/
+CallStmt:
+	"CALL" ProcedureCall
+	{
+		$$ = &ast.CallStmt{
+			Procedure: $2.(*ast.FuncCallExpr),
+		}
+	}
+
+ProcedureCall:
+	identifier
+	{
+		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{},
+		}
+	}
+|	Identifier '.' Identifier
+	{
+		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
+			Schema: model.NewCIStr($1),
+			FnName: model.NewCIStr($3),
+			Args:   []ast.ExprNode{},
+		}
+	}
+|	identifier '(' ExpressionListOpt ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
+			FnName: model.NewCIStr($1),
+			Args:   $3.([]ast.ExprNode),
+		}
+	}
+|	Identifier '.' Identifier '(' ExpressionListOpt ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			Tp:     ast.FuncCallExprTypeGeneric,
+			Schema: model.NewCIStr($1),
+			FnName: model.NewCIStr($3),
+			Args:   $5.([]ast.ExprNode),
+		}
+	}
 
 /************************************************************************************
  *
@@ -5952,7 +6038,7 @@ SimpleExpr:
 |	SumExpr
 |	'!' SimpleExpr %prec neg
 	{
-		$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
+		$$ = &ast.UnaryOperationExpr{Op: opcode.Not2, V: $2}
 	}
 |	'~' SimpleExpr %prec neg
 	{
@@ -5972,7 +6058,7 @@ SimpleExpr:
 	}
 |	not2 SimpleExpr %prec neg
 	{
-		$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
+		$$ = &ast.UnaryOperationExpr{Op: opcode.Not2, V: $2}
 	}
 |	SubSelect2
 |	'(' Expression ')'
@@ -7280,6 +7366,78 @@ SelectStmtFromTable:
 		$$ = st
 	}
 
+TableSampleOpt:
+	%prec empty
+	{
+		$$ = nil
+	}
+|	"TABLESAMPLE" TableSampleMethodOpt '(' Expression TableSampleUnitOpt ')' RepeatableOpt
+	{
+		var repSeed ast.ExprNode
+		if $7 != nil {
+			repSeed = ast.NewValueExpr($7, parser.charset, parser.collation)
+		}
+		$$ = &ast.TableSample{
+			SampleMethod:     $2.(ast.SampleMethodType),
+			Expr:             ast.NewValueExpr($4, parser.charset, parser.collation),
+			SampleClauseUnit: $5.(ast.SampleClauseUnitType),
+			RepeatableSeed:   repSeed,
+		}
+	}
+|	"TABLESAMPLE" TableSampleMethodOpt '(' ')' RepeatableOpt
+	{
+		var repSeed ast.ExprNode
+		if $5 != nil {
+			repSeed = ast.NewValueExpr($5, parser.charset, parser.collation)
+		}
+		$$ = &ast.TableSample{
+			SampleMethod:   $2.(ast.SampleMethodType),
+			RepeatableSeed: repSeed,
+		}
+	}
+
+TableSampleMethodOpt:
+	%prec empty
+	{
+		$$ = ast.SampleMethodTypeNone
+	}
+|	"SYSTEM"
+	{
+		$$ = ast.SampleMethodTypeSystem
+	}
+|	"BERNOULLI"
+	{
+		$$ = ast.SampleMethodTypeBernoulli
+	}
+|	"REGIONS"
+	{
+		$$ = ast.SampleMethodTypeTiDBRegion
+	}
+
+TableSampleUnitOpt:
+	%prec empty
+	{
+		$$ = ast.SampleClauseUnitTypeDefault
+	}
+|	"ROWS"
+	{
+		$$ = ast.SampleClauseUnitTypeRow
+	}
+|	"PERCENT"
+	{
+		$$ = ast.SampleClauseUnitTypePercent
+	}
+
+RepeatableOpt:
+	%prec empty
+	{
+		$$ = nil
+	}
+|	"REPEATABLE" '(' Expression ')'
+	{
+		$$ = $3
+	}
+
 SelectStmt:
 	SelectStmtBasic OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
 	{
@@ -7730,11 +7888,14 @@ TableRef:
 |	JoinTable
 
 TableFactor:
-	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt
+	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt TableSampleOpt
 	{
 		tn := $1.(*ast.TableName)
 		tn.PartitionNames = $2.([]model.CIStr)
 		tn.IndexHints = $4.([]*ast.IndexHint)
+		if $5 != nil {
+			tn.TableSample = $5.(*ast.TableSample)
+		}
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
 |	'(' SetOprStmt1 ')' TableAsNameOpt
@@ -9661,6 +9822,7 @@ Statement:
 |	FlashbackTableStmt
 |	GrantStmt
 |	GrantRoleStmt
+|	CallStmt
 |	InsertIntoStmt
 |	IndexAdviseStmt
 |	KillStmt
@@ -11142,6 +11304,11 @@ RoleSpecList:
 		$$ = append($1.([]*ast.UserSpec), $3.(*ast.UserSpec))
 	}
 
+BindableStmt:
+	SetOprStmt1
+|	UpdateStmt
+|	DeleteWithoutUsingStmt
+
 /*******************************************************************
  *
  *  Create Binding Statement
@@ -11150,22 +11317,20 @@ RoleSpecList:
  *      CREATE GLOBAL BINDING FOR select Col1,Col2 from table USING select Col1,Col2 from table use index(Col1)
  *******************************************************************/
 CreateBindingStmt:
-	"CREATE" GlobalScope "BINDING" "FOR" SetOprStmt1 "USING" SetOprStmt1
+	"CREATE" GlobalScope "BINDING" "FOR" BindableStmt "USING" BindableStmt
 	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
 		endOffset := parser.startOffset(&yyS[yypt-1])
-		//setOprStmt := $5.(*ast.SetOprStmt)
-		setOprStmt := $5
-		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		originStmt := $5
+		originStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
-		//hintedSetOprStmt := $7.(*ast.SetOprStmt)
-		hintedSetOprStmt := $7
-		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		hintedStmt := $7
+		hintedStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.CreateBindingStmt{
-			OriginNode:  setOprStmt,
-			HintedNode:  hintedSetOprStmt,
+			OriginNode:  originStmt,
+			HintedNode:  hintedStmt,
 			GlobalScope: $2.(bool),
 		}
 
@@ -11180,33 +11345,33 @@ CreateBindingStmt:
  *      DROP GLOBAL BINDING FOR select Col1,Col2 from table
  *******************************************************************/
 DropBindingStmt:
-	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt1
+	"DROP" GlobalScope "BINDING" "FOR" BindableStmt
 	{
 		startOffset := parser.startOffset(&yyS[yypt])
-		setOprStmt := $5
-		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		originStmt := $5
+		originStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginNode:  setOprStmt,
+			OriginNode:  originStmt,
 			GlobalScope: $2.(bool),
 		}
 
 		$$ = x
 	}
-|	"DROP" GlobalScope "BINDING" "FOR" SetOprStmt1 "USING" SetOprStmt1
+|	"DROP" GlobalScope "BINDING" "FOR" BindableStmt "USING" BindableStmt
 	{
 		startOffset := parser.startOffset(&yyS[yypt-2])
 		endOffset := parser.startOffset(&yyS[yypt-1])
-		setOprStmt := $5
-		setOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		originStmt := $5
+		originStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
 
 		startOffset = parser.startOffset(&yyS[yypt])
-		hintedSetOprStmt := $7
-		hintedSetOprStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		hintedStmt := $7
+		hintedStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
-			OriginNode:  setOprStmt,
-			HintedNode:  hintedSetOprStmt,
+			OriginNode:  originStmt,
+			HintedNode:  hintedStmt,
 			GlobalScope: $2.(bool),
 		}
 

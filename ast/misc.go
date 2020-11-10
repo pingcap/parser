@@ -66,6 +66,7 @@ const (
 	// Valid formats for explain statement.
 	ExplainFormatROW     = "row"
 	ExplainFormatDOT     = "dot"
+	ExplainFormatJSON    = "json"
 	ExplainFormatHint    = "hint"
 	ExplainFormatVerbose = "verbose"
 	PumpType             = "PUMP"
@@ -83,6 +84,7 @@ var (
 	ExplainFormats = []string{
 		ExplainFormatROW,
 		ExplainFormatDOT,
+		ExplainFormatJSON,
 		ExplainFormatHint,
 		ExplainFormatVerbose,
 	}
@@ -1994,6 +1996,14 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Tables[i] = node.(*TableName)
+	}
+
+	if n.Where != nil {
+		node, ok := n.Where.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Where = node.(ExprNode)
 	}
 
 	return v.Leave(n)
