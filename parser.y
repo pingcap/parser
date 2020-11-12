@@ -10893,6 +10893,8 @@ BindableStmt:
 	SelectStmt
 |	UpdateStmt
 |	DeleteWithoutUsingStmt
+|	InsertIntoStmt
+|	ReplaceIntoStmt
 
 /*******************************************************************
  *
