@@ -66,8 +66,8 @@ func TrimComment(txt string) string {
 }
 
 type ParserConfig struct {
-	EnableWindowFunction  bool
-	StrictDoubleTypeCheck bool
+	EnableWindowFunction        bool
+	EnableStrictDoubleTypeCheck bool
 }
 
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
@@ -126,7 +126,7 @@ func (parser *Parser) SetStrictDoubleTypeCheck(val bool) {
 
 func (parser *Parser) SetParserConfig(config ParserConfig) {
 	parser.EnableWindowFunc(config.EnableWindowFunction)
-	parser.SetStrictDoubleTypeCheck(config.StrictDoubleTypeCheck)
+	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
 }
 
 // Parse parses a query string to raw ast.StmtNode.
