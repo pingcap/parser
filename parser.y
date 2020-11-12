@@ -681,6 +681,7 @@ import (
 	statsHistograms            "STATS_HISTOGRAMS"
 	statsBuckets               "STATS_BUCKETS"
 	statsHealthy               "STATS_HEALTHY"
+	statsTopN                  "STATS_TOPN"
 	telemetry                  "TELEMETRY"
 	telemetryID                "TELEMETRY_ID"
 	tidb                       "TIDB"
@@ -5420,6 +5421,7 @@ TiDBKeyword:
 |	"STATS"
 |	"STATS_META"
 |	"STATS_HISTOGRAMS"
+|	"STATS_TOPN"
 |	"STATS_BUCKETS"
 |	"STATS_HEALTHY"
 |	"TELEMETRY"
@@ -9295,6 +9297,10 @@ ShowTargetFilterable:
 |	"STATS_HISTOGRAMS"
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowStatsHistograms}
+	}
+|	"STATS_TOPN"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowStatsTopN}
 	}
 |	"STATS_BUCKETS"
 	{

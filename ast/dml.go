@@ -1922,6 +1922,7 @@ const (
 	ShowEvents
 	ShowStatsMeta
 	ShowStatsHistograms
+	ShowStatsTopN
 	ShowStatsBuckets
 	ShowStatsHealthy
 	ShowPlugins
@@ -2079,6 +2080,11 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		}
 	case ShowStatsHistograms:
 		ctx.WriteKeyWord("STATS_HISTOGRAMS")
+		if err := restoreShowLikeOrWhereOpt(); err != nil {
+			return err
+		}
+	case ShowStatsTopN:
+		ctx.WriteKeyWord("STATS_TOPN")
 		if err := restoreShowLikeOrWhereOpt(); err != nil {
 			return err
 		}
