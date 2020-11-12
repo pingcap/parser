@@ -2162,6 +2162,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE d_n.t_n ALGORITHM = DEFAULT , MAX_ROWS 10, UNION ( d_n.t_n ) , ROW_FORMAT REDUNDANT, STATS_PERSISTENT = DEFAULT", true, "ALTER TABLE `d_n`.`t_n` ALGORITHM = DEFAULT, MAX_ROWS = 10, UNION = (`d_n`.`t_n`), ROW_FORMAT = REDUNDANT, STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 
 		// partition option
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (not 3), partition p2 values less than (20));", false, ""},
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (1 or 3), partition p2 values less than (20));", false, ""},
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (3 is null), partition p2 values less than (20));", false, ""},
+		{"create table t (b int) partition by range (b is null) (partition p0 values less than (10));", false, ""},
+		{"create table t (b int) partition by list (not b) (partition p0 values in (10, 20));", false, ""},
+		{"create table t (b int) partition by hash ( not b );", false, ""},
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (3 in (3, 4, 5)), partition p2 values less than (20));", false, ""},
 		{"CREATE TABLE t (id int) ENGINE = INNDB PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));", true, "CREATE TABLE `t` (`id` INT) ENGINE = INNDB PARTITION BY RANGE (`id`) (PARTITION `p0` VALUES LESS THAN (10),PARTITION `p1` VALUES LESS THAN (20))"},
 		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true, "CREATE TABLE `t` (`c` INT) PARTITION BY HASH (`c`) PARTITIONS 32"},
 		{"create table t (c int) PARTITION BY HASH (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", false, ""},
@@ -4352,6 +4359,20 @@ func (s *testParserSuite) TestBinding(c *C) {
 		{"drop session binding for delete t1, t2 from t1 inner join t2 on t1.b = t2.b where t1.a = 1", true, "DROP SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
 		{"DROP GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1", true, "DROP GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
 		{"DROP SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1", true, "DROP SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		// Insert cases.
+		{"CREATE GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"CREATE SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"drop global binding for insert into t1 select * from t2 where t1.a=1", true, "DROP GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"drop session binding for insert into t1 select * from t2 where t1.a=1", true, "DROP SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"DROP GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"DROP SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		// Replace cases.
+		{"CREATE GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"CREATE SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"drop global binding for replace into t1 select * from t2 where t1.a=1", true, "DROP GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"drop session binding for replace into t1 select * from t2 where t1.a=1", true, "DROP SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"DROP GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"DROP SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
 	}
 	s.RunTest(c, table)
 
@@ -4636,6 +4657,19 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 		c_set set('1') collate utf8_bin,
 		c_json json collate utf8_bin)`
 	stmts, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
+
+	createTableStr = `CREATE TABLE t (c_double double(10))`
+	_, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "[parser:1149]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use")
+	parser.SetStrictDoubleTypeCheck(false)
+	_, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
+	parser.SetStrictDoubleTypeCheck(true)
+
+	createTableStr = `CREATE TABLE t (c_double double(10, 2))`
+	_, _, err = parser.Parse(createTableStr, "", "")
 	c.Assert(err, IsNil)
 }
 
