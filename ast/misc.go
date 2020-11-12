@@ -1502,30 +1502,17 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginNode.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	switch node := selnode.(type) {
-	case *SelectStmt:
-		n.OriginNode = node
-		hintedSelnode, ok := n.HintedNode.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.HintedNode = hintedSelnode.(*SelectStmt)
-		return v.Leave(n)
-	case *SetOprStmt:
-		n.OriginNode = node
-		hintedSetOprNode, ok := n.HintedNode.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.HintedNode = hintedSetOprNode.(*SetOprStmt)
-		return v.Leave(n)
-	default:
+	n.OriginNode = origNode.(StmtNode)
+	hintedNode, ok := n.HintedNode.Accept(v)
+	if !ok {
 		return n, false
 	}
+	n.HintedNode = hintedNode.(StmtNode)
+	return v.Leave(n)
 }
 
 // DropBindingStmt deletes sql binding hint.
@@ -1563,34 +1550,19 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginNode.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	switch node := selnode.(type) {
-	case *SelectStmt:
-		n.OriginNode = node
-		if n.HintedNode != nil {
-			selnode, ok = n.HintedNode.Accept(v)
-			if !ok {
-				return n, false
-			}
-			n.HintedNode = selnode.(*SelectStmt)
+	n.OriginNode = origNode.(StmtNode)
+	if n.HintedNode != nil {
+		hintedNode, ok := n.HintedNode.Accept(v)
+		if !ok {
+			return n, false
 		}
-		return v.Leave(n)
-	case *SetOprStmt:
-		n.OriginNode = node
-		if n.HintedNode != nil {
-			selnode, ok = n.HintedNode.Accept(v)
-			if !ok {
-				return n, false
-			}
-			n.HintedNode = selnode.(*SetOprStmt)
-		}
-		return v.Leave(n)
-	default:
-		return n, false
+		n.HintedNode = hintedNode.(StmtNode)
 	}
+	return v.Leave(n)
 }
 
 // Extended statistics types.
@@ -2753,7 +2725,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlainf("%d", n.HintData.(uint64))
 	case "nth_plan":
 		ctx.WritePlainf("%d", n.HintData.(int64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local", "inl_hash_join", "inl_merge_join":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
