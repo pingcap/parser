@@ -11308,6 +11308,8 @@ BindableStmt:
 	SetOprStmt1
 |	UpdateStmt
 |	DeleteWithoutUsingStmt
+|	InsertIntoStmt
+|	ReplaceIntoStmt
 
 /*******************************************************************
  *
