@@ -66,6 +66,7 @@ const (
 	// Valid formats for explain statement.
 	ExplainFormatROW     = "row"
 	ExplainFormatDOT     = "dot"
+	ExplainFormatJSON    = "json"
 	ExplainFormatHint    = "hint"
 	ExplainFormatVerbose = "verbose"
 	PumpType             = "PUMP"
@@ -83,6 +84,7 @@ var (
 	ExplainFormats = []string{
 		ExplainFormatROW,
 		ExplainFormatDOT,
+		ExplainFormatJSON,
 		ExplainFormatHint,
 		ExplainFormatVerbose,
 	}
@@ -1472,8 +1474,8 @@ type CreateBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
-	OriginSel   StmtNode
-	HintedSel   StmtNode
+	OriginNode  StmtNode
+	HintedNode  StmtNode
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1484,11 +1486,11 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
+	if err := n.OriginNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	ctx.WriteKeyWord(" USING ")
-	if err := n.HintedSel.Restore(ctx); err != nil {
+	if err := n.HintedNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -1500,16 +1502,16 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	hintedSelnode, ok := n.HintedSel.Accept(v)
+	n.OriginNode = origNode.(StmtNode)
+	hintedNode, ok := n.HintedNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.HintedSel = hintedSelnode.(*SelectStmt)
+	n.HintedNode = hintedNode.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -1518,8 +1520,8 @@ type DropBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
-	OriginSel   StmtNode
-	HintedSel   StmtNode
+	OriginNode  StmtNode
+	HintedNode  StmtNode
 }
 
 func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1530,12 +1532,12 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
+	if err := n.OriginNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
-	if n.HintedSel != nil {
+	if n.HintedNode != nil {
 		ctx.WriteKeyWord(" USING ")
-		if err := n.HintedSel.Restore(ctx); err != nil {
+		if err := n.HintedNode.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
 	}
@@ -1548,17 +1550,17 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	if n.HintedSel != nil {
-		selnode, ok = n.HintedSel.Accept(v)
+	n.OriginNode = origNode.(StmtNode)
+	if n.HintedNode != nil {
+		hintedNode, ok := n.HintedNode.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.HintedSel = selnode.(*SelectStmt)
+		n.HintedNode = hintedNode.(StmtNode)
 	}
 	return v.Leave(n)
 }
@@ -1966,6 +1968,14 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Tables[i] = node.(*TableName)
+	}
+
+	if n.Where != nil {
+		node, ok := n.Where.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Where = node.(ExprNode)
 	}
 
 	return v.Leave(n)
@@ -2653,6 +2663,12 @@ type HintTimeRange struct {
 	To   string
 }
 
+// HintSetVar is the payload of `SET_VAR` hint
+type HintSetVar struct {
+	VarName string
+	Value   string
+}
+
 // HintTable is table in the hint. It may have query block info.
 type HintTable struct {
 	DBName        model.CIStr
@@ -2696,7 +2712,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	}
 	// Hints without args except query block.
 	switch n.HintName.L {
-	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name", "ignore_plan_cache", "topn_to_cop":
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name", "ignore_plan_cache", "limit_to_cop":
 		ctx.WritePlain(")")
 		return nil
 	}
@@ -2753,6 +2769,11 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteString(hintData.From)
 		ctx.WritePlain(", ")
 		ctx.WriteString(hintData.To)
+	case "set_var":
+		hintData := n.HintData.(HintSetVar)
+		ctx.WriteString(hintData.VarName)
+		ctx.WritePlain(", ")
+		ctx.WriteString(hintData.Value)
 	}
 	ctx.WritePlain(")")
 	return nil

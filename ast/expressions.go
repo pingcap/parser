@@ -16,6 +16,7 @@ package ast
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -625,13 +626,6 @@ func (n *DefaultExpr) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DefaultExpr)
-	if n.Name != nil {
-		node, ok := n.Name.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Name = node.(*ColumnName)
-	}
 	return v.Leave(n)
 }
 
@@ -1444,4 +1438,42 @@ func (n *SetCollationExpr) Accept(v Visitor) (Node, bool) {
 	}
 	n.Expr = node.(ExprNode)
 	return v.Leave(n)
+}
+
+type exprTextPositionCleaner struct {
+	oldTextPos []int
+	restore    bool
+}
+
+func (e *exprTextPositionCleaner) BeginRestore() {
+	e.restore = true
+}
+
+func (e *exprTextPositionCleaner) Enter(n Node) (node Node, skipChildren bool) {
+	if e.restore {
+		n.SetOriginTextPosition(e.oldTextPos[0])
+		e.oldTextPos = e.oldTextPos[1:]
+		return n, false
+	}
+	e.oldTextPos = append(e.oldTextPos, n.OriginTextPosition())
+	n.SetOriginTextPosition(0)
+	return n, false
+}
+
+func (e *exprTextPositionCleaner) Leave(n Node) (node Node, ok bool) {
+	return n, true
+}
+
+// ExpressionDeepEqual compares the equivalence of two expressions.
+func ExpressionDeepEqual(a ExprNode, b ExprNode) bool {
+	cleanerA := &exprTextPositionCleaner{}
+	cleanerB := &exprTextPositionCleaner{}
+	a.Accept(cleanerA)
+	b.Accept(cleanerB)
+	result := reflect.DeepEqual(a, b)
+	cleanerA.BeginRestore()
+	cleanerB.BeginRestore()
+	a.Accept(cleanerA)
+	b.Accept(cleanerB)
+	return result
 }
