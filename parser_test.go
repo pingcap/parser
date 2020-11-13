@@ -4123,6 +4123,7 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{`UNLOCK TABLES;`, true, "UNLOCK TABLES"},
 		{`LOCK TABLES t1 READ;`, true, "LOCK TABLES `t1` READ"},
 		{`LOCK TABLES t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
+		{`LOCK TABLES t1 READ ONLY;`, true, "LOCK TABLES `t1` READ ONLY"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
 		{`LOCK TABLES t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
 		{`LOCK TABLES t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},

@@ -11946,6 +11946,10 @@ LockType:
 	{
 		$$ = model.TableLockReadLocal
 	}
+|	"READ" "ONLY"
+	{
+		$$ = model.TableLockReadOnly
+	}
 |	"WRITE"
 	{
 		$$ = model.TableLockWrite
