@@ -1081,6 +1081,7 @@ import (
 	TableRefs                              "table references"
 	TableToTable                           "rename table to table"
 	TableToTableList                       "rename table to table by list"
+	TextStringList                         "text string list"
 	TimeUnit                               "Time unit for 'DATE_ADD', 'DATE_SUB', 'ADDDATE', 'SUBDATE', 'EXTRACT'"
 	TimestampUnit                          "Time unit for 'TIMESTAMPADD' and 'TIMESTAMPDIFF'"
 	TimestampBound                         "Timestamp bound for start transaction with timestamp mode"
@@ -1246,6 +1247,7 @@ import (
 	VariableName                    "A simple Identifier like xx or the xx.xx form"
 	ConfigItemName                  "A config item like aa or aa.bb or aa.bb-cc.dd"
 	StringNameOrBRIEOptionKeyword   "string literal or identifier or keyword used for BRIE options"
+	TextString                      "text string item"
 
 %precedence empty
 %precedence sqlBufferResult
@@ -10058,7 +10060,7 @@ StringType:
 		}
 		$$ = x
 	}
-|	"ENUM" '(' StringList ')' OptCharset
+|	"ENUM" '(' TextStringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeEnum)
 		x.Elems = $3.([]string)
@@ -10072,7 +10074,7 @@ StringType:
 		x.Charset = $5.(string)
 		$$ = x
 	}
-|	"SET" '(' StringList ')' OptCharset
+|	"SET" '(' TextStringList ')' OptCharset
 	{
 		x := types.NewFieldType(mysql.TypeSet)
 		x.Elems = $3.([]string)
@@ -10387,6 +10389,27 @@ StringList:
 		$$ = []string{$1}
 	}
 |	StringList ',' stringLit
+	{
+		$$ = append($1.([]string), $3)
+	}
+
+TextString:
+	stringLit
+|	hexLit
+	{
+		$$ = $1.(ast.BinaryLiteral).ToString()
+	}
+|	bitLit
+	{
+		$$ = $1.(ast.BinaryLiteral).ToString()
+	}
+
+TextStringList:
+	TextString
+	{
+		$$ = []string{$1}
+	}
+|	TextStringList ',' TextString
 	{
 		$$ = append($1.([]string), $3)
 	}
