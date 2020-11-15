@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
@@ -85,7 +86,26 @@ var (
 )
 
 var errClass2Desc = make(map[ErrClass]string)
-var rfcCode2errClass = make(map[string]ErrClass)
+var rfcCode2errClass = newCode2ErrClassMap()
+
+type code2ErrClassMap struct {
+	data sync.Map
+}
+
+func newCode2ErrClassMap() *code2ErrClassMap {
+	return &code2ErrClassMap{
+		data: sync.Map{},
+	}
+}
+
+func (m *code2ErrClassMap) Get(key string) (ErrClass, bool) {
+	ret, have := m.data.Load(key)
+	return ret.(ErrClass), have
+}
+
+func (m *code2ErrClassMap) Put(key string, err ErrClass) {
+	m.data.Store(key, err)
+}
 
 // RegisterErrorClass registers new error class for terror.
 func RegisterErrorClass(classCode int, desc string) ErrClass {
@@ -114,7 +134,7 @@ func (ec ErrClass) EqualClass(err error) bool {
 	if te, ok := e.(*Error); ok {
 		rfcCode := te.RFCCode()
 		if index := strings.Index(string(rfcCode), ":"); index > 0 {
-			if class, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+			if class, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
 				return class == ec
 			}
 		}
@@ -136,7 +156,7 @@ func (ec ErrClass) initError(code ErrCode) string {
 	clsMap[code] = struct{}{}
 	class := errClass2Desc[ec]
 	rfcCode := fmt.Sprintf("%s:%d", class, code)
-	rfcCode2errClass[class] = ec
+	rfcCode2errClass.Put(class, ec)
 	return rfcCode
 }
 
@@ -189,7 +209,7 @@ func getMySQLErrorCode(e *Error) uint16 {
 	rfcCode := e.RFCCode()
 	var class ErrClass
 	if index := strings.Index(string(rfcCode), ":"); index > 0 {
-		if ec, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+		if ec, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
 			class = ec
 		} else {
 			log.Warn("Unknown error class", zap.String("class", string(rfcCode)[:index]))
@@ -275,7 +295,7 @@ func Log(err error) {
 func GetErrClass(e *Error) ErrClass {
 	rfcCode := e.RFCCode()
 	if index := strings.Index(string(rfcCode), ":"); index > 0 {
-		if class, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+		if class, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
 			return class
 		}
 	}
