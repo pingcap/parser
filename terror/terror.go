@@ -85,7 +85,6 @@ var (
 )
 
 var errClass2Desc = make(map[ErrClass]string)
-var errCodeMap = make(map[ErrCode]*Error)
 var rfcCode2errClass = make(map[string]ErrClass)
 
 // RegisterErrorClass registers new error class for terror.
@@ -151,7 +150,6 @@ func (ec ErrClass) initError(code ErrCode) string {
 func (ec ErrClass) New(code ErrCode, message string) *Error {
 	rfcCode := ec.initError(code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
-	errCodeMap[code] = err
 	return err
 }
 
@@ -160,7 +158,6 @@ func (ec ErrClass) New(code ErrCode, message string) *Error {
 func (ec ErrClass) NewStdErr(code ErrCode, message *mysql.ErrMessage) *Error {
 	rfcCode := ec.initError(code)
 	err := errors.Normalize(message.Raw, errors.RedactArgs(message.RedactArgPos), errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
-	errCodeMap[code] = err
 	return err
 }
 
