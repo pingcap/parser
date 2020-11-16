@@ -7043,7 +7043,7 @@ CastType:
 			return 1
 		}
 		if fopt.Flen < fopt.Decimal {
-			yylex.AppendError(ErrMBiggerThanD.GenWithStackByArgs(""))
+			yylex.AppendError(ErrMBiggerThanD.GenWithStackByArgs())
 			return 1
 		}
 		x := types.NewFieldType(mysql.TypeNewDecimal)

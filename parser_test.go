@@ -5729,7 +5729,6 @@ func (s *testParserSuite) TestTypeCheck(c *C) {
 		{`select * from t where d = cast(111 as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '111'. Maximum is 65.`)},
 		{`select * from t where d = cast("abc" as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '"abc"'. Maximum is 65.`)},
 		{`select * from t where d = cast('d' as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column ''d''. Maximum is 65.`)},
-		{`select * from t where d = cast(d as float(100))`, errors.New(``)},
 		{`select cast(d as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column 'd'. Maximum is 65.`)},
 		{`select cast(111 as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '111'. Maximum is 65.`)},
 		{`select cast("abc" as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '"abc"'. Maximum is 65.`)},
