@@ -1143,6 +1143,7 @@ import (
 	WithGrantOptionOpt                     "With Grant Option opt"
 	WithValidation                         "with validation"
 	WithValidationOpt                      "optional with validation"
+	Writeable                              "Table writeable status"
 	ElseOpt                                "Optional else clause"
 	Type                                   "Types"
 	OptExistingWindowName                  "Optional existing WINDOW name"
@@ -1395,19 +1396,6 @@ AlterTableStmt:
 			IndexNames:     $9.([]model.CIStr),
 			IndexFlag:      true,
 			AnalyzeOpts:    $10.([]ast.AnalyzeOpt),
-		}
-	}
-|	"ALTER" IgnoreOptional "TABLE" TableName "READ" "WRITE"
-	{
-		$$ = &ast.CleanupTableLockStmt{
-			Tables: []*ast.TableName{$4.(*ast.TableName)},
-		}
-	}
-|	"ALTER" IgnoreOptional "TABLE" TableName "READ" "ONLY"
-	{
-		$$ = ast.TableLock{
-			Table: $4.(*ast.TableName),
-			Type:  model.TableLockReadOnly,
 		}
 	}
 
@@ -1969,6 +1957,13 @@ AlterTableSpec:
 			LockType: $1.(ast.LockType),
 		}
 	}
+|	Writeable
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:        ast.AlterTableWriteable,
+			Writeable: $1.(bool),
+		}
+	}
 |	AlgorithmClause
 	{
 		// Parse it and ignore it. Just for compatibility.
@@ -2140,6 +2135,16 @@ LockClause:
 			yylex.AppendError(ErrUnknownAlterLock.GenWithStackByArgs($3))
 			return 1
 		}
+	}
+
+Writeable:
+	"READ" "WRITE"
+	{
+		$$ = true
+	}
+|	"READ" "ONLY"
+	{
+		$$ = false
 	}
 
 KeyOrIndex:

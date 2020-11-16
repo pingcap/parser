@@ -4144,8 +4144,8 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{"ADMIN CLEANUP TABLE LOCK t1,t2", true, "ADMIN CLEANUP TABLE LOCK `t1`, `t2`"},
 
 		// For alter table read only/write.
-		{"ALTER TABLE t READ ONLY", true, "ALTER TABLE t READ ONLY"},
-		{"ALTER TABLE t READ WRITE", true, "ALTER TABLE t READ WRITE"},
+		{"ALTER TABLE t READ ONLY", true, "ALTER TABLE `t` READ ONLY"},
+		{"ALTER TABLE t READ WRITE", true, "ALTER TABLE `t` READ WRITE"},
 	}
 	s.RunTest(c, table)
 }
