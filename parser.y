@@ -1400,7 +1400,7 @@ AlterTableStmt:
 |	"ALTER" IgnoreOptional "TABLE" TableName "READ" "WRITE"
 	{
 		$$ = &ast.CleanupTableLockStmt{
-			Tables: $4.(*ast.TableName),
+			Tables: []*ast.TableName{$4.(*ast.TableName)},
 		}
 	}
 |	"ALTER" IgnoreOptional "TABLE" TableName "READ" "ONLY"
