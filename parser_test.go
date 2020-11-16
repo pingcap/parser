@@ -4123,7 +4123,6 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{`UNLOCK TABLES;`, true, "UNLOCK TABLES"},
 		{`LOCK TABLES t1 READ;`, true, "LOCK TABLES `t1` READ"},
 		{`LOCK TABLES t1 READ LOCAL;`, true, "LOCK TABLES `t1` READ LOCAL"},
-		{`LOCK TABLES t1 READ ONLY;`, true, "LOCK TABLES `t1` READ ONLY"},
 		{`show table status like 't'`, true, "SHOW TABLE STATUS LIKE 't'"},
 		{`LOCK TABLES t2 WRITE`, true, "LOCK TABLES `t2` WRITE"},
 		{`LOCK TABLES t2 WRITE LOCAL;`, true, "LOCK TABLES `t2` WRITE LOCAL"},
@@ -4143,6 +4142,10 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{"ADMIN CLEANUP TABLE LOCK", false, ""},
 		{"ADMIN CLEANUP TABLE LOCK t", true, "ADMIN CLEANUP TABLE LOCK `t`"},
 		{"ADMIN CLEANUP TABLE LOCK t1,t2", true, "ADMIN CLEANUP TABLE LOCK `t1`, `t2`"},
+
+		// For alter table read only/write.
+		{"ALTER TABLE t READ ONLY", true, "ALTER TABLE t READ ONLY"},
+		{"ALTER TABLE t READ WRITE", true, "ALTER TABLE t READ WRITE"},
 	}
 	s.RunTest(c, table)
 }

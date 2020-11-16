@@ -1397,6 +1397,19 @@ AlterTableStmt:
 			AnalyzeOpts:    $10.([]ast.AnalyzeOpt),
 		}
 	}
+|	"ALTER" IgnoreOptional "TABLE" TableName "READ" "WRITE"
+	{
+		$$ = &ast.CleanupTableLockStmt{
+			Tables: $4.(*ast.TableName),
+		}
+	}
+|	"ALTER" IgnoreOptional "TABLE" TableName "READ" "ONLY"
+	{
+		$$ = ast.TableLock{
+			Table: $4.(*ast.TableName),
+			Type:  model.TableLockReadOnly,
+		}
+	}
 
 PlacementRole:
 	"ROLE" "=" "FOLLOWER"
@@ -11945,10 +11958,6 @@ LockType:
 |	"READ" "LOCAL"
 	{
 		$$ = model.TableLockReadLocal
-	}
-|	"READ" "ONLY"
-	{
-		$$ = model.TableLockReadOnly
 	}
 |	"WRITE"
 	{
