@@ -41,8 +41,12 @@ var (
 	ErrWrongFieldTerminators = terror.ClassParser.NewStd(mysql.ErrWrongFieldTerminators)
 	// ErrTooBigDisplayWidth returns for data display width exceed limit .
 	ErrTooBigDisplayWidth = terror.ClassParser.NewStd(mysql.ErrTooBigDisplaywidth)
+	// ErrTooBigScale returns for data scale exceed limit.
+	ErrTooBigScale = terror.ClassParser.NewStd(mysql.ErrTooBigScale)
 	// ErrTooBigPrecision returns for data precision exceed limit.
 	ErrTooBigPrecision = terror.ClassParser.NewStd(mysql.ErrTooBigPrecision)
+	// ErrMBiggerThanD returns for data scale greater than precision.
+	ErrMBiggerThanD = terror.ClassParser.NewStd(mysql.ErrMBiggerThanD)
 	// ErrUnknownAlterLock returns for no alter lock type found error.
 	ErrUnknownAlterLock = terror.ClassParser.NewStd(mysql.ErrUnknownAlterLock)
 	// ErrUnknownAlterAlgorithm returns for no alter algorithm found error.

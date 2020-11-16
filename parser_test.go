@@ -5719,3 +5719,34 @@ func (s *testParserSuite) TestHighNotPrecedenceMode(c *C) {
 	restoreSQL = sb.String()
 	c.Assert(restoreSQL, Equals, "SELECT !1 BETWEEN -5 AND 5")
 }
+
+func (s *testParserSuite) TestTypeCheck(c *C) {
+	commentMsgCases := []testErrMsgCase{
+		// for cast decimal ErrTooBigScale
+		{`select convert('0.0', Decimal(41, 40))`, errors.New(`[parser:1425]Too big scale 40 specified for column ''0.0''. Maximum is 30.`)},
+		// for cast decimal ErrTooBigPrecision
+		{`select * from t where d = cast(d as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column 'd'. Maximum is 65.`)},
+		{`select * from t where d = cast(111 as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '111'. Maximum is 65.`)},
+		{`select * from t where d = cast("abc" as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '"abc"'. Maximum is 65.`)},
+		{`select * from t where d = cast('d' as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column ''d''. Maximum is 65.`)},
+		{`select * from t where d = cast(d as float(100))`, errors.New(``)},
+		{`select cast(d as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column 'd'. Maximum is 65.`)},
+		{`select cast(111 as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '111'. Maximum is 65.`)},
+		{`select cast("abc" as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '"abc"'. Maximum is 65.`)},
+		{`select cast("'d'" as decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '"'d'"'. Maximum is 65.`)},
+		// for cast decimal ErrMBiggerThanD
+		{`select * from t where d = cast(d as decimal(10,20))`, errors.New(`[parser:1427]For float(M,D), double(M,D) or decimal(M,D), M must be >= D (column '').`)},
+		{`select * from t where d = cast("d" as decimal(10,20))`, errors.New(`[parser:1427]For float(M,D), double(M,D) or decimal(M,D), M must be >= D (column '').`)},
+		{`select * from t where d = cast("'d'" as decimal(10,20))`, errors.New(`[parser:1427]For float(M,D), double(M,D) or decimal(M,D), M must be >= D (column '').`)},
+		// for convert decimal ErrTooBigPrecision
+		{`select * from t where d = convert(d, decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column 'd'. Maximum is 65.`)},
+		{`select * from t where d = convert(111, decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '111'. Maximum is 65.`)},
+		{`select * from t where d = convert("abc", decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column '"abc"'. Maximum is 65.`)},
+		{`select * from t where d = convert('d', decimal(1000,20))`, errors.New(`[parser:1426]Too big precision 1000 specified for column ''d''. Maximum is 65.`)},
+		// for convert decimal ErrMBiggerThanD
+		{`select * from t where d = convert(d , decimal(10,20))`, errors.New(`[parser:1427]For float(M,D), double(M,D) or decimal(M,D), M must be >= D (column '').`)},
+		{`select * from t where d = convert("d", decimal(10,20))`, errors.New(`[parser:1427]For float(M,D), double(M,D) or decimal(M,D), M must be >= D (column '').`)},
+		{`select * from t where d = convert("'d'", decimal(10,20))`, errors.New(`[parser:1427]For float(M,D), double(M,D) or decimal(M,D), M must be >= D (column '').`)},
+	}
+	s.RunErrMsgTest(c, commentMsgCases)
+}

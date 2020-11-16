@@ -7030,7 +7030,22 @@ CastType:
 	}
 |	"DECIMAL" FloatOpt
 	{
+		startOffset := parser.startOffset(&yyS[yypt-3])
+		endOffset := parser.endOffset(&yyS[yypt-2])
+		colString := parser.src[startOffset:endOffset]
 		fopt := $2.(*ast.FloatOpt)
+		if fopt.Flen > mysql.MaxDecimalWidth {
+			yylex.AppendError(ErrTooBigPrecision.GenWithStackByArgs(fopt.Flen, colString, mysql.MaxDecimalWidth))
+			return 1
+		}
+		if fopt.Decimal > mysql.MaxDecimalScale {
+			yylex.AppendError(ErrTooBigScale.GenWithStackByArgs(fopt.Decimal, colString, mysql.MaxDecimalScale))
+			return 1
+		}
+		if fopt.Flen < fopt.Decimal {
+			yylex.AppendError(ErrMBiggerThanD.GenWithStackByArgs(""))
+			return 1
+		}
 		x := types.NewFieldType(mysql.TypeNewDecimal)
 		x.Flen = fopt.Flen
 		x.Decimal = fopt.Decimal
