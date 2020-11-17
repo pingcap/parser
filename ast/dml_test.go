@@ -39,7 +39,7 @@ func (ts *testDMLSuite) TestDMLVisitorCover(c *C) {
 		{&LoadDataStmt{Table: &TableName{}, Columns: []*ColumnName{{}}, FieldsInfo: &FieldsClause{}, LinesInfo: &LinesClause{}}, 0, 0},
 		{&Assignment{Column: &ColumnName{}, Expr: ce}, 1, 1},
 		{&ByItem{Expr: ce}, 1, 1},
-		{&GroupByClause{Items: []*ByItem{{Expr: ce}, {Expr: ce}}}, 2, 2},
+		{&GroupByClause{Items: []*ByItemNillable{{Expr: ce}, {Expr: ce}}}, 2, 2},
 		{&HavingClause{Expr: ce}, 1, 1},
 		{&Join{Left: &TableSource{Source: &TableName{}}}, 0, 0},
 		{&Limit{Count: ce, Offset: ce}, 2, 2},

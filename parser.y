@@ -997,11 +997,14 @@ import (
 	OptFull                                "Full or empty"
 	OptTemporary                           "TEMPORARY or empty"
 	Order                                  "ORDER BY clause optional collation specification"
+	OrderNillable                          "ORDER which could be nil"
 	OrderBy                                "ORDER BY clause"
 	OrReplace                              "or replace"
 	ByItem                                 "BY item"
+	ByItemNillable                         "GROUP BY item"
 	OrderByOptional                        "Optional ORDER BY clause optional"
 	ByList                                 "BY list"
+	ByListNillable                         "GROUP BY list"
 	AlterOrderItem                         "Alter Order item"
 	AlterOrderList                         "Alter Order list"
 	QuickOptional                          "QUICK or empty"
@@ -4939,9 +4942,9 @@ FieldList:
 	}
 
 GroupByClause:
-	"GROUP" "BY" ByList
+	"GROUP" "BY" ByListNillable
 	{
-		$$ = &ast.GroupByClause{Items: $3.([]*ast.ByItem)}
+		$$ = &ast.GroupByClause{Items: $3.([]*ast.ByItemNillable)}
 	}
 
 HavingClause:
@@ -5912,6 +5915,37 @@ ByItem:
 			}
 		}
 		$$ = &ast.ByItem{Expr: expr, Desc: $2.(bool)}
+	}
+
+ByListNillable:
+	ByItemNillable
+	{
+		$$ = []*ast.ByItemNillable{$1.(*ast.ByItemNillable)}
+	}
+|	ByListNillable ',' ByItemNillable
+	{
+		$$ = append($1.([]*ast.ByItemNillable), $3.(*ast.ByItemNillable))
+	}
+
+ByItemNillable:
+	Expression OrderNillable
+	{
+		expr := $1
+		$$ = &ast.ByItemNillable{Expr: expr, Order: $2.(ast.ByItemOrder)}
+	}
+
+OrderNillable:
+	/* EMPTY */
+	{
+		$$ = ast.ByOrderNone
+	}
+|	"ASC"
+	{
+		$$ = ast.ByOrderAsc
+	}
+|	"DESC"
+	{
+		$$ = ast.ByOrderDesc
 	}
 
 Order:
