@@ -5648,7 +5648,8 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"import table db1.tbl1 from 'file:///d/' csv_null = abcdefgh", false, ""},
 		{"import table db1.tbl1 from 'file:///d/' resume 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' RESUME = 1"},
 		{"import table db1.tbl1 from 'file:///d/' resume abc", false, ""},
-		{"import table db1.tbl1 from 'file:///d/' resume 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' RESUME = 1"},
+		{"import table db1.tbl1 from 'file:///d/' analyze = optional", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' ANALYZE = OPTIONAL"},
+		{"import table db1.tbl1 from 'file:///d/' analyze = abc", false, ""},
 		// still support boolean checksum because BR share this syntax
 		{"import table db1.tbl1 from 'file:///d/' checksum 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CHECKSUM = 1"},
 	}
