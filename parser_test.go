@@ -5615,9 +5615,9 @@ func (s *testParserSuite) TestBRIE(c *C) {
 
 		{"IMPORT DATABASE * FROM 'file:///data/dump'", true, "IMPORT DATABASE * FROM 'file:///data/dump'"},
 		{
-			"import schema * from 'file:///d/' checkpoint false analyze false checksum false backend 'importer' tikv_importer '10.0.1.1:8287'",
+			"import schema * from 'file:///d/' checkpoint false analyze off checksum off backend 'importer' tikv_importer '10.0.1.1:8287'",
 			true,
-			"IMPORT DATABASE * FROM 'file:///d/' CHECKPOINT = 0 ANALYZE = 0 CHECKSUM = 0 BACKEND = 'importer' TIKV_IMPORTER = '10.0.1.1:8287'",
+			"IMPORT DATABASE * FROM 'file:///d/' CHECKPOINT = 0 ANALYZE = OFF CHECKSUM = OFF BACKEND = 'importer' TIKV_IMPORTER = '10.0.1.1:8287'",
 		},
 		{
 			"IMPORT DATABASE * FROM 'file:///d/' BACKEND TIDB ON DUPLICATE IGNORE SKIP_SCHEMA_FILES TRUE",
@@ -5646,6 +5646,11 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"import table db1.tbl1 from 'file:///d/' csv_null = false", false, ""},
 		{"import table db1.tbl1 from 'file:///d/' csv_null = 0", false, ""},
 		{"import table db1.tbl1 from 'file:///d/' csv_null = abcdefgh", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' resume 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' RESUME = 1"},
+		{"import table db1.tbl1 from 'file:///d/' resume abc", false, ""},
+		{"import table db1.tbl1 from 'file:///d/' resume 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' RESUME = 1"},
+		// still support boolean checksum because BR share this syntax
+		{"import table db1.tbl1 from 'file:///d/' checksum 1", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CHECKSUM = 1"},
 	}
 
 	s.RunTest(c, table)

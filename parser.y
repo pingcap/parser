@@ -462,11 +462,13 @@ import (
 	nowait                "NOWAIT"
 	nvarcharType          "NVARCHAR"
 	nulls                 "NULLS"
+	off                   "OFF"
 	offset                "OFFSET"
 	onDuplicate           "ON_DUPLICATE"
 	online                "ONLINE"
 	only                  "ONLY"
 	open                  "OPEN"
+	optional              "OPTIONAL"
 	packKeys              "PACK_KEYS"
 	pageSym               "PAGE"
 	parser                "PARSER"
@@ -504,10 +506,12 @@ import (
 	replica               "REPLICA"
 	replicas              "REPLICAS"
 	replication           "REPLICATION"
+	required              "REQUIRED"
 	respect               "RESPECT"
 	restart               "RESTART"
 	restore               "RESTORE"
 	restores              "RESTORES"
+	resume                "RESUME"
 	reverse               "REVERSE"
 	role                  "ROLE"
 	rollback              "ROLLBACK"
@@ -997,6 +1001,7 @@ import (
 	OptFull                                "Full or empty"
 	OptTemporary                           "TEMPORARY or empty"
 	Order                                  "ORDER BY clause optional collation specification"
+	OptionLevel                            "3 levels used by lightning config"
 	OrderBy                                "ORDER BY clause"
 	OrReplace                              "or replace"
 	ByItem                                 "BY item"
@@ -4343,13 +4348,13 @@ BRIEIntegerOptionName:
 	{
 		$$ = ast.BRIEOptionConcurrency
 	}
+|	"RESUME"
+	{
+		$$ = ast.BRIEOptionResume
+	}
 
 BRIEBooleanOptionName:
-	"CHECKSUM"
-	{
-		$$ = ast.BRIEOptionChecksum
-	}
-|	"SEND_CREDENTIALS_TO_TIKV"
+	"SEND_CREDENTIALS_TO_TIKV"
 	{
 		$$ = ast.BRIEOptionSendCreds
 	}
@@ -4360,10 +4365,6 @@ BRIEBooleanOptionName:
 |	"CHECKPOINT"
 	{
 		$$ = ast.BRIEOptionCheckpoint
-	}
-|	"ANALYZE"
-	{
-		$$ = ast.BRIEOptionAnalyze
 	}
 |	"SKIP_SCHEMA_FILES"
 	{
@@ -4516,6 +4517,31 @@ BRIEOption:
 			UintValue: $3.(uint64),
 		}
 	}
+|	"CHECKSUM" EqOpt Boolean
+	{
+		value := uint64(0)
+		if $3.(bool) {
+			value = 1
+		}
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionChecksum,
+			UintValue: value,
+		}
+	}
+|	"CHECKSUM" EqOpt OptionLevel
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionChecksum,
+			UintValue: uint64($3.(ast.BRIEOptionLevel)),
+		}
+	}
+|	"ANALYZE" EqOpt OptionLevel
+	{
+		$$ = &ast.BRIEOption{
+			Tp:        ast.BRIEOptionAnalyze,
+			UintValue: uint64($3.(ast.BRIEOptionLevel)),
+		}
+	}
 
 LengthNum:
 	NUM
@@ -4549,6 +4575,20 @@ Boolean:
 |	"TRUE"
 	{
 		$$ = true
+	}
+
+OptionLevel:
+	"OFF"
+	{
+		$$ = ast.BRIEOptionLevelOff
+	}
+|	"OPTIONAL"
+	{
+		$$ = ast.BRIEOptionLevelOptional
+	}
+|	"REQUIRED"
+	{
+		$$ = ast.BRIEOptionLevelRequired
 	}
 
 Expression:
@@ -5452,6 +5492,10 @@ UnReservedKeyword:
 |	"BERNOULLI"
 |	"SYSTEM"
 |	"PERCENT"
+|	"RESUME"
+|	"OFF"
+|	"OPTIONAL"
+|	"REQUIRED"
 
 TiDBKeyword:
 	"ADMIN"
