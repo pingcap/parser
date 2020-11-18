@@ -35,7 +35,6 @@ var (
 
 	_ Node = &Assignment{}
 	_ Node = &ByItem{}
-	_ Node = &ByItemNillable{}
 	_ Node = &FieldList{}
 	_ Node = &GroupByClause{}
 	_ Node = &HavingClause{}
@@ -661,30 +660,13 @@ func (n *TableRefsClause) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// ByItem represents an item in order by
+// ByItem represents an item in order by or group by.
 type ByItem struct {
 	node
 
-	Expr ExprNode
-	Desc bool
-}
-
-// ByItemOrder is the type of order for Group By items
-type ByItemOrder int
-
-// Group By ordering
-const (
-	ByOrderNone ByItemOrder = iota
-	ByOrderAsc
-	ByOrderDesc
-)
-
-// ByItemNillable represents an item in Group By
-type ByItemNillable struct {
-	node
-
-	Expr  ExprNode
-	Order ByItemOrder
+	Expr      ExprNode
+	Desc      bool
+	NullOrder bool
 }
 
 // Restore implements Node interface.
@@ -713,39 +695,10 @@ func (n *ByItem) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// Restore implements Node interface.
-func (n *ByItemNillable) Restore(ctx *format.RestoreCtx) error {
-	if err := n.Expr.Restore(ctx); err != nil {
-		return errors.Annotate(err, "An error occurred while restore ByItemNillable.Expr")
-	}
-	switch n.Order {
-	case ByOrderDesc:
-		ctx.WriteKeyWord(" DESC")
-	case ByOrderAsc:
-		ctx.WriteKeyWord(" ASC")
-	}
-	return nil
-}
-
-// Accept implements Node Accept interface.
-func (n *ByItemNillable) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
-	n = newNode.(*ByItemNillable)
-	node, ok := n.Expr.Accept(v)
-	if !ok {
-		return n, false
-	}
-	n.Expr = node.(ExprNode)
-	return v.Leave(n)
-}
-
 // GroupByClause represents group by clause.
 type GroupByClause struct {
 	node
-	Items []*ByItemNillable
+	Items []*ByItem
 }
 
 // Restore implements Node interface.
@@ -774,7 +727,7 @@ func (n *GroupByClause) Accept(v Visitor) (Node, bool) {
 		if !ok {
 			return n, false
 		}
-		n.Items[i] = node.(*ByItemNillable)
+		n.Items[i] = node.(*ByItem)
 	}
 	return v.Leave(n)
 }

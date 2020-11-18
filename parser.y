@@ -996,15 +996,13 @@ import (
 	DuplicateOpt                           "[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
 	OptFull                                "Full or empty"
 	OptTemporary                           "TEMPORARY or empty"
-	Order                                  "ORDER BY clause optional collation specification"
-	OrderNillable                          "ORDER which could be nil"
+	OptOrder                               "Optional ordering keyword: ASC/DESC. Default to ASC"
+	Order                                  "Ordering keyword: ASC or DESC"
 	OrderBy                                "ORDER BY clause"
 	OrReplace                              "or replace"
 	ByItem                                 "BY item"
-	ByItemNillable                         "GROUP BY item"
 	OrderByOptional                        "Optional ORDER BY clause optional"
 	ByList                                 "BY list"
-	ByListNillable                         "GROUP BY list"
 	AlterOrderItem                         "Alter Order item"
 	AlterOrderList                         "Alter Order list"
 	QuickOptional                          "QUICK or empty"
@@ -3298,12 +3296,12 @@ IndexPartSpecificationList:
 	}
 
 IndexPartSpecification:
-	ColumnName OptFieldLen Order
+	ColumnName OptFieldLen OptOrder
 	{
 		// Order is parsed but just ignored as MySQL did.
 		$$ = &ast.IndexPartSpecification{Column: $1.(*ast.ColumnName), Length: $2.(int)}
 	}
-|	'(' Expression ')' Order
+|	'(' Expression ')' OptOrder
 	{
 		$$ = &ast.IndexPartSpecification{Expr: $2}
 	}
@@ -4942,9 +4940,9 @@ FieldList:
 	}
 
 GroupByClause:
-	"GROUP" "BY" ByListNillable
+	"GROUP" "BY" ByList
 	{
-		$$ = &ast.GroupByClause{Items: $3.([]*ast.ByItemNillable)}
+		$$ = &ast.GroupByClause{Items: $3.([]*ast.ByItem)}
 	}
 
 HavingClause:
@@ -5882,7 +5880,7 @@ AlterOrderList:
 	}
 
 AlterOrderItem:
-	ColumnName Order
+	ColumnName OptOrder
 	{
 		$$ = &ast.AlterOrderItem{Column: $1.(*ast.ColumnName), Desc: $2.(bool)}
 	}
@@ -5904,7 +5902,19 @@ ByList:
 	}
 
 ByItem:
-	Expression Order
+	Expression
+	{
+		expr := $1
+		valueExpr, ok := expr.(ast.ValueExpr)
+		if ok {
+			position, isPosition := valueExpr.GetValue().(int64)
+			if isPosition {
+				expr = &ast.PositionExpr{N: int(position)}
+			}
+		}
+		$$ = &ast.ByItem{Expr: expr, NullOrder: true}
+	}
+|	Expression Order
 	{
 		expr := $1
 		valueExpr, ok := expr.(ast.ValueExpr)
@@ -5917,38 +5927,17 @@ ByItem:
 		$$ = &ast.ByItem{Expr: expr, Desc: $2.(bool)}
 	}
 
-ByListNillable:
-	ByItemNillable
+Order:
+	"ASC"
 	{
-		$$ = []*ast.ByItemNillable{$1.(*ast.ByItemNillable)}
-	}
-|	ByListNillable ',' ByItemNillable
-	{
-		$$ = append($1.([]*ast.ByItemNillable), $3.(*ast.ByItemNillable))
-	}
-
-ByItemNillable:
-	Expression OrderNillable
-	{
-		expr := $1
-		$$ = &ast.ByItemNillable{Expr: expr, Order: $2.(ast.ByItemOrder)}
-	}
-
-OrderNillable:
-	/* EMPTY */
-	{
-		$$ = ast.ByOrderNone
-	}
-|	"ASC"
-	{
-		$$ = ast.ByOrderAsc
+		$$ = false
 	}
 |	"DESC"
 	{
-		$$ = ast.ByOrderDesc
+		$$ = true
 	}
 
-Order:
+OptOrder:
 	/* EMPTY */
 	{
 		$$ = false // ASC by default
