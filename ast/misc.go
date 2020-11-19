@@ -2371,7 +2371,6 @@ func (n *ShutdownStmt) Accept(v Visitor) (Node, bool) {
 
 type BRIEKind uint8
 type BRIEOptionType uint16
-type BRIEOptionLevel uint64
 
 const (
 	BRIEKindBackup BRIEKind = iota
@@ -2409,12 +2408,15 @@ const (
 	BRIEOptionCSVSeparator
 	BRIEOptionCSVTrimLastSeparators
 
-	// BRIEOptionLevel
-	BRIEOptionLevelOff BRIEOptionLevel = iota + 2
-	BRIEOptionLevelOptional
-	BRIEOptionLevelRequired
-
 	BRIECSVHeaderIsColumns = ^uint64(0)
+)
+
+type BRIEOptionLevel uint64
+
+const (
+	BRIEOptionLevelOff      BRIEOptionLevel = iota // equals FALSE
+	BRIEOptionLevelRequired                        // equals TRUE
+	BRIEOptionLevelOptional
 )
 
 func (kind BRIEKind) String() string {
@@ -2583,19 +2585,19 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 			} else {
 				ctx.WritePlainf("%d", opt.UintValue)
 			}
-		case BRIEOptionChecksum:
+		case BRIEOptionChecksum, BRIEOptionAnalyze:
 			switch opt.UintValue {
-			case uint64(BRIEOptionLevelOff):
-				ctx.WriteKeyWord("OFF")
-			case uint64(BRIEOptionLevelOptional):
-				ctx.WriteKeyWord("OPTIONAL")
-			case uint64(BRIEOptionLevelRequired):
-				ctx.WriteKeyWord("REQUIRED")
-			default:
-				ctx.WritePlainf("%d", opt.UintValue)
+			case 0, 1:
+				if n.Kind == BRIEKindImport {
+					ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+				} else {
+					ctx.WritePlainf("%d", opt.UintValue)
+				}
+			case 2:
+				// BACKUP/RESTORE doesn't support this value for now
+				ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
 			}
-		case BRIEOptionAnalyze:
-			ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+
 		default:
 			ctx.WritePlainf("%d", opt.UintValue)
 		}
