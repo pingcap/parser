@@ -2608,10 +2608,7 @@ type PurgeImportStmt struct {
 }
 
 func (n *PurgeImportStmt) Accept(v Visitor) (Node, bool) {
-	newNode, skipChildren := v.Enter(n)
-	if skipChildren {
-		return v.Leave(newNode)
-	}
+	newNode, _ := v.Enter(n)
 	n = newNode.(*PurgeImportStmt)
 	return v.Leave(n)
 }
