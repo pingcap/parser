@@ -39,7 +39,7 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&DropDatabaseStmt{}, 0, 0},
 		{&DropIndexStmt{Table: &TableName{}}, 0, 0},
 		{&DropTableStmt{Tables: []*TableName{{}, {}}}, 0, 0},
-		{&RenameTableStmt{OldTable: &TableName{}, NewTable: &TableName{}}, 0, 0},
+		{&RenameTableStmt{TableToTables: []*TableToTable{}}, 0, 0},
 		{&TruncateTableStmt{Table: &TableName{}}, 0, 0},
 
 		// TODO: cover children
@@ -521,6 +521,17 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		return node.(*AlterTableStmt).Specs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "ALTER TABLE t %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestAlterTableOptionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ALTER TABLE t ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8", "ALTER TABLE `t` ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8"},
+		{"ALTER TABLE t ROW_FORMAT = COMPRESSED, KEY_BLOCK_SIZE = 8", "ALTER TABLE `t` ROW_FORMAT = COMPRESSED, KEY_BLOCK_SIZE = 8"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestAdminRepairTableRestore(c *C) {
