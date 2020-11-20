@@ -488,6 +488,7 @@ import (
 	processlist           "PROCESSLIST"
 	profile               "PROFILE"
 	profiles              "PROFILES"
+	purge                 "PURGE"
 	quarter               "QUARTER"
 	queries               "QUERIES"
 	query                 "QUERY"
@@ -842,6 +843,7 @@ import (
 	LoadStatsStmt          "Load statistic statement"
 	LockTablesStmt         "Lock tables statement"
 	PreparedStmt           "PreparedStmt"
+	PurgeStmt              "PURGE statement that removes a IMPORT task record"
 	SelectStmt             "SELECT statement"
 	RenameTableStmt        "rename table statement"
 	ReplaceIntoStmt        "REPLACE INTO statement"
@@ -1029,6 +1031,7 @@ import (
 	PrivLevel                              "Privilege scope"
 	PrivType                               "Privilege type"
 	ReferDef                               "Reference definition"
+	PurgeType                              "PURGE type"
 	OnDelete                               "ON DELETE clause"
 	OnUpdate                               "ON UPDATE clause"
 	OnDeleteUpdateOpt                      "optional ON DELETE and UPDATE clause"
@@ -4551,6 +4554,21 @@ Boolean:
 		$$ = true
 	}
 
+PurgeStmt:
+	"PURGE" PurgeType NUM
+	{
+		stmt := &ast.PurgeStmt{}
+		stmt.Item = $2.(*ast.PurgeItem)
+		stmt.Item.UintValue = getUint64FromNUM($3)
+		$$ = stmt
+	}
+
+PurgeType:
+	"IMPORT"
+	{
+		$$ = &ast.PurgeItem{Tp: ast.PurgeTypeImport}
+	}
+
 Expression:
 	singleAtIdentifier assignmentEq Expression %prec assignmentEq
 	{
@@ -5452,6 +5470,7 @@ UnReservedKeyword:
 |	"BERNOULLI"
 |	"SYSTEM"
 |	"PERCENT"
+|	"PURGE"
 
 TiDBKeyword:
 	"ADMIN"
@@ -9847,6 +9866,7 @@ Statement:
 |	LoadDataStmt
 |	LoadStatsStmt
 |	PreparedStmt
+|	PurgeStmt
 |	RollbackStmt
 |	RenameTableStmt
 |	ReplaceIntoStmt

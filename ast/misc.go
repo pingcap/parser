@@ -2601,6 +2601,47 @@ func (n *BRIEStmt) SecureText() string {
 	return sb.String()
 }
 
+type PurgeType uint16
+
+const (
+	PurgeTypeImport PurgeType = iota
+)
+
+func (t PurgeType) String() string {
+	switch t {
+	case PurgeTypeImport:
+		return "IMPORT"
+	default:
+		return ""
+	}
+}
+
+type PurgeItem struct {
+	Tp        PurgeType
+	UintValue uint64 // item id is always a number
+}
+
+type PurgeStmt struct {
+	stmtNode
+
+	Item *PurgeItem
+}
+
+func (n *PurgeStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*PurgeStmt)
+	return v.Leave(n)
+}
+
+func (n *PurgeStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("PURGE")
+	ctx.WritePlainf(" %s %d", n.Item.Tp.String(), n.Item.UintValue)
+	return nil
+}
+
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
