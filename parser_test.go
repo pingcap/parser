@@ -1156,13 +1156,13 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"call ", false, ""},
 		{"call test", true, "CALL `test`()"},
 		{"call test()", true, "CALL `test`()"},
-		{"call test(1, 'test', true)", true, "CALL `test`(1, 'test', TRUE)"},
+		{"call test(1, 'test', true)", true, "CALL `test`(1, _UTF8MB4'test', TRUE)"},
 		{"call x.y;", true, "CALL `x`.`y`()"},
 		{"call x.y();", true, "CALL `x`.`y`()"},
-		{"call x.y('p', 'q', 'r');", true, "CALL `x`.`y`('p', 'q', 'r')"},
+		{"call x.y('p', 'q', 'r');", true, "CALL `x`.`y`(_UTF8MB4'p', _UTF8MB4'q', _UTF8MB4'r')"},
 		{"call `x`.`y`;", true, "CALL `x`.`y`()"},
 		{"call `x`.`y`();", true, "CALL `x`.`y`()"},
-		{"call `x`.`y`('p', 'q', 'r');", true, "CALL `x`.`y`('p', 'q', 'r')"},
+		{"call `x`.`y`('p', 'q', 'r');", true, "CALL `x`.`y`(_UTF8MB4'p', _UTF8MB4'q', _UTF8MB4'r')"},
 	}
 	s.RunTest(c, table)
 }
@@ -4723,7 +4723,7 @@ func (s *testParserSuite) TestTableSample(c *C) {
 		{"select * from tbl tablesample (0 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 PERCENT)"},
 		{"select * from tbl tablesample (100 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (100 PERCENT)"},
 		{"select * from tbl tablesample (0 rows);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 ROWS)"},
-		{"select * from tbl tablesample ('34');", true, "SELECT * FROM `tbl` TABLESAMPLE ('34')"},
+		{"select * from tbl tablesample ('34');", true, "SELECT * FROM `tbl` TABLESAMPLE (_UTF8MB4'34')"},
 		{"select * from tbl1 tablesample (10), tbl2 tablesample (20);", true, "SELECT * FROM (`tbl1` TABLESAMPLE (10)) JOIN `tbl2` TABLESAMPLE (20)"},
 		{"select * from tbl1 a tablesample (10) join tbl2 b tablesample (20) on a.id <> b.id;", true, "SELECT * FROM `tbl1` AS `a` TABLESAMPLE (10) JOIN `tbl2` AS `b` TABLESAMPLE (20) ON `a`.`id`!=`b`.`id`"},
 		{"select * from demo tablesample bernoulli(50) limit 1 into outfile '/tmp/sample.csv';", true, "SELECT * FROM `demo` TABLESAMPLE BERNOULLI (50) LIMIT 1 INTO OUTFILE '/tmp/sample.csv'"},
