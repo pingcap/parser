@@ -843,7 +843,7 @@ import (
 	LoadStatsStmt          "Load statistic statement"
 	LockTablesStmt         "Lock tables statement"
 	PreparedStmt           "PreparedStmt"
-	PurgeStmt              "PURGE statement that removes a IMPORT task record"
+	PurgeImportStmt        "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt             "SELECT statement"
 	RenameTableStmt        "rename table statement"
 	ReplaceIntoStmt        "REPLACE INTO statement"
@@ -1031,7 +1031,6 @@ import (
 	PrivLevel                              "Privilege scope"
 	PrivType                               "Privilege type"
 	ReferDef                               "Reference definition"
-	PurgeType                              "PURGE type"
 	OnDelete                               "ON DELETE clause"
 	OnUpdate                               "ON UPDATE clause"
 	OnDeleteUpdateOpt                      "optional ON DELETE and UPDATE clause"
@@ -4554,19 +4553,10 @@ Boolean:
 		$$ = true
 	}
 
-PurgeStmt:
-	"PURGE" PurgeType NUM
+PurgeImportStmt:
+	"PURGE" "IMPORT" NUM
 	{
-		stmt := &ast.PurgeStmt{}
-		stmt.Item = $2.(*ast.PurgeItem)
-		stmt.Item.UintValue = getUint64FromNUM($3)
-		$$ = stmt
-	}
-
-PurgeType:
-	"IMPORT"
-	{
-		$$ = &ast.PurgeItem{Tp: ast.PurgeTypeImport}
+		$$ = &ast.PurgeImportStmt{TaskID: getUint64FromNUM($3)}
 	}
 
 Expression:
@@ -9866,7 +9856,7 @@ Statement:
 |	LoadDataStmt
 |	LoadStatsStmt
 |	PreparedStmt
-|	PurgeStmt
+|	PurgeImportStmt
 |	RollbackStmt
 |	RenameTableStmt
 |	ReplaceIntoStmt

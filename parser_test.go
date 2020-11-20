@@ -5655,7 +5655,6 @@ func (s *testParserSuite) TestPurge(c *C) {
 	cases := []testCase{
 		{"purge import 100", true, "PURGE IMPORT 100"},
 		{"purge import abc", false, ""},
-		{"purge 100", false, ""},
 	}
 	s.RunTest(c, cases)
 }

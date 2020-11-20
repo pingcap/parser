@@ -2601,44 +2601,23 @@ func (n *BRIEStmt) SecureText() string {
 	return sb.String()
 }
 
-type PurgeType uint16
-
-const (
-	PurgeTypeImport PurgeType = iota
-)
-
-func (t PurgeType) String() string {
-	switch t {
-	case PurgeTypeImport:
-		return "IMPORT"
-	default:
-		return ""
-	}
-}
-
-type PurgeItem struct {
-	Tp        PurgeType
-	UintValue uint64 // item id is always a number
-}
-
-type PurgeStmt struct {
+type PurgeImportStmt struct {
 	stmtNode
 
-	Item *PurgeItem
+	TaskID uint64
 }
 
-func (n *PurgeStmt) Accept(v Visitor) (Node, bool) {
+func (n *PurgeImportStmt) Accept(v Visitor) (Node, bool) {
 	newNode, skipChildren := v.Enter(n)
 	if skipChildren {
 		return v.Leave(newNode)
 	}
-	n = newNode.(*PurgeStmt)
+	n = newNode.(*PurgeImportStmt)
 	return v.Leave(n)
 }
 
-func (n *PurgeStmt) Restore(ctx *format.RestoreCtx) error {
-	ctx.WriteKeyWord("PURGE")
-	ctx.WritePlainf(" %s %d", n.Item.Tp.String(), n.Item.UintValue)
+func (n *PurgeImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WritePlainf("PURGE IMPORT %d", n.TaskID)
 	return nil
 }
 
