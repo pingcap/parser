@@ -28,6 +28,7 @@ import (
 	. "github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/parser/test_driver"
 )
@@ -48,12 +49,12 @@ func (s *testParserSuite) TestSimple(c *C) {
 
 	reservedKws := []string{
 		"add", "all", "alter", "analyze", "and", "as", "asc", "between", "bigint",
-		"binary", "blob", "both", "by", "cascade", "case", "change", "character", "check", "collate",
+		"binary", "blob", "both", "by", "call", "cascade", "case", "change", "character", "check", "collate",
 		"column", "constraint", "convert", "create", "cross", "current_date", "current_time",
 		"current_timestamp", "current_user", "database", "databases", "day_hour", "day_microsecond",
 		"day_minute", "day_second", "decimal", "default", "delete", "desc", "describe",
 		"distinct", "distinctRow", "div", "double", "drop", "dual", "else", "enclosed", "escaped",
-		"exists", "explain", "false", "float", "for", "force", "foreign", "from",
+		"exists", "explain", "false", "float", "fetch", "for", "force", "foreign", "from",
 		"fulltext", "grant", "group", "having", "hour_microsecond", "hour_minute",
 		"hour_second", "if", "ignore", "in", "index", "infile", "inner", "insert", "int", "into", "integer",
 		"interval", "is", "join", "key", "keys", "kill", "leading", "left", "like", "limit", "lines", "load",
@@ -70,7 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "until", "placement",
+		"match", "until", "placement", "tablesample",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -420,7 +421,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{";", true, ""},
 		{"INSERT INTO foo VALUES (1234)", true, "INSERT INTO `foo` VALUES (1234)"},
 		{"INSERT INTO foo VALUES (1234, 5678)", true, "INSERT INTO `foo` VALUES (1234,5678)"},
-		{"INSERT INTO t1 (SELECT * FROM t2)", true, "INSERT INTO `t1` SELECT * FROM `t2`"},
+		{"INSERT INTO t1 (SELECT * FROM t2)", true, "INSERT INTO `t1` (SELECT * FROM `t2`)"},
 		{"INSERT INTO t partition (p0) values(1234)", true, "INSERT INTO `t` PARTITION(`p0`) VALUES (1234)"},
 		{"REPLACE INTO t partition (p0) values(1234)", true, "REPLACE INTO `t` PARTITION(`p0`) VALUES (1234)"},
 		{"INSERT INTO t partition (p0, p1, p2) values(1234)", true, "INSERT INTO `t` PARTITION(`p0`, `p1`, `p2`) VALUES (1234)"},
@@ -501,6 +502,45 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 			SELECT * from tmp;
 		ROLLBACK;`, true, "START TRANSACTION; INSERT INTO `tmp` SELECT * FROM `bar`; SELECT * FROM `tmp`; ROLLBACK"},
 
+		// table statement
+		{"TABLE t", true, "TABLE `t`"},
+		{"(TABLE t)", true, "(TABLE `t`)"},
+		{"TABLE t1, t2", false, ""},
+		{"TABLE t ORDER BY b", true, "TABLE `t` ORDER BY `b`"},
+		{"TABLE t LIMIT 3", true, "TABLE `t` LIMIT 3"},
+		{"TABLE t ORDER BY b LIMIT 3", true, "TABLE `t` ORDER BY `b` LIMIT 3"},
+		{"TABLE t ORDER BY b LIMIT 3 OFFSET 2", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
+		{"TABLE t ORDER BY b LIMIT 2,3", true, "TABLE `t` ORDER BY `b` LIMIT 2,3"},
+		{"INSERT INTO ta TABLE tb", true, "INSERT INTO `ta` TABLE `tb`"},
+		{"INSERT INTO t.a TABLE t.b", true, "INSERT INTO `t`.`a` TABLE `t`.`b`"},
+		{"REPLACE INTO ta TABLE tb", true, "REPLACE INTO `ta` TABLE `tb`"},
+		{"REPLACE INTO t.a TABLE t.b", true, "REPLACE INTO `t`.`a` TABLE `t`.`b`"},
+		{"TABLE t1 INTO OUTFILE 'a.txt'", true, "TABLE `t1` INTO OUTFILE 'a.txt'"},
+		{"TABLE t ORDER BY a INTO OUTFILE '/tmp/abc'", true, "TABLE `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
+		{"CREATE TABLE t.a TABLE t.b", true, "CREATE TABLE `t`.`a` AS TABLE `t`.`b`"},
+		{"CREATE TABLE ta TABLE tb", true, "CREATE TABLE `ta` AS TABLE `tb`"},
+		{"CREATE TABLE ta (x INT) TABLE tb", true, "CREATE TABLE `ta` (`x` INT) AS TABLE `tb`"},
+		{"CREATE VIEW v AS TABLE t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS TABLE `t`"},
+		{"CREATE VIEW v AS (TABLE t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (TABLE `t`)"},
+		{"SELECT * FROM t1 WHERE a IN (TABLE t2)", true, "SELECT * FROM `t1` WHERE `a` IN (TABLE `t2`)"},
+
+		// values statement
+		{"VALUES ROW(1)", true, "VALUES ROW(1)"},
+		{"VALUES ROW()", true, "VALUES ROW()"},
+		{"VALUES ROW(1, default)", true, "VALUES ROW(1,DEFAULT)"},
+		{"VALUES ROW(1), ROW(2,3)", true, "VALUES ROW(1), ROW(2,3)"},
+		{"VALUES (1,2)", false, ""},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8)"},
+		{"VALUES ROW(1,s,3.1), ROW(5,y,9.9)", true, "VALUES ROW(1,`s`,3.1), ROW(5,`y`,9.9)"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) LIMIT 3", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) LIMIT 3"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a`"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY a LIMIT 2", true, "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY `a` LIMIT 2"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9) INTO OUTFILE 'a.txt'", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTO OUTFILE 'a.txt'"},
+		{"VALUES ROW(1,-2,3), ROW(5,7,9) ORDER BY a INTO OUTFILE '/tmp/abc'", true, "VALUES ROW(1,-2,3), ROW(5,7,9) ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
+		{"CREATE TABLE ta VALUES ROW(1)", true, "CREATE TABLE `ta` AS VALUES ROW(1)"},
+		{"CREATE TABLE ta AS VALUES ROW(1)", true, "CREATE TABLE `ta` AS VALUES ROW(1)"},
+		{"CREATE VIEW a AS VALUES ROW(1)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `a` AS VALUES ROW(1)"},
+
 		// qualified select
 		{"SELECT a.b.c FROM t", true, "SELECT `a`.`b`.`c` FROM `t`"},
 		{"SELECT a.b.*.c FROM t", false, ""},
@@ -576,6 +616,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
 		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` LOCK IN SHARE MODE"},
 		{"SELECT * from t for update nowait", true, "SELECT * FROM `t` FOR UPDATE NOWAIT"},
+		{"SELECT * from t for update wait 5", true, "SELECT * FROM `t` FOR UPDATE WAIT 5"},
+		{"SELECT * from t limit 1 for update wait 11", true, "SELECT * FROM `t` LIMIT 1 FOR UPDATE WAIT 11"},
 
 		// select into outfile
 		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
@@ -704,6 +746,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin reload bindings", true, "ADMIN RELOAD BINDINGS"},
 		{"admin show telemetry", true, "ADMIN SHOW TELEMETRY"},
 		{"admin reset telemetry_id", true, "ADMIN RESET TELEMETRY_ID"},
+		{"admin reload statistics", true, "ADMIN RELOAD STATISTICS"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -736,6 +779,14 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// for select with where clause
 		{"SELECT * FROM t WHERE 1 = 1", true, "SELECT * FROM `t` WHERE 1=1"},
 
+		// for select with FETCH FIRST syntax
+		{"SELECT * FROM t FETCH FIRST 5 ROW ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH NEXT 5 ROW ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH FIRST 5 ROWS ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH NEXT 5 ROWS ONLY", true, "SELECT * FROM `t` LIMIT 5"},
+		{"SELECT * FROM t FETCH FIRST ROW ONLY", true, "SELECT * FROM `t` LIMIT 1"},
+		{"SELECT * FROM t FETCH NEXT ROW ONLY", true, "SELECT * FROM `t` LIMIT 1"},
+
 		// for dual
 		{"select 1 from dual", true, "SELECT 1"},
 		{"select 1 from dual limit 1", true, "SELECT 1 LIMIT 1"},
@@ -746,7 +797,11 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select 1 order by 1", true, "SELECT 1 ORDER BY 1"},
 
 		// for https://github.com/pingcap/tidb/issues/320
-		{`(select 1);`, true, "SELECT 1"},
+		{`(select 1);`, true, "(SELECT 1)"},
+
+		// for https://github.com/pingcap/parser/issues/963
+		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`='')"},
+		{"select min(b) b from (select min(t.b) b from t where t.a = '') as t1;", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`='') AS `t1`"},
 
 		// for https://github.com/pingcap/tidb/issues/1050
 		{`SELECT /*!40001 SQL_NO_CACHE */ * FROM test WHERE 1 limit 0, 2000;`, true, "SELECT SQL_NO_CACHE * FROM `test` WHERE 1 LIMIT 0,2000"},
@@ -1096,6 +1151,18 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for change statement
 		{"change pump to node_state ='paused' for node_id '127.0.0.1:8250'", true, "CHANGE PUMP TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8250'"},
 		{"change drainer to node_state ='paused' for node_id '127.0.0.1:8249'", true, "CHANGE DRAINER TO NODE_STATE ='paused' FOR NODE_ID '127.0.0.1:8249'"},
+
+		// for call statement
+		{"call ", false, ""},
+		{"call test", true, "CALL `test`()"},
+		{"call test()", true, "CALL `test`()"},
+		{"call test(1, 'test', true)", true, "CALL `test`(1, 'test', TRUE)"},
+		{"call x.y;", true, "CALL `x`.`y`()"},
+		{"call x.y();", true, "CALL `x`.`y`()"},
+		{"call x.y('p', 'q', 'r');", true, "CALL `x`.`y`('p', 'q', 'r')"},
+		{"call `x`.`y`;", true, "CALL `x`.`y`()"},
+		{"call `x`.`y`();", true, "CALL `x`.`y`()"},
+		{"call `x`.`y`('p', 'q', 'r');", true, "CALL `x`.`y`('p', 'q', 'r')"},
 	}
 	s.RunTest(c, table)
 }
@@ -1182,6 +1249,10 @@ func (s *testParserSuite) TestExpression(c *C) {
 		{`select _binary"string";`, true, "SELECT _BINARY'string'"},
 		{"select N'string'", true, "SELECT _UTF8'string'"},
 		{"select n'string'", true, "SELECT _UTF8'string'"},
+		{"select _utf8 0xD0B1;", true, "SELECT _UTF8 x'd0b1'"},
+		{"select _utf8 X'D0B1';", true, "SELECT _UTF8 x'd0b1'"},
+		{"select _utf8 0b1101000010110001;", true, "SELECT _UTF8 b'1101000010110001'"},
+		{"select _utf8 B'1101000010110001';", true, "SELECT _UTF8 b'1101000010110001'"},
 		// for comparison
 		{"select 1 <=> 0, 1 <=> null, 1 = null", true, "SELECT 1<=>0,1<=>NULL,1=NULL"},
 		// for date literal
@@ -1627,6 +1698,10 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`SELECT RELEASE_ALL_LOCKS();`, true, "SELECT RELEASE_ALL_LOCKS()"},
 		{`SELECT UUID();`, true, "SELECT UUID()"},
 		{`SELECT UUID_SHORT()`, true, "SELECT UUID_SHORT()"},
+		{`SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db')`, true, "SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db')"},
+		{`SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db', 1)`, true, "SELECT UUID_TO_BIN('6ccd780c-baba-1026-9564-5b8c656024db', 1)"},
+		{`SELECT BIN_TO_UUID(0x6ccd780cbaba102695645b8c656024db)`, true, "SELECT BIN_TO_UUID(x'6ccd780cbaba102695645b8c656024db')"},
+		{`SELECT BIN_TO_UUID(0x6ccd780cbaba102695645b8c656024db, 1)`, true, "SELECT BIN_TO_UUID(x'6ccd780cbaba102695645b8c656024db', 1)"},
 		// test illegal arguments
 		{`SELECT SLEEP();`, true, "SELECT SLEEP()"},
 		{`SELECT ANY_VALUE();`, true, "SELECT ANY_VALUE()"},
@@ -1837,14 +1912,17 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select approx_count_distinct(c1) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`) FROM `t`"},
 		{`select approx_count_distinct(c1, c2) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, `c2`) FROM `t`"},
 		{`select approx_count_distinct(c1, 123) from t;`, true, "SELECT APPROX_COUNT_DISTINCT(`c1`, 123) FROM `t`"},
+		{`select approx_percentile(c1) from t;`, true, "SELECT APPROX_PERCENTILE(`c1`) FROM `t`"},
+		{`select approx_percentile(c1, c2) from t;`, true, "SELECT APPROX_PERCENTILE(`c1`, `c2`) FROM `t`"},
+		{`select approx_percentile(c1, 123) from t;`, true, "SELECT APPROX_PERCENTILE(`c1`, 123) FROM `t`"},
 		{`select group_concat(c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(c2,c1 SEPARATOR ';') from t group by c1;`, true, "SELECT GROUP_CONCAT(`c2`, `c1` SEPARATOR ';') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinctrow c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
-		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STD(`c1`),STD(`c1`),STD(DISTINCT `c1`) FROM `t`"},
+		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select std(c1, c2) from t`, false, ""},
-		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV(`c1`),STDDEV(`c1`),STDDEV(DISTINCT `c1`) FROM `t`"},
+		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select stddev(c1, c2) from t`, false, ""},
 		{`select stddev_pop(c1), stddev_pop(all c1), stddev_pop(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
 		{`select stddev_pop(c1, c2) from t`, false, ""},
@@ -1856,6 +1934,10 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select var_pop(c1, c2) from t`, false, ""},
 		{`select var_samp(c1), var_samp(all c1), var_samp(distinct c1) from t`, true, "SELECT VAR_SAMP(`c1`),VAR_SAMP(`c1`),VAR_SAMP(DISTINCT `c1`) FROM `t`"},
 		{`select var_samp(c1, c2) from t`, false, ""},
+		{`select json_arrayagg(c2) from t group by c1`, true, "SELECT JSON_ARRAYAGG(`c2`) FROM `t` GROUP BY `c1`"},
+		{`select json_arrayagg(c1, c2) from t group by c1`, false, ""},
+		{`select json_arrayagg(distinct c2) from t group by c1`, false, "SELECT JSON_ARRAYAGG(DISTINCT `c2`) FROM `t` GROUP BY `c1`"},
+		{`select json_arrayagg(all c2) from t group by c1`, true, "SELECT JSON_ARRAYAGG(`c2`) FROM `t` GROUP BY `c1`"},
 		{`select json_objectagg(c1, c2) from t group by c1`, true, "SELECT JSON_OBJECTAGG(`c1`, `c2`) FROM `t` GROUP BY `c1`"},
 		{`select json_objectagg(c1, c2, c3) from t group by c1`, false, ""},
 		{`select json_objectagg(distinct c1, c2) from t group by c1`, false, "SELECT JSON_OBJECTAGG(DISTINCT `c1`, `c2`) FROM `t` GROUP BY `c1`"},
@@ -2080,6 +2162,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE d_n.t_n ALGORITHM = DEFAULT , MAX_ROWS 10, UNION ( d_n.t_n ) , ROW_FORMAT REDUNDANT, STATS_PERSISTENT = DEFAULT", true, "ALTER TABLE `d_n`.`t_n` ALGORITHM = DEFAULT, MAX_ROWS = 10, UNION = (`d_n`.`t_n`), ROW_FORMAT = REDUNDANT, STATS_PERSISTENT = DEFAULT /* TableOptionStatsPersistent is not supported */ "},
 
 		// partition option
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (not 3), partition p2 values less than (20));", false, ""},
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (1 or 3), partition p2 values less than (20));", false, ""},
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (3 is null), partition p2 values less than (20));", false, ""},
+		{"create table t (b int) partition by range (b is null) (partition p0 values less than (10));", false, ""},
+		{"create table t (b int) partition by list (not b) (partition p0 values in (10, 20));", false, ""},
+		{"create table t (b int) partition by hash ( not b );", false, ""},
+		{"create table t (b int) partition by range columns (b) (partition p0 values less than (3 in (3, 4, 5)), partition p2 values less than (20));", false, ""},
 		{"CREATE TABLE t (id int) ENGINE = INNDB PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));", true, "CREATE TABLE `t` (`id` INT) ENGINE = INNDB PARTITION BY RANGE (`id`) (PARTITION `p0` VALUES LESS THAN (10),PARTITION `p1` VALUES LESS THAN (20))"},
 		{"create table t (c int) PARTITION BY HASH (c) PARTITIONS 32;", true, "CREATE TABLE `t` (`c` INT) PARTITION BY HASH (`c`) PARTITIONS 32"},
 		{"create table t (c int) PARTITION BY HASH (Year(VDate)) (PARTITION p1980 VALUES LESS THAN (1980) ENGINE = MyISAM, PARTITION p1990 VALUES LESS THAN (1990) ENGINE = MyISAM, PARTITION pothers VALUES LESS THAN MAXVALUE ENGINE = MyISAM)", false, ""},
@@ -2270,16 +2359,16 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table a (t int) like b", false, ""},
 		{"create table a (t int) like (b)", false, ""},
 		// Create table with select statement
-		{"create table a select * from b", true, "CREATE TABLE `a`  AS SELECT * FROM `b`"},
-		{"create table a as select * from b", true, "CREATE TABLE `a`  AS SELECT * FROM `b`"},
+		{"create table a select * from b", true, "CREATE TABLE `a` AS SELECT * FROM `b`"},
+		{"create table a as select * from b", true, "CREATE TABLE `a` AS SELECT * FROM `b`"},
 		{"create table a (m int, n datetime) as select * from b", true, "CREATE TABLE `a` (`m` INT,`n` DATETIME) AS SELECT * FROM `b`"},
 		{"create table a (unique(n)) as select n from b", true, "CREATE TABLE `a` (UNIQUE(`n`)) AS SELECT `n` FROM `b`"},
-		{"create table a ignore as select n from b", true, "CREATE TABLE `a`  IGNORE AS SELECT `n` FROM `b`"},
-		{"create table a replace as select n from b", true, "CREATE TABLE `a`  REPLACE AS SELECT `n` FROM `b`"},
+		{"create table a ignore as select n from b", true, "CREATE TABLE `a` IGNORE AS SELECT `n` FROM `b`"},
+		{"create table a replace as select n from b", true, "CREATE TABLE `a` REPLACE AS SELECT `n` FROM `b`"},
 		{"create table a (m int) replace as (select n as m from b union select n+1 as m from c group by 1 limit 2)", true, "CREATE TABLE `a` (`m` INT) REPLACE AS (SELECT `n` AS `m` FROM `b` UNION SELECT `n`+1 AS `m` FROM `c` GROUP BY 1 LIMIT 2)"},
 
 		// Create table with no option is valid for parser
-		{"create table a", true, "CREATE TABLE `a` "},
+		{"create table a", true, "CREATE TABLE `a`"},
 
 		{"create table t (a timestamp default now)", false, ""},
 		{"create table t (a timestamp default now())", true, "CREATE TABLE `t` (`a` TIMESTAMP DEFAULT CURRENT_TIMESTAMP())"},
@@ -2573,20 +2662,24 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"alter table t reorganize partition no_write_to_binlog remove into (partition p0 VALUES LESS THAN (1991));", true, "ALTER TABLE `t` REORGANIZE PARTITION NO_WRITE_TO_BINLOG `remove` INTO (PARTITION `p0` VALUES LESS THAN (1991))"},
 
 		// alter placement rules
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='-zone=zone1' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='-zone=zone1' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1,-zone=zone2' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1,-zone=zone2' ROLE=LEADER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=FOLLOWER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=FOLLOWER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY ROLE=LEARNER CONSTRAINTS='+zone=zone1' REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=LEARNER REPLICAS=1"},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY REPLICAS=1 CONSTRAINTS='+zone=zone1' ROLE=VOTER", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='+zone=zone1' ROLE=VOTER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str,str2' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str,str2' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=FOLLOWER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=FOLLOWER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY ROLE=LEARNER CONSTRAINTS='str' REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEARNER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY REPLICAS=1 CONSTRAINTS='str' ROLE=VOTER", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=VOTER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS= ROLE=follower REPLICAS=1;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=-1;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=0;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=1 REPLICAS=2;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=1 ROLE=voter;", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='+zone=gh' ROLE=follower REPLICAS=1 CONSTRAINTS='ttt';", false, ""},
-		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='' ROLE=follower REPLICAS=1;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=0;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 REPLICAS=2;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 ROLE=voter;", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=follower REPLICAS=1 CONSTRAINTS='ttt';", false, ""},
 		{"ALTER TABLE t ALTER PARTITION p", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1", true, "ALTER TABLE `t` ALTER PARTITION `p` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY", false, ""},
+		{"ALTER TABLE t ALTER PARTITION p DROP PLACEMENT POLICY ROLE=voter", true, "ALTER TABLE `t` ALTER PARTITION `p` DROP PLACEMENT POLICY ROLE=VOTER"},
+		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
+		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
@@ -2991,6 +3084,22 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a bigint primary key auto_random(4), b varchar(100)) auto_random_base 200", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(4),`b` VARCHAR(100)) AUTO_RANDOM_BASE = 200"},
 		{"alter table t auto_random_base = 50", true, "ALTER TABLE `t` AUTO_RANDOM_BASE = 50"},
 		{"alter table t auto_increment 30, auto_random_base 40", true, "ALTER TABLE `t` AUTO_INCREMENT = 30, AUTO_RANDOM_BASE = 40"},
+
+		// for alter sequence
+		{"alter sequence seq", false, ""},
+		{"alter sequence seq comment=\"haha\"", false, ""},
+		{"alter sequence seq start = 1", true, "ALTER SEQUENCE `seq` START WITH 1"},
+		{"alter sequence seq start with 1 increment by 1", true, "ALTER SEQUENCE `seq` START WITH 1 INCREMENT BY 1"},
+		{"alter sequence seq start with 1 increment by 2 minvalue 0 maxvalue 100", true, "ALTER SEQUENCE `seq` START WITH 1 INCREMENT BY 2 MINVALUE 0 MAXVALUE 100"},
+		{"alter sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle", true, "ALTER SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE"},
+		{"alter sequence if exists seq2 increment = 2", true, "ALTER SEQUENCE IF EXISTS `seq2` INCREMENT BY 2"},
+		{"alter sequence seq restart", true, "ALTER SEQUENCE `seq` RESTART"},
+		{"alter sequence seq start with 3 restart with 5", true, "ALTER SEQUENCE `seq` START WITH 3 RESTART WITH 5"},
+		{"alter sequence seq restart = 5", true, "ALTER SEQUENCE `seq` RESTART WITH 5"},
+		{"create sequence seq restart = 5", false, ""},
+
+		// for issue 18149
+		{"create table t (a int, index ``(a))", true, "CREATE TABLE `t` (`a` INT,INDEX ``(`a`))"},
 	}
 	s.RunTest(c, table)
 }
@@ -3024,6 +3133,11 @@ func (s *testParserSuite) TestHintError(c *C) {
 	stmt, _, err = parser.Parse("insert /*+ memory_quota(1 MB) */ into t select * from t;", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
+
+	stmt, warns, err = parser.Parse("SELECT id FROM tbl WHERE id = 0 FOR UPDATE /*+ xyz */", "", "")
+	c.Assert(err, IsNil)
+	c.Assert(len(warns), Equals, 1)
+	c.Assert(warns[0], ErrorMatches, `.*near '/\*\+' at line 1`)
 }
 
 func (s *testParserSuite) TestErrorMsg(c *C) {
@@ -3562,6 +3676,16 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints, HasLen, 2)
 	c.Assert(hints[0].HintName.L, Equals, "read_consistent_replica")
 	c.Assert(hints[1].HintName.L, Equals, "read_consistent_replica")
+
+	// Test LIMIT_TO_COP
+	stmt, _, err = parser.Parse("select /*+ LIMIT_TO_COP(), limit_to_cop() */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "limit_to_cop")
+	c.Assert(hints[1].HintName.L, Equals, "limit_to_cop")
 }
 
 func (s *testParserSuite) TestType(c *C) {
@@ -3584,6 +3708,10 @@ func (s *testParserSuite) TestType(c *C) {
 
 		// for enum and set type
 		{"create table t (c1 enum('a', 'b'), c2 set('a', 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum('a  ', 'b\t'), c2 set('a  ', 'b\t'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b\t'),`c2` SET('a','b\t'))"},
+		{"create table t (c1 enum('a', 'b') binary, c2 set('a', 'b') binary)", true, "CREATE TABLE `t` (`c1` ENUM('a','b') BINARY,`c2` SET('a','b') BINARY)"},
+		{"create table t (c1 enum(0x61, 'b'), c2 set(0x61, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
+		{"create table t (c1 enum(0b01100001, 'b'), c2 set(0b01100001, 'b'))", true, "CREATE TABLE `t` (`c1` ENUM('a','b'),`c2` SET('a','b'))"},
 		{"create table t (c1 enum)", false, ""},
 		{"create table t (c1 set)", false, ""},
 
@@ -3699,6 +3827,8 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT 'app_developer' TO 'dev1'@'localhost';", true, "GRANT `app_developer`@`%` TO `dev1`@`localhost`"},
 		{"GRANT SHUTDOWN ON *.* TO 'dev1'@'localhost';", true, "GRANT SHUTDOWN ON *.* TO `dev1`@`localhost`"},
 		{"GRANT CONFIG ON *.* TO 'dev1'@'localhost';", true, "GRANT CONFIG ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CREATE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE ON *.* TO `dev1`@`localhost`"},
+		{"GRANT CREATE TABLESPACE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE TABLESPACE ON *.* TO `dev1`@`localhost`"},
 
 		// for revoke statement
 		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
@@ -3794,6 +3924,9 @@ func (s *testParserSuite) TestSubquery(c *C) {
 		{"SELECT NOT EXISTS (select 1)", true, "SELECT NOT EXISTS (SELECT 1)"},
 		{"SELECT + NOT EXISTS (select 1)", false, ""},
 		{"SELECT - NOT EXISTS (select 1)", false, ""},
+		{"SELECT * FROM t where t.a in (select a from t limit 1, 10)", true, "SELECT * FROM `t` WHERE `t`.`a` IN (SELECT `a` FROM `t` LIMIT 1,10)"},
+		{"SELECT * FROM t where t.a in ((select a from t limit 1, 10))", true, "SELECT * FROM `t` WHERE `t`.`a` IN ((SELECT `a` FROM `t` LIMIT 1,10))"},
+		{"SELECT * FROM t where t.a in ((select a from t limit 1, 10), 1)", true, "SELECT * FROM `t` WHERE `t`.`a` IN ((SELECT `a` FROM `t` LIMIT 1,10),1)"},
 	}
 	s.RunTest(c, table)
 
@@ -3837,6 +3970,20 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"insert into t select c1 from t1 union select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 union select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` UNION SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual union select 1 as b from dual order by a", true, "SELECT 2 AS `a` UNION SELECT 1 AS `b` ORDER BY `a`"},
+		{"table t1 union table t2", true, "TABLE `t1` UNION TABLE `t2`"},
+		{"table t1 union (table t2)", true, "TABLE `t1` UNION (TABLE `t2`)"},
+		{"table t1 union select * from t2", true, "TABLE `t1` UNION SELECT * FROM `t2`"},
+		{"select * from t1 union table t2", true, "SELECT * FROM `t1` UNION TABLE `t2`"},
+		{"table t1 union (select c2 from t2) order by c1 limit 1", true, "TABLE `t1` UNION (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"select c1 from t1 union (table t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` UNION (TABLE `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) union table t2 union (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) UNION TABLE `t2` UNION (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(table t1) union select c2 from t2 union (table t3) order by c1 limit 1", true, "(TABLE `t1`) UNION SELECT `c2` FROM `t2` UNION (TABLE `t3`) ORDER BY `c1` LIMIT 1"},
+		{"values row(1,-2,3), row(5,7,9) union values row(1,-2,3), row(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"values row(1,-2,3), row(5,7,9) union (values row(1,-2,3), row(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION (VALUES ROW(1,-2,3), ROW(5,7,9))"},
+		{"values row(1,-2,3), row(5,7,9) union select * from t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION SELECT * FROM `t`"},
+		{"values row(1,-2,3), row(5,7,9) union table t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) UNION TABLE `t`"},
+		{"select * from t union values row(1,-2,3), row(5,7,9)", true, "SELECT * FROM `t` UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"table t union values row(1,-2,3), row(5,7,9)", true, "TABLE `t` UNION VALUES ROW(1,-2,3), ROW(5,7,9)"},
 		// except
 		{"select c1 from t1 except select c2 from t2", true, "SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
 		{"select c1 from t1 except (select c2 from t2)", true, "SELECT `c1` FROM `t1` EXCEPT (SELECT `c2` FROM `t2`)"},
@@ -3853,6 +4000,20 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"insert into t select c1 from t1 except select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 except select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` EXCEPT SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual except select 1 as b from dual order by a", true, "SELECT 2 AS `a` EXCEPT SELECT 1 AS `b` ORDER BY `a`"},
+		{"table t1 except table t2", true, "TABLE `t1` EXCEPT TABLE `t2`"},
+		{"table t1 except (table t2)", true, "TABLE `t1` EXCEPT (TABLE `t2`)"},
+		{"table t1 except select * from t2", true, "TABLE `t1` EXCEPT SELECT * FROM `t2`"},
+		{"select * from t1 except table t2", true, "SELECT * FROM `t1` EXCEPT TABLE `t2`"},
+		{"table t1 except (select c2 from t2) order by c1 limit 1", true, "TABLE `t1` EXCEPT (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"select c1 from t1 except (table t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` EXCEPT (TABLE `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) except table t2 except (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) EXCEPT TABLE `t2` EXCEPT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(table t1) except select c2 from t2 except (table t3) order by c1 limit 1", true, "(TABLE `t1`) EXCEPT SELECT `c2` FROM `t2` EXCEPT (TABLE `t3`) ORDER BY `c1` LIMIT 1"},
+		{"values row(1,-2,3), row(5,7,9) except values row(1,-2,3), row(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"values row(1,-2,3), row(5,7,9) except (values row(1,-2,3), row(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT (VALUES ROW(1,-2,3), ROW(5,7,9))"},
+		{"values row(1,-2,3), row(5,7,9) except select * from t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT SELECT * FROM `t`"},
+		{"values row(1,-2,3), row(5,7,9) except table t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) EXCEPT TABLE `t`"},
+		{"select * from t except values row(1,-2,3), row(5,7,9)", true, "SELECT * FROM `t` EXCEPT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"table t except values row(1,-2,3), row(5,7,9)", true, "TABLE `t` EXCEPT VALUES ROW(1,-2,3), ROW(5,7,9)"},
 		// intersect
 		{"select c1 from t1 intersect select c2 from t2", true, "SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
 		{"select c1 from t1 intersect (select c2 from t2)", true, "SELECT `c1` FROM `t1` INTERSECT (SELECT `c2` FROM `t2`)"},
@@ -3869,13 +4030,46 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"insert into t select c1 from t1 intersect select c2 from t2", true, "INSERT INTO `t` SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
 		{"insert into t (c) select c1 from t1 intersect select c2 from t2", true, "INSERT INTO `t` (`c`) SELECT `c1` FROM `t1` INTERSECT SELECT `c2` FROM `t2`"},
 		{"select 2 as a from dual intersect select 1 as b from dual order by a", true, "SELECT 2 AS `a` INTERSECT SELECT 1 AS `b` ORDER BY `a`"},
+		{"table t1 intersect table t2", true, "TABLE `t1` INTERSECT TABLE `t2`"},
+		{"table t1 intersect (table t2)", true, "TABLE `t1` INTERSECT (TABLE `t2`)"},
+		{"table t1 intersect select * from t2", true, "TABLE `t1` INTERSECT SELECT * FROM `t2`"},
+		{"select * from t1 intersect table t2", true, "SELECT * FROM `t1` INTERSECT TABLE `t2`"},
+		{"table t1 intersect (select c2 from t2) order by c1 limit 1", true, "TABLE `t1` INTERSECT (SELECT `c2` FROM `t2`) ORDER BY `c1` LIMIT 1"},
+		{"select c1 from t1 intersect (table t2) order by c1 limit 1", true, "SELECT `c1` FROM `t1` INTERSECT (TABLE `t2`) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) intersect table t2 intersect (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT TABLE `t2` INTERSECT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"(table t1) intersect select c2 from t2 intersect (table t3) order by c1 limit 1", true, "(TABLE `t1`) INTERSECT SELECT `c2` FROM `t2` INTERSECT (TABLE `t3`) ORDER BY `c1` LIMIT 1"},
+		{"values row(1,-2,3), row(5,7,9) intersect values row(1,-2,3), row(5,7,9)", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"values row(1,-2,3), row(5,7,9) intersect (values row(1,-2,3), row(5,7,9))", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT (VALUES ROW(1,-2,3), ROW(5,7,9))"},
+		{"values row(1,-2,3), row(5,7,9) intersect select * from t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT SELECT * FROM `t`"},
+		{"values row(1,-2,3), row(5,7,9) intersect table t", true, "VALUES ROW(1,-2,3), ROW(5,7,9) INTERSECT TABLE `t`"},
+		{"select * from t intersect values row(1,-2,3), row(5,7,9)", true, "SELECT * FROM `t` INTERSECT VALUES ROW(1,-2,3), ROW(5,7,9)"},
+		{"table t intersect values row(1,-2,3), row(5,7,9)", true, "TABLE `t` INTERSECT VALUES ROW(1,-2,3), ROW(5,7,9)"},
 		// mixture of union, except and intersect
 		{"(select c1 from t1) intersect select c2 from t2 union (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT SELECT `c2` FROM `t2` UNION (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
 		{"(select c1 from t1) union all select c2 from t2 except (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) UNION ALL SELECT `c2` FROM `t2` EXCEPT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
 		{"(select c1 from t1) except select c2 from t2 intersect (select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) EXCEPT SELECT `c2` FROM `t2` INTERSECT (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
 		{"select 1 union distinct select 1 except select 1 intersect select 1", true, "SELECT 1 UNION SELECT 1 EXCEPT SELECT 1 INTERSECT SELECT 1"},
+		// mixture of union, except and intersect with parentheses
+		{"(select c1 from t1) intersect all (select c2 from t2 union (select c3 from t3)) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) INTERSECT ALL (SELECT `c2` FROM `t2` UNION (SELECT `c3` FROM `t3`)) ORDER BY `c1` LIMIT 1"},
+		{"(select c1 from t1) union all (select c2 from t2 except select c3 from t3) order by c1 limit 1", true, "(SELECT `c1` FROM `t1`) UNION ALL (SELECT `c2` FROM `t2` EXCEPT SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"((select c1 from t1) except select c2 from t2) intersect all (select c3 from t3) order by c1 limit 1", true, "((SELECT `c1` FROM `t1`) EXCEPT SELECT `c2` FROM `t2`) INTERSECT ALL (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
+		{"select 1 union distinct (select 1 except all select 1 intersect select 1)", true, "SELECT 1 UNION (SELECT 1 EXCEPT ALL SELECT 1 INTERSECT SELECT 1)"},
 	}
 	s.RunTest(c, table)
+}
+
+func checkOrderBy(c *C, s ast.Node, hasOrderBy []bool, i int) int {
+	switch x := s.(type) {
+	case *ast.SelectStmt:
+		c.Assert(x.OrderBy != nil, Equals, hasOrderBy[i])
+		return i + 1
+	case *ast.SetOprSelectList:
+		for _, sel := range x.Selects {
+			i = checkOrderBy(c, sel, hasOrderBy, i)
+		}
+		return i
+	}
+	return i
 }
 
 func (s *testParserSuite) TestUnionOrderBy(c *C) {
@@ -3900,8 +4094,7 @@ func (s *testParserSuite) TestUnionOrderBy(c *C) {
 		if ok {
 			var i int
 			for _, s := range us.SelectList.Selects {
-				c.Assert(s.OrderBy != nil, Equals, t.hasOrderBy[i])
-				i++
+				i = checkOrderBy(c, s, t.hasOrderBy, i)
 			}
 			c.Assert(us.OrderBy != nil, Equals, t.hasOrderBy[i])
 		}
@@ -3949,6 +4142,10 @@ func (s *testParserSuite) TestLockUnlockTables(c *C) {
 		{"ADMIN CLEANUP TABLE LOCK", false, ""},
 		{"ADMIN CLEANUP TABLE LOCK t", true, "ADMIN CLEANUP TABLE LOCK `t`"},
 		{"ADMIN CLEANUP TABLE LOCK t1,t2", true, "ADMIN CLEANUP TABLE LOCK `t1`, `t2`"},
+
+		// For alter table read only/write.
+		{"ALTER TABLE t READ ONLY", true, "ALTER TABLE `t` READ ONLY"},
+		{"ALTER TABLE t READ WRITE", true, "ALTER TABLE `t` READ WRITE"},
 	}
 	s.RunTest(c, table)
 }
@@ -4130,6 +4327,56 @@ func (s *testParserSuite) TestBinding(c *C) {
 		{"drop session binding for select * from t using select * from t use index(a)", true, "DROP SESSION BINDING FOR SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`)"},
 		{"show global bindings", true, "SHOW GLOBAL BINDINGS"},
 		{"show session bindings", true, "SHOW SESSION BINDINGS"},
+		{"create global binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "CREATE GLOBAL BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"create session binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "CREATE SESSION BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop global binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop session binding for select * from t union all select * from t using select * from t use index(a) union all select * from t use index(a)", true, "DROP SESSION BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t` USING SELECT * FROM `t` USE INDEX (`a`) UNION ALL SELECT * FROM `t` USE INDEX (`a`)"},
+		{"drop global binding for select * from t union all select * from t", true, "DROP GLOBAL BINDING FOR SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create session binding for select 1 union select 2 intersect select 3 using select 1 union select 2 intersect select 3", true, "CREATE SESSION BINDING FOR SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 USING SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"},
+		{"drop session binding for select 1 union select 2 intersect select 3 using select 1 union select 2 intersect select 3", true, "DROP SESSION BINDING FOR SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 USING SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"},
+		{"drop session binding for select 1 union select 2 intersect select 3", true, "DROP SESSION BINDING FOR SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"},
+		// Update cases.
+		{"CREATE GLOBAL BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1", true, "CREATE GLOBAL BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1"},
+		{"CREATE SESSION BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1", true, "CREATE SESSION BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1"},
+		{"drop global binding for update t set a = 1 where b = 1", true, "DROP GLOBAL BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1"},
+		{"drop session binding for update t set a = 1 where b = 1", true, "DROP SESSION BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1"},
+		{"DROP GLOBAL BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1", true, "DROP GLOBAL BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1"},
+		{"DROP SESSION BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1", true, "DROP SESSION BINDING FOR UPDATE `t` SET `a`=1 WHERE `b`=1 USING UPDATE /*+ USE_INDEX(`t` `b`)*/ `t` SET `a`=1 WHERE `b`=1"},
+		// Multi-table Update.
+		{"CREATE GLOBAL BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`", true, "CREATE GLOBAL BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`"},
+		{"CREATE SESSION BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`", true, "CREATE SESSION BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`"},
+		{"DROP GLOBAL BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`", true, "DROP GLOBAL BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`"},
+		{"DROP SESSION BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`", true, "DROP SESSION BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`"},
+		{"DROP GLOBAL BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`", true, "DROP GLOBAL BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`"},
+		{"DROP SESSION BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`", true, "DROP SESSION BINDING FOR UPDATE `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b` USING UPDATE /*+ INL_JOIN(`t1`)*/ `t1` JOIN `t2` SET `t1`.`a`=1 WHERE `t1`.`b`=`t2`.`b`"},
+		// Delete cases.
+		{"CREATE GLOBAL BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1", true, "CREATE GLOBAL BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1"},
+		{"CREATE SESSION BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1", true, "CREATE SESSION BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1"},
+		{"drop global binding for delete from t where a = 1", true, "DROP GLOBAL BINDING FOR DELETE FROM `t` WHERE `a`=1"},
+		{"drop session binding for delete from t where a = 1", true, "DROP SESSION BINDING FOR DELETE FROM `t` WHERE `a`=1"},
+		{"DROP GLOBAL BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1", true, "DROP GLOBAL BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1"},
+		{"DROP SESSION BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1", true, "DROP SESSION BINDING FOR DELETE FROM `t` WHERE `a`=1 USING DELETE /*+ USE_INDEX(`t` `a`)*/ FROM `t` WHERE `a`=1"},
+		// Multi-table Delete.
+		{"CREATE GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1", true, "CREATE GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		{"CREATE SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1", true, "CREATE SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		{"drop global binding for delete t1, t2 from t1 inner join t2 on t1.b = t2.b where t1.a = 1", true, "DROP GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		{"drop session binding for delete t1, t2 from t1 inner join t2 on t1.b = t2.b where t1.a = 1", true, "DROP SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		{"DROP GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1", true, "DROP GLOBAL BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		{"DROP SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1", true, "DROP SESSION BINDING FOR DELETE `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1 USING DELETE /*+ HASH_JOIN(`t1`, `t2`)*/ `t1`,`t2` FROM `t1` JOIN `t2` ON `t1`.`b`=`t2`.`b` WHERE `t1`.`a`=1"},
+		// Insert cases.
+		{"CREATE GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"CREATE SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"drop global binding for insert into t1 select * from t2 where t1.a=1", true, "DROP GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"drop session binding for insert into t1 select * from t2 where t1.a=1", true, "DROP SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"DROP GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP GLOBAL BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"DROP SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP SESSION BINDING FOR INSERT INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING INSERT INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		// Replace cases.
+		{"CREATE GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"CREATE SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "CREATE SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"drop global binding for replace into t1 select * from t2 where t1.a=1", true, "DROP GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"drop session binding for replace into t1 select * from t2 where t1.a=1", true, "DROP SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t1`.`a`=1"},
+		{"DROP GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP GLOBAL BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
+		{"DROP SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1", true, "DROP SESSION BINDING FOR REPLACE INTO `t1` SELECT * FROM `t2` WHERE `t2`.`a`=1 USING REPLACE INTO `t1` SELECT /*+ USE_INDEX(`t2` `a`)*/ * FROM `t2` WHERE `t2`.`a`=1"},
 	}
 	s.RunTest(c, table)
 
@@ -4138,8 +4385,8 @@ func (s *testParserSuite) TestBinding(c *C) {
 	c.Assert(err, IsNil)
 	v, ok := sms[0].(*ast.CreateBindingStmt)
 	c.Assert(ok, IsTrue)
-	c.Assert(v.OriginSel.Text(), Equals, "select * from t")
-	c.Assert(v.HintedSel.Text(), Equals, "select * from t use index(a)")
+	c.Assert(v.OriginNode.Text(), Equals, "select * from t")
+	c.Assert(v.HintedNode.Text(), Equals, "select * from t use index(a)")
 	c.Assert(v.GlobalScope, IsTrue)
 }
 
@@ -4159,18 +4406,18 @@ func (s *testParserSuite) TestView(c *C) {
 		{"create or replace algorithm = merge definer = current_user view v as select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
 
 		// create view with `(` select statement `)`
-		{"create view v as (select * from t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = undefined view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = temptable view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security definer view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = current_user view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t`"},
+		{"create view v as (select * from t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = undefined view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = temptable view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t`) WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = current_user view v as (select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t`)"},
 
 		// create view with union statement
 		{"create view v as select * from t union select * from t", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION SELECT * FROM `t`"},
@@ -4201,17 +4448,17 @@ func (s *testParserSuite) TestView(c *C) {
 		{"create or replace algorithm = merge definer = current_user view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
 
 		// create view with `(` union statement `)`
-		{"create view v as (select * from t union all select * from t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = undefined view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = merge view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = temptable view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security definer view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t` WITH LOCAL CHECK OPTION"},
-		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+		{"create view v as (select * from t union all select * from t)", true, "CREATE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = undefined view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = temptable view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = TEMPTABLE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security definer view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY DEFINER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t)", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`) WITH LOCAL CHECK OPTION"},
+		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
 		{"create or replace algorithm = merge definer = current_user view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
 	}
 	s.RunTest(c, table)
@@ -4283,6 +4530,32 @@ func (s *testParserSuite) TestTimestampDiffUnit(c *C) {
 		{"SELECT TIMESTAMPDIFF(YEAR_MONTH,'2003-02-01','2003-05-01')", false, ""},
 	}
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestFuncCallExprOffset(c *C) {
+	// Test case for offset field on func call expr.
+	p := parser.New()
+	stmt, _, err := p.Parse("SELECT s.a(), b();", "", "")
+	c.Assert(err, IsNil)
+	ss := stmt[0].(*ast.SelectStmt)
+	fields := ss.Fields.Fields
+	c.Assert(len(fields), Equals, 2)
+
+	{
+		// s.a()
+		expr := fields[0].Expr
+		f, ok := expr.(*ast.FuncCallExpr)
+		c.Assert(ok, IsTrue)
+		c.Assert(f.OriginTextPosition(), Equals, 7)
+	}
+
+	{
+		// b()
+		expr := fields[1].Expr
+		f, ok := expr.(*ast.FuncCallExpr)
+		c.Assert(ok, IsTrue)
+		c.Assert(f.OriginTextPosition(), Equals, 14)
+	}
 }
 
 func (s *testParserSuite) TestSessionManage(c *C) {
@@ -4389,6 +4662,19 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 		c_json json collate utf8_bin)`
 	stmts, _, err = parser.Parse(createTableStr, "", "")
 	c.Assert(err, IsNil)
+
+	createTableStr = `CREATE TABLE t (c_double double(10))`
+	_, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "[parser:1149]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use")
+	parser.SetStrictDoubleTypeCheck(false)
+	_, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
+	parser.SetStrictDoubleTypeCheck(true)
+
+	createTableStr = `CREATE TABLE t (c_double double(10, 2))`
+	_, _, err = parser.Parse(createTableStr, "", "")
+	c.Assert(err, IsNil)
 }
 
 func (s *testParserSuite) TestAnalyze(c *C) {
@@ -4412,8 +4698,70 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t partition a index b with 4 buckets", true, "ANALYZE TABLE `t` PARTITION `a` INDEX `b` WITH 4 BUCKETS"},
 		{"analyze incremental table t index", true, "ANALYZE INCREMENTAL TABLE `t` INDEX"},
 		{"analyze incremental table t index idx", true, "ANALYZE INCREMENTAL TABLE `t` INDEX `idx`"},
+		{"analyze table t update histogram on b with 1024 buckets", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `b` WITH 1024 BUCKETS"},
+		{"analyze table t drop histogram on b", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `b`"},
+		{"analyze table t update histogram on c1, c2;", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `c1`,`c2`"},
+		{"analyze table t drop histogram on c1, c2;", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `c1`,`c2`"},
 	}
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestTableSample(c *C) {
+	table := []testCase{
+		// positive test cases
+		{"select * from tbl tablesample system (50);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (50)"},
+		{"select * from tbl tablesample system (50 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (50 PERCENT)"},
+		{"select * from tbl tablesample system (49.9 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (49.9 PERCENT)"},
+		{"select * from tbl tablesample system (120 rows);", true, "SELECT * FROM `tbl` TABLESAMPLE SYSTEM (120 ROWS)"},
+		{"select * from tbl tablesample bernoulli (50);", true, "SELECT * FROM `tbl` TABLESAMPLE BERNOULLI (50)"},
+		{"select * from tbl tablesample (50);", true, "SELECT * FROM `tbl` TABLESAMPLE (50)"},
+		{"select * from tbl tablesample (50) repeatable (123456789);", true, "SELECT * FROM `tbl` TABLESAMPLE (50) REPEATABLE(123456789)"},
+		{"select * from tbl as a tablesample (50);", true, "SELECT * FROM `tbl` AS `a` TABLESAMPLE (50)"},
+		{"select * from tbl `tablesample` tablesample (50);", true, "SELECT * FROM `tbl` AS `tablesample` TABLESAMPLE (50)"},
+		{"select * from tbl tablesample (50) where id > 20;", true, "SELECT * FROM `tbl` TABLESAMPLE (50) WHERE `id`>20"},
+		{"select * from tbl partition (p0) tablesample (50);", true, "SELECT * FROM `tbl` PARTITION(`p0`) TABLESAMPLE (50)"},
+		{"select * from tbl tablesample (0 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 PERCENT)"},
+		{"select * from tbl tablesample (100 percent);", true, "SELECT * FROM `tbl` TABLESAMPLE (100 PERCENT)"},
+		{"select * from tbl tablesample (0 rows);", true, "SELECT * FROM `tbl` TABLESAMPLE (0 ROWS)"},
+		{"select * from tbl tablesample ('34');", true, "SELECT * FROM `tbl` TABLESAMPLE ('34')"},
+		{"select * from tbl1 tablesample (10), tbl2 tablesample (20);", true, "SELECT * FROM (`tbl1` TABLESAMPLE (10)) JOIN `tbl2` TABLESAMPLE (20)"},
+		{"select * from tbl1 a tablesample (10) join tbl2 b tablesample (20) on a.id <> b.id;", true, "SELECT * FROM `tbl1` AS `a` TABLESAMPLE (10) JOIN `tbl2` AS `b` TABLESAMPLE (20) ON `a`.`id`!=`b`.`id`"},
+		{"select * from demo tablesample bernoulli(50) limit 1 into outfile '/tmp/sample.csv';", true, "SELECT * FROM `demo` TABLESAMPLE BERNOULLI (50) LIMIT 1 INTO OUTFILE '/tmp/sample.csv'"},
+		{"select * from demo tablesample bernoulli(50) order by a, b into outfile '/tmp/sample.csv';", true, "SELECT * FROM `demo` TABLESAMPLE BERNOULLI (50) ORDER BY `a`,`b` INTO OUTFILE '/tmp/sample.csv'"},
+
+		// negative test cases
+		{"select * from tbl tablesample system(50) a;", false, ""},
+		{"select * from tbl tablesample (50) partition (p0);", false, ""},
+		{"select * from tbl where id > 20 tablesample system(50);", false, ""},
+		{"select * from (select * from tbl) a tablesample system(50);", false, ""},
+		{"select * from tbl tablesample system(50) tablesample system(50);", false, ""},
+		{"select * from tbl tablesample system(50, 50);", false, ""},
+		{"select * from tbl tablesample dhfksdlfljcoew(50);", false, ""},
+		{"select * from tbl tablesample system;", false, ""},
+		{"select * from tbl tablesample system (33) repeatable;", false, ""},
+		{"select 1 from dual tablesample system (50);", false, ""},
+	}
+	s.RunTest(c, table)
+	p := parser.New()
+	cases := []string{
+		"select * from tbl tablesample (33.3 + 44.4);",
+		"select * from tbl tablesample (33.3 + 44.4 percent);",
+		"select * from tbl tablesample (33 + 44 rows);",
+		"select * from tbl tablesample (33 + 44 rows) repeatable (55 + 66);",
+		"select * from tbl tablesample (200);",
+		"select * from tbl tablesample (-10);",
+		"select * from tbl tablesample (null);",
+		"select * from tbl tablesample (33.3 rows);",
+		"select * from tbl tablesample (-4 rows);",
+		"select * from tbl tablesample (50) repeatable ('ssss');",
+		"delete from tbl using tbl2 tablesample(10 rows) repeatable (111) where tbl.id = tbl2.id",
+		"update tbl tablesample regions() set id = '1'",
+	}
+	for _, sql := range cases {
+		comment := Commentf("source %v", sql)
+		_, err := p.ParseOneStmt(sql, "", "")
+		c.Assert(err, IsNil, comment)
+	}
 }
 
 func (s *testParserSuite) TestGeneratedColumn(c *C) {
@@ -5088,6 +5436,7 @@ type nodeTextCleaner struct {
 // Enter implements Visitor interface.
 func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	in.SetText("")
+	in.SetOriginTextPosition(0)
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
 		for _, opt := range node.Options {
@@ -5300,4 +5649,77 @@ func (s *testParserSuite) TestBRIE(c *C) {
 	}
 
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestStatisticsOps(c *C) {
+	table := []testCase{
+		{"create statistics stats1 (cardinality) on t(a,b,c)", true, "CREATE STATISTICS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"create statistics stats2 (dependency) on t(a,b)", true, "CREATE STATISTICS `stats2` (DEPENDENCY) ON `t`(`a`, `b`)"},
+		{"create statistics stats3 (correlation) on t(a,b)", true, "CREATE STATISTICS `stats3` (CORRELATION) ON `t`(`a`, `b`)"},
+		{"create statistics stats3 on t(a,b)", false, ""},
+		{"create statistics if not exists stats1 (cardinality) on t(a,b,c)", true, "CREATE STATISTICS IF NOT EXISTS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"create statistics if not exists stats2 (dependency) on t(a,b)", true, "CREATE STATISTICS IF NOT EXISTS `stats2` (DEPENDENCY) ON `t`(`a`, `b`)"},
+		{"create statistics if not exists stats3 (correlation) on t(a,b)", true, "CREATE STATISTICS IF NOT EXISTS `stats3` (CORRELATION) ON `t`(`a`, `b`)"},
+		{"create statistics if not exists stats3 on t(a,b)", false, ""},
+		{"create statistics stats1(cardinality) on t(a,b,c)", true, "CREATE STATISTICS `stats1` (CARDINALITY) ON `t`(`a`, `b`, `c`)"},
+		{"drop statistics stats1", true, "DROP STATISTICS `stats1`"},
+	}
+	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("create statistics if not exists stats1 (cardinality) on t(a,b,c)", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.CreateStatisticsStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.IfNotExists, IsTrue)
+	c.Assert(v.StatsName, Equals, "stats1")
+	c.Assert(v.StatsType, Equals, ast.StatsTypeCardinality)
+	c.Assert(v.Table.Name, Equals, model.CIStr{O: "t", L: "t"})
+	c.Assert(len(v.Columns), Equals, 3)
+	c.Assert(v.Columns[0].Name, Equals, model.CIStr{O: "a", L: "a"})
+	c.Assert(v.Columns[1].Name, Equals, model.CIStr{O: "b", L: "b"})
+	c.Assert(v.Columns[2].Name, Equals, model.CIStr{O: "c", L: "c"})
+}
+
+func (s *testParserSuite) TestHighNotPrecedenceMode(c *C) {
+	p := parser.New()
+	var sb strings.Builder
+
+	sms, _, err := p.Parse("SELECT NOT 1 BETWEEN -5 AND 5", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	v1, ok := v.Fields.Fields[0].Expr.(*ast.UnaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(v1.Op, Equals, opcode.Not)
+	err = sms[0].Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+	c.Assert(err, IsNil)
+	restoreSQL := sb.String()
+	c.Assert(restoreSQL, Equals, "SELECT NOT 1 BETWEEN -5 AND 5")
+	sb.Reset()
+
+	sms, _, err = p.Parse("SELECT !1 BETWEEN -5 AND 5", "", "")
+	c.Assert(err, IsNil)
+	v, ok = sms[0].(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	_, ok = v.Fields.Fields[0].Expr.(*ast.BetweenExpr)
+	c.Assert(ok, IsTrue)
+	err = sms[0].Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+	c.Assert(err, IsNil)
+	restoreSQL = sb.String()
+	c.Assert(restoreSQL, Equals, "SELECT !1 BETWEEN -5 AND 5")
+	sb.Reset()
+
+	p = parser.New()
+	p.SetSQLMode(mysql.ModeHighNotPrecedence)
+	sms, _, err = p.Parse("SELECT NOT 1 BETWEEN -5 AND 5", "", "")
+	c.Assert(err, IsNil)
+	v, ok = sms[0].(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	_, ok = v.Fields.Fields[0].Expr.(*ast.BetweenExpr)
+	c.Assert(ok, IsTrue)
+	err = sms[0].Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+	c.Assert(err, IsNil)
+	restoreSQL = sb.String()
+	c.Assert(restoreSQL, Equals, "SELECT !1 BETWEEN -5 AND 5")
 }

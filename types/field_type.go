@@ -28,6 +28,14 @@ const (
 	UnspecifiedLength = -1
 )
 
+// TiDBStrictIntegerDisplayWidth represent whether return warnings when integerType with (length) was parsed.
+// The default is `false`, it will be parsed as warning, and the result in show-create-table will ignore the
+// display length when it set to `true`. This is for compatibility with MySQL 8.0 in which integer max display
+// length is deprecated, referring this issue #6688 for more details.
+var (
+	TiDBStrictIntegerDisplayWidth bool
+)
+
 // FieldType records field type information.
 type FieldType struct {
 	Tp      byte
@@ -62,11 +70,15 @@ func (ft *FieldType) Equal(other *FieldType) bool {
 	// but need compare unsigned_flag of ft.Flag.
 	// When Tp is float or double with Decimal unspecified, do not check whether Flen is equal,
 	// because Flen for them is useless.
-	partialEqual := ft.Tp == other.Tp &&
-		ft.Decimal == other.Decimal &&
+	// The Decimal field can be ignored if the type is int or string.
+	tpEqual := (ft.Tp == other.Tp) || (ft.Tp == mysql.TypeVarchar && other.Tp == mysql.TypeVarString) || (ft.Tp == mysql.TypeVarString && other.Tp == mysql.TypeVarchar)
+	flenEqual := ft.Flen == other.Flen || (ft.EvalType() == ETReal && ft.Decimal == UnspecifiedLength)
+	ignoreDecimal := ft.EvalType() == ETInt || ft.EvalType() == ETString
+	partialEqual := tpEqual &&
+		(ignoreDecimal || ft.Decimal == other.Decimal) &&
 		ft.Charset == other.Charset &&
 		ft.Collate == other.Collate &&
-		(ft.Flen == other.Flen || (ft.EvalType() == ETReal && ft.Decimal == UnspecifiedLength)) &&
+		flenEqual &&
 		mysql.HasUnsignedFlag(ft.Flag) == mysql.HasUnsignedFlag(other.Flag)
 	if !partialEqual || len(ft.Elems) != len(other.Elems) {
 		return false
@@ -154,9 +166,14 @@ func (ft *FieldType) CompactStr() string {
 		}
 	case mysql.TypeNewDecimal:
 		suffix = fmt.Sprintf("(%d,%d)", displayFlen, displayDecimal)
-	case mysql.TypeBit, mysql.TypeShort, mysql.TypeTiny, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
-		// Flen is always shown.
+	case mysql.TypeBit, mysql.TypeVarchar, mysql.TypeString, mysql.TypeVarString:
 		suffix = fmt.Sprintf("(%d)", displayFlen)
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
+		// Referring this issue #6688, the integer max display length is deprecated in MySQL 8.0.
+		// Since the length doesn't take any effect in TiDB storage or showing result, we remove it here.
+		if !TiDBStrictIntegerDisplayWidth {
+			suffix = fmt.Sprintf("(%d)", displayFlen)
+		}
 	case mysql.TypeYear:
 		suffix = fmt.Sprintf("(%d)", ft.Flen)
 	}
@@ -218,7 +235,7 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlain(")")
 	case mysql.TypeTimestamp, mysql.TypeDatetime, mysql.TypeDuration:
 		precision = ft.Decimal
-	case mysql.TypeDecimal, mysql.TypeFloat, mysql.TypeDouble, mysql.TypeNewDecimal:
+	case mysql.TypeUnspecified, mysql.TypeFloat, mysql.TypeDouble, mysql.TypeNewDecimal:
 		precision = ft.Flen
 		scale = ft.Decimal
 	default:
@@ -257,7 +274,7 @@ func (ft *FieldType) Restore(ctx *format.RestoreCtx) error {
 }
 
 // RestoreAsCastType is used for write AST back to string.
-func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
+func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx, explicitCharset bool) {
 	switch ft.Tp {
 	case mysql.TypeVarString:
 		skipWriteBinary := false
@@ -269,6 +286,9 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 		}
 		if ft.Flen != UnspecifiedLength {
 			ctx.WritePlainf("(%d)", ft.Flen)
+		}
+		if !explicitCharset {
+			return
 		}
 		if !skipWriteBinary && ft.Flag&mysql.BinaryFlag != 0 {
 			ctx.WriteKeyWord(" BINARY")
@@ -312,10 +332,10 @@ func (ft *FieldType) RestoreAsCastType(ctx *format.RestoreCtx) {
 }
 
 // FormatAsCastType is used for write AST back to string.
-func (ft *FieldType) FormatAsCastType(w io.Writer) {
+func (ft *FieldType) FormatAsCastType(w io.Writer, explicitCharset bool) {
 	var sb strings.Builder
 	restoreCtx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
-	ft.RestoreAsCastType(restoreCtx)
+	ft.RestoreAsCastType(restoreCtx, explicitCharset)
 	fmt.Fprint(w, sb.String())
 }
 

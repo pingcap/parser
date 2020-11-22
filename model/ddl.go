@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pingcap/errors"
+	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
 
@@ -76,6 +77,7 @@ const (
 	ActionDropCheckConstraint           ActionType = 44
 	ActionAlterCheckConstraint          ActionType = 45
 	ActionAlterTableAlterPartition      ActionType = 46
+	ActionRenameTables                  ActionType = 47
 )
 
 const (
@@ -175,6 +177,10 @@ type DDLReorgMeta struct {
 	// EndHandle is the last handle of the adding indices table.
 	// We should only backfill indices in the range [startHandle, EndHandle].
 	EndHandle int64 `json:"end_handle"`
+
+	SQLMode       mysql.SQLMode                    `json:"sql_mode"`
+	Warnings      map[errors.ErrorID]*terror.Error `json:"warnings"`
+	WarningsCount map[errors.ErrorID]int64         `json:"warnings_count"`
 }
 
 // NewDDLReorgMeta new a DDLReorgMeta.
@@ -196,9 +202,12 @@ type Job struct {
 	// ErrorCount will be increased, every time we meet an error when running job.
 	ErrorCount int64 `json:"err_count"`
 	// RowCount means the number of rows that are processed.
-	RowCount int64         `json:"row_count"`
-	Mu       sync.Mutex    `json:"-"`
-	Args     []interface{} `json:"-"`
+	RowCount int64      `json:"row_count"`
+	Mu       sync.Mutex `json:"-"`
+	// CtxVars are variables attached to the job. It is for internal usage.
+	// E.g. passing arguments between functions by one single *Job pointer.
+	CtxVars []interface{} `json:"-"`
+	Args    []interface{} `json:"-"`
 	// RawArgs : We must use json raw message to delay parsing special args.
 	RawArgs     json.RawMessage `json:"raw_args"`
 	SchemaState SchemaState     `json:"schema_state"`
@@ -260,6 +269,17 @@ func (job *Job) GetRowCount() int64 {
 	defer job.Mu.Unlock()
 
 	return job.RowCount
+}
+
+// SetWarnings sets the warnings of rows handled.
+func (job *Job) SetWarnings(warnings map[errors.ErrorID]*terror.Error, warningsCount map[errors.ErrorID]int64) {
+	job.ReorgMeta.Warnings = warnings
+	job.ReorgMeta.WarningsCount = warningsCount
+}
+
+// GetWarnings gets the warnings of the rows handled.
+func (job *Job) GetWarnings() (map[errors.ErrorID]*terror.Error, map[errors.ErrorID]int64) {
+	return job.ReorgMeta.Warnings, job.ReorgMeta.WarningsCount
 }
 
 // Encode encodes job with json format.

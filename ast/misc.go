@@ -66,6 +66,7 @@ const (
 	// Valid formats for explain statement.
 	ExplainFormatROW     = "row"
 	ExplainFormatDOT     = "dot"
+	ExplainFormatJSON    = "json"
 	ExplainFormatHint    = "hint"
 	ExplainFormatVerbose = "verbose"
 	PumpType             = "PUMP"
@@ -83,6 +84,7 @@ var (
 	ExplainFormats = []string{
 		ExplainFormatROW,
 		ExplainFormatDOT,
+		ExplainFormatJSON,
 		ExplainFormatHint,
 		ExplainFormatVerbose,
 	}
@@ -1472,8 +1474,8 @@ type CreateBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
-	OriginSel   StmtNode
-	HintedSel   StmtNode
+	OriginNode  StmtNode
+	HintedNode  StmtNode
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1484,11 +1486,11 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
+	if err := n.OriginNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	ctx.WriteKeyWord(" USING ")
-	if err := n.HintedSel.Restore(ctx); err != nil {
+	if err := n.HintedNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -1500,16 +1502,16 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	hintedSelnode, ok := n.HintedSel.Accept(v)
+	n.OriginNode = origNode.(StmtNode)
+	hintedNode, ok := n.HintedNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.HintedSel = hintedSelnode.(*SelectStmt)
+	n.HintedNode = hintedNode.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -1518,8 +1520,8 @@ type DropBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
-	OriginSel   StmtNode
-	HintedSel   StmtNode
+	OriginNode  StmtNode
+	HintedNode  StmtNode
 }
 
 func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1530,12 +1532,12 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginSel.Restore(ctx); err != nil {
+	if err := n.OriginNode.Restore(ctx); err != nil {
 		return errors.Trace(err)
 	}
-	if n.HintedSel != nil {
+	if n.HintedNode != nil {
 		ctx.WriteKeyWord(" USING ")
-		if err := n.HintedSel.Restore(ctx); err != nil {
+		if err := n.HintedNode.Restore(ctx); err != nil {
 			return errors.Trace(err)
 		}
 	}
@@ -1548,18 +1550,121 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	if n.HintedSel != nil {
-		selnode, ok = n.HintedSel.Accept(v)
+	n.OriginNode = origNode.(StmtNode)
+	if n.HintedNode != nil {
+		hintedNode, ok := n.HintedNode.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.HintedSel = selnode.(*SelectStmt)
+		n.HintedNode = hintedNode.(StmtNode)
 	}
+	return v.Leave(n)
+}
+
+// Extended statistics types.
+const (
+	StatsTypeCardinality uint8 = iota
+	StatsTypeDependency
+	StatsTypeCorrelation
+)
+
+// CreateStatisticsStmt is a statement to create extended statistics.
+// Examples:
+//   CREATE STATISTICS stats1 (cardinality) ON t(a, b, c);
+//   CREATE STATISTICS stats2 (dependency) ON t(a, b);
+//   CREATE STATISTICS stats3 (correlation) ON t(a, b);
+type CreateStatisticsStmt struct {
+	stmtNode
+
+	IfNotExists bool
+	StatsName   string
+	StatsType   uint8
+	Table       *TableName
+	Columns     []*ColumnName
+}
+
+// Restore implements Node interface.
+func (n *CreateStatisticsStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("CREATE STATISTICS ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
+	ctx.WriteName(n.StatsName)
+	switch n.StatsType {
+	case StatsTypeCardinality:
+		ctx.WriteKeyWord(" (cardinality) ")
+	case StatsTypeDependency:
+		ctx.WriteKeyWord(" (dependency) ")
+	case StatsTypeCorrelation:
+		ctx.WriteKeyWord(" (correlation) ")
+	}
+	ctx.WriteKeyWord("ON ")
+	if err := n.Table.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore CreateStatisticsStmt.Table")
+	}
+
+	ctx.WritePlain("(")
+	for i, col := range n.Columns {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := col.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore CreateStatisticsStmt.Columns: [%v]", i)
+		}
+	}
+	ctx.WritePlain(")")
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *CreateStatisticsStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*CreateStatisticsStmt)
+	node, ok := n.Table.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Table = node.(*TableName)
+	for i, col := range n.Columns {
+		node, ok = col.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Columns[i] = node.(*ColumnName)
+	}
+	return v.Leave(n)
+}
+
+// DropStatisticsStmt is a statement to drop extended statistics.
+// Examples:
+//   DROP STATISTICS stats1;
+type DropStatisticsStmt struct {
+	stmtNode
+
+	StatsName string
+}
+
+// Restore implements Node interface.
+func (n *DropStatisticsStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("DROP STATISTICS ")
+	ctx.WriteName(n.StatsName)
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *DropStatisticsStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*DropStatisticsStmt)
 	return v.Leave(n)
 }
 
@@ -1628,6 +1733,7 @@ const (
 	AdminReloadBindings
 	AdminShowTelemetry
 	AdminResetTelemetryID
+	AdminReloadStatistics
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1840,6 +1946,8 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SHOW TELEMETRY")
 	case AdminResetTelemetryID:
 		ctx.WriteKeyWord("RESET TELEMETRY_ID")
+	case AdminReloadStatistics:
+		ctx.WriteKeyWord("RELOAD STATISTICS")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -1860,6 +1968,14 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 			return n, false
 		}
 		n.Tables[i] = node.(*TableName)
+	}
+
+	if n.Where != nil {
+		node, ok := n.Where.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Where = node.(ExprNode)
 	}
 
 	return v.Leave(n)
@@ -2547,6 +2663,12 @@ type HintTimeRange struct {
 	To   string
 }
 
+// HintSetVar is the payload of `SET_VAR` hint
+type HintSetVar struct {
+	VarName string
+	Value   string
+}
+
 // HintTable is table in the hint. It may have query block info.
 type HintTable struct {
 	DBName        model.CIStr
@@ -2590,7 +2712,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 	}
 	// Hints without args except query block.
 	switch n.HintName.L {
-	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name", "ignore_plan_cache":
+	case "hash_agg", "stream_agg", "agg_to_cop", "read_consistent_replica", "no_index_merge", "qb_name", "ignore_plan_cache", "limit_to_cop":
 		ctx.WritePlain(")")
 		return nil
 	}
@@ -2603,7 +2725,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlainf("%d", n.HintData.(uint64))
 	case "nth_plan":
 		ctx.WritePlainf("%d", n.HintData.(int64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local", "inl_hash_join", "inl_merge_join":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
@@ -2647,6 +2769,11 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteString(hintData.From)
 		ctx.WritePlain(", ")
 		ctx.WriteString(hintData.To)
+	case "set_var":
+		hintData := n.HintData.(HintSetVar)
+		ctx.WriteString(hintData.VarName)
+		ctx.WritePlain(", ")
+		ctx.WriteString(hintData.Value)
 	}
 	ctx.WritePlain(")")
 	return nil

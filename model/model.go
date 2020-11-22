@@ -42,6 +42,11 @@ const (
 	StateDeleteReorganization
 	// StatePublic means this schema element is ok for all write and read operations.
 	StatePublic
+	// StateReplica means we're waiting tiflash replica to be finished.
+	StateReplicaOnly
+	/*
+	 *  Please add the new state at the end to keep the values consistent across versions.
+	 */
 )
 
 // String implements fmt.Stringer interface.
@@ -57,6 +62,8 @@ func (s SchemaState) String() string {
 		return "delete reorganization"
 	case StatePublic:
 		return "public"
+	case StateReplicaOnly:
+		return "replica only"
 	default:
 		return "none"
 	}
@@ -78,6 +85,12 @@ const (
 	CurrLatestColumnInfoVersion = ColumnInfoVersion2
 )
 
+// ChangeStateInfo is used for recording the information of schema changing.
+type ChangeStateInfo struct {
+	// DependencyColumnOffset is the changing column offset that the current column depends on when executing modify/change column.
+	DependencyColumnOffset int `json:"relative_col_offset"`
+}
+
 // ColumnInfo provides meta data describing of a table column.
 type ColumnInfo struct {
 	ID                    int64       `json:"id"`
@@ -96,7 +109,8 @@ type ColumnInfo struct {
 	State               SchemaState `json:"state"`
 	Comment             string      `json:"comment"`
 	// A hidden column is used internally(expression index) and are not accessible by users.
-	Hidden bool `json:"hidden"`
+	Hidden           bool `json:"hidden"`
+	*ChangeStateInfo `json:"change_state_info"`
 	// Version means the version of the column info.
 	// Version = 0: For OriginDefaultValue and DefaultValue of timestamp column will stores the default time in system time zone.
 	//              That is a bug if multiple TiDB servers in different system time zone.
@@ -137,7 +151,7 @@ func (c *ColumnInfo) SetOriginDefaultValue(value interface{}) error {
 
 // GetOriginalDefaultValue gets the origin default value.
 func (c *ColumnInfo) GetOriginDefaultValue() interface{} {
-	if c.Tp == mysql.TypeBit {
+	if c.Tp == mysql.TypeBit && c.OriginDefaultValueBit != nil {
 		// If the column type is BIT, both `OriginDefaultValue` and `DefaultValue` of ColumnInfo are corrupted,
 		// because the content before json.Marshal is INCONSISTENT with the content after json.Unmarshal.
 		return string(c.OriginDefaultValueBit)
@@ -202,6 +216,9 @@ func FindColumnInfo(cols []*ColumnInfo, name string) *ColumnInfo {
 // for use of execution phase.
 const ExtraHandleID = -1
 
+// ExtraPartitionID is the column ID of column which store the partitionID decoded in global index values.
+const ExtraPidColID = -2
+
 const (
 	// TableInfoVersion0 means the table info version is 0.
 	// Upgrade from v2.1.1 or v2.1.2 to v2.1.3 and later, and then execute a "change/modify column" statement
@@ -234,6 +251,9 @@ const (
 
 // ExtraHandleName is the name of ExtraHandle Column.
 var ExtraHandleName = NewCIStr("_tidb_rowid")
+
+// ExtraPartitionIdName is the name of ExtraPartitionId Column.
+var ExtraPartitionIdName = NewCIStr("_tidb_pid")
 
 // TableInfo provides meta data describing a DB table.
 type TableInfo struct {
@@ -298,6 +318,10 @@ type TableInfo struct {
 
 	// TiFlashReplica means the TiFlash replica info.
 	TiFlashReplica *TiFlashReplicaInfo `json:"tiflash_replica"`
+
+	// IsColumnar means the table is column-oriented.
+	// It's true when the engine of the table is TiFlash only.
+	IsColumnar bool `json:"is_columnar"`
 }
 
 // TableLockInfo provides meta data describing a table lock.
@@ -362,6 +386,9 @@ const (
 	TableLockRead
 	// TableLockReadLocal is not supported.
 	TableLockReadLocal
+	// TableLockReadOnly is used to set a table into read-only status,
+	// when the session exits, it will not release its lock automatically.
+	TableLockReadOnly
 	// TableLockWrite means only the session with this lock has write/read permission.
 	// Only the session that holds the lock can access the table. No other session can access it until the lock is released.
 	TableLockWrite
@@ -377,6 +404,8 @@ func (t TableLockType) String() string {
 		return "READ"
 	case TableLockReadLocal:
 		return "READ LOCAL"
+	case TableLockReadOnly:
+		return "READ ONLY"
 	case TableLockWriteLocal:
 		return "WRITE LOCAL"
 	case TableLockWrite:
@@ -536,6 +565,17 @@ func NewExtraHandleColInfo() *ColumnInfo {
 		Name: ExtraHandleName,
 	}
 	colInfo.Flag = mysql.PriKeyFlag
+	colInfo.Tp = mysql.TypeLonglong
+	colInfo.Flen, colInfo.Decimal = mysql.GetDefaultFieldLengthAndDecimal(mysql.TypeLonglong)
+	return colInfo
+}
+
+// NewExtraPartitionIDColInfo mocks a column info for extra partition id column.
+func NewExtraPartitionIDColInfo() *ColumnInfo {
+	colInfo := &ColumnInfo{
+		ID:   ExtraPidColID,
+		Name: ExtraPartitionIdName,
+	}
 	colInfo.Tp = mysql.TypeLonglong
 	colInfo.Flen, colInfo.Decimal = mysql.GetDefaultFieldLengthAndDecimal(mysql.TypeLonglong)
 	return colInfo
@@ -704,14 +744,21 @@ type PartitionInfo struct {
 	Enable bool `json:"enable"`
 
 	Definitions []PartitionDefinition `json:"definitions"`
-	Num         uint64                `json:"num"`
+	// AddingDefinitions is filled when adding a partition that is in the mid state.
+	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
+	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
+	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
+	Num                 uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
 func (pi *PartitionInfo) GetNameByID(id int64) string {
-	for _, def := range pi.Definitions {
-		if id == def.ID {
-			return def.Name.L
+	definitions := pi.Definitions
+	// do not convert this loop to `for _, def := range definitions`.
+	// see https://github.com/pingcap/parser/pull/1072 for the benchmark.
+	for i := range definitions {
+		if id == definitions[i].ID {
+			return definitions[i].Name.L
 		}
 	}
 	return ""
@@ -719,11 +766,11 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 
 // PartitionDefinition defines a single partition.
 type PartitionDefinition struct {
-	ID       int64       `json:"id"`
-	Name     CIStr       `json:"name"`
-	LessThan []string    `json:"less_than"`
-	Comment  string      `json:"comment,omitempty"`
-	State    SchemaState `json:"state"`
+	ID       int64      `json:"id"`
+	Name     CIStr      `json:"name"`
+	LessThan []string   `json:"less_than"`
+	InValues [][]string `json:"in_values"`
+	Comment  string     `json:"comment,omitempty"`
 }
 
 // Clone clones ConstraintInfo.
@@ -737,8 +784,9 @@ func (ci *PartitionDefinition) Clone() PartitionDefinition {
 // FindPartitionDefinitionByName finds PartitionDefinition by name.
 func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
 	lowConstrName := strings.ToLower(partitionDefinitionName)
-	for i, pd := range t.Partition.Definitions {
-		if pd.Name.L == lowConstrName {
+	definitions := t.Partition.Definitions
+	for i := range definitions {
+		if definitions[i].Name.L == lowConstrName {
 			return &t.Partition.Definitions[i]
 		}
 	}

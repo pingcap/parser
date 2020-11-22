@@ -17,10 +17,10 @@ go mod init colx && touch main.go
 
 ## Import Dependencies
 
-First of all, you need to use `go get` to fetch the dependencies:
+First of all, you need to use `go get` to fetch the dependencies through git hash. The git hashes are available in [release page](https://github.com/pingcap/parser/releases). Take `v4.0.2` as an example:
 
 ```bash
-go get -v github.com/pingcap/parser@v4.0.0-rc.1
+go get -v github.com/pingcap/parser@3a18f1e
 ```
 
 > **NOTE**
@@ -28,7 +28,7 @@ go get -v github.com/pingcap/parser@v4.0.0-rc.1
 > You may want to use advanced API on expressions (a kind of AST node), such as numbers, string literals, booleans, nulls, etc. It is strongly recommended to use the `types` package in TiDB repo with the following command:
 >
 > ```bash
-> go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1
+> go get -v github.com/pingcap/tidb/types/parser_driver@328b6d0
 > ```
 > and import it in your golang source code:
 > ```go
@@ -99,7 +99,7 @@ If the parser runs properly, you should get a result like this:
 > Here are a few things you might want to know:
 > - To use a parser, a `parser_driver` is required. It decides how to parse the basic data types in SQL.
 >
->   You can use [`github.com/pingcap/parser/test_driver`](https://pkg.go.dev/github.com/pingcap/parser/test_driver) as the `parser_driver` for test. Again, if you need advanced features, please use the `parser_driver` in TiDB (run `go get -v github.com/pingcap/tidb/types/parser_driver@v4.0.0-rc.1` and import it).
+>   You can use [`github.com/pingcap/parser/test_driver`](https://pkg.go.dev/github.com/pingcap/parser/test_driver) as the `parser_driver` for test. Again, if you need advanced features, please use the `parser_driver` in TiDB (run `go get -v github.com/pingcap/tidb/types/parser_driver@328b6d0` and import it).
 > - The instantiated parser object is not goroutine safe. It is better to keep it in a single goroutine.
 > - The instantiated parser object is not lightweight. It is better to reuse it if possible.
 > - The 2nd and 3rd arguments of [`parser.Parse()`](https://pkg.go.dev/github.com/pingcap/parser?tab=doc#Parser.Parse) are charset and collation respectively. If you pass an empty string into it, a default value is chosen.

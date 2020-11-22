@@ -39,7 +39,7 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&DropDatabaseStmt{}, 0, 0},
 		{&DropIndexStmt{Table: &TableName{}}, 0, 0},
 		{&DropTableStmt{Tables: []*TableName{{}, {}}}, 0, 0},
-		{&RenameTableStmt{OldTable: &TableName{}, NewTable: &TableName{}}, 0, 0},
+		{&RenameTableStmt{TableToTables: []*TableToTable{}}, 0, 0},
 		{&TruncateTableStmt{Table: &TableName{}}, 0, 0},
 
 		// TODO: cover children
@@ -272,10 +272,14 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id enum('a','b')", "`id` ENUM('a','b')"},
 		{"id enum('''a''','''b''')", "`id` ENUM('''a''','''b''')"},
 		{"id enum('a\\nb','a\\tb','a\\rb')", "`id` ENUM('a\nb','a\tb','a\rb')"},
+		{"id enum('a','b') binary", "`id` ENUM('a','b') BINARY"},
+		{"id enum(0x61, 0b01100010)", "`id` ENUM('a','b')"},
 		{"id set('a','b')", "`id` SET('a','b')"},
 		{"id set('''a''','''b''')", "`id` SET('''a''','''b''')"},
 		{"id set('a\\nb','a''	\\r\\nb','a\\rb')", "`id` SET('a\nb','a''	\r\nb','a\rb')"},
 		{`id set("a'\nb","a'b\tc")`, "`id` SET('a''\nb','a''b\tc')"},
+		{"id set('a','b') binary", "`id` SET('a','b') BINARY"},
+		{"id set(0x61, 0b01100010)", "`id` SET('a','b')"},
 		{"id TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_CI", "`id` TEXT CHARACTER SET UTF8 COLLATE utf8_unicode_ci"},
 		{"id text character set UTF8", "`id` TEXT CHARACTER SET UTF8"},
 		{"id text charset UTF8", "`id` TEXT CHARACTER SET UTF8"},
@@ -517,6 +521,17 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		return node.(*AlterTableStmt).Specs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "ALTER TABLE t %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestAlterTableOptionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ALTER TABLE t ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8", "ALTER TABLE `t` ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8"},
+		{"ALTER TABLE t ROW_FORMAT = COMPRESSED, KEY_BLOCK_SIZE = 8", "ALTER TABLE `t` ROW_FORMAT = COMPRESSED, KEY_BLOCK_SIZE = 8"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestAdminRepairTableRestore(c *C) {
