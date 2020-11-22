@@ -1237,6 +1237,7 @@ import (
 	RegexpSym         "REGEXP or RLIKE"
 	IntoOpt           "INTO or EmptyString"
 	ValueSym          "Value or Values"
+	NotSym            "Not token"
 	Char              "{CHAR|CHARACTER}"
 	NChar             "{NCHAR|NATIONAL CHARACTER|NATIONAL CHAR}"
 	Varchar           "{VARCHAR|VARCHARACTER|CHARACTER VARYING|CHAR VARYING}"
@@ -2700,16 +2701,19 @@ PrimaryOpt:
 	{}
 |	"PRIMARY"
 
+NotSym:
+	not
+|	not2
+	{
+		$$ = "NOT"
+	}
+
 EnforcedOrNot:
 	"ENFORCED"
 	{
 		$$ = true
 	}
-|	"NOT" "ENFORCED"
-	{
-		$$ = false
-	}
-|	not2 "ENFORCED"
+|	NotSym "ENFORCED"
 	{
 		$$ = false
 	}
@@ -2725,11 +2729,7 @@ EnforcedOrNotOrNotNullOpt:
 	//	 This branch is needed to workaround the need of a lookahead of 2 for the grammar:
 	//
 	//	  { [NOT] NULL | CHECK(...) [NOT] ENFORCED } ...
-	"NOT" "NULL"
-	{
-		$$ = 0
-	}
-|	not2 "NULL"
+	NotSym "NULL"
 	{
 		$$ = 0
 	}
@@ -2743,11 +2743,7 @@ EnforcedOrNotOrNotNullOpt:
 	}
 
 ColumnOption:
-	"NOT" "NULL"
-	{
-		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionNotNull}
-	}
-|	not2 "NULL"
+	NotSym "NULL"
 	{
 		$$ = &ast.ColumnOption{Tp: ast.ColumnOptionNotNull}
 	}
@@ -4764,11 +4760,7 @@ BetweenOrNotOp:
 	{
 		$$ = true
 	}
-|	"NOT" "BETWEEN"
-	{
-		$$ = false
-	}
-|	not2 "BETWEEN"
+|	NotSym "BETWEEN"
 	{
 		$$ = false
 	}
@@ -4778,11 +4770,7 @@ IsOrNotOp:
 	{
 		$$ = true
 	}
-|	"IS" "NOT"
-	{
-		$$ = false
-	}
-|	"IS" not2
+|	"IS" NotSym
 	{
 		$$ = false
 	}
@@ -4792,11 +4780,7 @@ InOrNotOp:
 	{
 		$$ = true
 	}
-|	"NOT" "IN"
-	{
-		$$ = false
-	}
-|	not2 "IN"
+|	NotSym "IN"
 	{
 		$$ = false
 	}
@@ -4806,11 +4790,7 @@ LikeOrNotOp:
 	{
 		$$ = true
 	}
-|	"NOT" "LIKE"
-	{
-		$$ = false
-	}
-|	not2 "LIKE"
+|	NotSym "LIKE"
 	{
 		$$ = false
 	}
@@ -4820,11 +4800,7 @@ RegexpOrNotOp:
 	{
 		$$ = true
 	}
-|	"NOT" RegexpSym
-	{
-		$$ = false
-	}
-|	not2 RegexpSym
+|	NotSym RegexpSym
 	{
 		$$ = false
 	}
@@ -4998,11 +4974,7 @@ IfNotExists:
 	{
 		$$ = false
 	}
-|	"IF" "NOT" "EXISTS"
-	{
-		$$ = true
-	}
-|	"IF" not2 "EXISTS"
+|	"IF" NotSym "EXISTS"
 	{
 		$$ = true
 	}
