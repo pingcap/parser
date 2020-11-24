@@ -490,6 +490,7 @@ import (
 	processlist           "PROCESSLIST"
 	profile               "PROFILE"
 	profiles              "PROFILES"
+	purge                 "PURGE"
 	quarter               "QUARTER"
 	queries               "QUERIES"
 	query                 "QUERY"
@@ -846,6 +847,7 @@ import (
 	LoadStatsStmt          "Load statistic statement"
 	LockTablesStmt         "Lock tables statement"
 	PreparedStmt           "PreparedStmt"
+	PurgeImportStmt        "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt             "SELECT statement"
 	RenameTableStmt        "rename table statement"
 	ReplaceIntoStmt        "REPLACE INTO statement"
@@ -4610,6 +4612,12 @@ OptionLevel:
 		$$ = ast.BRIEOptionLevelRequired
 	}
 
+PurgeImportStmt:
+	"PURGE" "IMPORT" NUM
+	{
+		$$ = &ast.PurgeImportStmt{TaskID: getUint64FromNUM($3)}
+	}
+
 Expression:
 	singleAtIdentifier assignmentEq Expression %prec assignmentEq
 	{
@@ -5515,6 +5523,7 @@ UnReservedKeyword:
 |	"OFF"
 |	"OPTIONAL"
 |	"REQUIRED"
+|	"PURGE"
 
 TiDBKeyword:
 	"ADMIN"
@@ -9910,6 +9919,7 @@ Statement:
 |	LoadDataStmt
 |	LoadStatsStmt
 |	PreparedStmt
+|	PurgeImportStmt
 |	RollbackStmt
 |	RenameTableStmt
 |	ReplaceIntoStmt
