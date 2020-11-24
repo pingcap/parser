@@ -2593,7 +2593,7 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 				} else {
 					ctx.WritePlainf("%d", opt.UintValue)
 				}
-			case 2:
+			default:
 				// BACKUP/RESTORE doesn't support this value for now
 				ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
 			}
