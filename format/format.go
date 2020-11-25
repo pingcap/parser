@@ -219,8 +219,6 @@ const (
 
 	RestoreSpacesAroundBinaryOperation
 
-	RestoreWithDefaultDB
-
 	RestoreStringWithoutDefaultCharset
 )
 
@@ -280,10 +278,6 @@ func (rf RestoreFlags) HasNameBackQuotesFlag() bool {
 // HasSpacesAroundBinaryOperationFlag returns a boolean indicating whether `rf` has `RestoreSpacesAroundBinaryOperation` flag.
 func (rf RestoreFlags) HasSpacesAroundBinaryOperationFlag() bool {
 	return rf.has(RestoreSpacesAroundBinaryOperation)
-}
-
-func (rf RestoreFlags) HasWithDefaultDB() bool {
-	return rf.has(RestoreWithDefaultDB)
 }
 
 func (rf RestoreFlags) HasStringWithoutDefaultCharset() bool {

@@ -194,7 +194,7 @@ func (n *TableName) restoreName(ctx *format.RestoreCtx) {
 	if n.Schema.String() != "" {
 		ctx.WriteName(n.Schema.String())
 		ctx.WritePlain(".")
-	} else if ctx.Flags.HasWithDefaultDB() {
+	} else if ctx.DefaultDB != "" {
 		ctx.WriteName(ctx.DefaultDB)
 		ctx.WritePlain(".")
 	}
