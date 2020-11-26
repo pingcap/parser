@@ -752,7 +752,9 @@ type PartitionInfo struct {
 	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
 	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
 	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
-	Num                 uint64                `json:"num"`
+	// PartitionStates indicates the state of each partition
+	PartitionStates []PartitionState `json:"states"`
+	Num             uint64           `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
@@ -766,6 +768,11 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 		}
 	}
 	return ""
+}
+
+type PartitionState struct {
+	ID    int64       `json:"id"`
+	State SchemaState `json:"state"`
 }
 
 // PartitionDefinition defines a single partition.
