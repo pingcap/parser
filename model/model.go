@@ -770,6 +770,26 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 	return ""
 }
 
+func (pi *PartitionInfo) GetStateByID(id int64) (SchemaState, bool) {
+	for _, pstate := range pi.PartitionStates {
+		if pstate.ID == id {
+			return pstate.State, true
+		}
+	}
+	return StateNone, false
+}
+
+func (pi *PartitionInfo) SetStateByID(id int64, state SchemaState) bool {
+	for i, pstate := range pi.PartitionStates {
+		if pstate.ID == id {
+			pstate.State = state
+			pi.PartitionStates[i] = pstate
+			return true
+		}
+	}
+	return false
+}
+
 type PartitionState struct {
 	ID    int64       `json:"id"`
 	State SchemaState `json:"state"`
