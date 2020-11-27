@@ -752,9 +752,7 @@ type PartitionInfo struct {
 	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
 	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
 	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
-	// PartitionStates indicates the state of each partition
-	PartitionStates []PartitionState `json:"states"`
-	Num             uint64           `json:"num"`
+	Num                 uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
@@ -771,7 +769,7 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 }
 
 func (pi *PartitionInfo) GetStateByID(id int64) (SchemaState, bool) {
-	for _, pstate := range pi.PartitionStates {
+	for _, pstate := range pi.Definitions {
 		if pstate.ID == id {
 			return pstate.State, true
 		}
@@ -780,10 +778,10 @@ func (pi *PartitionInfo) GetStateByID(id int64) (SchemaState, bool) {
 }
 
 func (pi *PartitionInfo) SetStateByID(id int64, state SchemaState) bool {
-	for i, pstate := range pi.PartitionStates {
+	for i, pstate := range pi.Definitions {
 		if pstate.ID == id {
 			pstate.State = state
-			pi.PartitionStates[i] = pstate
+			pi.Definitions[i] = pstate
 			return true
 		}
 	}
@@ -797,11 +795,12 @@ type PartitionState struct {
 
 // PartitionDefinition defines a single partition.
 type PartitionDefinition struct {
-	ID       int64      `json:"id"`
-	Name     CIStr      `json:"name"`
-	LessThan []string   `json:"less_than"`
-	InValues [][]string `json:"in_values"`
-	Comment  string     `json:"comment,omitempty"`
+	ID       int64       `json:"id"`
+	Name     CIStr       `json:"name"`
+	LessThan []string    `json:"less_than"`
+	InValues [][]string  `json:"in_values"`
+	State    SchemaState `json:"state"`
+	Comment  string      `json:"comment,omitempty"`
 }
 
 // Clone clones ConstraintInfo.
