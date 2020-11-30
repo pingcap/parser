@@ -1497,16 +1497,16 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	origNode, ok := n.OriginSel.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
-	hintedSelnode, ok := n.HintedSel.Accept(v)
+	n.OriginSel = origNode.(StmtNode)
+	hintedNode, ok := n.HintedSel.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.HintedSel = hintedSelnode.(*SelectStmt)
+	n.HintedSel = hintedNode.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -1545,17 +1545,17 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginSel.Accept(v)
+	origNode, ok := n.OriginSel.Accept(v)
 	if !ok {
 		return n, false
 	}
-	n.OriginSel = selnode.(*SelectStmt)
+	n.OriginSel = origNode.(StmtNode)
 	if n.HintedSel != nil {
-		selnode, ok = n.HintedSel.Accept(v)
+		hintedNode, ok := n.HintedSel.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.HintedSel = selnode.(*SelectStmt)
+		n.HintedSel = hintedNode.(StmtNode)
 	}
 	return v.Leave(n)
 }
