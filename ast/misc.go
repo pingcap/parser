@@ -2398,6 +2398,7 @@ const (
 	BRIEOptionSkipSchemaFiles
 	BRIEOptionStrictFormat
 	BRIEOptionTiKVImporter
+	BRIEOptionResume
 	// CSV options
 	BRIEOptionCSVBackslashEscape
 	BRIEOptionCSVDelimiter
@@ -2408,6 +2409,14 @@ const (
 	BRIEOptionCSVTrimLastSeparators
 
 	BRIECSVHeaderIsColumns = ^uint64(0)
+)
+
+type BRIEOptionLevel uint64
+
+const (
+	BRIEOptionLevelOff      BRIEOptionLevel = iota // equals FALSE
+	BRIEOptionLevelRequired                        // equals TRUE
+	BRIEOptionLevelOptional
 )
 
 func (kind BRIEKind) String() string {
@@ -2453,6 +2462,8 @@ func (kind BRIEOptionType) String() string {
 		return "STRICT_FORMAT"
 	case BRIEOptionTiKVImporter:
 		return "TIKV_IMPORTER"
+	case BRIEOptionResume:
+		return "RESUME"
 	case BRIEOptionCSVBackslashEscape:
 		return "CSV_BACKSLASH_ESCAPE"
 	case BRIEOptionCSVDelimiter:
@@ -2467,6 +2478,19 @@ func (kind BRIEOptionType) String() string {
 		return "CSV_SEPARATOR"
 	case BRIEOptionCSVTrimLastSeparators:
 		return "CSV_TRIM_LAST_SEPARATORS"
+	default:
+		return ""
+	}
+}
+
+func (level BRIEOptionLevel) String() string {
+	switch level {
+	case BRIEOptionLevelOff:
+		return "OFF"
+	case BRIEOptionLevelOptional:
+		return "OPTIONAL"
+	case BRIEOptionLevelRequired:
+		return "REQUIRED"
 	default:
 		return ""
 	}
@@ -2561,6 +2585,19 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 			} else {
 				ctx.WritePlainf("%d", opt.UintValue)
 			}
+		case BRIEOptionChecksum, BRIEOptionAnalyze:
+			switch opt.UintValue {
+			case 0, 1:
+				if n.Kind == BRIEKindImport {
+					ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+				} else {
+					ctx.WritePlainf("%d", opt.UintValue)
+				}
+			default:
+				// BACKUP/RESTORE doesn't support this value for now
+				ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+			}
+
 		default:
 			ctx.WritePlainf("%d", opt.UintValue)
 		}
@@ -2599,6 +2636,23 @@ func (n *BRIEStmt) SecureText() string {
 	var sb strings.Builder
 	_ = redactedStmt.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
 	return sb.String()
+}
+
+type PurgeImportStmt struct {
+	stmtNode
+
+	TaskID uint64
+}
+
+func (n *PurgeImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*PurgeImportStmt)
+	return v.Leave(n)
+}
+
+func (n *PurgeImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WritePlainf("PURGE IMPORT %d", n.TaskID)
+	return nil
 }
 
 // Ident is the table identifier composed of schema name and table name.
@@ -2725,7 +2779,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlainf("%d", n.HintData.(uint64))
 	case "nth_plan":
 		ctx.WritePlainf("%d", n.HintData.(int64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local", "inl_hash_join", "inl_merge_join":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
