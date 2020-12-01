@@ -44,8 +44,8 @@ const (
 	StatePublic
 	// StateReplica means we're waiting tiflash replica to be finished.
 	StateReplicaOnly
-	// StateGlobalTxnOnly means we can only use global txn for write operator on this schema element
-	StateGlobalTxnWriteOnly
+	// StateGlobalTxnOnly means we can only use global txn for operator on this schema element
+	StateGlobalTxnOnly
 	/*
 	 *  Please add the new state at the end to keep the values consistent across versions.
 	 */
@@ -66,8 +66,8 @@ func (s SchemaState) String() string {
 		return "public"
 	case StateReplicaOnly:
 		return "replica only"
-	case StateGlobalTxnWriteOnly:
-		return "global txn write only"
+	case StateGlobalTxnOnly:
+		return "global txn only"
 	default:
 		return "none"
 	}
