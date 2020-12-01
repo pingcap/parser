@@ -413,8 +413,6 @@ func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
 	}
 	needParen = false
 
-	return errors.Annotate(err, "TEST ERROR")
-
 	if tn, tnCase := n.Source.(*TableName); tnCase {
 		if needParen {
 			ctx.WritePlain("(")
