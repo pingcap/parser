@@ -121,6 +121,14 @@ func (s *Scanner) AppendError(err error) {
 	s.errs = append(s.errs, err)
 }
 
+// AppendWarn sets warning into scanner.
+func (s *Scanner) AppendWarn(err error) {
+	if err == nil {
+		return
+	}
+	s.warns = append(s.warns, err)
+}
+
 // Lex returns a token and store the token value in v.
 // Scanner satisfies yyLexer interface.
 // 0 and invalid are special token id this function would return:

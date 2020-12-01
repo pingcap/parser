@@ -262,7 +262,12 @@ func toInt(l yyLexer, lval *yySymType, str string) int {
 func toDecimal(l yyLexer, lval *yySymType, str string) int {
 	dec, err := ast.NewDecimal(str)
 	if err != nil {
-		l.AppendError(l.Errorf("decimal literal: %v", err))
+		if terror.ClassTypes.NewStd(mysql.ErrDataOutOfRange).Equal(err) {
+			l.AppendWarn(terror.ClassTypes.NewStd(mysql.ErrTruncatedWrongValue).GenWithStackByArgs("DECIMAL", str))
+			dec, _ = ast.NewDecimal(mysql.DefaultDecimal)
+		} else {
+			l.AppendError(l.Errorf("decimal literal: %v", err))
+		}
 	}
 	lval.item = dec
 	return decLit
@@ -271,6 +276,11 @@ func toDecimal(l yyLexer, lval *yySymType, str string) int {
 func toFloat(l yyLexer, lval *yySymType, str string) int {
 	n, err := strconv.ParseFloat(str, 64)
 	if err != nil {
+		e := err.(*strconv.NumError)
+		if e.Err == strconv.ErrRange {
+			l.AppendError(terror.ClassTypes.NewStd(mysql.ErrIllegalValueForType).GenWithStackByArgs("double", str))
+			return int(unicode.ReplacementChar)
+		}
 		l.AppendError(l.Errorf("float literal: %v", err))
 		return int(unicode.ReplacementChar)
 	}

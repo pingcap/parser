@@ -814,3 +814,8 @@ func (n *PriorityEnum) Restore(ctx *format.RestoreCtx) error {
 const (
 	PrimaryKeyName = "PRIMARY"
 )
+
+// DefaultDecimal defines the default decimal value when the value out of range.
+const (
+	DefaultDecimal = "99999999999999999999999999999999999999999999999999999999999999999"
+)
