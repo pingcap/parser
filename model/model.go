@@ -769,24 +769,47 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 	return ""
 }
 
-func (pi *PartitionInfo) GetStateByID(id int64) (SchemaState, bool) {
+func (pi *PartitionInfo) GetStateByID(id int64) SchemaState {
 	for _, pstate := range pi.States {
 		if pstate.ID == id {
-			return pstate.State, true
+			return pstate.State
 		}
 	}
-	return StateNone, false
+	return StatePublic
 }
 
-func (pi *PartitionInfo) SetStateByID(id int64, state SchemaState) bool {
+func (pi *PartitionInfo) SetStateByID(id int64, state SchemaState) {
+	newState := PartitionState{ID: id, State: state}
 	for i, pstate := range pi.States {
 		if pstate.ID == id {
-			pstate.State = state
-			pi.States[i] = pstate
-			return true
+			pi.States[i] = newState
+			return
 		}
 	}
-	return false
+	if pi.States == nil {
+		pi.States = make([]PartitionState, 0, 1)
+	}
+	pi.States = append(pi.States, newState)
+}
+
+func (pi *PartitionInfo) GCPartitionStates() {
+	if len(pi.States) < 1 {
+		return
+	}
+	newStates := make([]PartitionState, 0, len(pi.Definitions))
+	for _, state := range pi.States {
+		found := false
+		for _, def := range pi.Definitions {
+			if def.ID == state.ID {
+				found = true
+				break
+			}
+		}
+		if found {
+			newStates = append(newStates, state)
+		}
+	}
+	pi.States = newStates
 }
 
 type PartitionState struct {
