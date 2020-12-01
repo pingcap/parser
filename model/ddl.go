@@ -466,6 +466,7 @@ type SchemaDiff struct {
 	Type     ActionType `json:"type"`
 	SchemaID int64      `json:"schema_id"`
 	TableID  int64      `json:"table_id"`
+	PartitionID int64 `json:"partition_id"`
 
 	// OldTableID is the table ID before truncate, only used by truncate table DDL.
 	OldTableID int64 `json:"old_table_id"`
