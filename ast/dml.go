@@ -411,6 +411,8 @@ func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
 	case *SelectStmt, *SetOprStmt:
 		needParen = true
 	}
+
+	// Temp
 	needParen = false
 
 	if tn, tnCase := n.Source.(*TableName); tnCase {
