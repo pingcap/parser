@@ -462,11 +462,10 @@ func (s JobState) String() string {
 // SchemaDiff contains the schema modification at a particular schema version.
 // It is used to reduce schema reload cost.
 type SchemaDiff struct {
-	Version     int64      `json:"version"`
-	Type        ActionType `json:"type"`
-	SchemaID    int64      `json:"schema_id"`
-	TableID     int64      `json:"table_id"`
-	PartitionID int64      `json:"partition_id"`
+	Version  int64      `json:"version"`
+	Type     ActionType `json:"type"`
+	SchemaID int64      `json:"schema_id"`
+	TableID  int64      `json:"table_id"`
 
 	// OldTableID is the table ID before truncate, only used by truncate table DDL.
 	OldTableID int64 `json:"old_table_id"`
@@ -476,10 +475,11 @@ type SchemaDiff struct {
 	AffectedOpts []*AffectedOption `json:"affected_options"`
 }
 
-// AffectedOption is used when a ddl affects multi tables.
+// AffectedOption is used when a ddl affects multi tables or partitions.
 type AffectedOption struct {
 	SchemaID    int64 `json:"schema_id"`
 	TableID     int64 `json:"table_id"`
 	OldTableID  int64 `json:"old_table_id"`
 	OldSchemaID int64 `json:"old_schema_id"`
+	PartitionID int64 `json:"partition_id"`
 }
