@@ -684,14 +684,9 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 func startWithDot(s *Scanner) (tok int, pos Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
-	save := s.r.pos()
 	if isDigit(s.r.peek()) {
 		tok, _, lit = s.scanFloat(&pos)
-		if s.r.eof() || !isIdentChar(s.r.peek()) {
-			return
-		}
-		// Fail to parse a float, reset to dot.
-		s.r.p = save
+		return
 	}
 	tok, lit = int('.'), "."
 	return
@@ -731,9 +726,15 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 		s.r.inc()
 		ch0 = s.r.peek()
 		if ch0 == '-' || ch0 == '+' || isDigit(ch0) {
-			s.r.inc()
-			s.scanDigits()
+			backPos := s.r.p
 			tok = floatLit
+			s.r.inc()
+			if isDigit(s.r.peek()) {
+				s.scanDigits()
+			} else if !isDigit(ch0) {
+				s.r.p = backPos
+				tok = identifier
+			}
 		} else {
 			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
 			// 9e9e = 9e9(float) + e(identifier)
