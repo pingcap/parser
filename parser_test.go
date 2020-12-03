@@ -263,6 +263,12 @@ func (s *testParserSuite) TestSimple(c *C) {
 	expr = sel.Fields.Fields[0]
 	vExpr = expr.Expr.(*test_driver.ValueExpr)
 	c.Assert(vExpr.Kind(), Equals, test_driver.KindUint64)
+
+	// for issue #1110
+	src = "select 1e100000;"
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals,"[types:1367]Illegal double '1e100000' value found during parsing")
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
