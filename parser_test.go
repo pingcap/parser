@@ -1923,19 +1923,19 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select group_concat(distinct c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`select group_concat(distinctrow c2,c1) from t group by c1;`, true, "SELECT GROUP_CONCAT(DISTINCT `c2`, `c1` SEPARATOR ',') FROM `t` GROUP BY `c1`"},
 		{`SELECT student_name, GROUP_CONCAT(DISTINCT test_score ORDER BY test_score DESC SEPARATOR ' ') FROM student GROUP BY student_name;`, true, "SELECT `student_name`,GROUP_CONCAT(DISTINCT `test_score` ORDER BY `test_score` DESC SEPARATOR ' ') FROM `student` GROUP BY `student_name`"},
-		{`select std(c1), std(all c1), std(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
+		{`select std(c1) from t`, true, "SELECT STDDEV_POP(`c1`) FROM `t`"},
 		{`select std(c1, c2) from t`, false, ""},
-		{`select stddev(c1), stddev(all c1), stddev(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
+		{`select stddev(c1) from t`, true, "SELECT STDDEV_POP(`c1`) FROM `t`"},
 		{`select stddev(c1, c2) from t`, false, ""},
-		{`select stddev_pop(c1), stddev_pop(all c1), stddev_pop(distinct c1) from t`, true, "SELECT STDDEV_POP(`c1`),STDDEV_POP(`c1`),STDDEV_POP(DISTINCT `c1`) FROM `t`"},
+		{`select stddev_pop(c1) from t`, true, "SELECT STDDEV_POP(`c1`) FROM `t`"},
 		{`select stddev_pop(c1, c2) from t`, false, ""},
-		{`select stddev_samp(c1), stddev_samp(all c1), stddev_samp(distinct c1) from t`, true, "SELECT STDDEV_SAMP(`c1`),STDDEV_SAMP(`c1`),STDDEV_SAMP(DISTINCT `c1`) FROM `t`"},
+		{`select stddev_samp(c1) from t`, true, "SELECT STDDEV_SAMP(`c1`) FROM `t`"},
 		{`select stddev_samp(c1, c2) from t`, false, ""},
-		{`select variance(c1), variance(all c1), variance(distinct c1) from t`, true, "SELECT VAR_POP(`c1`),VAR_POP(`c1`),VAR_POP(DISTINCT `c1`) FROM `t`"},
+		{`select variance(c1) from t`, true, "SELECT VAR_POP(`c1`) FROM `t`"},
 		{`select variance(c1, c2) from t`, false, ""},
-		{`select var_pop(c1), var_pop(all c1), var_pop(distinct c1) from t`, true, "SELECT VAR_POP(`c1`),VAR_POP(`c1`),VAR_POP(DISTINCT `c1`) FROM `t`"},
+		{`select var_pop(c1) from t`, true, "SELECT VAR_POP(`c1`) FROM `t`"},
 		{`select var_pop(c1, c2) from t`, false, ""},
-		{`select var_samp(c1), var_samp(all c1), var_samp(distinct c1) from t`, true, "SELECT VAR_SAMP(`c1`),VAR_SAMP(`c1`),VAR_SAMP(DISTINCT `c1`) FROM `t`"},
+		{`select var_samp(c1) from t`, true, "SELECT VAR_SAMP(`c1`) FROM `t`"},
 		{`select var_samp(c1, c2) from t`, false, ""},
 		{`select json_arrayagg(c2) from t group by c1`, true, "SELECT JSON_ARRAYAGG(`c2`) FROM `t` GROUP BY `c1`"},
 		{`select json_arrayagg(c1, c2) from t group by c1`, false, ""},
@@ -3239,6 +3239,48 @@ func (s *testParserSuite) TestErrorMsg(c *C) {
 
 	_, _, err = parser.Parse("select 1 collate some_unknown_collation", "", "")
 	c.Assert(err.Error(), Equals, "[ddl:1273]Unknown collation: 'some_unknown_collation'")
+
+	_, _, err = parser.Parse("select std(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 14 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select std(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 19 near \"distinct c1) from t\" ")
+
+	_, _, err = parser.Parse("select stddev(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 17 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select stddev(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 22 near \"distinct c1) from t\" ")
+
+	_, _, err = parser.Parse("select stddev_pop(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 21 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select stddev_pop(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 26 near \"distinct c1) from t\" ")
+
+	_, _, err = parser.Parse("select stddev_samp(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 22 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select stddev_samp(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 27 near \"distinct c1) from t\" ")
+
+	_, _, err = parser.Parse("select variance(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 19 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select variance(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 24 near \"distinct c1) from t\" ")
+
+	_, _, err = parser.Parse("select var_pop(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 18 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select var_pop(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 23 near \"distinct c1) from t\" ")
+
+	_, _, err = parser.Parse("select var_samp(all c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 19 near \"all c1) from t\" ")
+
+	_, _, err = parser.Parse("select var_samp(distinct c1) from t", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 24 near \"distinct c1) from t\" ")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {

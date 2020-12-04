@@ -27,7 +27,6 @@ package parser
 
 import (
 	"strings"
-
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
@@ -6810,33 +6809,33 @@ SumExpr:
 			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
 		}
 	}
-|	builtinStddevPop '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
+|	builtinStddevPop '(' Expression ')' OptWindowingClause
 	{
-		if $6 != nil {
-			$$ = &ast.WindowFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool), Spec: *($6.(*ast.WindowSpec))}
+		if $5 != nil {
+			$$ = &ast.WindowFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$3}, Distinct: false, Spec: *($5.(*ast.WindowSpec))}
 		} else {
-			$$ = &ast.AggregateFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
+			$$ = &ast.AggregateFuncExpr{F: ast.AggFuncStddevPop, Args: []ast.ExprNode{$3}, Distinct: false}
 		}
 	}
-|	builtinStddevSamp '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
+|	builtinStddevSamp '(' Expression ')' OptWindowingClause
 	{
-		if $6 != nil {
-			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool), Spec: *($6.(*ast.WindowSpec))}
+		if $5 != nil {
+			$$ = &ast.WindowFuncExpr{F: $1, Args: []ast.ExprNode{$3}, Distinct: false, Spec: *($5.(*ast.WindowSpec))}
 		} else {
-			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
+			$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}, Distinct: false}
 		}
 	}
-|	builtinVarPop '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
+|	builtinVarPop '(' Expression ')' OptWindowingClause
 	{
-		if $6 != nil {
-			$$ = &ast.WindowFuncExpr{F: ast.AggFuncVarPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool), Spec: *($6.(*ast.WindowSpec))}
+		if $5 != nil {
+			$$ = &ast.WindowFuncExpr{F: ast.AggFuncVarPop, Args: []ast.ExprNode{$3}, Distinct: false, Spec: *($5.(*ast.WindowSpec))}
 		} else {
-			$$ = &ast.AggregateFuncExpr{F: ast.AggFuncVarPop, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
+			$$ = &ast.AggregateFuncExpr{F: ast.AggFuncVarPop, Args: []ast.ExprNode{$3}, Distinct: false}
 		}
 	}
-|	builtinVarSamp '(' BuggyDefaultFalseDistinctOpt Expression ')' OptWindowingClause
+|	builtinVarSamp '(' Expression ')' OptWindowingClause
 	{
-		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$4}, Distinct: $3.(bool)}
+		$$ = &ast.AggregateFuncExpr{F: $1, Args: []ast.ExprNode{$3}, Distinct: false}
 	}
 |	"JSON_ARRAYAGG" '(' Expression ')' OptWindowingClause
 	{
