@@ -195,7 +195,7 @@ const (
 )
 
 // PrivilegeType  privilege
-type PrivilegeType uint32
+type PrivilegeType uint64
 
 const (
 	_ PrivilegeType = 1 << iota
