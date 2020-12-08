@@ -8342,7 +8342,8 @@ SelectStmtOptsList:
 		opt := $2.(*ast.SelectStmtOpts)
 
 		// Merge options.
-		if opt.TableHints != nil {
+		// Always use the first hint.
+		if opt.TableHints != nil && opts.TableHints == nil {
 			opts.TableHints = opt.TableHints
 		}
 		if opt.Distinct {
