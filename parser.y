@@ -1315,11 +1315,11 @@ import (
 	TextString                      "text string item"
 
 %precedence empty
+%precedence lowerThanSelectOpt
 %precedence sqlBufferResult
 %precedence sqlBigResult
 %precedence sqlSmallResult
 %precedence sqlCache sqlNoCache
-%precedence higherThanSelectOpt
 %precedence lowerThanIntervalKeyword
 %precedence interval
 %precedence next
@@ -8269,7 +8269,12 @@ SelectStmtOpt:
 	{
 		opt := &ast.SelectStmtOpts{}
 		opt.SQLCache = true
-		opt.Distinct = $1.(bool)
+		if $1.(bool) {
+			opt.Distinct = true
+		} else {
+			opt.Distinct = false
+			opt.ExplicitAll = true
+		}
 		$$ = opt
 	}
 |	Priority
@@ -8328,7 +8333,7 @@ SelectStmtOpts:
 		opt.SQLCache = true
 		$$ = opt
 	}
-|	SelectStmtOptsList %prec higherThanSelectOpt
+|	SelectStmtOptsList %prec lowerThanSelectOpt
 
 SelectStmtOptsList:
 	SelectStmtOptsList SelectStmtOpt
@@ -8363,6 +8368,14 @@ SelectStmtOptsList:
 		}
 		if opt.StraightJoin {
 			opts.StraightJoin = true
+		}
+		if opt.ExplicitAll {
+			opts.ExplicitAll = true
+		}
+
+		if opts.Distinct && opts.ExplicitAll {
+			yylex.AppendError(ErrWrongUsage.GenWithStackByArgs("ALL", "DISTINCT"))
+			return 1
 		}
 
 		$$ = opts
