@@ -1055,12 +1055,7 @@ import (
 	RowValue                               "Row value"
 	RowStmt                                "Row constructor"
 	SelectLockOpt                          "FOR UPDATE or LOCK IN SHARE MODE,"
-	SelectStmtCalcFoundRows                "SELECT statement optional SQL_CALC_FOUND_ROWS"
-	SelectStmtSQLBigResult                 "SELECT statement optional SQL_BIG_RESULT"
-	SelectStmtSQLBufferResult              "SELECT statement optional SQL_BUFFER_RESULT"
 	SelectStmtSQLCache                     "SELECT statement optional SQL_CAHCE/SQL_NO_CACHE"
-	SelectStmtSQLSmallResult               "SELECT statement optional SQL_SMALL_RESULT"
-	SelectStmtStraightJoin                 "SELECT statement optional STRAIGHT_JOIN"
 	SelectStmtFieldList                    "SELECT statement field list"
 	SelectStmtLimit                        "SELECT statement LIMIT clause"
 	SelectStmtLimitOpt                     "SELECT statement optional LIMIT clause"
@@ -8286,25 +8281,25 @@ SelectStmtOpt:
 		opt.Priority = $1.(mysql.PriorityEnum)
 		$$ = opt
 	}
-|	SelectStmtSQLSmallResult
+|	"SQL_SMALL_RESULT"
 	{
 		opt := &ast.SelectStmtOpts{}
 		opt.SQLCache = true
-		opt.SQLSmallResult = $1.(bool)
+		opt.SQLSmallResult = true
 		$$ = opt
 	}
-|	SelectStmtSQLBigResult
+|	"SQL_BIG_RESULT"
 	{
 		opt := &ast.SelectStmtOpts{}
 		opt.SQLCache = true
-		opt.SQLBigResult = $1.(bool)
+		opt.SQLBigResult = true
 		$$ = opt
 	}
-|	SelectStmtSQLBufferResult
+|	"SQL_BUFFER_RESULT"
 	{
 		opt := &ast.SelectStmtOpts{}
 		opt.SQLCache = true
-		opt.SQLBufferResult = $1.(bool)
+		opt.SQLBufferResult = true
 		$$ = opt
 	}
 |	SelectStmtSQLCache
@@ -8313,18 +8308,18 @@ SelectStmtOpt:
 		opt.SQLCache = $1.(bool)
 		$$ = opt
 	}
-|	SelectStmtCalcFoundRows
+|	"SQL_CALC_FOUND_ROWS"
 	{
 		opt := &ast.SelectStmtOpts{}
 		opt.SQLCache = true
-		opt.CalcFoundRows = $1.(bool)
+		opt.CalcFoundRows = true
 		$$ = opt
 	}
-|	SelectStmtStraightJoin
+|	"STRAIGHT_JOIN"
 	{
 		opt := &ast.SelectStmtOpts{}
 		opt.SQLCache = true
-		opt.StraightJoin = $1.(bool)
+		opt.StraightJoin = true
 		$$ = opt
 	}
 
@@ -8403,24 +8398,6 @@ TableOptimizerHintsOpt:
 	}
 |	TableOptimizerHints
 
-SelectStmtCalcFoundRows:
-	"SQL_CALC_FOUND_ROWS"
-	{
-		$$ = true
-	}
-
-SelectStmtSQLBigResult:
-	"SQL_BIG_RESULT"
-	{
-		$$ = true
-	}
-
-SelectStmtSQLBufferResult:
-	"SQL_BUFFER_RESULT"
-	{
-		$$ = true
-	}
-
 SelectStmtSQLCache:
 	"SQL_CACHE"
 	{
@@ -8429,18 +8406,6 @@ SelectStmtSQLCache:
 |	"SQL_NO_CACHE"
 	{
 		$$ = false
-	}
-
-SelectStmtSQLSmallResult:
-	"SQL_SMALL_RESULT"
-	{
-		$$ = true
-	}
-
-SelectStmtStraightJoin:
-	"STRAIGHT_JOIN"
-	{
-		$$ = true
 	}
 
 SelectStmtFieldList:
