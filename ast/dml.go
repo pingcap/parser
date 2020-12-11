@@ -15,7 +15,6 @@ package ast
 
 import (
 	"github.com/pingcap/errors"
-
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
@@ -1301,6 +1300,44 @@ type SetOprStmt struct {
 	SelectList *SetOprSelectList
 	OrderBy    *OrderByClause
 	Limit      *Limit
+}
+
+// CheckSetOprStmtIntoOption validate the 'into out file' option in SetOprStmt.
+func CheckSetOprStmtIntoOption(n Node, disallowIntoOutFile bool) error {
+	switch v := n.(type) {
+	case *SelectStmt:
+		if disallowIntoOutFile && v.SelectIntoOpt != nil {
+			return errors.Errorf("Wrong usage of INTO OUT FILE option")
+		}
+	case *SetOprStmt:
+		hasIntoOpt, err := checkSetOprStmtIntoOption(v.SelectList)
+		if err != nil {
+			return err
+		}
+		if hasIntoOpt && disallowIntoOutFile {
+			return errors.Errorf("Wrong usage of INTO OUT FILE option")
+		}
+	}
+	return nil
+}
+
+func checkSetOprStmtIntoOption(n Node) (hasIntoOpt bool, err error) {
+	switch v := n.(type) {
+	case *SetOprSelectList:
+		for i, s := range v.Selects {
+			isLastOne := i+1 == len(v.Selects)
+			hasIntoOpt, err = checkSetOprStmtIntoOption(s)
+			if err != nil {
+				return true, err
+			}
+			if hasIntoOpt && !isLastOne {
+				return true, errors.Errorf("Wrong usage of INTO OUT FILE option")
+			}
+		}
+	case *SelectStmt:
+		return v.SelectIntoOpt != nil, nil
+	}
+	return false, nil
 }
 
 // Restore implements Node interface.

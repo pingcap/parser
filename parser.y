@@ -3825,13 +3825,27 @@ CreateTableSelectOpt:
 	}
 |	SetOprStmt1
 	{
+		if err := ast.CheckSetOprStmtIntoOption($1, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
 
 CreateViewSelectOpt:
 	SetOprStmt1
+	{
+		if err := ast.CheckSetOprStmtIntoOption($1, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
+	}
 |	'(' SetOprStmt1 ')'
 	{
+		if err := ast.CheckSetOprStmtIntoOption($2, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = $2
 	}
 
@@ -5714,6 +5728,10 @@ InsertValues:
 	}
 |	'(' ColumnNameListOpt ')' SetOprStmt1
 	{
+		if err := ast.CheckSetOprStmtIntoOption($4, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(ast.ResultSetNode)}
 	}
 |	ValueSym ValuesList %prec insertValues
@@ -5722,6 +5740,10 @@ InsertValues:
 	}
 |	SetOprStmt1
 	{
+		if err := ast.CheckSetOprStmtIntoOption($1, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.InsertStmt{Select: $1.(ast.ResultSetNode)}
 	}
 |	"SET" ColumnSetValueList
@@ -8020,6 +8042,10 @@ TableFactor:
 	}
 |	'(' SetOprStmt1 ')' TableAsNameOpt
 	{
+		if err := ast.CheckSetOprStmtIntoOption($2, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		if st, isSel := $2.(*ast.SelectStmt); isSel {
 			endOffset := parser.endOffset(&yyS[yypt-1])
 			parser.setLastSelectFieldText(st, endOffset)
@@ -8445,6 +8471,10 @@ SelectStmtIntoOption:
 SubSelect:
 	'(' SetOprStmt1 ')'
 	{
+		if err := ast.CheckSetOprStmtIntoOption($2, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		if s, isSel := $2.(*ast.SelectStmt); isSel {
 			endOffset := parser.endOffset(&yyS[yypt])
 			parser.setLastSelectFieldText(s, endOffset)
@@ -8459,6 +8489,10 @@ SubSelect:
 SubSelect2:
 	'(' SetOprStmt2 ')'
 	{
+		if err := ast.CheckSetOprStmtIntoOption($2, true); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		if s, isSel := $2.(*ast.SelectStmt); isSel {
 			endOffset := parser.endOffset(&yyS[yypt])
 			parser.setLastSelectFieldText(s, endOffset)
@@ -10002,6 +10036,13 @@ Statement:
 |	RevokeStmt
 |	RevokeRoleStmt
 |	SetOprStmt1
+	{
+		if err := ast.CheckSetOprStmtIntoOption($1, false); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
+		$$ = $1
+	}
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
@@ -10027,6 +10068,13 @@ TraceableStmt:
 |	InsertIntoStmt
 |	ReplaceIntoStmt
 |	SetOprStmt1
+	{
+		if err := ast.CheckSetOprStmtIntoOption($1, false); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
+		$$ = $1
+	}
 |	LoadDataStmt
 |	BeginTransactionStmt
 |	CommitStmt
@@ -10039,6 +10087,13 @@ ExplainableStmt:
 |	InsertIntoStmt
 |	ReplaceIntoStmt
 |	SetOprStmt1
+	{
+		if err := ast.CheckSetOprStmtIntoOption($1, false); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
+		$$ = $1
+	}
 
 StatementList:
 	Statement
@@ -11479,6 +11534,13 @@ RoleSpecList:
 
 BindableStmt:
 	SetOprStmt1
+	{
+		if err := ast.CheckSetOprStmtIntoOption($1, false); err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
+		$$ = $1
+	}
 |	UpdateStmt
 |	DeleteWithoutUsingStmt
 |	InsertIntoStmt
