@@ -231,7 +231,7 @@ func (tc *testDMLSuite) TestJoinRestore(c *C) {
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From.TableRefs
 	}
-	RunNodeRestoreTestWithFlagsStmtChange(c, testCases, "select * from %s", extractNodeFunc)
+	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
 	RunNodeRestoreTestWithFlagsStmtChange(c, testChangedCases, "select * from %s", extractNodeFunc)
 }
 
