@@ -125,23 +125,23 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"N'some text'", underscoreCS},
 		{"n'some text'", underscoreCS},
 		{"\\N", null},
-		{".*", int('.')},       // `.`, `*`
+		{".*", int('.')},     // `.`, `*`
 		{".1_t_1_x", decLit}, // `.1`, `_t_1_x`
-		{"9e9e", floatLit},     // 9e9e = 9e9 + e
+		{"9e9e", floatLit},   // 9e9e = 9e9 + e
 		{".1e", invalid},
 		// Issue #3954
-		{".1e23", floatLit}, // `.1e23`
-		{".123", decLit},    // `.123`
-		{".1*23", decLit},   // `.1`, `*`, `23`
-		{".1,23", decLit},   // `.1`, `,`, `23`
-		{".1 23", decLit},   // `.1`, `23`
-		{".1$23", decLit},    // `.1`, `$23`
-		{".1a23", decLit},    // `.1`, `a23`
+		{".1e23", floatLit},    // `.1e23`
+		{".123", decLit},       // `.123`
+		{".1*23", decLit},      // `.1`, `*`, `23`
+		{".1,23", decLit},      // `.1`, `,`, `23`
+		{".1 23", decLit},      // `.1`, `23`
+		{".1$23", decLit},      // `.1`, `$23`
+		{".1a23", decLit},      // `.1`, `a23`
 		{".1e23$23", floatLit}, // `.1e23`, `$23`
 		{".1e23a23", floatLit}, // `.1e23`, `a23`
-		{".1C23", decLit},    // `.1`, `C23`
-		{".1\u0081", decLit}, // `.1`, `\u0081`
-		{".1\uff34", decLit}, // `.1`, `\uff34`
+		{".1C23", decLit},      // `.1`, `C23`
+		{".1\u0081", decLit},   // `.1`, `\u0081`
+		{".1\uff34", decLit},   // `.1`, `\uff34`
 		{`b''`, bitLit},
 		{`b'0101'`, bitLit},
 		{`0b0101`, bitLit},
