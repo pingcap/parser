@@ -263,6 +263,17 @@ func (s *testParserSuite) TestSimple(c *C) {
 	expr = sel.Fields.Fields[0]
 	vExpr = expr.Expr.(*test_driver.ValueExpr)
 	c.Assert(vExpr.Kind(), Equals, test_driver.KindUint64)
+
+	src = `select 99e+r10 from t1;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok = st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	bExpr, ok := sel.Fields.Fields[0].Expr.(*ast.BinaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(bExpr.Op, Equals, opcode.Plus)
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "99e")
+	c.Assert(bExpr.R.(*ast.ColumnNameExpr).Name.Name.O, Equals, "r10")
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
