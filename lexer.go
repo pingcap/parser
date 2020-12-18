@@ -71,6 +71,7 @@ type Scanner struct {
 	// hintPos records the start position of the previous optimizer hint.
 	lastHintPos Pos
 
+	// true if a dot follows an identifier
 	identifierDot bool
 }
 
