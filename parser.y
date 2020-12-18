@@ -8028,6 +8028,8 @@ TableFactor:
 	}
 |	'(' TableRefs ')'
 	{
+		j := $2.(*ast.Join)
+		j.ExplicitParens = true
 		$$ = $2
 	}
 

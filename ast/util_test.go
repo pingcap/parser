@@ -149,6 +149,8 @@ func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 		for _, opt := range node.Options {
 			opt.StrValue = strings.ToLower(opt.StrValue)
 		}
+	case *Join:
+		node.ExplicitParens = false
 	}
 	return in, false
 }

@@ -224,12 +224,14 @@ func (tc *testDMLSuite) TestJoinRestore(c *C) {
 	testChangedCases := []NodeRestoreTestCase{
 		{"(a al left join b bl on al.a1 > bl.b1) join (a ar right join b br on ar.a1 > br.b1)", "((`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN `b` AS `br`) LEFT JOIN `a` AS `ar` ON `ar`.`a1`>`br`.`b1`"},
 		{"a al left join b bl on al.a1 > bl.b1, a ar right join b br on ar.a1 > br.b1", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
-		{"t1 join (t2 right join t3 on t2.a > t3.a join (t4 right join t5 on t4.a > t5.a))", "(((`t1` JOIN `t3`) LEFT JOIN `t2` ON `t2`.`a`>`t3`.`a`) JOIN `t5`) LEFT JOIN `t4` ON `t4`.`a`>`t5`.`a`"},
+		{"t1 join (t2 right join t3 on t2.a > t3.a join (t4 right join t5 on t4.a > t5.a))", "(((`t1` JOIN `t2`) RIGHT JOIN `t3` ON `t2`.`a`>`t3`.`a`) JOIN `t5`) LEFT JOIN `t4` ON `t4`.`a`>`t5`.`a`"},
+		{"t1 join t2 right join t3 on t2.a=t3.a", "(`t1` JOIN `t2`) RIGHT JOIN `t3` ON `t2`.`a`=`t3`.`a`"},
+		{"t1 join (t2 right join t3 on t2.a=t3.a)", "(`t1` JOIN `t3`) LEFT JOIN `t2` ON `t2`.`a`=`t3`.`a`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From.TableRefs
 	}
-	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+	RunNodeRestoreTestWithFlagsStmtChange(c, testCases, "select * from %s", extractNodeFunc)
 	RunNodeRestoreTestWithFlagsStmtChange(c, testChangedCases, "select * from %s", extractNodeFunc)
 }
 

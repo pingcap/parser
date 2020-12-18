@@ -84,7 +84,8 @@ type Join struct {
 	// NaturalJoin represents join is natural join.
 	NaturalJoin bool
 	// StraightJoin represents a straight join.
-	StraightJoin bool
+	StraightJoin   bool
+	ExplicitParens bool
 }
 
 // NewCrossJoin builds a cross join without `on` or `using` clause.
@@ -109,7 +110,7 @@ type Join struct {
 //       JOIN    t3
 //       /  \
 //      t1  t2
-// Besides, if the right handle side join tree's join type is right join, we need to rewrite it to left join.
+// Besides, if the right handle side join tree's join type is right join and has explicit parentheses, we need to rewrite it to left join.
 // So t1 join t2 right join t3 would be rewrite to t1 join t3 left join t2.
 // If not, t1 join (t2 right join t3) would be (t1 join t2) right join t3. After rewrite the right join to left join.
 // We get (t1 join t3) left join t2, the semantics is correct.
@@ -122,7 +123,7 @@ func NewCrossJoin(left, right ResultSetNode) (n *Join) {
 	var leftMostLeafFatherOfRight = rj
 	// Walk down the right hand side.
 	for {
-		if leftMostLeafFatherOfRight.Tp == RightJoin {
+		if leftMostLeafFatherOfRight.Tp == RightJoin && leftMostLeafFatherOfRight.ExplicitParens {
 			// Rewrite right join to left join.
 			tmpChild := leftMostLeafFatherOfRight.Right
 			leftMostLeafFatherOfRight.Right = leftMostLeafFatherOfRight.Left

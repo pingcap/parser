@@ -5511,6 +5511,8 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 			}
 		}
 		node.Specs = specs
+	case *ast.Join:
+		node.ExplicitParens = false
 	}
 	return in, false
 }
