@@ -274,9 +274,8 @@ func startWithXx(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.incAsLongAs(isIdentChar)
-	tok, lit = identifier, s.r.data(&pos)
-	return
+	s.r.p = pos
+	return scanIdentifier(s)
 }
 
 func startWithNn(s *Scanner) (tok int, pos Pos, lit string) {
@@ -307,9 +306,8 @@ func startWithBb(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.incAsLongAs(isIdentChar)
-	tok, lit = identifier, s.r.data(&pos)
-	return
+	s.r.p = pos
+	return scanIdentifier(s)
 }
 
 func startWithSharp(s *Scanner) (tok int, pos Pos, lit string) {
@@ -489,7 +487,6 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
-	s.r.inc()
 	s.r.incAsLongAs(isIdentChar)
 	s.identifierDot = s.r.peek() == '.'
 	return identifier, pos, s.r.data(&pos)
