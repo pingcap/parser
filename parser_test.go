@@ -798,7 +798,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		// for https://github.com/pingcap/tidb/issues/320
 		{`(select 1);`, true, "(SELECT 1)"},
-		
+
 		//https://github.com/pingcap/tidb/issues/14297
 		{"select 1 where 1=1", true, "SELECT 1 FROM DUAL WHERE 1=1"},
 
