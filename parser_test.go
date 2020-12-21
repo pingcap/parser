@@ -274,6 +274,16 @@ func (s *testParserSuite) TestSimple(c *C) {
 	c.Assert(bExpr.Op, Equals, opcode.Plus)
 	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "99e")
 	c.Assert(bExpr.R.(*ast.ColumnNameExpr).Name.Name.O, Equals, "r10")
+
+	src = `select t./*123*/*,@c3:=0 from t order by t.c1;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok = st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(sel.Fields.Fields[0].WildCard.Table.O, Equals, "t")
+	varExpr, ok := sel.Fields.Fields[1].Expr.(*ast.VariableExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(varExpr.Name, Equals, "c3")
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {

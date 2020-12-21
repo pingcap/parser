@@ -446,6 +446,7 @@ func startWithStar(s *Scanner) (tok int, pos Pos, lit string) {
 		return s.scan()
 	}
 	// otherwise it is just a normal star.
+	s.identifierDot = false
 	return '*', pos, "*"
 }
 
