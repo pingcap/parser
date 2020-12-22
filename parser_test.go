@@ -263,6 +263,39 @@ func (s *testParserSuite) TestSimple(c *C) {
 	expr = sel.Fields.Fields[0]
 	vExpr = expr.Expr.(*test_driver.ValueExpr)
 	c.Assert(vExpr.Kind(), Equals, test_driver.KindUint64)
+
+	src = `select 99e+r10 from t1;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok = st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	bExpr, ok := sel.Fields.Fields[0].Expr.(*ast.BinaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(bExpr.Op, Equals, opcode.Plus)
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "99e")
+	c.Assert(bExpr.R.(*ast.ColumnNameExpr).Name.Name.O, Equals, "r10")
+
+	src = `select t./*123*/*,@c3:=0 from t order by t.c1;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok = st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(sel.Fields.Fields[0].WildCard.Table.O, Equals, "t")
+	varExpr, ok := sel.Fields.Fields[1].Expr.(*ast.VariableExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(varExpr.Name, Equals, "c3")
+
+	src = `select t.1e from test.t;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	sel, ok = st.(*ast.SelectStmt)
+	c.Assert(ok, IsTrue)
+	colExpr, ok := sel.Fields.Fields[0].Expr.(*ast.ColumnNameExpr)
+	c.Assert(colExpr.Name.Table.O, Equals, "t")
+	c.Assert(colExpr.Name.Name.O, Equals, "1e")
+	tName := sel.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName)
+	c.Assert(tName.Schema.O, Equals, "test")
+	c.Assert(tName.Name.O, Equals, "t")
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
@@ -646,6 +679,7 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select * from t1 natural left outer join t2", true, "SELECT * FROM `t1` NATURAL LEFT JOIN `t2`"},
 		{"select * from t1 natural inner join t2", false, ""},
 		{"select * from t1 natural cross join t2", false, ""},
+		{"select * from t3 join t1 join t2 on t1.a=t2.a on t3.b=t2.b", true, "SELECT * FROM `t3` JOIN (`t1` JOIN `t2` ON `t1`.`a`=`t2`.`a`) ON `t3`.`b`=`t2`.`b`"},
 
 		// for straight_join
 		{"select * from t1 straight_join t2 on t1.id = t2.id", true, "SELECT * FROM `t1` STRAIGHT_JOIN `t2` ON `t1`.`id`=`t2`.`id`"},
@@ -5510,6 +5544,8 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 			}
 		}
 		node.Specs = specs
+	case *ast.Join:
+		node.ExplicitParens = false
 	}
 	return in, false
 }
