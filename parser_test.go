@@ -296,6 +296,16 @@ func (s *testParserSuite) TestSimple(c *C) {
 	tName := sel.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName)
 	c.Assert(tName.Schema.O, Equals, "test")
 	c.Assert(tName.Name.O, Equals, "t")
+
+	src = "select t. `a` > 10 from t;"
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	bExpr, ok = st.(*ast.SelectStmt).Fields.Fields[0].Expr.(*ast.BinaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(bExpr.Op, Equals, opcode.GT)
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "a")
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Table.O, Equals, "t")
+	c.Assert(bExpr.R.(ast.ValueExpr).GetValue().(int64), Equals, int64(10))
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
@@ -3871,6 +3881,8 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT CONFIG ON *.* TO 'dev1'@'localhost';", true, "GRANT CONFIG ON *.* TO `dev1`@`localhost`"},
 		{"GRANT CREATE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE ON *.* TO `dev1`@`localhost`"},
 		{"GRANT CREATE TABLESPACE ON *.* TO 'dev1'@'localhost';", true, "GRANT CREATE TABLESPACE ON *.* TO `dev1`@`localhost`"},
+		{"GRANT EXECUTE ON FUNCTION db1.anomaly_score TO 'user1'@'domain-or-ip-address1'", true, "GRANT EXECUTE ON FUNCTION `db1`.`anomaly_score` TO `user1`@`domain-or-ip-address1`"},
+		{"GRANT EXECUTE ON PROCEDURE mydb.myproc TO 'someuser'@'somehost'", true, "GRANT EXECUTE ON PROCEDURE `mydb`.`myproc` TO `someuser`@`somehost`"},
 
 		// for revoke statement
 		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
@@ -3886,6 +3898,8 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';", true, "REVOKE `role1`@`%`, `role2`@`%` FROM `user1`@`localhost`, `user2`@`localhost`"},
 		{"REVOKE SHUTDOWN ON *.* FROM 'dev1'@'localhost';", true, "REVOKE SHUTDOWN ON *.* FROM `dev1`@`localhost`"},
 		{"REVOKE CONFIG ON *.* FROM 'dev1'@'localhost';", true, "REVOKE CONFIG ON *.* FROM `dev1`@`localhost`"},
+		{"REVOKE EXECUTE ON FUNCTION db.func FROM 'user'@'localhost'", true, "REVOKE EXECUTE ON FUNCTION `db`.`func` FROM `user`@`localhost`"},
+		{"REVOKE EXECUTE ON PROCEDURE db.func FROM 'user'@'localhost'", true, "REVOKE EXECUTE ON PROCEDURE `db`.`func` FROM `user`@`localhost`"},
 	}
 	s.RunTest(c, table)
 }
