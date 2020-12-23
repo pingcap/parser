@@ -927,6 +927,11 @@ AAAAAAAAAAAA5gm5Mg==
 		{"CREATE SEQUENCE seq INCREMENT -9223372036854775808", true, "CREATE SEQUENCE `seq` INCREMENT BY -9223372036854775808"},
 		{"CREATE SEQUENCE seq INCREMENT -9223372036854775809", false, ""},
 	}
+	original := s.enableWindowFunc
+	defer func() {
+		s.enableWindowFunc = original
+	}()
+	s.enableWindowFunc = true
 	s.RunTest(c, table)
 }
 
@@ -1996,6 +2001,11 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select next value for sequence", true, "SELECT NEXTVAL(`sequence`)"},
 		{"select NeXt vAluE for seQuEncE2", true, "SELECT NEXTVAL(`seQuEncE2`)"},
 	}
+	original := s.enableWindowFunc
+	defer func() {
+		s.enableWindowFunc = original
+	}()
+	s.enableWindowFunc = true
 	s.RunTest(c, table)
 
 	// Test in REAL_AS_FLOAT SQL mode.
@@ -2065,6 +2075,11 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{"select .78`123`", true, "SELECT 0.78 AS `123`"},
 		{`select .78"123"`, true, "SELECT 0.78 AS `123`"},
 	}
+	original := s.enableWindowFunc
+	defer func() {
+		s.enableWindowFunc = original
+	}()
+	s.enableWindowFunc = true
 	s.RunTest(c, table)
 }
 
@@ -4062,6 +4077,11 @@ func (s *testParserSuite) TestSetOperator(c *C) {
 		{"((select c1 from t1) except select c2 from t2) intersect all (select c3 from t3) order by c1 limit 1", true, "((SELECT `c1` FROM `t1`) EXCEPT SELECT `c2` FROM `t2`) INTERSECT ALL (SELECT `c3` FROM `t3`) ORDER BY `c1` LIMIT 1"},
 		{"select 1 union distinct (select 1 except all select 1 intersect select 1)", true, "SELECT 1 UNION (SELECT 1 EXCEPT ALL SELECT 1 INTERSECT SELECT 1)"},
 	}
+	original := s.enableWindowFunc
+	defer func() {
+		s.enableWindowFunc = original
+	}()
+	s.enableWindowFunc = true
 	s.RunTest(c, table)
 }
 
