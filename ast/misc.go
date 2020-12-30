@@ -1991,9 +1991,7 @@ type PrivElem struct {
 
 // Restore implements Node interface.
 func (n *PrivElem) Restore(ctx *format.RestoreCtx) error {
-	if n.Priv == 0 {
-		ctx.WritePlain("/* UNSUPPORTED TYPE */")
-	} else if n.Priv == mysql.AllPriv {
+	if n.Priv == mysql.AllPriv {
 		ctx.WriteKeyWord("ALL")
 	} else {
 		str, ok := mysql.Priv2Str[n.Priv]
@@ -2043,6 +2041,10 @@ const (
 	ObjectTypeNone ObjectTypeType = iota + 1
 	// ObjectTypeTable means the following object is a table.
 	ObjectTypeTable
+	// ObjectTypeFunction means the following object is a stored function.
+	ObjectTypeFunction
+	// ObjectTypeProcedure means the following object is a stored procedure.
+	ObjectTypeProcedure
 )
 
 // Restore implements Node interface.
@@ -2052,6 +2054,10 @@ func (n ObjectTypeType) Restore(ctx *format.RestoreCtx) error {
 		// do nothing
 	case ObjectTypeTable:
 		ctx.WriteKeyWord("TABLE")
+	case ObjectTypeFunction:
+		ctx.WriteKeyWord("FUNCTION")
+	case ObjectTypeProcedure:
+		ctx.WriteKeyWord("PROCEDURE")
 	default:
 		return errors.New("Unsupported object type")
 	}

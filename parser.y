@@ -1338,10 +1338,12 @@ import (
 %precedence remove
 %precedence lowerThenOrder
 %precedence order
-%left join straightJoin inner cross left right full natural
+%precedence lowerThanFunction
+%precedence function
 
 /* A dummy token to force the priority of TableRef production in a join. */
 %left tableRefPriority
+%left join straightJoin inner cross left right full natural
 %precedence lowerThanOn
 %precedence on using
 %right assignmentEq
@@ -6118,13 +6120,6 @@ SimpleIdent:
 			Name:  model.NewCIStr($3),
 		}}
 	}
-|	'.' Identifier '.' Identifier
-	{
-		$$ = &ast.ColumnNameExpr{Name: &ast.ColumnName{
-			Table: model.NewCIStr($2),
-			Name:  model.NewCIStr($4),
-		}}
-	}
 |	Identifier '.' Identifier '.' Identifier
 	{
 		$$ = &ast.ColumnNameExpr{Name: &ast.ColumnName{
@@ -8033,6 +8028,8 @@ TableFactor:
 	}
 |	'(' TableRefs ')'
 	{
+		j := $2.(*ast.Join)
+		j.ExplicitParens = true
 		$$ = $2
 	}
 
@@ -8145,7 +8142,7 @@ JoinTable:
 	/* Use %prec to evaluate production TableRef before cross join */
 	TableRef CrossOpt TableRef %prec tableRefPriority
 	{
-		$$ = &ast.Join{Left: $1.(ast.ResultSetNode), Right: $3.(ast.ResultSetNode), Tp: ast.CrossJoin}
+		$$ = ast.NewCrossJoin($1.(ast.ResultSetNode), $3.(ast.ResultSetNode))
 	}
 |	TableRef CrossOpt TableRef "ON" Expression
 	{
@@ -11713,15 +11710,15 @@ PrivType:
 	}
 |	"REPLICATION" "SLAVE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.ReplicationSlavePriv
 	}
 |	"REPLICATION" "CLIENT"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.ReplicationClientPriv
 	}
 |	"USAGE"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.UsagePriv
 	}
 |	"RELOAD"
 	{
@@ -11777,12 +11774,21 @@ PrivType:
 	}
 
 ObjectType:
+	%prec lowerThanFunction
 	{
 		$$ = ast.ObjectTypeNone
 	}
 |	"TABLE"
 	{
 		$$ = ast.ObjectTypeTable
+	}
+|	"FUNCTION"
+	{
+		$$ = ast.ObjectTypeFunction
+	}
+|	"PROCEDURE"
+	{
+		$$ = ast.ObjectTypeProcedure
 	}
 
 PrivLevel:
