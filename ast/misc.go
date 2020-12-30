@@ -2299,7 +2299,7 @@ func (n *GrantStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// GrantRoleStmt is the struct for GRANT PROXY statement.
+// GrantProxyStmt is the struct for GRANT PROXY statement.
 type GrantProxyStmt struct {
 	stmtNode
 
