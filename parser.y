@@ -212,6 +212,7 @@ import (
 	precisionType     "PRECISION"
 	primary           "PRIMARY"
 	procedure         "PROCEDURE"
+	proxy             "PROXY"
 	rangeKwd          "RANGE"
 	rank              "RANK"
 	read              "READ"
@@ -839,6 +840,7 @@ import (
 	FlushStmt              "Flush statement"
 	FlashbackTableStmt     "Flashback table statement"
 	GrantStmt              "Grant statement"
+	GrantProxyStmt         "Grant proxy statement"
 	GrantRoleStmt          "Grant role statement"
 	InsertIntoStmt         "INSERT INTO statement"
 	CallStmt               "CALL statement"
@@ -9983,6 +9985,7 @@ Statement:
 |	FlushStmt
 |	FlashbackTableStmt
 |	GrantStmt
+|	GrantProxyStmt
 |	GrantRoleStmt
 |	CallStmt
 |	InsertIntoStmt
@@ -11564,6 +11567,16 @@ GrantStmt:
 			Users:      $7.([]*ast.UserSpec),
 			TLSOptions: $8.([]*ast.TLSOption),
 			WithGrant:  $9.(bool),
+		}
+	}
+
+GrantProxyStmt:
+	"GRANT" "PROXY" "ON" Username "TO" UsernameList WithGrantOptionOpt
+	{
+		$$ = &ast.GrantProxyStmt{
+			LocalUser:     $4.(*auth.UserIdentity),
+			ExternalUsers: $6.([]*auth.UserIdentity),
+			WithGrant:     $7.(bool),
 		}
 	}
 
