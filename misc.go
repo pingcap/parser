@@ -581,6 +581,7 @@ var tokenMap = map[string]int{
 	"ROWS":                     rows,
 	"RTREE":                    rtree,
 	"RESUME":                   resume,
+	"S3":                       s3,
 	"SAMPLES":                  samples,
 	"SAN":                      san,
 	"SCHEMA":                   database,
