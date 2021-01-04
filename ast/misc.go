@@ -1983,7 +1983,7 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 
 // RoleOrPriv is a temporary structure to be further processed into auth.RoleIdentity or PrivElem
 type RoleOrPriv struct {
-	Symbols []string    // hold undecided symbols
+	Symbols string      // hold undecided symbols
 	Node    interface{} // hold auth.RoleIdentity or PrivElem that can be sure when parsing
 }
 
@@ -1994,10 +1994,7 @@ func (n *RoleOrPriv) ToRole() (*auth.RoleIdentity, error) {
 		}
 		return nil, errors.Errorf("can't convert to RoleIdentity, type %T", n.Node)
 	}
-	if len(n.Symbols) != 1 {
-		return nil, errors.Errorf("symbols should be length 1, got %d", len(n.Symbols))
-	}
-	return &auth.RoleIdentity{Username: n.Symbols[0], Hostname: "%"}, nil
+	return &auth.RoleIdentity{Username: n.Symbols, Hostname: "%"}, nil
 }
 
 func (n *RoleOrPriv) ToPriv() (*PrivElem, error) {
@@ -2010,7 +2007,7 @@ func (n *RoleOrPriv) ToPriv() (*PrivElem, error) {
 	if len(n.Symbols) == 0 {
 		return nil, errors.New("symbols should not be length 0")
 	}
-	return &PrivElem{Priv: mysql.ExtendedPriv, Name: strings.Join(n.Symbols, " ")}, nil
+	return &PrivElem{Priv: mysql.ExtendedPriv, Name: n.Symbols}, nil
 }
 
 // PrivElem is the privilege type and optional column list.

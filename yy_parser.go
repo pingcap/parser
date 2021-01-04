@@ -322,34 +322,28 @@ func getInt64FromNUM(num interface{}) (val int64, errMsg string) {
 	return -1, fmt.Sprintf("%d is out of range [–9223372036854775808,9223372036854775807]", num)
 }
 
-// convertRoleOrPrivList tries to convert elements of roleOrPrivList to RoleIdentity if toRole, else to PrivElem
-func convertRoleOrPrivList(roleOrPrivList interface{}, toRole bool) (interface{}, error) {
-	var (
-		list []*ast.RoleOrPriv
-		ok   bool
-	)
-	if list, ok = roleOrPrivList.([]*ast.RoleOrPriv); !ok {
-		return nil, fmt.Errorf("parameter should be `[]*ast.RoleOrPriv`")
-	}
-	if toRole {
-		var roles []*auth.RoleIdentity
-		for _, elem := range list {
-			role, err := elem.ToRole()
-			if err != nil {
-				return nil, err
-			}
-			roles = append(roles, role)
+// convertToRole tries to convert elements of roleOrPrivList to RoleIdentity
+func convertToRole(roleOrPrivList []*ast.RoleOrPriv) ([]*auth.RoleIdentity, error) {
+	var roles []*auth.RoleIdentity
+	for _, elem := range roleOrPrivList {
+		role, err := elem.ToRole()
+		if err != nil {
+			return nil, err
 		}
-		return roles, nil
-	} else {
-		var privileges []*ast.PrivElem
-		for _, elem := range list {
-			priv, err := elem.ToPriv()
-			if err != nil {
-				return nil, err
-			}
-			privileges = append(privileges, priv)
-		}
-		return privileges, nil
+		roles = append(roles, role)
 	}
+	return roles, nil
+}
+
+// convertToPriv tries to convert elements of roleOrPrivList to PrivElem
+func convertToPriv(roleOrPrivList []*ast.RoleOrPriv) ([]*ast.PrivElem, error) {
+	var privileges []*ast.PrivElem
+	for _, elem := range roleOrPrivList {
+		priv, err := elem.ToPriv()
+		if err != nil {
+			return nil, err
+		}
+		privileges = append(privileges, priv)
+	}
+	return privileges, nil
 }

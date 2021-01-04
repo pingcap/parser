@@ -230,7 +230,6 @@ import (
 	row               "ROW"
 	rows              "ROWS"
 	rowNumber         "ROW_NUMBER"
-	s3                "S3"
 	secondMicrosecond "SECOND_MICROSECOND"
 	selectKwd         "SELECT"
 	set               "SET"
@@ -634,6 +633,7 @@ import (
 	now                   "NOW"
 	position              "POSITION"
 	recent                "RECENT"
+	s3                    "S3"
 	staleness             "STALENESS"
 	std                   "STD"
 	stddev                "STDDEV"
@@ -5595,6 +5595,7 @@ NotKeywordToken:
 |	"NOW"
 |	"RECENT"
 |	"POSITION"
+|	"S3"
 |	"SUBDATE"
 |	"SUBSTRING"
 |	"SUM"
@@ -11578,13 +11579,13 @@ DropBindingStmt:
 GrantStmt:
 	"GRANT" RoleOrPrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList RequireClauseOpt WithGrantOptionOpt
 	{
-		p, err := convertRoleOrPrivList($2, false)
+		p, err := convertToPriv($2.([]*ast.RoleOrPriv))
 		if err != nil {
 			yylex.AppendError(err)
 			return 1
 		}
 		$$ = &ast.GrantStmt{
-			Privs:      p.([]*ast.PrivElem),
+			Privs:      p,
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level:      $5.(*ast.GrantLevel),
 			Users:      $7.([]*ast.UserSpec),
@@ -11596,13 +11597,13 @@ GrantStmt:
 GrantRoleStmt:
 	"GRANT" RoleOrPrivElemList "TO" UsernameList
 	{
-		r, err := convertRoleOrPrivList($2, true)
+		r, err := convertToRole($2.([]*ast.RoleOrPriv))
 		if err != nil {
 			yylex.AppendError(err)
 			return 1
 		}
 		$$ = &ast.GrantRoleStmt{
-			Roles: r.([]*auth.RoleIdentity),
+			Roles: r,
 			Users: $4.([]*auth.UserIdentity),
 		}
 	}
@@ -11658,19 +11659,19 @@ RoleOrPrivElem:
 |	ExtendedPriv
 	{
 		$$ = &ast.RoleOrPriv{
-			Symbols: $1.([]string),
+			Symbols: strings.Join($1.([]string), " "),
 		}
 	}
 |	"LOAD" "FROM" "S3"
 	{
 		$$ = &ast.RoleOrPriv{
-			Symbols: []string{"LOAD", "FROM", "S3"},
+			Symbols: "LOAD FROM S3",
 		}
 	}
 |	"SELECT" "INTO" "S3"
 	{
 		$$ = &ast.RoleOrPriv{
-			Symbols: []string{"SELECT", "INTO", "S3"},
+			Symbols: "SELECT INTO S3",
 		}
 	}
 
@@ -11901,13 +11902,13 @@ PrivLevel:
 RevokeStmt:
 	"REVOKE" RoleOrPrivElemList "ON" ObjectType PrivLevel "FROM" UserSpecList
 	{
-		p, err := convertRoleOrPrivList($2, false)
+		p, err := convertToPriv($2.([]*ast.RoleOrPriv))
 		if err != nil {
 			yylex.AppendError(err)
 			return 1
 		}
 		$$ = &ast.RevokeStmt{
-			Privs:      p.([]*ast.PrivElem),
+			Privs:      p,
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level:      $5.(*ast.GrantLevel),
 			Users:      $7.([]*ast.UserSpec),
@@ -11917,13 +11918,13 @@ RevokeStmt:
 RevokeRoleStmt:
 	"REVOKE" RoleOrPrivElemList "FROM" UsernameList
 	{
-		r, err := convertRoleOrPrivList($2, true)
+		r, err := convertToRole($2.([]*ast.RoleOrPriv))
 		if err != nil {
 			yylex.AppendError(err)
 			return 1
 		}
 		$$ = &ast.RevokeRoleStmt{
-			Roles: r.([]*auth.RoleIdentity),
+			Roles: r,
 			Users: $4.([]*auth.UserIdentity),
 		}
 	}
