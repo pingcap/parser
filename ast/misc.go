@@ -1981,20 +1981,50 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// RoleOrPriv is a temporary structure to be further processed into auth.RoleIdentity or PrivElem
+type RoleOrPriv struct {
+	Symbols string      // hold undecided symbols
+	Node    interface{} // hold auth.RoleIdentity or PrivElem that can be sure when parsing
+}
+
+func (n *RoleOrPriv) ToRole() (*auth.RoleIdentity, error) {
+	if n.Node != nil {
+		if r, ok := n.Node.(*auth.RoleIdentity); ok {
+			return r, nil
+		}
+		return nil, errors.Errorf("can't convert to RoleIdentity, type %T", n.Node)
+	}
+	return &auth.RoleIdentity{Username: n.Symbols, Hostname: "%"}, nil
+}
+
+func (n *RoleOrPriv) ToPriv() (*PrivElem, error) {
+	if n.Node != nil {
+		if p, ok := n.Node.(*PrivElem); ok {
+			return p, nil
+		}
+		return nil, errors.Errorf("can't convert to PrivElem, type %T", n.Node)
+	}
+	if len(n.Symbols) == 0 {
+		return nil, errors.New("symbols should not be length 0")
+	}
+	return &PrivElem{Priv: mysql.ExtendedPriv, Name: n.Symbols}, nil
+}
+
 // PrivElem is the privilege type and optional column list.
 type PrivElem struct {
 	node
 
 	Priv mysql.PrivilegeType
 	Cols []*ColumnName
+	Name string
 }
 
 // Restore implements Node interface.
 func (n *PrivElem) Restore(ctx *format.RestoreCtx) error {
-	if n.Priv == 0 {
-		ctx.WritePlain("/* UNSUPPORTED TYPE */")
-	} else if n.Priv == mysql.AllPriv {
+	if n.Priv == mysql.AllPriv {
 		ctx.WriteKeyWord("ALL")
+	} else if n.Priv == mysql.ExtendedPriv {
+		ctx.WriteKeyWord(n.Name)
 	} else {
 		str, ok := mysql.Priv2Str[n.Priv]
 		if ok {
@@ -2043,6 +2073,10 @@ const (
 	ObjectTypeNone ObjectTypeType = iota + 1
 	// ObjectTypeTable means the following object is a table.
 	ObjectTypeTable
+	// ObjectTypeFunction means the following object is a stored function.
+	ObjectTypeFunction
+	// ObjectTypeProcedure means the following object is a stored procedure.
+	ObjectTypeProcedure
 )
 
 // Restore implements Node interface.
@@ -2052,6 +2086,10 @@ func (n ObjectTypeType) Restore(ctx *format.RestoreCtx) error {
 		// do nothing
 	case ObjectTypeTable:
 		ctx.WriteKeyWord("TABLE")
+	case ObjectTypeFunction:
+		ctx.WriteKeyWord("FUNCTION")
+	case ObjectTypeProcedure:
+		ctx.WriteKeyWord("PROCEDURE")
 	default:
 		return errors.New("Unsupported object type")
 	}
@@ -2291,6 +2329,46 @@ func (n *GrantStmt) Accept(v Visitor) (Node, bool) {
 		n.Privs[i] = node.(*PrivElem)
 	}
 	return v.Leave(n)
+}
+
+// GrantProxyStmt is the struct for GRANT PROXY statement.
+type GrantProxyStmt struct {
+	stmtNode
+
+	LocalUser     *auth.UserIdentity
+	ExternalUsers []*auth.UserIdentity
+	WithGrant     bool
+}
+
+// Accept implements Node Accept interface.
+func (n *GrantProxyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*GrantProxyStmt)
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *GrantProxyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("GRANT PROXY ON ")
+	if err := n.LocalUser.Restore(ctx); err != nil {
+		return errors.Annotatef(err, "An error occurred while restore GrantProxyStmt.LocalUser")
+	}
+	ctx.WriteKeyWord(" TO ")
+	for i, v := range n.ExternalUsers {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore GrantProxyStmt.ExternalUsers[%d]", i)
+		}
+	}
+	if n.WithGrant {
+		ctx.WriteKeyWord(" WITH GRANT OPTION")
+	}
+	return nil
 }
 
 // GrantRoleStmt is the struct for GRANT TO statement.
@@ -2680,6 +2758,7 @@ type SelectStmtOpts struct {
 	StraightJoin    bool
 	Priority        mysql.PriorityEnum
 	TableHints      []*TableOptimizerHint
+	ExplicitAll     bool
 }
 
 // TableOptimizerHint is Table level optimizer hint
