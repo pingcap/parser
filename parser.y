@@ -635,11 +635,13 @@ import (
 	position              "POSITION"
 	recent                "RECENT"
 	s3                    "S3"
+	skip                  "SKIP"
 	staleness             "STALENESS"
 	std                   "STD"
 	stddev                "STDDEV"
 	stddevPop             "STDDEV_POP"
 	stddevSamp            "STDDEV_SAMP"
+	strict                "STRICT"
 	strong                "STRONG"
 	subDate               "SUBDATE"
 	sum                   "SUM"
@@ -816,6 +818,7 @@ import (
 	CreateRoleStmt         "CREATE Role statement"
 	CreateDatabaseStmt     "Create Database Statement"
 	CreateIndexStmt        "CREATE INDEX statement"
+	CreateImportStmt       "CREATE IMPORT statement"
 	CreateBindingStmt      "CREATE BINDING  statement"
 	CreateSequenceStmt     "CREATE SEQUENCE statement"
 	CreateStatisticsStmt   "CREATE STATISTICS statement"
@@ -938,6 +941,7 @@ import (
 	RequireClause                          "Encrypted connections options"
 	RequireClauseOpt                       "optional Encrypted connections options"
 	EqOpt                                  "= or empty"
+	ErrorHandling                            "specify exit, replace or skip when meet error"
 	EscapedTableRef                        "escaped table reference"
 	ExpressionList                         "expression list"
 	ExtendedPriv                           "Extended privileges like LOAD FROM S3 or dynamic privileges"
@@ -4629,6 +4633,60 @@ PurgeImportStmt:
 		$$ = &ast.PurgeImportStmt{TaskID: getUint64FromNUM($3)}
 	}
 
+/*******************************************************************
+ * import statements
+ *
+ *	CREATE IMPORT [IF NOT EXISTS] import_name
+ *		FROM data_location [REPLACE | SKIP {ALL | CONSTRAINT | DUPLICATE ｜ STRICT}]
+ *		[options_list]
+ *	STOP IMPORT [IF RUNNING] import_name
+ *	RESUME IMPORT [IF NOT RUNNING] import_name
+ *	ALTER IMPORT import_name
+ *		[REPLACE | SKIP {ALL | CONSTRAINT | DUPLICATE | STRICT}]
+ *		[options_list]
+ *		[TRUNCATE
+ *			[ALL | ERRORS] [TABLE table_name]
+ *		]
+ *	DROP IMPORT import_name
+ *	SHOW IMPORT import_name [ERRORS] [TABLE table_name]
+ */
+CreateImportStmt:
+	"CREATE" "IMPORT" IfNotExists Identifier "FROM" stringLit ErrorHandling BRIEOptions
+	{
+		$$ = &ast.CreateImportStmt{
+			IfNotExists:   $3.(bool),
+			Name:          $4,
+			Storage:       $6,
+			ErrorHandling: $7.(ast.ErrorHandlingOption),
+			Options:       $8.([]*ast.BRIEOption),
+		}
+	}
+
+ErrorHandling:
+	{
+		$$ = ast.ErrorHandleError
+	}
+|	"REPLACE"
+	{
+		$$ = ast.ErrorHandleReplace
+	}
+|	"SKIP" "ALL"
+	{
+		$$ = ast.ErrorHandleSkipAll
+	}
+|	"SKIP" "CONSTRAINT"
+	{
+		$$ = ast.ErrorHandleSkipConstraint
+	}
+|	"SKIP" "DUPLICATE"
+	{
+		$$ = ast.ErrorHandleSkipDuplicate
+	}
+|	"SKIP" "STRICT"
+	{
+		$$ = ast.ErrorHandleSkipStrict
+	}
+
 Expression:
 	singleAtIdentifier assignmentEq Expression %prec assignmentEq
 	{
@@ -5598,6 +5656,8 @@ NotKeywordToken:
 |	"RECENT"
 |	"POSITION"
 |	"S3"
+|	"SKIP"
+|	"STRICT"
 |	"SUBDATE"
 |	"SUBSTRING"
 |	"SUM"
@@ -9990,6 +10050,7 @@ Statement:
 |	ExplainStmt
 |	ChangeStmt
 |	CreateDatabaseStmt
+|	CreateImportStmt
 |	CreateIndexStmt
 |	CreateTableStmt
 |	CreateViewStmt

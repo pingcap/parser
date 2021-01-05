@@ -2580,6 +2580,35 @@ type BRIEOption struct {
 	UintValue uint64
 }
 
+func (opt *BRIEOption) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord(opt.Tp.String())
+	ctx.WritePlain(" = ")
+	switch opt.Tp {
+	case BRIEOptionBackupTS, BRIEOptionLastBackupTS, BRIEOptionBackend, BRIEOptionOnDuplicate, BRIEOptionTiKVImporter, BRIEOptionCSVDelimiter, BRIEOptionCSVNull, BRIEOptionCSVSeparator:
+		ctx.WriteString(opt.StrValue)
+	case BRIEOptionBackupTimeAgo:
+		ctx.WritePlainf("%d ", opt.UintValue/1000)
+		ctx.WriteKeyWord("MICROSECOND AGO")
+	case BRIEOptionRateLimit:
+		ctx.WritePlainf("%d ", opt.UintValue/1048576)
+		ctx.WriteKeyWord("MB")
+		ctx.WritePlain("/")
+		ctx.WriteKeyWord("SECOND")
+	case BRIEOptionCSVHeader:
+		if opt.UintValue == BRIECSVHeaderIsColumns {
+			ctx.WriteKeyWord("COLUMNS")
+		} else {
+			ctx.WritePlainf("%d", opt.UintValue)
+		}
+	case BRIEOptionChecksum, BRIEOptionAnalyze:
+		// BACKUP/RESTORE doesn't support OPTIONAL value for now, should warn at executor
+		ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+	default:
+		ctx.WritePlainf("%d", opt.UintValue)
+	}
+	return nil
+}
+
 // BRIEStmt is a statement for backup, restore, import and export.
 type BRIEStmt struct {
 	stmtNode
@@ -2644,40 +2673,8 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 
 	for _, opt := range n.Options {
 		ctx.WritePlain(" ")
-		ctx.WriteKeyWord(opt.Tp.String())
-		ctx.WritePlain(" = ")
-		switch opt.Tp {
-		case BRIEOptionBackupTS, BRIEOptionLastBackupTS, BRIEOptionBackend, BRIEOptionOnDuplicate, BRIEOptionTiKVImporter, BRIEOptionCSVDelimiter, BRIEOptionCSVNull, BRIEOptionCSVSeparator:
-			ctx.WriteString(opt.StrValue)
-		case BRIEOptionBackupTimeAgo:
-			ctx.WritePlainf("%d ", opt.UintValue/1000)
-			ctx.WriteKeyWord("MICROSECOND AGO")
-		case BRIEOptionRateLimit:
-			ctx.WritePlainf("%d ", opt.UintValue/1048576)
-			ctx.WriteKeyWord("MB")
-			ctx.WritePlain("/")
-			ctx.WriteKeyWord("SECOND")
-		case BRIEOptionCSVHeader:
-			if opt.UintValue == BRIECSVHeaderIsColumns {
-				ctx.WriteKeyWord("COLUMNS")
-			} else {
-				ctx.WritePlainf("%d", opt.UintValue)
-			}
-		case BRIEOptionChecksum, BRIEOptionAnalyze:
-			switch opt.UintValue {
-			case 0, 1:
-				if n.Kind == BRIEKindImport {
-					ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
-				} else {
-					ctx.WritePlainf("%d", opt.UintValue)
-				}
-			default:
-				// BACKUP/RESTORE doesn't support this value for now
-				ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
-			}
-
-		default:
-			ctx.WritePlainf("%d", opt.UintValue)
+		if err := opt.Restore(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -2731,6 +2728,106 @@ func (n *PurgeImportStmt) Accept(v Visitor) (Node, bool) {
 func (n *PurgeImportStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WritePlainf("PURGE IMPORT %d", n.TaskID)
 	return nil
+}
+
+// ErrorHandlingOption is used in async IMPORT related stmt
+type ErrorHandlingOption uint64
+
+const (
+	ErrorHandleError ErrorHandlingOption = iota
+	ErrorHandleReplace
+	ErrorHandleSkipAll
+	ErrorHandleSkipConstraint
+	ErrorHandleSkipDuplicate
+	ErrorHandleSkipStrict
+)
+
+func (o ErrorHandlingOption) String() string {
+	switch o {
+	case ErrorHandleError:
+		return ""
+	case ErrorHandleReplace:
+		return "REPLACE"
+	case ErrorHandleSkipAll:
+		return "SKIP ALL"
+	case ErrorHandleSkipConstraint:
+		return "SKIP CONSTRAINT"
+	case ErrorHandleSkipDuplicate:
+		return "SKIP DUPLICATE"
+	case ErrorHandleSkipStrict:
+		return "SKIP STRICT"
+	default:
+		return ""
+	}
+}
+
+type CreateImportStmt struct {
+	stmtNode
+
+	IfNotExists   bool
+	Name          string
+	Storage       string
+	ErrorHandling ErrorHandlingOption
+	Options       []*BRIEOption
+}
+
+func (n *CreateImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*CreateImportStmt)
+	return v.Leave(n)
+}
+
+func (n *CreateImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("CREATE IMPORT ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
+	ctx.WriteName(n.Name)
+	ctx.WriteKeyWord(" FROM ")
+	ctx.WriteString(n.Storage)
+	if n.ErrorHandling != ErrorHandleError {
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(n.ErrorHandling.String())
+	}
+	for _, opt := range n.Options {
+		ctx.WritePlain(" ")
+		if err := opt.Restore(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SecureText implements SensitiveStmtNode
+func (n *CreateImportStmt) SecureText() string {
+	// FIXME: this solution is not scalable, and duplicates some logic from BR.
+	redactedStorage := n.Storage
+	u, err := url.Parse(n.Storage)
+	if err == nil {
+		if u.Scheme == "s3" {
+			query := u.Query()
+			for key := range query {
+				switch strings.ToLower(strings.ReplaceAll(key, "_", "-")) {
+				case "access-key", "secret-access-key":
+					query[key] = []string{"xxxxxx"}
+				}
+			}
+			u.RawQuery = query.Encode()
+			redactedStorage = u.String()
+		}
+	}
+
+	redactedStmt := &CreateImportStmt{
+		IfNotExists:   n.IfNotExists,
+		Name:          n.Name,
+		Storage:       redactedStorage,
+		ErrorHandling: n.ErrorHandling,
+		Options:       n.Options,
+	}
+
+	var sb strings.Builder
+	_ = redactedStmt.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb))
+	return sb.String()
 }
 
 // Ident is the table identifier composed of schema name and table name.

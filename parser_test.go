@@ -108,7 +108,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
-		"constraints", "role", "replicas", "policy", "s3",
+		"constraints", "role", "replicas", "policy", "s3", "skip", "strict",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -5665,9 +5665,8 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"backup database * to 'noop://' rate_limit 500 MB/second snapshot 5 minute ago", true, "BACKUP DATABASE * TO 'noop://' RATE_LIMIT = 500 MB/SECOND SNAPSHOT = 300000000 MICROSECOND AGO"},
 		{"backup database * to 'noop://' snapshot = '2020-03-18 18:13:54'", true, "BACKUP DATABASE * TO 'noop://' SNAPSHOT = '2020-03-18 18:13:54'"},
 		{"backup database * to 'noop://' snapshot = 1234567890", true, "BACKUP DATABASE * TO 'noop://' SNAPSHOT = 1234567890"},
-		{"restore table g from 'noop://' concurrency 40 checksum 0 online 1", true, "RESTORE TABLE `g` FROM 'noop://' CONCURRENCY = 40 CHECKSUM = 0 ONLINE = 1"},
+		{"restore table g from 'noop://' concurrency 40 checksum 0 online 1", true, "RESTORE TABLE `g` FROM 'noop://' CONCURRENCY = 40 CHECKSUM = OFF ONLINE = 1"},
 		{
-			// FIXME: should we really include the access key in the Restore() text???
 			"backup table x to 's3://bucket/path/?endpoint=https://test-cluster-s3.local&access-key=aaaaaaaaa&secret-access-key=bbbbbbbb&force-path-style=1'",
 			true,
 			"BACKUP TABLE `x` TO 's3://bucket/path/?endpoint=https://test-cluster-s3.local&access-key=aaaaaaaaa&secret-access-key=bbbbbbbb&force-path-style=1'",
@@ -5724,7 +5723,7 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"import table db1.tbl1 from 'file:///d/' checksum true analyze 2", true, "IMPORT TABLE `db1`.`tbl1` FROM 'file:///d/' CHECKSUM = REQUIRED ANALYZE = REQUIRED"},
 		// restore could use OFF/REQUIRED, but now it won't restore to those value because br only support boolean checksum
 		// but OPTIONAL should be restored to keep same semantics
-		{"restore table g from 'noop://' checksum off", true, "RESTORE TABLE `g` FROM 'noop://' CHECKSUM = 0"},
+		{"restore table g from 'noop://' checksum off", true, "RESTORE TABLE `g` FROM 'noop://' CHECKSUM = OFF"},
 		{"restore table g from 'noop://' checksum optional", true, "RESTORE TABLE `g` FROM 'noop://' CHECKSUM = OPTIONAL"},
 	}
 
@@ -5735,6 +5734,18 @@ func (s *testParserSuite) TestPurge(c *C) {
 	cases := []testCase{
 		{"purge import 100", true, "PURGE IMPORT 100"},
 		{"purge import abc", false, ""},
+	}
+	s.RunTest(c, cases)
+}
+
+func (s *testParserSuite) TestAsyncImport(c *C) {
+	cases := []testCase{
+		{"create import test from 'file:///d/'", true, "CREATE IMPORT `test` FROM 'file:///d/'"},
+		{
+			"create import if not exists test from 'file:///d/' skip all csv_header = columns strict_format = true csv_backslash_escape = true",
+			true,
+			"CREATE IMPORT IF NOT EXISTS `test` FROM 'file:///d/' SKIP ALL CSV_HEADER = COLUMNS STRICT_FORMAT = 1 CSV_BACKSLASH_ESCAPE = 1",
+		},
 	}
 	s.RunTest(c, cases)
 }
