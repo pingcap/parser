@@ -66,6 +66,7 @@ const (
 	// Valid formats for explain statement.
 	ExplainFormatROW     = "row"
 	ExplainFormatDOT     = "dot"
+	ExplainFormatJSON    = "json"
 	ExplainFormatHint    = "hint"
 	ExplainFormatVerbose = "verbose"
 	PumpType             = "PUMP"
@@ -83,6 +84,7 @@ var (
 	ExplainFormats = []string{
 		ExplainFormatROW,
 		ExplainFormatDOT,
+		ExplainFormatJSON,
 		ExplainFormatHint,
 		ExplainFormatVerbose,
 	}
@@ -133,7 +135,7 @@ type TraceStmt struct {
 // Restore implements Node interface.
 func (n *TraceStmt) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("TRACE ")
-	if n.Format != "json" {
+	if n.Format != "row" {
 		ctx.WriteKeyWord("FORMAT")
 		ctx.WritePlain(" = ")
 		ctx.WriteString(n.Format)
@@ -1500,30 +1502,17 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	selnode, ok := n.OriginNode.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	switch node := selnode.(type) {
-	case *SelectStmt:
-		n.OriginNode = node
-		hintedSelnode, ok := n.HintedNode.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.HintedNode = hintedSelnode.(*SelectStmt)
-		return v.Leave(n)
-	case *SetOprStmt:
-		n.OriginNode = node
-		hintedSetOprNode, ok := n.HintedNode.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.HintedNode = hintedSetOprNode.(*SetOprStmt)
-		return v.Leave(n)
-	default:
+	n.OriginNode = origNode.(StmtNode)
+	hintedNode, ok := n.HintedNode.Accept(v)
+	if !ok {
 		return n, false
 	}
+	n.HintedNode = hintedNode.(StmtNode)
+	return v.Leave(n)
 }
 
 // DropBindingStmt deletes sql binding hint.
@@ -1561,34 +1550,19 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	selnode, ok := n.OriginNode.Accept(v)
+	origNode, ok := n.OriginNode.Accept(v)
 	if !ok {
 		return n, false
 	}
-	switch node := selnode.(type) {
-	case *SelectStmt:
-		n.OriginNode = node
-		if n.HintedNode != nil {
-			selnode, ok = n.HintedNode.Accept(v)
-			if !ok {
-				return n, false
-			}
-			n.HintedNode = selnode.(*SelectStmt)
+	n.OriginNode = origNode.(StmtNode)
+	if n.HintedNode != nil {
+		hintedNode, ok := n.HintedNode.Accept(v)
+		if !ok {
+			return n, false
 		}
-		return v.Leave(n)
-	case *SetOprStmt:
-		n.OriginNode = node
-		if n.HintedNode != nil {
-			selnode, ok = n.HintedNode.Accept(v)
-			if !ok {
-				return n, false
-			}
-			n.HintedNode = selnode.(*SetOprStmt)
-		}
-		return v.Leave(n)
-	default:
-		return n, false
+		n.HintedNode = hintedNode.(StmtNode)
 	}
+	return v.Leave(n)
 }
 
 // Extended statistics types.
@@ -1597,6 +1571,13 @@ const (
 	StatsTypeDependency
 	StatsTypeCorrelation
 )
+
+// StatisticsSpec is the specification for ADD /DROP STATISTICS.
+type StatisticsSpec struct {
+	StatsName string
+	StatsType uint8
+	Columns   []*ColumnName
+}
 
 // CreateStatisticsStmt is a statement to create extended statistics.
 // Examples:
@@ -1973,7 +1954,7 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 	case AdminResetTelemetryID:
 		ctx.WriteKeyWord("RESET TELEMETRY_ID")
 	case AdminReloadStatistics:
-		ctx.WriteKeyWord("RELOAD STATISTICS")
+		ctx.WriteKeyWord("RELOAD TIDB_STATS")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
@@ -1996,7 +1977,44 @@ func (n *AdminStmt) Accept(v Visitor) (Node, bool) {
 		n.Tables[i] = node.(*TableName)
 	}
 
+	if n.Where != nil {
+		node, ok := n.Where.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Where = node.(ExprNode)
+	}
+
 	return v.Leave(n)
+}
+
+// RoleOrPriv is a temporary structure to be further processed into auth.RoleIdentity or PrivElem
+type RoleOrPriv struct {
+	Symbols string      // hold undecided symbols
+	Node    interface{} // hold auth.RoleIdentity or PrivElem that can be sure when parsing
+}
+
+func (n *RoleOrPriv) ToRole() (*auth.RoleIdentity, error) {
+	if n.Node != nil {
+		if r, ok := n.Node.(*auth.RoleIdentity); ok {
+			return r, nil
+		}
+		return nil, errors.Errorf("can't convert to RoleIdentity, type %T", n.Node)
+	}
+	return &auth.RoleIdentity{Username: n.Symbols, Hostname: "%"}, nil
+}
+
+func (n *RoleOrPriv) ToPriv() (*PrivElem, error) {
+	if n.Node != nil {
+		if p, ok := n.Node.(*PrivElem); ok {
+			return p, nil
+		}
+		return nil, errors.Errorf("can't convert to PrivElem, type %T", n.Node)
+	}
+	if len(n.Symbols) == 0 {
+		return nil, errors.New("symbols should not be length 0")
+	}
+	return &PrivElem{Priv: mysql.ExtendedPriv, Name: n.Symbols}, nil
 }
 
 // PrivElem is the privilege type and optional column list.
@@ -2005,14 +2023,15 @@ type PrivElem struct {
 
 	Priv mysql.PrivilegeType
 	Cols []*ColumnName
+	Name string
 }
 
 // Restore implements Node interface.
 func (n *PrivElem) Restore(ctx *format.RestoreCtx) error {
-	if n.Priv == 0 {
-		ctx.WritePlain("/* UNSUPPORTED TYPE */")
-	} else if n.Priv == mysql.AllPriv {
+	if n.Priv == mysql.AllPriv {
 		ctx.WriteKeyWord("ALL")
+	} else if n.Priv == mysql.ExtendedPriv {
+		ctx.WriteKeyWord(n.Name)
 	} else {
 		str, ok := mysql.Priv2Str[n.Priv]
 		if ok {
@@ -2061,6 +2080,10 @@ const (
 	ObjectTypeNone ObjectTypeType = iota + 1
 	// ObjectTypeTable means the following object is a table.
 	ObjectTypeTable
+	// ObjectTypeFunction means the following object is a stored function.
+	ObjectTypeFunction
+	// ObjectTypeProcedure means the following object is a stored procedure.
+	ObjectTypeProcedure
 )
 
 // Restore implements Node interface.
@@ -2070,6 +2093,10 @@ func (n ObjectTypeType) Restore(ctx *format.RestoreCtx) error {
 		// do nothing
 	case ObjectTypeTable:
 		ctx.WriteKeyWord("TABLE")
+	case ObjectTypeFunction:
+		ctx.WriteKeyWord("FUNCTION")
+	case ObjectTypeProcedure:
+		ctx.WriteKeyWord("PROCEDURE")
 	default:
 		return errors.New("Unsupported object type")
 	}
@@ -2311,6 +2338,46 @@ func (n *GrantStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// GrantProxyStmt is the struct for GRANT PROXY statement.
+type GrantProxyStmt struct {
+	stmtNode
+
+	LocalUser     *auth.UserIdentity
+	ExternalUsers []*auth.UserIdentity
+	WithGrant     bool
+}
+
+// Accept implements Node Accept interface.
+func (n *GrantProxyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*GrantProxyStmt)
+	return v.Leave(n)
+}
+
+// Restore implements Node interface.
+func (n *GrantProxyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("GRANT PROXY ON ")
+	if err := n.LocalUser.Restore(ctx); err != nil {
+		return errors.Annotatef(err, "An error occurred while restore GrantProxyStmt.LocalUser")
+	}
+	ctx.WriteKeyWord(" TO ")
+	for i, v := range n.ExternalUsers {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore GrantProxyStmt.ExternalUsers[%d]", i)
+		}
+	}
+	if n.WithGrant {
+		ctx.WriteKeyWord(" WITH GRANT OPTION")
+	}
+	return nil
+}
+
 // GrantRoleStmt is the struct for GRANT TO statement.
 type GrantRoleStmt struct {
 	stmtNode
@@ -2416,6 +2483,7 @@ const (
 	BRIEOptionSkipSchemaFiles
 	BRIEOptionStrictFormat
 	BRIEOptionTiKVImporter
+	BRIEOptionResume
 	// CSV options
 	BRIEOptionCSVBackslashEscape
 	BRIEOptionCSVDelimiter
@@ -2426,6 +2494,14 @@ const (
 	BRIEOptionCSVTrimLastSeparators
 
 	BRIECSVHeaderIsColumns = ^uint64(0)
+)
+
+type BRIEOptionLevel uint64
+
+const (
+	BRIEOptionLevelOff      BRIEOptionLevel = iota // equals FALSE
+	BRIEOptionLevelRequired                        // equals TRUE
+	BRIEOptionLevelOptional
 )
 
 func (kind BRIEKind) String() string {
@@ -2471,6 +2547,8 @@ func (kind BRIEOptionType) String() string {
 		return "STRICT_FORMAT"
 	case BRIEOptionTiKVImporter:
 		return "TIKV_IMPORTER"
+	case BRIEOptionResume:
+		return "RESUME"
 	case BRIEOptionCSVBackslashEscape:
 		return "CSV_BACKSLASH_ESCAPE"
 	case BRIEOptionCSVDelimiter:
@@ -2485,6 +2563,19 @@ func (kind BRIEOptionType) String() string {
 		return "CSV_SEPARATOR"
 	case BRIEOptionCSVTrimLastSeparators:
 		return "CSV_TRIM_LAST_SEPARATORS"
+	default:
+		return ""
+	}
+}
+
+func (level BRIEOptionLevel) String() string {
+	switch level {
+	case BRIEOptionLevelOff:
+		return "OFF"
+	case BRIEOptionLevelOptional:
+		return "OPTIONAL"
+	case BRIEOptionLevelRequired:
+		return "REQUIRED"
 	default:
 		return ""
 	}
@@ -2579,6 +2670,19 @@ func (n *BRIEStmt) Restore(ctx *format.RestoreCtx) error {
 			} else {
 				ctx.WritePlainf("%d", opt.UintValue)
 			}
+		case BRIEOptionChecksum, BRIEOptionAnalyze:
+			switch opt.UintValue {
+			case 0, 1:
+				if n.Kind == BRIEKindImport {
+					ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+				} else {
+					ctx.WritePlainf("%d", opt.UintValue)
+				}
+			default:
+				// BACKUP/RESTORE doesn't support this value for now
+				ctx.WriteKeyWord(BRIEOptionLevel(opt.UintValue).String())
+			}
+
 		default:
 			ctx.WritePlainf("%d", opt.UintValue)
 		}
@@ -2619,6 +2723,23 @@ func (n *BRIEStmt) SecureText() string {
 	return sb.String()
 }
 
+type PurgeImportStmt struct {
+	stmtNode
+
+	TaskID uint64
+}
+
+func (n *PurgeImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*PurgeImportStmt)
+	return v.Leave(n)
+}
+
+func (n *PurgeImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WritePlainf("PURGE IMPORT %d", n.TaskID)
+	return nil
+}
+
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
@@ -2644,6 +2765,7 @@ type SelectStmtOpts struct {
 	StraightJoin    bool
 	Priority        mysql.PriorityEnum
 	TableHints      []*TableOptimizerHint
+	ExplicitAll     bool
 }
 
 // TableOptimizerHint is Table level optimizer hint
@@ -2743,7 +2865,7 @@ func (n *TableOptimizerHint) Restore(ctx *format.RestoreCtx) error {
 		ctx.WritePlainf("%d", n.HintData.(uint64))
 	case "nth_plan":
 		ctx.WritePlainf("%d", n.HintData.(int64))
-	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local":
+	case "tidb_hj", "tidb_smj", "tidb_inlj", "hash_join", "merge_join", "inl_join", "broadcast_join", "broadcast_join_local", "inl_hash_join", "inl_merge_join":
 		for i, table := range n.Tables {
 			if i != 0 {
 				ctx.WritePlain(", ")
