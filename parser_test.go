@@ -5746,6 +5746,11 @@ func (s *testParserSuite) TestAsyncImport(c *C) {
 			true,
 			"CREATE IMPORT IF NOT EXISTS `test` FROM 'file:///d/' SKIP ALL CSV_HEADER = COLUMNS STRICT_FORMAT = 1 CSV_BACKSLASH_ESCAPE = 1",
 		},
+		{
+			"create import if not exists test from 'file:///d/' replace SKIP_SCHEMA_FILES TRUE",
+			true,
+			"CREATE IMPORT IF NOT EXISTS `test` FROM 'file:///d/' REPLACE SKIP_SCHEMA_FILES = 1",
+		},
 	}
 	s.RunTest(c, cases)
 }
