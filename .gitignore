@@ -3,3 +3,4 @@ y.go
 *.output
 .idea/
 coverage.txt
+.vscode/

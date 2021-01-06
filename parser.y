@@ -359,6 +359,7 @@ import (
 	deallocate            "DEALLOCATE"
 	definer               "DEFINER"
 	delayKeyWrite         "DELAY_KEY_WRITE"
+	digest                "DIGEST"
 	directory             "DIRECTORY"
 	disable               "DISABLE"
 	discard               "DISCARD"
@@ -5460,6 +5461,7 @@ UnReservedKeyword:
 |	"TRADITIONAL"
 |	"SQL_BUFFER_RESULT"
 |	"DIRECTORY"
+|	"DIGEST"
 |	"HISTOGRAM"
 |	"HISTORY"
 |	"LIST"
@@ -8422,7 +8424,7 @@ SelectStmtOptsList:
 TableOptimizerHints:
 	hintComment
 	{
-		hints, warns := parser.parseHint($1)
+		hints, warns := parser.ParseHint($1)
 		for _, w := range warns {
 			yylex.AppendError(w)
 			parser.lastErrorAsWarn()
@@ -11582,8 +11584,25 @@ CreateBindingStmt:
 		hintedStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.CreateBindingStmt{
+			BindingTp:   ast.BindingForStmt,
 			OriginNode:  originStmt,
 			HintedNode:  hintedStmt,
+			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+|	"CREATE" GlobalScope "BINDING" "FOR" "DIGEST" stringLit "USING" hintComment
+	{
+		hints, warns := parser.ParseHint($8)
+		for _, w := range warns {
+			yylex.AppendError(w)
+			parser.lastErrorAsWarn()
+		}
+		x := &ast.CreateBindingStmt{
+			BindingTp:   ast.BindingForDigest,
+			Hints:       hints,
+			StmtDigest:  $6,
 			GlobalScope: $2.(bool),
 		}
 
@@ -11605,6 +11624,7 @@ DropBindingStmt:
 		originStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForStmt,
 			OriginNode:  originStmt,
 			GlobalScope: $2.(bool),
 		}
@@ -11623,9 +11643,36 @@ DropBindingStmt:
 		hintedStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForStmt,
 			OriginNode:  originStmt,
 			HintedNode:  hintedStmt,
 			GlobalScope: $2.(bool),
+		}
+
+		$$ = x
+	}
+|	"DROP" GlobalScope "BINDING" "FOR" "DIGEST" stringLit
+	{
+		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForDigest,
+			GlobalScope: $2.(bool),
+			StmtDigest:  $6,
+		}
+
+		$$ = x
+	}
+|	"DROP" GlobalScope "BINDING" "FOR" "DIGEST" stringLit "USING" hintComment
+	{
+		hints, warns := parser.ParseHint($8)
+		for _, w := range warns {
+			yylex.AppendError(w)
+			parser.lastErrorAsWarn()
+		}
+		x := &ast.DropBindingStmt{
+			BindingTp:   ast.BindingForDigest,
+			GlobalScope: $2.(bool),
+			StmtDigest:  $6,
+			Hints:       hints,
 		}
 
 		$$ = x

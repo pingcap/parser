@@ -90,6 +90,13 @@ var (
 	}
 )
 
+const (
+	BindingForStmt BindingType = iota
+	BindingForDigest
+)
+
+type BindingType int
+
 // TypeOpt is used for parsing data type option from SQL.
 type TypeOpt struct {
 	IsUnsigned bool
@@ -1473,9 +1480,14 @@ func (n *DropUserStmt) Accept(v Visitor) (Node, bool) {
 type CreateBindingStmt struct {
 	stmtNode
 
+	BindingTp BindingType
+
 	GlobalScope bool
 	OriginNode  StmtNode
 	HintedNode  StmtNode
+
+	Hints      []*TableOptimizerHint
+	StmtDigest string
 }
 
 func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1486,12 +1498,26 @@ func (n *CreateBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginNode.Restore(ctx); err != nil {
-		return errors.Trace(err)
-	}
-	ctx.WriteKeyWord(" USING ")
-	if err := n.HintedNode.Restore(ctx); err != nil {
-		return errors.Trace(err)
+	switch n.BindingTp {
+	case BindingForStmt:
+		if err := n.OriginNode.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+		ctx.WriteKeyWord(" USING ")
+		if err := n.HintedNode.Restore(ctx); err != nil {
+			return errors.Trace(err)
+		}
+	case BindingForDigest:
+		ctx.WriteKeyWord("DIGEST ")
+		ctx.WriteString(n.StmtDigest)
+		ctx.WriteKeyWord(" USING ")
+		ctx.WritePlain("/*+ ")
+		for _, hint := range n.Hints {
+			if err := hint.Restore(ctx); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		ctx.WritePlain(" */")
 	}
 	return nil
 }
@@ -1502,16 +1528,27 @@ func (n *CreateBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*CreateBindingStmt)
-	origNode, ok := n.OriginNode.Accept(v)
-	if !ok {
-		return n, false
+	switch n.BindingTp {
+	case BindingForStmt:
+		origNode, ok := n.OriginNode.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.OriginNode = origNode.(StmtNode)
+		hintedNode, ok := n.HintedNode.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.HintedNode = hintedNode.(StmtNode)
+	case BindingForDigest:
+		for i, hint := range n.Hints {
+			hintNode, ok := hint.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.Hints[i] = hintNode.(*TableOptimizerHint)
+		}
 	}
-	n.OriginNode = origNode.(StmtNode)
-	hintedNode, ok := n.HintedNode.Accept(v)
-	if !ok {
-		return n, false
-	}
-	n.HintedNode = hintedNode.(StmtNode)
 	return v.Leave(n)
 }
 
@@ -1520,8 +1557,11 @@ type DropBindingStmt struct {
 	stmtNode
 
 	GlobalScope bool
+	BindingTp   BindingType
+	StmtDigest  string
 	OriginNode  StmtNode
 	HintedNode  StmtNode
+	Hints       []*TableOptimizerHint
 }
 
 func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
@@ -1532,13 +1572,29 @@ func (n *DropBindingStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("SESSION ")
 	}
 	ctx.WriteKeyWord("BINDING FOR ")
-	if err := n.OriginNode.Restore(ctx); err != nil {
-		return errors.Trace(err)
-	}
-	if n.HintedNode != nil {
-		ctx.WriteKeyWord(" USING ")
-		if err := n.HintedNode.Restore(ctx); err != nil {
+	switch n.BindingTp {
+	case BindingForStmt:
+		if err := n.OriginNode.Restore(ctx); err != nil {
 			return errors.Trace(err)
+		}
+		if n.HintedNode != nil {
+			ctx.WriteKeyWord(" USING ")
+			if err := n.HintedNode.Restore(ctx); err != nil {
+				return errors.Trace(err)
+			}
+		}
+	case BindingForDigest:
+		ctx.WriteKeyWord("DIGEST ")
+		ctx.WriteString(n.StmtDigest)
+		if len(n.Hints) > 0 {
+			ctx.WriteKeyWord(" USING ")
+			ctx.WritePlain("/*+ ")
+			for _, hint := range n.Hints {
+				if err := hint.Restore(ctx); err != nil {
+					return errors.Trace(err)
+				}
+			}
+			ctx.WritePlain(" */")
 		}
 	}
 	return nil
@@ -1550,17 +1606,28 @@ func (n *DropBindingStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DropBindingStmt)
-	origNode, ok := n.OriginNode.Accept(v)
-	if !ok {
-		return n, false
-	}
-	n.OriginNode = origNode.(StmtNode)
-	if n.HintedNode != nil {
-		hintedNode, ok := n.HintedNode.Accept(v)
+	switch n.BindingTp {
+	case BindingForStmt:
+		origNode, ok := n.OriginNode.Accept(v)
 		if !ok {
 			return n, false
 		}
-		n.HintedNode = hintedNode.(StmtNode)
+		n.OriginNode = origNode.(StmtNode)
+		if n.HintedNode != nil {
+			hintedNode, ok := n.HintedNode.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.HintedNode = hintedNode.(StmtNode)
+		}
+	case BindingForDigest:
+		for i, hint := range n.Hints {
+			hintNode, ok := hint.Accept(v)
+			if !ok {
+				return n, false
+			}
+			n.Hints[i] = hintNode.(*TableOptimizerHint)
+		}
 	}
 	return v.Leave(n)
 }
