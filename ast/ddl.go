@@ -54,6 +54,12 @@ type CharsetOpt struct {
 	Col string
 }
 
+// NullString represents a string that may be nil.
+type NullString struct {
+	String string
+	Empty  bool // Empty is true if String is empty backtick.
+}
+
 // DatabaseOptionType is the type for database options.
 type DatabaseOptionType int
 
@@ -324,13 +330,15 @@ func (n *ReferenceDef) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*ReferenceDef)
-	node, ok := n.Table.Accept(v)
-	if !ok {
-		return n, false
+	if n.Table != nil {
+		node, ok := n.Table.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Table = node.(*TableName)
 	}
-	n.Table = node.(*TableName)
 	for i, val := range n.IndexPartSpecifications {
-		node, ok = val.Accept(v)
+		node, ok := val.Accept(v)
 		if !ok {
 			return n, false
 		}
@@ -714,6 +722,7 @@ type Constraint struct {
 	InColumn bool // Used for Check
 
 	InColumnName string // Used for Check
+	IsEmptyIndex bool   // Used for Check
 }
 
 // Restore implements Node interface.
@@ -771,7 +780,7 @@ func (n *Constraint) Restore(ctx *format.RestoreCtx) error {
 		if n.IfNotExists {
 			ctx.WriteKeyWord("IF NOT EXISTS ")
 		}
-	} else if n.Name != "" {
+	} else if n.Name != "" || n.IsEmptyIndex {
 		ctx.WritePlain(" ")
 		ctx.WriteName(n.Name)
 	}
@@ -2151,6 +2160,7 @@ const (
 	AlterTableRenameTable
 	AlterTableAlterColumn
 	AlterTableLock
+	AlterTableWriteable
 	AlterTableAlgorithm
 	AlterTableRenameIndex
 	AlterTableForce
@@ -2185,6 +2195,8 @@ const (
 	// AlterTableSetTiFlashReplica uses to set the table TiFlash replica.
 	AlterTableSetTiFlashReplica
 	AlterTablePlacement
+	AlterTableAddStatistics
+	AlterTableDropStatistics
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2282,6 +2294,8 @@ type AlterTableSpec struct {
 	Visibility      IndexVisibility
 	TiFlashReplica  *TiFlashReplicaSpec
 	PlacementSpecs  []*PlacementSpec
+	Writeable       bool
+	Statistics      *StatisticsSpec
 }
 
 type TiFlashReplicaSpec struct {
@@ -2323,6 +2337,35 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 			}
 			ctx.WriteString(v)
 		}
+	case AlterTableAddStatistics:
+		ctx.WriteKeyWord("ADD TIDB_STATS ")
+		if n.IfNotExists {
+			ctx.WriteKeyWord("IF NOT EXISTS ")
+		}
+		ctx.WriteName(n.Statistics.StatsName)
+		switch n.Statistics.StatsType {
+		case StatsTypeCardinality:
+			ctx.WriteKeyWord(" CARDINALITY(")
+		case StatsTypeDependency:
+			ctx.WriteKeyWord(" DEPENDENCY(")
+		case StatsTypeCorrelation:
+			ctx.WriteKeyWord(" CORRELATION(")
+		}
+		for i, col := range n.Statistics.Columns {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := col.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AddStatisticsSpec.Columns: [%v]", i)
+			}
+		}
+		ctx.WritePlain(")")
+	case AlterTableDropStatistics:
+		ctx.WriteKeyWord("DROP TIDB_STATS ")
+		if n.IfExists {
+			ctx.WriteKeyWord("IF EXISTS ")
+		}
+		ctx.WriteName(n.Statistics.StatsName)
 	case AlterTableOption:
 		switch {
 		case len(n.Options) == 2 && n.Options[0].Tp == TableOptionCharset && n.Options[1].Tp == TableOptionCollate:
@@ -2488,6 +2531,13 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("LOCK ")
 		ctx.WritePlain("= ")
 		ctx.WriteKeyWord(n.LockType.String())
+	case AlterTableWriteable:
+		ctx.WriteKeyWord("READ ")
+		if n.Writeable {
+			ctx.WriteKeyWord("WRITE")
+		} else {
+			ctx.WriteKeyWord("ONLY")
+		}
 	case AlterTableOrderByColumns:
 		ctx.WriteKeyWord("ORDER BY ")
 		for i, alterOrderItem := range n.OrderByList {

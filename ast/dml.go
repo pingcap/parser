@@ -15,6 +15,7 @@ package ast
 
 import (
 	"github.com/pingcap/errors"
+
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
@@ -27,6 +28,7 @@ var (
 	_ DMLNode = &SetOprStmt{}
 	_ DMLNode = &UpdateStmt{}
 	_ DMLNode = &SelectStmt{}
+	_ DMLNode = &CallStmt{}
 	_ DMLNode = &ShowStmt{}
 	_ DMLNode = &LoadDataStmt{}
 	_ DMLNode = &SplitRegionStmt{}
@@ -82,7 +84,63 @@ type Join struct {
 	// NaturalJoin represents join is natural join.
 	NaturalJoin bool
 	// StraightJoin represents a straight join.
-	StraightJoin bool
+	StraightJoin   bool
+	ExplicitParens bool
+}
+
+// NewCrossJoin builds a cross join without `on` or `using` clause.
+// If the right child is a join tree, we need to handle it differently to make the precedence get right.
+// Here is the example: t1 join t2 join t3
+//                 JOIN ON t2.a = t3.a
+//  t1    join    /    \
+//              t2      t3
+// (left)         (right)
+//
+// We can not build it directly to:
+//         JOIN
+//        /    \
+//       t1	   JOIN ON t2.a = t3.a
+//             /   \
+//            t2    t3
+// The precedence would be t1 join (t2 join t3 on t2.a=t3.a), not (t1 join t2) join t3 on t2.a=t3.a
+// We need to find the left-most child of the right child, and build a cross join of the left-hand side
+// of the left child(t1), and the right hand side with the original left-most child of the right child(t2).
+//          JOIN t2.a = t3.a
+//         /    \
+//       JOIN    t3
+//       /  \
+//      t1  t2
+// Besides, if the right handle side join tree's join type is right join and has explicit parentheses, we need to rewrite it to left join.
+// So t1 join t2 right join t3 would be rewrite to t1 join t3 left join t2.
+// If not, t1 join (t2 right join t3) would be (t1 join t2) right join t3. After rewrite the right join to left join.
+// We get (t1 join t3) left join t2, the semantics is correct.
+func NewCrossJoin(left, right ResultSetNode) (n *Join) {
+	rj, ok := right.(*Join)
+	if !ok || rj.Right == nil {
+		return &Join{Left: left, Right: right, Tp: CrossJoin}
+	}
+
+	var leftMostLeafFatherOfRight = rj
+	// Walk down the right hand side.
+	for {
+		if leftMostLeafFatherOfRight.Tp == RightJoin && leftMostLeafFatherOfRight.ExplicitParens {
+			// Rewrite right join to left join.
+			tmpChild := leftMostLeafFatherOfRight.Right
+			leftMostLeafFatherOfRight.Right = leftMostLeafFatherOfRight.Left
+			leftMostLeafFatherOfRight.Left = tmpChild
+			leftMostLeafFatherOfRight.Tp = LeftJoin
+		}
+		leftChild := leftMostLeafFatherOfRight.Left
+		if join, ok := leftChild.(*Join); ok && join.Right != nil {
+			leftMostLeafFatherOfRight = join
+		} else {
+			break
+		}
+	}
+
+	newCrossJoin := &Join{Left: left, Right: leftMostLeafFatherOfRight.Left, Tp: CrossJoin}
+	leftMostLeafFatherOfRight.Left = newCrossJoin
+	return rj
 }
 
 // Restore implements Node interface.
@@ -184,12 +242,16 @@ type TableName struct {
 
 	IndexHints     []*IndexHint
 	PartitionNames []model.CIStr
+	TableSample    *TableSample
 }
 
 // Restore implements Node interface.
 func (n *TableName) restoreName(ctx *format.RestoreCtx) {
 	if n.Schema.String() != "" {
 		ctx.WriteName(n.Schema.String())
+		ctx.WritePlain(".")
+	} else if ctx.DefaultDB != "" {
+		ctx.WriteName(ctx.DefaultDB)
 		ctx.WritePlain(".")
 	}
 	ctx.WriteName(n.Name.String())
@@ -216,14 +278,22 @@ func (n *TableName) restoreIndexHints(ctx *format.RestoreCtx) error {
 			return errors.Annotate(err, "An error occurred while splicing IndexHints")
 		}
 	}
-
 	return nil
 }
 
 func (n *TableName) Restore(ctx *format.RestoreCtx) error {
 	n.restoreName(ctx)
 	n.restorePartitions(ctx)
-	return n.restoreIndexHints(ctx)
+	if err := n.restoreIndexHints(ctx); err != nil {
+		return err
+	}
+	if n.TableSample != nil {
+		ctx.WritePlain(" ")
+		if err := n.TableSample.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing TableName.TableSample")
+		}
+	}
+	return nil
 }
 
 // IndexHintType is the type for index hint use, ignore or force.
@@ -302,6 +372,13 @@ func (n *TableName) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*TableName)
+	if n.TableSample != nil {
+		newTs, ok := n.TableSample.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.TableSample = newTs.(*TableSample)
+	}
 	return v.Leave(n)
 }
 
@@ -409,6 +486,12 @@ func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
 		if err := tn.restoreIndexHints(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).IndexHints")
 		}
+		if tn.TableSample != nil {
+			ctx.WritePlain(" ")
+			if err := tn.TableSample.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while splicing TableName.TableSample")
+			}
+		}
 
 		if needParen {
 			ctx.WritePlain(")")
@@ -454,9 +537,12 @@ type SelectLockType int
 const (
 	SelectLockNone SelectLockType = iota
 	SelectLockForUpdate
-	SelectLockInShareMode
+	SelectLockForShare
 	SelectLockForUpdateNoWait
 	SelectLockForUpdateWaitN
+	SelectLockForShareNoWait
+	SelectLockForUpdateSkipLocked
+	SelectLockForShareSkipLocked
 )
 
 type SelectLockInfo struct {
@@ -471,12 +557,18 @@ func (n SelectLockType) String() string {
 		return "none"
 	case SelectLockForUpdate:
 		return "for update"
-	case SelectLockInShareMode:
-		return "in share mode"
+	case SelectLockForShare:
+		return "for share"
 	case SelectLockForUpdateNoWait:
 		return "for update nowait"
 	case SelectLockForUpdateWaitN:
-		return "for update wait seconds"
+		return "for update wait"
+	case SelectLockForShareNoWait:
+		return "for share nowait"
+	case SelectLockForUpdateSkipLocked:
+		return "for update skip locked"
+	case SelectLockForShareSkipLocked:
+		return "for share skip locked"
 	}
 	return "unsupported select lock type"
 }
@@ -640,8 +732,9 @@ func (n *TableRefsClause) Accept(v Visitor) (Node, bool) {
 type ByItem struct {
 	node
 
-	Expr ExprNode
-	Desc bool
+	Expr      ExprNode
+	Desc      bool
+	NullOrder bool
 }
 
 // Restore implements Node interface.
@@ -775,6 +868,90 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type SampleMethodType int8
+
+const (
+	SampleMethodTypeNone SampleMethodType = iota
+	SampleMethodTypeSystem
+	SampleMethodTypeBernoulli
+	SampleMethodTypeTiDBRegion
+)
+
+type SampleClauseUnitType int8
+
+const (
+	SampleClauseUnitTypeDefault SampleClauseUnitType = iota
+	SampleClauseUnitTypeRow
+	SampleClauseUnitTypePercent
+)
+
+type TableSample struct {
+	node
+	SampleMethod     SampleMethodType
+	Expr             ExprNode
+	SampleClauseUnit SampleClauseUnitType
+	RepeatableSeed   ExprNode
+}
+
+func (s *TableSample) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("TABLESAMPLE ")
+	switch s.SampleMethod {
+	case SampleMethodTypeBernoulli:
+		ctx.WriteKeyWord("BERNOULLI ")
+	case SampleMethodTypeSystem:
+		ctx.WriteKeyWord("SYSTEM ")
+	case SampleMethodTypeTiDBRegion:
+		ctx.WriteKeyWord("REGION ")
+	}
+	ctx.WritePlain("(")
+	if s.Expr != nil {
+		if err := s.Expr.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableSample.Expr")
+		}
+	}
+	switch s.SampleClauseUnit {
+	case SampleClauseUnitTypeDefault:
+	case SampleClauseUnitTypePercent:
+		ctx.WriteKeyWord(" PERCENT")
+	case SampleClauseUnitTypeRow:
+		ctx.WriteKeyWord(" ROWS")
+
+	}
+	ctx.WritePlain(")")
+	if s.RepeatableSeed != nil {
+		ctx.WriteKeyWord(" REPEATABLE")
+		ctx.WritePlain("(")
+		if err := s.RepeatableSeed.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore TableSample.Expr")
+		}
+		ctx.WritePlain(")")
+	}
+	return nil
+}
+
+func (s *TableSample) Accept(v Visitor) (node Node, ok bool) {
+	newNode, skipChildren := v.Enter(s)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	s = newNode.(*TableSample)
+	if s.Expr != nil {
+		node, ok = s.Expr.Accept(v)
+		if !ok {
+			return s, false
+		}
+		s.Expr = node.(ExprNode)
+	}
+	if s.RepeatableSeed != nil {
+		node, ok = s.RepeatableSeed.Accept(v)
+		if !ok {
+			return s, false
+		}
+		s.RepeatableSeed = node.(ExprNode)
+	}
+	return v.Leave(s)
+}
+
 type SelectStmtKind uint8
 
 const (
@@ -872,9 +1049,16 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("SQL_NO_CACHE ")
 		}
 
+		if n.SelectStmtOpts.CalcFoundRows {
+			ctx.WriteKeyWord("SQL_CALC_FOUND_ROWS ")
+		}
+
 		if n.TableHints != nil && len(n.TableHints) != 0 {
 			ctx.WritePlain("/*+ ")
 			for i, tableHint := range n.TableHints {
+				if i != 0 {
+					ctx.WritePlain(" ")
+				}
 				if err := tableHint.Restore(ctx); err != nil {
 					return errors.Annotatef(err, "An error occurred while restore SelectStmt.TableHints[%d]", i)
 				}
@@ -884,6 +1068,8 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 
 		if n.Distinct {
 			ctx.WriteKeyWord("DISTINCT ")
+		} else if n.SelectStmtOpts.ExplicitAll {
+			ctx.WriteKeyWord("ALL ")
 		}
 		if n.SelectStmtOpts.StraightJoin {
 			ctx.WriteKeyWord("STRAIGHT_JOIN ")
@@ -909,6 +1095,7 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 		if n.From == nil && n.Where != nil {
 			ctx.WriteKeyWord(" FROM DUAL")
 		}
+
 		if n.Where != nil {
 			ctx.WriteKeyWord(" WHERE ")
 			if err := n.Where.Restore(ctx); err != nil {
@@ -971,16 +1158,14 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	}
 
 	if n.LockInfo != nil {
+		ctx.WritePlain(" ")
 		switch n.LockInfo.LockType {
-		case SelectLockInShareMode:
-			ctx.WriteKeyWord(" LOCK ")
-			ctx.WriteKeyWord(n.LockInfo.LockType.String())
-		case SelectLockForUpdate, SelectLockForUpdateNoWait:
-			ctx.WritePlain(" ")
-			ctx.WriteKeyWord(n.LockInfo.LockType.String())
+		case SelectLockNone:
 		case SelectLockForUpdateWaitN:
-			ctx.WriteKeyWord(" FOR UPDATE WAIT ")
-			ctx.WritePlainf("%d", n.LockInfo.WaitSec)
+			ctx.WriteKeyWord(n.LockInfo.LockType.String())
+			ctx.WritePlainf(" %d", n.LockInfo.WaitSec)
+		default:
+			ctx.WriteKeyWord(n.LockInfo.LockType.String())
 		}
 	}
 
@@ -1496,6 +1681,46 @@ func (n *LinesClause) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
+// CallStmt represents a call procedure query node.
+// See https://dev.mysql.com/doc/refman/5.7/en/call.html
+type CallStmt struct {
+	dmlNode
+
+	Procedure *FuncCallExpr
+}
+
+// Restore implements Node interface.
+func (n *CallStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("CALL ")
+
+	if err := n.Procedure.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore CallStmt.Procedure")
+	}
+
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *CallStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	n = newNode.(*CallStmt)
+
+	if n.Procedure != nil {
+		node, ok := n.Procedure.Accept(v)
+		if !ok {
+			return n, false
+		}
+
+		n.Procedure = node.(*FuncCallExpr)
+	}
+
+	return v.Leave(n)
+}
+
 // InsertStmt is a statement to insert new rows into an existing table.
 // See https://dev.mysql.com/doc/refman/5.7/en/insert.html
 type InsertStmt struct {
@@ -1526,6 +1751,9 @@ func (n *InsertStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.TableHints != nil && len(n.TableHints) != 0 {
 		ctx.WritePlain("/*+ ")
 		for i, tableHint := range n.TableHints {
+			if i != 0 {
+				ctx.WritePlain(" ")
+			}
 			if err := tableHint.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore InsertStmt.TableHints[%d]", i)
 			}
@@ -1707,6 +1935,9 @@ func (n *DeleteStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.TableHints != nil && len(n.TableHints) != 0 {
 		ctx.WritePlain("/*+ ")
 		for i, tableHint := range n.TableHints {
+			if i != 0 {
+				ctx.WritePlain(" ")
+			}
 			if err := tableHint.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore UpdateStmt.TableHints[%d]", i)
 			}
@@ -1849,6 +2080,9 @@ func (n *UpdateStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.TableHints != nil && len(n.TableHints) != 0 {
 		ctx.WritePlain("/*+ ")
 		for i, tableHint := range n.TableHints {
+			if i != 0 {
+				ctx.WritePlain(" ")
+			}
 			if err := tableHint.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore UpdateStmt.TableHints[%d]", i)
 			}
@@ -2032,6 +2266,7 @@ const (
 	ShowEvents
 	ShowStatsMeta
 	ShowStatsHistograms
+	ShowStatsTopN
 	ShowStatsBuckets
 	ShowStatsHealthy
 	ShowPlugins
@@ -2189,6 +2424,11 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		}
 	case ShowStatsHistograms:
 		ctx.WriteKeyWord("STATS_HISTOGRAMS")
+		if err := restoreShowLikeOrWhereOpt(); err != nil {
+			return err
+		}
+	case ShowStatsTopN:
+		ctx.WriteKeyWord("STATS_TOPN")
 		if err := restoreShowLikeOrWhereOpt(); err != nil {
 			return err
 		}

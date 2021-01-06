@@ -163,6 +163,9 @@ func (d *sqlDigester) normalize(sql string) {
 	}
 	d.lexer.reset("")
 	for i, token := range d.tokens {
+		if token.tok == singleAtIdentifier {
+			d.buffer.WriteString("@")
+		}
 		d.buffer.WriteString(token.lit)
 		if i != len(d.tokens)-1 {
 			d.buffer.WriteRune(' ')
@@ -331,7 +334,7 @@ func (d *sqlDigester) isStarParam() (starParam bool) {
 
 func (d *sqlDigester) isLit(t token) (beLit bool) {
 	tok := t.tok
-	if d.isNumLit(tok) || tok == stringLit || tok == bitLit {
+	if d.isNumLit(tok) || tok == stringLit || tok == bitLit || tok == paramMarker {
 		beLit = true
 	} else if t.lit == "*" {
 		beLit = true
