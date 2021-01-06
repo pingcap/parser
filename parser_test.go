@@ -108,7 +108,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
-		"constraints", "role", "replicas", "policy", "s3", "skip", "strict", "running", "stop",
+		"constraints", "role", "replicas", "policy", "s3", "strict", "running", "stop",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -655,12 +655,18 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' IGNORE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
 		{"LOAD DATA LOCAL INFILE '/tmp/t.csv' REPLACE INTO TABLE t1 FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' REPLACE INTO TABLE `t1` FIELDS TERMINATED BY ','"},
 
-		// select for update
-		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
-		{"SELECT * from t lock in share mode", true, "SELECT * FROM `t` LOCK IN SHARE MODE"},
-		{"SELECT * from t for update nowait", true, "SELECT * FROM `t` FOR UPDATE NOWAIT"},
-		{"SELECT * from t for update wait 5", true, "SELECT * FROM `t` FOR UPDATE WAIT 5"},
-		{"SELECT * from t limit 1 for update wait 11", true, "SELECT * FROM `t` LIMIT 1 FOR UPDATE WAIT 11"},
+		// select for update/share
+		{"select * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
+		{"select * from t for share", true, "SELECT * FROM `t` FOR SHARE"},
+		{"select * from t for update nowait", true, "SELECT * FROM `t` FOR UPDATE NOWAIT"},
+		{"select * from t for update wait 5", true, "SELECT * FROM `t` FOR UPDATE WAIT 5"},
+		{"select * from t limit 1 for update wait 11", true, "SELECT * FROM `t` LIMIT 1 FOR UPDATE WAIT 11"},
+		{"select * from t for share nowait", true, "SELECT * FROM `t` FOR SHARE NOWAIT"},
+		{"select * from t for update skip locked", true, "SELECT * FROM `t` FOR UPDATE SKIP LOCKED"},
+		{"select * from t for share skip locked", true, "SELECT * FROM `t` FOR SHARE SKIP LOCKED"},
+		{"select * from t lock in share mode", true, "SELECT * FROM `t` FOR SHARE"},
+		{"select * from t lock in share mode nowait", false, ""},
+		{"select * from t lock in share mode skip locked", false, ""},
 
 		// select into outfile
 		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
@@ -790,7 +796,9 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"admin reload bindings", true, "ADMIN RELOAD BINDINGS"},
 		{"admin show telemetry", true, "ADMIN SHOW TELEMETRY"},
 		{"admin reset telemetry_id", true, "ADMIN RESET TELEMETRY_ID"},
-		{"admin reload statistics", true, "ADMIN RELOAD STATISTICS"},
+		// This case would be removed once TiDB PR to remove ADMIN RELOAD STATISTICS is merged.
+		{"admin reload statistics", true, "ADMIN RELOAD TIDB_STATS"},
+		{"admin reload tidb_stats", true, "ADMIN RELOAD TIDB_STATS"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},
@@ -4379,8 +4387,8 @@ func (s *testParserSuite) TestTrace(c *C) {
 		{"trace replace into foo values (1 || 2)", true, "TRACE REPLACE INTO `foo` VALUES (1 OR 2)"},
 		{"trace update t set id = id + 1 order by id desc;", true, "TRACE UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
 		{"trace select c1 from t1 union (select c2 from t2) limit 1, 1", true, "TRACE SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
-		{"trace format = 'row' select c1 from t1 union (select c2 from t2) limit 1, 1", true, "TRACE FORMAT = 'row' SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
-		{"trace format = 'json' update t set id = id + 1 order by id desc;", true, "TRACE UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
+		{"trace format = 'row' select c1 from t1 union (select c2 from t2) limit 1, 1", true, "TRACE SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{"trace format = 'json' update t set id = id + 1 order by id desc;", true, "TRACE FORMAT = 'json' UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
 	}
 	s.RunTest(c, table)
 }

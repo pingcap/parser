@@ -249,6 +249,7 @@ import (
 	stored            "STORED"
 	terminated        "TERMINATED"
 	then              "THEN"
+	tidbStats         "TIDB_STATS"
 	tinyblobType      "TINYBLOB"
 	tinyIntType       "TINYINT"
 	tinytextType      "TINYTEXT"
@@ -427,6 +428,7 @@ import (
 	level                 "LEVEL"
 	list                  "LIST"
 	local                 "LOCAL"
+	locked                "LOCKED"
 	location              "LOCATION"
 	logs                  "LOGS"
 	master                "MASTER"
@@ -540,6 +542,7 @@ import (
 	shutdown              "SHUTDOWN"
 	signed                "SIGNED"
 	simple                "SIMPLE"
+	skip                  "SKIP"
 	skipSchemaFiles       "SKIP_SCHEMA_FILES"
 	slave                 "SLAVE"
 	slow                  "SLOW"
@@ -636,7 +639,6 @@ import (
 	recent                "RECENT"
 	running               "RUNNING"
 	s3                    "S3"
-	skip                  "SKIP"
 	staleness             "STALENESS"
 	std                   "STD"
 	stddev                "STDDEV"
@@ -1077,7 +1079,7 @@ import (
 	RowFormat                              "Row format option"
 	RowValue                               "Row value"
 	RowStmt                                "Row constructor"
-	SelectLockOpt                          "FOR UPDATE or LOCK IN SHARE MODE,"
+	SelectLockOpt                          "SELECT lock options"
 	SelectStmtSQLCache                     "SELECT statement optional SQL_CAHCE/SQL_NO_CACHE"
 	SelectStmtFieldList                    "SELECT statement field list"
 	SelectStmtLimit                        "SELECT statement LIMIT clause"
@@ -1695,6 +1697,19 @@ AlterTableSpec:
 			Num:             getUint64FromNUM($6),
 		}
 	}
+|	"ADD" "TIDB_STATS" IfNotExists Identifier StatsType '(' ColumnNameList ')'
+	{
+		statsSpec := &ast.StatisticsSpec{
+			StatsName: $4,
+			StatsType: $5.(uint8),
+			Columns:   $7.([]*ast.ColumnName),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:          ast.AlterTableAddStatistics,
+			IfNotExists: $3.(bool),
+			Statistics:  statsSpec,
+		}
+	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
 	{
 		$$ = &ast.AlterTableSpec{
@@ -1748,6 +1763,17 @@ AlterTableSpec:
 			IfExists:       $3.(bool),
 			Tp:             ast.AlterTableDropPartition,
 			PartitionNames: $4.([]model.CIStr),
+		}
+	}
+|	"DROP" "TIDB_STATS" IfExists Identifier
+	{
+		statsSpec := &ast.StatisticsSpec{
+			StatsName: $4,
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:         ast.AlterTableDropStatistics,
+			IfExists:   $3.(bool),
+			Statistics: statsSpec,
 		}
 	}
 |	"EXCHANGE" "PARTITION" Identifier "WITH" "TABLE" TableName WithValidationOpt
@@ -3222,28 +3248,28 @@ NumLiteral:
 |	decLit
 
 StatsType:
-	'(' "CARDINALITY" ')'
+	"CARDINALITY"
 	{
 		$$ = ast.StatsTypeCardinality
 	}
-|	'(' "DEPENDENCY" ')'
+|	"DEPENDENCY"
 	{
 		$$ = ast.StatsTypeDependency
 	}
-|	'(' "CORRELATION" ')'
+|	"CORRELATION"
 	{
 		$$ = ast.StatsTypeCorrelation
 	}
 
 CreateStatisticsStmt:
-	"CREATE" "STATISTICS" IfNotExists Identifier StatsType "ON" TableName '(' ColumnNameList ')'
+	"CREATE" "STATISTICS" IfNotExists Identifier '(' StatsType ')' "ON" TableName '(' ColumnNameList ')'
 	{
 		$$ = &ast.CreateStatisticsStmt{
 			IfNotExists: $3.(bool),
 			StatsName:   $4,
-			StatsType:   $5.(uint8),
-			Table:       $7.(*ast.TableName),
-			Columns:     $9.([]*ast.ColumnName),
+			StatsType:   $6.(uint8),
+			Table:       $9.(*ast.TableName),
+			Columns:     $11.([]*ast.ColumnName),
 		}
 	}
 
@@ -4209,7 +4235,7 @@ TraceStmt:
 	{
 		$$ = &ast.TraceStmt{
 			Stmt:   $2,
-			Format: "json",
+			Format: "row",
 		}
 		startOffset := parser.startOffset(&yyS[yypt])
 		$2.SetText(string(parser.src[startOffset:]))
@@ -5716,6 +5742,8 @@ UnReservedKeyword:
 |	"OPTIONAL"
 |	"REQUIRED"
 |	"PURGE"
+|	"SKIP"
+|	"LOCKED"
 
 TiDBKeyword:
 	"ADMIN"
@@ -5780,7 +5808,6 @@ NotKeywordToken:
 |	"RUNNING"
 |	"POSITION"
 |	"S3"
-|	"SKIP"
 |	"STRICT"
 |	"SUBDATE"
 |	"SUBSTRING"
@@ -8665,7 +8692,7 @@ SubSelect2:
 		$$ = &ast.SubqueryExpr{Query: rs}
 	}
 
-// See https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-reads.html
+// See https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html
 SelectLockOpt:
 	/* empty */
 	{
@@ -8674,6 +8701,10 @@ SelectLockOpt:
 |	"FOR" "UPDATE"
 	{
 		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdate}
+	}
+|	"FOR" "SHARE"
+	{
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
 	}
 |	"FOR" "UPDATE" "NOWAIT"
 	{
@@ -8686,9 +8717,21 @@ SelectLockOpt:
 			WaitSec:  getUint64FromNUM($4),
 		}
 	}
+|	"FOR" "SHARE" "NOWAIT"
+	{
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareNoWait}
+	}
+|	"FOR" "UPDATE" "SKIP" "LOCKED"
+	{
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdateSkipLocked}
+	}
+|	"FOR" "SHARE" "SKIP" "LOCKED"
+	{
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareSkipLocked}
+	}
 |	"LOCK" "IN" "SHARE" "MODE"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockInShareMode}
+		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
 	}
 
 SetOprStmt1:
@@ -9477,6 +9520,12 @@ AdminStmt:
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminReloadBindings,
+		}
+	}
+|	"ADMIN" "RELOAD" "TIDB_STATS"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminReloadStatistics,
 		}
 	}
 |	"ADMIN" "RELOAD" "STATISTICS"
