@@ -108,7 +108,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
-		"constraints", "role", "replicas", "policy", "s3", "skip", "strict",
+		"constraints", "role", "replicas", "policy", "s3", "skip", "strict", "running", "stop",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -5751,6 +5751,20 @@ func (s *testParserSuite) TestAsyncImport(c *C) {
 			true,
 			"CREATE IMPORT IF NOT EXISTS `test` FROM 'file:///d/' REPLACE SKIP_SCHEMA_FILES = 1",
 		},
+		{"stop import test", true, "STOP IMPORT `test`"},
+		{"stop import if running test", true, "STOP IMPORT IF RUNNING `test`"},
+		{"resume import test", true, "RESUME IMPORT `test`"},
+		{"resume import if not running test", true, "RESUME IMPORT IF NOT RUNNING `test`"},
+		// empty alter import is OK
+		{"alter import test", true, "ALTER IMPORT `test`"},
+		{"alter import test truncate all", true, "ALTER IMPORT `test` TRUNCATE ALL"},
+		{"alter import test skip duplicate csv_delimiter = '''' truncate errors table tbl", true, "ALTER IMPORT `test` SKIP DUPLICATE CSV_DELIMITER = '''' TRUNCATE ERRORS TABLE `tbl`"},
+		{"alter import test truncate errors table db.tbl", true, "ALTER IMPORT `test` TRUNCATE ERRORS TABLE `db`.`tbl`"},
+		{"drop import test", true, "DROP IMPORT `test`"},
+		{"drop import if exists test", true, "DROP IMPORT IF EXISTS `test`"},
+		{"show import test", true, "SHOW IMPORT `test`"},
+		{"show import test table tbl", true, "SHOW IMPORT `test` TABLE `tbl`"},
+		{"show import test errors table tbl", true, "SHOW IMPORT `test` ERRORS TABLE `tbl`"},
 	}
 	s.RunTest(c, cases)
 }

@@ -634,6 +634,7 @@ import (
 	now                   "NOW"
 	position              "POSITION"
 	recent                "RECENT"
+	running               "RUNNING"
 	s3                    "S3"
 	skip                  "SKIP"
 	staleness             "STALENESS"
@@ -641,6 +642,7 @@ import (
 	stddev                "STDDEV"
 	stddevPop             "STDDEV_POP"
 	stddevSamp            "STDDEV_SAMP"
+	stop                  "STOP"
 	strict                "STRICT"
 	strong                "STRONG"
 	subDate               "SUBDATE"
@@ -805,6 +807,7 @@ import (
 	AlterDatabaseStmt      "Alter database statement"
 	AlterTableStmt         "Alter table statement"
 	AlterUserStmt          "Alter user statement"
+	AlterImportStmt        "ALTER IMPORT statement"
 	AlterInstanceStmt      "Alter instance statement"
 	AlterSequenceStmt      "Alter sequence statement"
 	AnalyzeTableStmt       "Analyze table statement"
@@ -824,6 +827,7 @@ import (
 	CreateStatisticsStmt   "CREATE STATISTICS statement"
 	DoStmt                 "Do statement"
 	DropDatabaseStmt       "DROP DATABASE statement"
+	DropImportStmt         "DROP IMPORT statement"
 	DropIndexStmt          "DROP INDEX statement"
 	DropStatisticsStmt     "DROP STATISTICS statement"
 	DropStatsStmt          "DROP STATS statement"
@@ -859,6 +863,7 @@ import (
 	RenameTableStmt        "rename table statement"
 	ReplaceIntoStmt        "REPLACE INTO statement"
 	RecoverTableStmt       "recover table statement"
+	ResumeImportStmt       "RESUME IMPORT statement"
 	RevokeStmt             "Revoke statement"
 	RevokeRoleStmt         "Revoke role statement"
 	RollbackStmt           "ROLLBACK statement"
@@ -867,8 +872,10 @@ import (
 	ChangeStmt             "Change statement"
 	SetRoleStmt            "Set active role statement"
 	SetDefaultRoleStmt     "Set default statement for some user"
+	ShowImportStmt         "SHOW IMPORT statement"
 	ShowStmt               "Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement              "statement"
+	StopImportStmt         "STOP IMPORT statement"
 	TraceStmt              "TRACE statement"
 	TraceableStmt          "traceable statement"
 	TruncateTableStmt      "TRUNCATE TABLE statement"
@@ -969,7 +976,10 @@ import (
 	HandleRangeList                        "handle range list"
 	IfExists                               "If Exists"
 	IfNotExists                            "If Not Exists"
+	IfNotRunning                           "If Not Running"
+	IfRunning                              "If Running"
 	IgnoreOptional                         "IGNORE or empty"
+	ImportTruncate                         "truncate all data or data related to errors"
 	IndexHint                              "index hint"
 	IndexHintList                          "index hint list"
 	IndexHintListOpt                       "index hint list opt"
@@ -1009,7 +1019,9 @@ import (
 	ObjectType                             "Grant statement object type"
 	OnDuplicateKeyUpdate                   "ON DUPLICATE KEY UPDATE value list"
 	DuplicateOpt                           "[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
+	OptErrors                              "ERRORS or empty"
 	OptFull                                "Full or empty"
+	OptTableName                           "Optional table name"
 	OptTemporary                           "TEMPORARY or empty"
 	OptOrder                               "Optional ordering keyword: ASC/DESC. Default to ASC"
 	Order                                  "Ordering keyword: ASC or DESC"
@@ -4645,9 +4657,9 @@ PurgeImportStmt:
  *		[REPLACE | SKIP {ALL | CONSTRAINT | DUPLICATE | STRICT}]
  *		[options_list]
  *		[TRUNCATE
- *			[ALL | ERRORS] [TABLE table_name]
+ *			{ALL | ERRORS} [TABLE table_name]
  *		]
- *	DROP IMPORT import_name
+ *	DROP IMPORT [IF EXISTS] import_name
  *	SHOW IMPORT import_name [ERRORS] [TABLE table_name]
  */
 CreateImportStmt:
@@ -4660,6 +4672,87 @@ CreateImportStmt:
 			ErrorHandling: $7.(ast.ErrorHandlingOption),
 			Options:       $8.([]*ast.BRIEOption),
 		}
+	}
+
+StopImportStmt:
+	"STOP" "IMPORT" IfRunning Identifier
+	{
+		$$ = &ast.StopImportStmt{
+			IfRunning: $3.(bool),
+			Name:      $4,
+		}
+	}
+
+ResumeImportStmt:
+	"RESUME" "IMPORT" IfNotRunning Identifier
+	{
+		$$ = &ast.ResumeImportStmt{
+			IfNotRunning: $3.(bool),
+			Name:         $4,
+		}
+	}
+
+AlterImportStmt:
+	"ALTER" "IMPORT" Identifier ErrorHandling BRIEOptions ImportTruncate
+	{
+		s := &ast.AlterImportStmt{
+			Name:          $3,
+			ErrorHandling: $4.(ast.ErrorHandlingOption),
+			Options:       $5.([]*ast.BRIEOption),
+		}
+		if $6 != nil {
+			s.Truncate = $6.(*ast.ImportTruncate)
+		}
+		$$ = s
+	}
+
+DropImportStmt:
+	"DROP" "IMPORT" IfExists Identifier
+	{
+		$$ = &ast.DropImportStmt{
+			IfExists: $3.(bool),
+			Name:     $4,
+		}
+	}
+
+ShowImportStmt:
+	"SHOW" "IMPORT" Identifier OptErrors OptTableName
+	{
+		s := &ast.ShowImportStmt{
+			Name:       $3,
+			ErrorsOnly: $4.(bool),
+		}
+		if $5 != nil {
+			s.TableName = $5.(*ast.TableName)
+		}
+		$$ = s
+	}
+
+IfRunning:
+	{
+		$$ = false
+	}
+|	"IF" "RUNNING"
+	{
+		$$ = true
+	}
+
+IfNotRunning:
+	{
+		$$ = false
+	}
+|	"IF" NotSym "RUNNING"
+	{
+		$$ = true
+	}
+
+OptErrors:
+	{
+		$$ = false
+	}
+|	"ERRORS"
+	{
+		$$ = true
 	}
 
 ErrorHandling:
@@ -4685,6 +4778,36 @@ ErrorHandling:
 |	"SKIP" "STRICT"
 	{
 		$$ = ast.ErrorHandleSkipStrict
+	}
+
+OptTableName:
+	{
+		$$ = nil
+	}
+|	"TABLE" TableName
+	{
+		$$ = $2
+	}
+
+ImportTruncate:
+	{
+		$$ = nil
+	}
+|	"TRUNCATE" "ALL" OptTableName
+	{
+		t := &ast.ImportTruncate{IsErrorsOnly: false}
+		if $3 != nil {
+			t.TableName = $3.(*ast.TableName)
+		}
+		$$ = t
+	}
+|	"TRUNCATE" "ERRORS" OptTableName
+	{
+		t := &ast.ImportTruncate{IsErrorsOnly: true}
+		if $3 != nil {
+			t.TableName = $3.(*ast.TableName)
+		}
+		$$ = t
 	}
 
 Expression:
@@ -5654,6 +5777,7 @@ NotKeywordToken:
 |	"MAX"
 |	"NOW"
 |	"RECENT"
+|	"RUNNING"
 |	"POSITION"
 |	"S3"
 |	"SKIP"
@@ -5665,6 +5789,7 @@ NotKeywordToken:
 |	"STDDEV"
 |	"STDDEV_POP"
 |	"STDDEV_SAMP"
+|	"STOP"
 |	"VARIANCE"
 |	"VAR_POP"
 |	"VAR_SAMP"
@@ -10037,6 +10162,7 @@ Statement:
 |	AlterDatabaseStmt
 |	AlterTableStmt
 |	AlterUserStmt
+|	AlterImportStmt
 |	AlterInstanceStmt
 |	AlterSequenceStmt
 |	AnalyzeTableStmt
@@ -10061,6 +10187,7 @@ Statement:
 |	CreateStatisticsStmt
 |	DoStmt
 |	DropDatabaseStmt
+|	DropImportStmt
 |	DropIndexStmt
 |	DropTableStmt
 |	DropSequenceStmt
@@ -10087,6 +10214,7 @@ Statement:
 |	RenameTableStmt
 |	ReplaceIntoStmt
 |	RecoverTableStmt
+|	ResumeImportStmt
 |	RevokeStmt
 |	RevokeRoleStmt
 |	SetOprStmt1
@@ -10094,6 +10222,8 @@ Statement:
 |	SetRoleStmt
 |	SetDefaultRoleStmt
 |	SplitRegionStmt
+|	StopImportStmt
+|	ShowImportStmt
 |	ShowStmt
 |	SubSelect
 	{

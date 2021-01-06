@@ -2830,6 +2830,150 @@ func (n *CreateImportStmt) SecureText() string {
 	return sb.String()
 }
 
+type StopImportStmt struct {
+	stmtNode
+
+	IfRunning bool
+	Name      string
+}
+
+func (n *StopImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*StopImportStmt)
+	return v.Leave(n)
+}
+
+func (n *StopImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("STOP IMPORT ")
+	if n.IfRunning {
+		ctx.WriteKeyWord("IF RUNNING ")
+	}
+	ctx.WriteName(n.Name)
+	return nil
+}
+
+type ResumeImportStmt struct {
+	stmtNode
+
+	IfNotRunning bool
+	Name         string
+}
+
+func (n *ResumeImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*ResumeImportStmt)
+	return v.Leave(n)
+}
+
+func (n *ResumeImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("RESUME IMPORT ")
+	if n.IfNotRunning {
+		ctx.WriteKeyWord("IF NOT RUNNING ")
+	}
+	ctx.WriteName(n.Name)
+	return nil
+}
+
+type ImportTruncate struct {
+	IsErrorsOnly bool
+	TableName    *TableName
+}
+
+type AlterImportStmt struct {
+	stmtNode
+
+	Name          string
+	ErrorHandling ErrorHandlingOption
+	Options       []*BRIEOption
+	Truncate      *ImportTruncate
+}
+
+func (n *AlterImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*AlterImportStmt)
+	return v.Leave(n)
+}
+
+func (n *AlterImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("ALTER IMPORT ")
+	ctx.WriteName(n.Name)
+	if n.ErrorHandling != ErrorHandleError {
+		ctx.WritePlain(" ")
+		ctx.WriteKeyWord(n.ErrorHandling.String())
+	}
+	for _, opt := range n.Options {
+		ctx.WritePlain(" ")
+		if err := opt.Restore(ctx); err != nil {
+			return err
+		}
+	}
+	if n.Truncate != nil {
+		if n.Truncate.IsErrorsOnly {
+			ctx.WriteKeyWord(" TRUNCATE ERRORS")
+		} else {
+			ctx.WriteKeyWord(" TRUNCATE ALL")
+		}
+		if n.Truncate.TableName != nil {
+			ctx.WriteKeyWord(" TABLE ")
+			if err := n.Truncate.TableName.Restore(ctx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type DropImportStmt struct {
+	stmtNode
+
+	IfExists bool
+	Name     string
+}
+
+func (n *DropImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*DropImportStmt)
+	return v.Leave(n)
+}
+
+func (n *DropImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("DROP IMPORT ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.Name)
+	return nil
+}
+
+type ShowImportStmt struct {
+	stmtNode
+
+	Name       string
+	ErrorsOnly bool
+	TableName  *TableName
+}
+
+func (n *ShowImportStmt) Accept(v Visitor) (Node, bool) {
+	newNode, _ := v.Enter(n)
+	n = newNode.(*ShowImportStmt)
+	return v.Leave(n)
+}
+
+func (n *ShowImportStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("SHOW IMPORT ")
+	ctx.WriteName(n.Name)
+	if n.ErrorsOnly {
+		ctx.WriteKeyWord(" ERRORS")
+	}
+	if n.TableName != nil {
+		ctx.WriteKeyWord(" TABLE ")
+		if err := n.TableName.Restore(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Ident is the table identifier composed of schema name and table name.
 type Ident struct {
 	Schema model.CIStr
