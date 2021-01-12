@@ -1092,6 +1092,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		{"show backup", false, ""},
 		{"show restore", false, ""},
 		{"show imports", true, "SHOW IMPORTS"},
+		// for show create import
+		{"show create import test", true, "SHOW CREATE IMPORT `test`"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},

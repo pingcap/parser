@@ -9647,6 +9647,13 @@ ShowStmt:
 			User: $4.(*auth.UserIdentity),
 		}
 	}
+|	"SHOW" "CREATE" "IMPORT" Identifier
+	{
+		$$ = &ast.ShowStmt{
+			Tp:     ast.ShowCreateImport,
+			DBName: $4, // we reuse DBName of ShowStmt
+		}
+	}
 |	"SHOW" "TABLE" TableName PartitionNameListOpt "REGIONS" WhereClauseOptional
 	{
 		stmt := &ast.ShowStmt{
