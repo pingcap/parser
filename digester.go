@@ -17,13 +17,14 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"github.com/pingcap/parser/charset"
 	hash2 "hash"
 	"reflect"
 	"strings"
 	"sync"
 	"unicode"
 	"unsafe"
+
+	"github.com/pingcap/parser/charset"
 )
 
 // DigestHash generates the digest of statements.
