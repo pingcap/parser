@@ -807,6 +807,7 @@ import (
 	LockTablesStmt       "Lock tables statement"
 	PreparedStmt         "PreparedStmt"
 	SelectStmt           "SELECT statement"
+	SelectStmtNoWith     "SELECT statement no with part"
 	RenameTableStmt      "rename table statement"
 	RenameDatabaseStmt   "rename database statment"
 	ReplaceIntoStmt      "REPLACE INTO statement"
@@ -826,7 +827,8 @@ import (
 	TruncateTableStmt    "TRUNCATE TABLE statement"
 	UnlockTablesStmt     "Unlock tables statement"
 	UpdateStmt           "UPDATE statement"
-	UnionStmt            "Union select state ment"
+	UnionStmt            "Union select statement"
+	UnionStmtNoWith      "Union select statement no with part"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
 	CreateViewSelectOpt  "Select/Union statement in CREATE VIEW ... AS SELECT"
@@ -862,6 +864,8 @@ import (
 	ColumnNameOrUserVariableList           "column name or user variable list"
 	ColumnList                             "column list"
 	ColumnNameListOpt                      "column name list opt"
+	IdentList                              "identifier list"
+	IdentListWithParenOpt                  "column name list opt with parentheses"
 	ColumnNameOrUserVarListOpt             "column name or user vairiabe list opt"
 	ColumnNameOrUserVarListOptWithBrackets "column name or user variable list opt with brackets"
 	ColumnSetValue                         "insert statement set value by column name"
@@ -871,6 +875,7 @@ import (
 	ColumnOptionList                       "column definition option list"
 	VirtualOrStored                        "indicate generated column is stored or not"
 	ColumnOptionListOpt                    "optional column definition option list"
+	CommonTableExpr                        "Common table expression"
 	CompletionTypeWithinTransaction        "overwrite system variable completion_type within current transaction"
 	ConnectionOption                       "single connection options"
 	ConnectionOptionList                   "connection options for CREATE USER statement"
@@ -1094,6 +1099,8 @@ import (
 	WhereClauseOptional                    "Optional WHERE clause"
 	WhenClause                             "When clause"
 	WhenClauseList                         "When clause list"
+	WithClause                             "With Clause"
+	WithList                               "With list"
 	WithReadLockOpt                        "With Read Lock opt"
 	WithGrantOptionOpt                     "With Grant Option opt"
 	WithValidation                         "with validation"
@@ -1107,6 +1114,7 @@ import (
 	OptNullTreatment                       "Optional NULL treatment"
 	OptPartitionClause                     "Optional PARTITION clause"
 	OptWild                                "Optional Wildcard"
+	OptWithClause                          "Optional with Clause"
 	OptWindowOrderByClause                 "Optional ORDER BY clause in WINDOW"
 	OptWindowFrameClause                   "Optional FRAME clause in WINDOW"
 	OptWindowingClause                     "Optional OVER clause"
@@ -1260,6 +1268,8 @@ import (
 %precedence stringLit
 %precedence lowerThanSetKeyword
 %precedence set
+%precedence selectKwd
+%precedence lowerThanSelectStmt
 %precedence lowerThanInsertValues
 %precedence insertValues
 %precedence lowerThanCreateTableSelect
@@ -2441,6 +2451,26 @@ ColumnNameListOpt:
 		$$ = []*ast.ColumnName{}
 	}
 |	ColumnNameList
+
+IdentListWithParenOpt:
+	/* EMPTY */
+	{
+		$$ = []model.CIStr{}
+	}
+|	'(' IdentList ')'
+	{
+		$$ = $2
+	}
+
+IdentList:
+	Identifier
+	{
+		$$ = []model.CIStr{model.NewCIStr($1)}
+	}
+|	IdentList ',' Identifier
+	{
+		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
+	}
 
 ColumnNameOrUserVarListOpt:
 	/* EMPTY */
@@ -7018,6 +7048,15 @@ SelectStmtFromTable:
 	}
 
 SelectStmt:
+	SelectStmtNoWith
+|	WithClause SelectStmtNoWith
+	{
+		st := $2.(*ast.SelectStmt)
+		st.With = $1.(*ast.WithClause)
+		$$ = st
+	}
+
+SelectStmtNoWith:
 	SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
@@ -7082,6 +7121,44 @@ SelectStmt:
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
 		$$ = st
+	}
+
+WithClause:
+	"WITH" WithList
+	{
+		$$ = $2
+	}
+
+OptWithClause:
+	/* empty */
+	{
+		$$ = nil
+	}
+|	WithClause
+
+WithList:
+	WithList ',' CommonTableExpr
+	{
+		ws := $1.(*ast.WithClause)
+		ws.CTEs = append(ws.CTEs, $3.(*ast.CommonTableExpression))
+		$$ = ws
+	}
+|	CommonTableExpr
+	{
+		ws := &ast.WithClause{}
+		ws.CTEs = make([]*ast.CommonTableExpression, 0, 4)
+		ws.CTEs = append(ws.CTEs, $1.(*ast.CommonTableExpression))
+		$$ = ws
+	}
+
+CommonTableExpr:
+	Identifier IdentListWithParenOpt "AS" SubSelect
+	{
+		cte := &ast.CommonTableExpression{}
+		cte.Name = model.NewCIStr($1)
+		cte.ColNameList = $2.([]model.CIStr)
+		cte.Query = $4.(*ast.SubqueryExpr)
+		$$ = cte
 	}
 
 FromDual:
@@ -7833,6 +7910,15 @@ SelectLockOpt:
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
 UnionStmt:
+	UnionStmtNoWith
+|	WithClause UnionStmtNoWith
+	{
+		union := $2.(*ast.UnionStmt)
+		union.With = $1.(*ast.WithClause)
+		$$ = union
+	}
+
+UnionStmtNoWith:
 	UnionClauseList "UNION" UnionOpt SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
 	{
 		st := $4.(*ast.SelectStmt)
@@ -7935,7 +8021,7 @@ UnionClauseList:
 	}
 
 UnionSelect:
-	SelectStmt
+	SelectStmtNoWith
 |	'(' SelectStmt ')'
 	{
 		st := $2.(*ast.SelectStmt)
