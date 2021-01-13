@@ -767,6 +767,20 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+type CommonTableExpression struct {
+	node
+
+	Name     model.CIStr
+	Query    *SubqueryExpr
+	NameList []*ColumnName
+}
+
+type WithClause struct {
+	node
+
+	CTEs []*CommonTableExpression
+}
+
 // SelectStmt represents the select query node.
 // See https://dev.mysql.com/doc/refman/5.7/en/select.html
 type SelectStmt struct {
@@ -805,10 +819,52 @@ type SelectStmt struct {
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
 	SelectIntoOpt *SelectIntoOption
+	With          *WithClause
+}
+
+func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("WITH ")
+	first := true
+	for _, cte := range n.CTEs {
+		if !first {
+			ctx.WritePlain(", ")
+		} else {
+			first = false
+		}
+		ctx.WriteName(cte.Name.String())
+		if len(cte.NameList) > 0 {
+			ctx.WritePlain(" ")
+			ctx.WritePlain("(")
+			f := true
+			for _, name := range cte.NameList {
+				if !f {
+					ctx.WritePlain(", ")
+				} else {
+					f = false
+				}
+				ctx.WritePlain(name.String())
+			}
+			ctx.WritePlain(")")
+		}
+		ctx.WritePlain(" AS ")
+		err := cte.Query.Restore(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	ctx.WritePlain(" ")
+	return nil
 }
 
 // Restore implements Node interface.
 func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		err := n.With.Restore(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	ctx.WriteKeyWord("SELECT ")
 
 	if n.SelectStmtOpts.Priority > 0 {
