@@ -867,6 +867,27 @@ func (i *IndexColumn) Clone() *IndexColumn {
 	return &ni
 }
 
+// PrimaryKeyType is the type of primary key.
+// Available values are 'with clustered', 'without clustered', and ''(default).
+type PrimaryKeyType int8
+
+func (p PrimaryKeyType) String() string {
+	switch p {
+	case PrimaryKeyTypeWithClustered:
+		return "CLUSTERED"
+	case PrimaryKeyTypeWithoutClustered:
+		return "NONCLUSTERED"
+	default:
+		return ""
+	}
+}
+
+const (
+	PrimaryKeyTypeDefault PrimaryKeyType = iota
+	PrimaryKeyTypeWithClustered
+	PrimaryKeyTypeWithoutClustered
+)
+
 // IndexType is the type of index
 type IndexType int
 
