@@ -1891,6 +1891,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select next value for seq", true, "SELECT NEXTVAL(`seq`)"},
 		{"select next value for sequence", true, "SELECT NEXTVAL(`sequence`)"},
 		{"select NeXt vAluE for seQuEncE2", true, "SELECT NEXTVAL(`seQuEncE2`)"},
+
+		// Test Decode
+		{"select decode_case(1+2, 1, 2, 3, 4, 5, 6)", true, ""},
 	}
 	s.RunTest(c, table)
 
@@ -1905,7 +1908,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select cast(1 as float(54));", false, ""},
 
 		// for cast as real
-		{"select cast(1 as real);", true, "SELECT CAST(1 AS FLOAT)"},
+		{"select cast(1 as real);", true, "SELECT DECODE_CASE(1+2, 1, 2, 3, 4, 5, 6)"},
 	}
 	s.RunTestInRealAsFloatMode(c, table2)
 }

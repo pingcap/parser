@@ -256,6 +256,7 @@ const (
 	If     = "if"
 	Ifnull = "ifnull"
 	Nullif = "nullif"
+	DecodeCase = "decode_case"
 
 	// miscellaneous functions
 	AnyValue        = "any_value"
