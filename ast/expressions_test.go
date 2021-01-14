@@ -347,6 +347,16 @@ func (tc *testExpressionsSuite) TestMaxValueExprRestore(c *C) {
 	RunNodeRestoreTest(c, testCases, "alter table posts add partition ( partition p1 values less than %s)", extractNodeFunc)
 }
 
+func (tc *testExpressionsSuite) TestDefaultValueExprRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"default", "DEFAULT"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node.(*AlterTableStmt).Specs[0].PartDefinitions[0].Clause.(*PartitionDefinitionClauseIn).Values[0][0]
+	}
+	RunNodeRestoreTest(c, testCases, "alter table posts add partition ( partition p1 values in ( %s ) )", extractNodeFunc)
+}
+
 func (tc *testExpressionsSuite) TestPositionExprRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"1", "1"},

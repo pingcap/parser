@@ -689,10 +689,12 @@ func (pi *PartitionInfo) GetNameByID(id int64) string {
 
 // PartitionDefinition defines a single partition.
 type PartitionDefinition struct {
-	ID       int64    `json:"id"`
-	Name     CIStr    `json:"name"`
-	LessThan []string `json:"less_than"`
-	Comment  string   `json:"comment,omitempty"`
+	ID        int64      `json:"id"`
+	Name      CIStr      `json:"name"`
+	LessThan  []string   `json:"less_than"`
+	InValues  [][]string `json:"in_values"`
+	IsDefault bool       `json:"is_default"`
+	Comment   string     `json:"comment,omitempty"`
 }
 
 // IndexColumn provides index column info.
@@ -750,6 +752,7 @@ type IndexInfo struct {
 	Unique    bool           `json:"is_unique"`    // Whether the index is unique.
 	Primary   bool           `json:"is_primary"`   // Whether the index is primary key.
 	Invisible bool           `json:"is_invisible"` // Whether the index is invisible.
+	Global    bool           `json:"is_global"`    // Whether the index is global.
 }
 
 // Clone clones IndexInfo.

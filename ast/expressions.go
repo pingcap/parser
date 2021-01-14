@@ -1326,6 +1326,31 @@ func (n *MaxValueExpr) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// DefaultValueExpr is the expression for "default" used in partition.
+type DefaultValueExpr struct {
+	exprNode
+}
+
+// Restore implements Node interface.
+func (n *DefaultValueExpr) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("DEFAULT")
+	return nil
+}
+
+// Format the ExprNode into a Writer.
+func (n *DefaultValueExpr) Format(w io.Writer) {
+	fmt.Fprint(w, "DEFAULT")
+}
+
+// Accept implements Node Accept interface.
+func (n *DefaultValueExpr) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	return v.Leave(n)
+}
+
 // MatchAgainst is the expression for matching against fulltext index.
 type MatchAgainst struct {
 	exprNode

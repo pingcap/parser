@@ -2085,6 +2085,8 @@ func (s *testParserSuite) TestDDL(c *C) {
  PARTITION part9 VALUES LESS THAN (10) COMMENT = '10月份' ENGINE = InnoDB,
  PARTITION part10 VALUES LESS THAN (11) COMMENT = '11月份' ENGINE = InnoDB,
  PARTITION part11 VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB) */ ;`, true, "CREATE TABLE `app_channel_daily_report` (`id` BIGINT(20) NOT NULL AUTO_INCREMENT,`app_version` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',`gmt_create` DATETIME NOT NULL COMMENT '创建时间',PRIMARY KEY(`id`)) ENGINE = InnoDB AUTO_INCREMENT = 33703438 DEFAULT CHARACTER SET = UTF8 DEFAULT COLLATE = UTF8_UNICODE_CI PARTITION BY RANGE (MONTH(`gmt_create`)-1) (PARTITION `part0` VALUES LESS THAN (1) COMMENT = '1月份' ENGINE = InnoDB,PARTITION `part1` VALUES LESS THAN (2) COMMENT = '2月份' ENGINE = InnoDB,PARTITION `part2` VALUES LESS THAN (3) COMMENT = '3月份' ENGINE = InnoDB,PARTITION `part3` VALUES LESS THAN (4) COMMENT = '4月份' ENGINE = InnoDB,PARTITION `part4` VALUES LESS THAN (5) COMMENT = '5月份' ENGINE = InnoDB,PARTITION `part5` VALUES LESS THAN (6) COMMENT = '6月份' ENGINE = InnoDB,PARTITION `part6` VALUES LESS THAN (7) COMMENT = '7月份' ENGINE = InnoDB,PARTITION `part7` VALUES LESS THAN (8) COMMENT = '8月份' ENGINE = InnoDB,PARTITION `part8` VALUES LESS THAN (9) COMMENT = '9月份' ENGINE = InnoDB,PARTITION `part9` VALUES LESS THAN (10) COMMENT = '10月份' ENGINE = InnoDB,PARTITION `part10` VALUES LESS THAN (11) COMMENT = '11月份' ENGINE = InnoDB,PARTITION `part11` VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB)"},
+		{`CREATE TABLE t (a int, b int) partition by list (a) (partition p0 values IN (1), partition p1 values IN (DEFAULT))`, true, "CREATE TABLE `t` (`a` INT,`b` INT) PARTITION BY LIST (`a`) (PARTITION `p0` VALUES IN (1),PARTITION `p1` VALUES IN (DEFAULT))"},
+		{`CREATE TABLE t (a int, b int) partition by list (a) (partition p0 values (1), partition p1 values (DEFAULT))`, true, "CREATE TABLE `t` (`a` INT,`b` INT) PARTITION BY LIST (`a`) (PARTITION `p0` VALUES IN (1),PARTITION `p1` VALUES IN (DEFAULT))"},
 
 		// for check clause
 		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)) not enforced, check (c2 in (0, 1)))", true, "CREATE TABLE `t` (`c1` TINYINT(1),`c2` TINYINT(1),CHECK(`c1` IN (0,1)) NOT ENFORCED,CHECK(`c2` IN (0,1)) ENFORCED)"},
@@ -2965,6 +2967,19 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a bigint primary key auto_random(4), b varchar(100)) auto_random_base 200", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(4),`b` VARCHAR(100)) AUTO_RANDOM_BASE = 200"},
 		{"alter table t auto_random_base = 50", true, "ALTER TABLE `t` AUTO_RANDOM_BASE = 50"},
 		{"alter table t auto_increment 30, auto_random_base 40", true, "ALTER TABLE `t` AUTO_INCREMENT = 30, AUTO_RANDOM_BASE = 40"},
+
+		// for alter sequence
+		{"alter sequence seq", false, ""},
+		{"alter sequence seq comment=\"haha\"", false, ""},
+		{"alter sequence seq start = 1", true, "ALTER SEQUENCE `seq` START WITH 1"},
+		{"alter sequence seq start with 1 increment by 1", true, "ALTER SEQUENCE `seq` START WITH 1 INCREMENT BY 1"},
+		{"alter sequence seq start with 1 increment by 2 minvalue 0 maxvalue 100", true, "ALTER SEQUENCE `seq` START WITH 1 INCREMENT BY 2 MINVALUE 0 MAXVALUE 100"},
+		{"alter sequence seq increment -1 start with -1 minvalue -1 maxvalue -1000 cache = 10 nocycle", true, "ALTER SEQUENCE `seq` INCREMENT BY -1 START WITH -1 MINVALUE -1 MAXVALUE -1000 CACHE 10 NOCYCLE"},
+		{"alter sequence if exists seq2 increment = 2", true, "ALTER SEQUENCE IF EXISTS `seq2` INCREMENT BY 2"},
+		{"alter sequence seq restart", true, "ALTER SEQUENCE `seq` RESTART"},
+		{"alter sequence seq start with 3 restart with 5", true, "ALTER SEQUENCE `seq` START WITH 3 RESTART WITH 5"},
+		{"alter sequence seq restart = 5", true, "ALTER SEQUENCE `seq` RESTART WITH 5"},
+		{"create sequence seq restart = 5", false, ""},
 	}
 	s.RunTest(c, table)
 }
@@ -5182,6 +5197,16 @@ func (s *testParserSuite) TestBRIE(c *C) {
 		{"import table db1.tbl1 from 'file:///d/' csv_null = false", false, ""},
 		{"import table db1.tbl1 from 'file:///d/' csv_null = 0", false, ""},
 		{"import table db1.tbl1 from 'file:///d/' csv_null = abcdefgh", false, ""},
+	}
+
+	s.RunTest(c, table)
+}
+
+// For CTE
+func (s *testParserSuite) TestCTE(c *C) {
+	table := []testCase{
+		{"WITH `cte` AS (SELECT 1,2) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT 1,2) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH `cte` (col1, col2) AS (SELECT 1,2 UNION ALL SELECT 3,4) SELECT col1, col2 FROM cte;", true, "WITH `cte` (col1, col2) AS (SELECT 1,2 UNION ALL SELECT 3,4) SELECT `col1`,`col2` FROM `cte`"},
 	}
 
 	s.RunTest(c, table)
