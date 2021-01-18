@@ -1893,7 +1893,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select NeXt vAluE for seQuEncE2", true, "SELECT NEXTVAL(`seQuEncE2`)"},
 
 		// Test Decode
-		{"select decode_case(1+2, 1, 2, 3, 4, 5, 6)", true, ""},
+		{"select decode_case(1+2, 1, 2, 3, 4, 5, 6)", true, "SELECT DECODE_CASE(1+2, 1, 2, 3, 4, 5, 6)"},
+		{"select decode_case(1+2, 1, 'a', 6)", true, "SELECT DECODE_CASE(1+2, 1, 'a', 6)"},
+		{"select decode_case(a, 1, 'a', 6) from t", true, "SELECT DECODE_CASE(`a`, 1, 'a', 6) FROM `t`"},
 	}
 	s.RunTest(c, table)
 
@@ -1908,7 +1910,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select cast(1 as float(54));", false, ""},
 
 		// for cast as real
-		{"select cast(1 as real);", true, "SELECT DECODE_CASE(1+2, 1, 2, 3, 4, 5, 6)"},
+		{"select cast(1 as real);", true, "SELECT CAST(1 AS FLOAT)"},
 	}
 	s.RunTestInRealAsFloatMode(c, table2)
 }
