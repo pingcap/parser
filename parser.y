@@ -2145,11 +2145,11 @@ WithValidation:
 WithClustered:
 	"CLUSTERED"
 	{
-		$$ = model.PrimaryKeyTypeWithClustered
+		$$ = model.PrimaryKeyTypeClustered
 	}
 |	"NONCLUSTERED"
 	{
-		$$ = model.PrimaryKeyTypeWithoutClustered
+		$$ = model.PrimaryKeyTypeNonClustered
 	}
 
 AlgorithmClause:

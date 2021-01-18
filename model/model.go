@@ -873,9 +873,9 @@ type PrimaryKeyType int8
 
 func (p PrimaryKeyType) String() string {
 	switch p {
-	case PrimaryKeyTypeWithClustered:
+	case PrimaryKeyTypeClustered:
 		return "CLUSTERED"
-	case PrimaryKeyTypeWithoutClustered:
+	case PrimaryKeyTypeNonClustered:
 		return "NONCLUSTERED"
 	default:
 		return ""
@@ -884,8 +884,8 @@ func (p PrimaryKeyType) String() string {
 
 const (
 	PrimaryKeyTypeDefault PrimaryKeyType = iota
-	PrimaryKeyTypeWithClustered
-	PrimaryKeyTypeWithoutClustered
+	PrimaryKeyTypeClustered
+	PrimaryKeyTypeNonClustered
 )
 
 // IndexType is the type of index
