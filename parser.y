@@ -1023,7 +1023,6 @@ import (
 	DuplicateOpt                           "[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
 	OptErrors                              "ERRORS or empty"
 	OptFull                                "Full or empty"
-	OptTableName                           "Optional table name"
 	OptTemporary                           "TEMPORARY or empty"
 	OptOrder                               "Optional ordering keyword: ASC/DESC. Default to ASC"
 	Order                                  "Ordering keyword: ASC or DESC"
@@ -1131,6 +1130,7 @@ import (
 	TableNameOptWild                       "Table name with optional wildcard"
 	TableNameList                          "Table name list"
 	TableNameListOpt                       "Table name list opt"
+	TableNameListOpt2                      "Optional table name list with a preceding TABLE"
 	TableOption                            "create table option"
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
@@ -4673,10 +4673,10 @@ PurgeImportStmt:
  *		[REPLACE | SKIP {ALL | CONSTRAINT | DUPLICATE | STRICT}]
  *		[options_list]
  *		[TRUNCATE
- *			{ALL | ERRORS} [TABLE table_name]
+ *			{ALL | ERRORS} [TABLE table_name [, table_name] ...]
  *		]
  *	DROP IMPORT [IF EXISTS] import_name
- *	SHOW IMPORT import_name [ERRORS] [TABLE table_name]
+ *	SHOW IMPORT import_name [ERRORS] [TABLE table_name [, table_name] ...]
  */
 CreateImportStmt:
 	"CREATE" "IMPORT" IfNotExists Identifier "FROM" stringLit ErrorHandling BRIEOptions
@@ -4732,16 +4732,13 @@ DropImportStmt:
 	}
 
 ShowImportStmt:
-	"SHOW" "IMPORT" Identifier OptErrors OptTableName
+	"SHOW" "IMPORT" Identifier OptErrors TableNameListOpt2
 	{
-		s := &ast.ShowImportStmt{
+		$$ = &ast.ShowImportStmt{
 			Name:       $3,
 			ErrorsOnly: $4.(bool),
+			TableNames: $5.([]*ast.TableName),
 		}
-		if $5 != nil {
-			s.TableName = $5.(*ast.TableName)
-		}
-		$$ = s
 	}
 
 IfRunning:
@@ -4796,34 +4793,23 @@ ErrorHandling:
 		$$ = ast.ErrorHandleSkipStrict
 	}
 
-OptTableName:
-	{
-		$$ = nil
-	}
-|	"TABLE" TableName
-	{
-		$$ = $2
-	}
-
 ImportTruncate:
 	{
 		$$ = nil
 	}
-|	"TRUNCATE" "ALL" OptTableName
+|	"TRUNCATE" "ALL" TableNameListOpt2
 	{
-		t := &ast.ImportTruncate{IsErrorsOnly: false}
-		if $3 != nil {
-			t.TableName = $3.(*ast.TableName)
+		$$ = &ast.ImportTruncate{
+			IsErrorsOnly: false,
+			TableNames:   $3.([]*ast.TableName),
 		}
-		$$ = t
 	}
-|	"TRUNCATE" "ERRORS" OptTableName
+|	"TRUNCATE" "ERRORS" TableNameListOpt2
 	{
-		t := &ast.ImportTruncate{IsErrorsOnly: true}
-		if $3 != nil {
-			t.TableName = $3.(*ast.TableName)
+		$$ = &ast.ImportTruncate{
+			IsErrorsOnly: true,
+			TableNames:   $3.([]*ast.TableName),
 		}
-		$$ = t
 	}
 
 Expression:
@@ -10193,6 +10179,16 @@ TableNameListOpt:
 		$$ = []*ast.TableName{}
 	}
 |	TableNameList
+
+TableNameListOpt2:
+	%prec empty
+	{
+		$$ = []*ast.TableName{}
+	}
+|	"TABLE" TableNameList
+	{
+		$$ = $2
+	}
 
 WithReadLockOpt:
 	{

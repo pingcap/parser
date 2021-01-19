@@ -2880,7 +2880,7 @@ func (n *ResumeImportStmt) Restore(ctx *format.RestoreCtx) error {
 
 type ImportTruncate struct {
 	IsErrorsOnly bool
-	TableName    *TableName
+	TableNames   []*TableName
 }
 
 type AlterImportStmt struct {
@@ -2917,9 +2917,16 @@ func (n *AlterImportStmt) Restore(ctx *format.RestoreCtx) error {
 		} else {
 			ctx.WriteKeyWord(" TRUNCATE ALL")
 		}
-		if n.Truncate.TableName != nil {
-			ctx.WriteKeyWord(" TABLE ")
-			if err := n.Truncate.TableName.Restore(ctx); err != nil {
+		if len(n.Truncate.TableNames) != 0 {
+			ctx.WriteKeyWord(" TABLE")
+		}
+		for i := range n.Truncate.TableNames {
+			if i == 0 {
+				ctx.WritePlain(" ")
+			} else {
+				ctx.WritePlain(", ")
+			}
+			if err := n.Truncate.TableNames[i].Restore(ctx); err != nil {
 				return err
 			}
 		}
@@ -2954,7 +2961,7 @@ type ShowImportStmt struct {
 
 	Name       string
 	ErrorsOnly bool
-	TableName  *TableName
+	TableNames []*TableName
 }
 
 func (n *ShowImportStmt) Accept(v Visitor) (Node, bool) {
@@ -2969,9 +2976,16 @@ func (n *ShowImportStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.ErrorsOnly {
 		ctx.WriteKeyWord(" ERRORS")
 	}
-	if n.TableName != nil {
-		ctx.WriteKeyWord(" TABLE ")
-		if err := n.TableName.Restore(ctx); err != nil {
+	if len(n.TableNames) != 0 {
+		ctx.WriteKeyWord(" TABLE")
+	}
+	for i := range n.TableNames {
+		if i == 0 {
+			ctx.WritePlain(" ")
+		} else {
+			ctx.WritePlain(", ")
+		}
+		if err := n.TableNames[i].Restore(ctx); err != nil {
 			return err
 		}
 	}

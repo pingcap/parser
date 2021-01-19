@@ -5751,11 +5751,13 @@ func (s *testParserSuite) TestAsyncImport(c *C) {
 		{"alter import test truncate all", true, "ALTER IMPORT `test` TRUNCATE ALL"},
 		{"alter import test skip duplicate csv_delimiter = '''' truncate errors table tbl", true, "ALTER IMPORT `test` SKIP DUPLICATE CSV_DELIMITER = '''' TRUNCATE ERRORS TABLE `tbl`"},
 		{"alter import test truncate errors table db.tbl", true, "ALTER IMPORT `test` TRUNCATE ERRORS TABLE `db`.`tbl`"},
+		{"alter import test truncate errors table db.tb1, tb2", true, "ALTER IMPORT `test` TRUNCATE ERRORS TABLE `db`.`tb1`, `tb2`"},
 		{"drop import test", true, "DROP IMPORT `test`"},
 		{"drop import if exists test", true, "DROP IMPORT IF EXISTS `test`"},
 		{"show import test", true, "SHOW IMPORT `test`"},
 		{"show import test table tbl", true, "SHOW IMPORT `test` TABLE `tbl`"},
 		{"show import test errors table tbl", true, "SHOW IMPORT `test` ERRORS TABLE `tbl`"},
+		{"show import test errors table tb1, db.tb2", true, "SHOW IMPORT `test` ERRORS TABLE `tb1`, `db`.`tb2`"},
 	}
 	s.RunTest(c, cases)
 }
