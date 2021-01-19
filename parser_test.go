@@ -1892,7 +1892,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select next value for sequence", true, "SELECT NEXTVAL(`sequence`)"},
 		{"select NeXt vAluE for seQuEncE2", true, "SELECT NEXTVAL(`seQuEncE2`)"},
 
-		// Test Decode
+		// Test DecodeCase
 		{"select decode_case(1+2, 1, 2, 3, 4, 5, 6)", true, "SELECT DECODE_CASE(1+2, 1, 2, 3, 4, 5, 6)"},
 		{"select decode_case(1+2, 1, 'a', 6)", true, "SELECT DECODE_CASE(1+2, 1, 'a', 6)"},
 		{"select decode_case(a, 1, 'a', 6) from t", true, "SELECT DECODE_CASE(`a`, 1, 'a', 6) FROM `t`"},
