@@ -84,7 +84,63 @@ type Join struct {
 	// NaturalJoin represents join is natural join.
 	NaturalJoin bool
 	// StraightJoin represents a straight join.
-	StraightJoin bool
+	StraightJoin   bool
+	ExplicitParens bool
+}
+
+// NewCrossJoin builds a cross join without `on` or `using` clause.
+// If the right child is a join tree, we need to handle it differently to make the precedence get right.
+// Here is the example: t1 join t2 join t3
+//                 JOIN ON t2.a = t3.a
+//  t1    join    /    \
+//              t2      t3
+// (left)         (right)
+//
+// We can not build it directly to:
+//         JOIN
+//        /    \
+//       t1	   JOIN ON t2.a = t3.a
+//             /   \
+//            t2    t3
+// The precedence would be t1 join (t2 join t3 on t2.a=t3.a), not (t1 join t2) join t3 on t2.a=t3.a
+// We need to find the left-most child of the right child, and build a cross join of the left-hand side
+// of the left child(t1), and the right hand side with the original left-most child of the right child(t2).
+//          JOIN t2.a = t3.a
+//         /    \
+//       JOIN    t3
+//       /  \
+//      t1  t2
+// Besides, if the right handle side join tree's join type is right join and has explicit parentheses, we need to rewrite it to left join.
+// So t1 join t2 right join t3 would be rewrite to t1 join t3 left join t2.
+// If not, t1 join (t2 right join t3) would be (t1 join t2) right join t3. After rewrite the right join to left join.
+// We get (t1 join t3) left join t2, the semantics is correct.
+func NewCrossJoin(left, right ResultSetNode) (n *Join) {
+	rj, ok := right.(*Join)
+	if !ok || rj.Right == nil {
+		return &Join{Left: left, Right: right, Tp: CrossJoin}
+	}
+
+	var leftMostLeafFatherOfRight = rj
+	// Walk down the right hand side.
+	for {
+		if leftMostLeafFatherOfRight.Tp == RightJoin && leftMostLeafFatherOfRight.ExplicitParens {
+			// Rewrite right join to left join.
+			tmpChild := leftMostLeafFatherOfRight.Right
+			leftMostLeafFatherOfRight.Right = leftMostLeafFatherOfRight.Left
+			leftMostLeafFatherOfRight.Left = tmpChild
+			leftMostLeafFatherOfRight.Tp = LeftJoin
+		}
+		leftChild := leftMostLeafFatherOfRight.Left
+		if join, ok := leftChild.(*Join); ok && join.Right != nil {
+			leftMostLeafFatherOfRight = join
+		} else {
+			break
+		}
+	}
+
+	newCrossJoin := &Join{Left: left, Right: leftMostLeafFatherOfRight.Left, Tp: CrossJoin}
+	leftMostLeafFatherOfRight.Left = newCrossJoin
+	return rj
 }
 
 // Restore implements Node interface.
@@ -481,9 +537,12 @@ type SelectLockType int
 const (
 	SelectLockNone SelectLockType = iota
 	SelectLockForUpdate
-	SelectLockInShareMode
+	SelectLockForShare
 	SelectLockForUpdateNoWait
 	SelectLockForUpdateWaitN
+	SelectLockForShareNoWait
+	SelectLockForUpdateSkipLocked
+	SelectLockForShareSkipLocked
 )
 
 type SelectLockInfo struct {
@@ -498,12 +557,18 @@ func (n SelectLockType) String() string {
 		return "none"
 	case SelectLockForUpdate:
 		return "for update"
-	case SelectLockInShareMode:
-		return "in share mode"
+	case SelectLockForShare:
+		return "for share"
 	case SelectLockForUpdateNoWait:
 		return "for update nowait"
 	case SelectLockForUpdateWaitN:
-		return "for update wait seconds"
+		return "for update wait"
+	case SelectLockForShareNoWait:
+		return "for share nowait"
+	case SelectLockForUpdateSkipLocked:
+		return "for update skip locked"
+	case SelectLockForShareSkipLocked:
+		return "for share skip locked"
 	}
 	return "unsupported select lock type"
 }
@@ -984,6 +1049,10 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("SQL_NO_CACHE ")
 		}
 
+		if n.SelectStmtOpts.CalcFoundRows {
+			ctx.WriteKeyWord("SQL_CALC_FOUND_ROWS ")
+		}
+
 		if n.TableHints != nil && len(n.TableHints) != 0 {
 			ctx.WritePlain("/*+ ")
 			for i, tableHint := range n.TableHints {
@@ -999,6 +1068,8 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 
 		if n.Distinct {
 			ctx.WriteKeyWord("DISTINCT ")
+		} else if n.SelectStmtOpts.ExplicitAll {
+			ctx.WriteKeyWord("ALL ")
 		}
 		if n.SelectStmtOpts.StraightJoin {
 			ctx.WriteKeyWord("STRAIGHT_JOIN ")
@@ -1087,16 +1158,14 @@ func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	}
 
 	if n.LockInfo != nil {
+		ctx.WritePlain(" ")
 		switch n.LockInfo.LockType {
-		case SelectLockInShareMode:
-			ctx.WriteKeyWord(" LOCK ")
-			ctx.WriteKeyWord(n.LockInfo.LockType.String())
-		case SelectLockForUpdate, SelectLockForUpdateNoWait:
-			ctx.WritePlain(" ")
-			ctx.WriteKeyWord(n.LockInfo.LockType.String())
+		case SelectLockNone:
 		case SelectLockForUpdateWaitN:
-			ctx.WriteKeyWord(" FOR UPDATE WAIT ")
-			ctx.WritePlainf("%d", n.LockInfo.WaitSec)
+			ctx.WriteKeyWord(n.LockInfo.LockType.String())
+			ctx.WritePlainf(" %d", n.LockInfo.WaitSec)
+		default:
+			ctx.WriteKeyWord(n.LockInfo.LockType.String())
 		}
 	}
 
@@ -2217,6 +2286,7 @@ const (
 	ShowBackups
 	ShowRestores
 	ShowImports
+	ShowCreateImport
 )
 
 const (
@@ -2420,6 +2490,9 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("PRIVILEGES")
 	case ShowBuiltins:
 		ctx.WriteKeyWord("BUILTINS")
+	case ShowCreateImport:
+		ctx.WriteKeyWord("CREATE IMPORT ")
+		ctx.WriteName(n.DBName)
 	// ShowTargetFilterable
 	default:
 		switch n.Tp {
