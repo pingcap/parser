@@ -189,6 +189,7 @@ import (
 	mediumblobType    "MEDIUMBLOB"
 	mediumIntType     "MEDIUMINT"
 	mediumtextType    "MEDIUMTEXT"
+	minus             "MINUS"
 	minuteMicrosecond "MINUTE_MICROSECOND"
 	minuteSecond      "MINUTE_SECOND"
 	mod               "MOD"
@@ -245,6 +246,7 @@ import (
 	straightJoin      "STRAIGHT_JOIN"
 	tableKwd          "TABLE"
 	tableSample       "TABLESAMPLE"
+	template          "TEMPLATE"
 	stored            "STORED"
 	terminated        "TERMINATED"
 	then              "THEN"
@@ -3609,25 +3611,20 @@ SubPartitionOpt:
 	{
 		$$ = nil
 	}
-|	"SUBPARTITION" "BY" SubPartitionMethod SubPartitionNumOpt
+|	"SUBPARTITION" "BY" PartitionMethod SubPartitionNumOpt
 	{
 		method := $3.(*ast.PartitionMethod)
-		method.Num = $4.(uint64)
 		$$ = method
 	}
 
 SubPartitionNumOpt:
-	{
-		$$ = uint64(0)
-	}
+	{}
 |	"SUBPARTITIONS" LengthNum
+	{}
+|	"SUBPARTITION" "TEMPLATE" '(' error ')'
 	{
-		res := $2.(uint64)
-		if res == 0 {
-			yylex.AppendError(ast.ErrNoParts.GenWithStackByArgs("subpartitions"))
-			return 1
-		}
-		$$ = res
+		yyerrok()
+		parser.lastErrorAsWarn()
 	}
 
 PartitionNumOpt:
@@ -4683,6 +4680,10 @@ MaxValueOrExpression:
 		$$ = &ast.MaxValueExpr{}
 	}
 |	BitExpr
+|	"DEFAULT"
+	{
+		$$ = &ast.DefaultExpr{}
+	}
 
 FulltextSearchModifierOpt:
 	/* empty */
@@ -5123,6 +5124,10 @@ IndexOption:
 		$$ = &ast.IndexOption{
 			Visibility: $1.(ast.IndexVisibility),
 		}
+	}
+|	"LOCAL"
+	{
+		$$ = nil
 	}
 
 /*
@@ -8667,6 +8672,15 @@ SetOpr:
 		$$ = &tp
 	}
 |	"EXCEPT" SetOprOpt
+	{
+		var tp ast.SetOprType
+		tp = ast.Except
+		if $2 == false {
+			tp = ast.ExceptAll
+		}
+		$$ = &tp
+	}
+|	"MINUS" SetOprOpt
 	{
 		var tp ast.SetOprType
 		tp = ast.Except
