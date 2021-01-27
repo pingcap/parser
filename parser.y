@@ -339,6 +339,7 @@ import (
 	compression           "COMPRESSION"
 	concurrency           "CONCURRENCY"
 	connection            "CONNECTION"
+	consistency           "CONSISTENCY"
 	consistent            "CONSISTENT"
 	constraints           "CONSTRAINTS"
 	context               "CONTEXT"
@@ -384,6 +385,7 @@ import (
 	execute               "EXECUTE"
 	expansion             "EXPANSION"
 	expire                "EXPIRE"
+	external              "EXTERNAL"
 	extended              "EXTENDED"
 	faultsSym             "FAULTS"
 	fields                "FIELDS"
@@ -2613,6 +2615,12 @@ BeginTransactionStmt:
 		$$ = &ast.BeginStmt{
 			ReadOnly: true,
 			Bound:    $8.(*ast.TimestampBound),
+		}
+	}
+|	"START" "TRANSACTION" "WITHOUT" "EXTERNAL" "CONSISTENCY"
+	{
+		$$ = &ast.BeginStmt{
+			WithoutExternalConsistency: true,
 		}
 	}
 
@@ -5451,6 +5459,7 @@ UnReservedKeyword:
 |	"COMMIT"
 |	"COMPACT"
 |	"COMPRESSED"
+|	"CONSISTENCY"
 |	"CONSISTENT"
 |	"CURRENT"
 |	"DATA"
@@ -5472,6 +5481,7 @@ UnReservedKeyword:
 |	"ESCAPE"
 |	"EVOLVE"
 |	"EXECUTE"
+|	"EXTERNAL"
 |	"EXTENDED"
 |	"FIELDS"
 |	"FILE"

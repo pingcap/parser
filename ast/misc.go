@@ -384,9 +384,10 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type BeginStmt struct {
 	stmtNode
-	Mode     string
-	ReadOnly bool
-	Bound    *TimestampBound
+	Mode                       string
+	ReadOnly                   bool
+	Bound                      *TimestampBound
+	WithoutExternalConsistency bool
 }
 
 // Restore implements Node interface.
@@ -412,6 +413,8 @@ func (n *BeginStmt) Restore(ctx *format.RestoreCtx) error {
 					return n.Bound.Timestamp.Restore(ctx)
 				}
 			}
+		} else if n.WithoutExternalConsistency {
+			ctx.WriteKeyWord("START TRANSACTION WITHOUT EXTERNAL CONSISTENCY")
 		} else {
 			ctx.WriteKeyWord("START TRANSACTION")
 		}
