@@ -242,13 +242,13 @@ import (
 	sqlSmallResult    "SQL_SMALL_RESULT"
 	ssl               "SSL"
 	starting          "STARTING"
+	statsExtended     "STATS_EXTENDED"
 	straightJoin      "STRAIGHT_JOIN"
 	tableKwd          "TABLE"
 	tableSample       "TABLESAMPLE"
 	stored            "STORED"
 	terminated        "TERMINATED"
 	then              "THEN"
-	tidbStats         "TIDB_STATS"
 	tinyblobType      "TINYBLOB"
 	tinyIntType       "TINYINT"
 	tinytextType      "TINYTEXT"
@@ -325,6 +325,7 @@ import (
 	cipher                "CIPHER"
 	cleanup               "CLEANUP"
 	client                "CLIENT"
+	clientErrorsSummary   "CLIENT_ERRORS_SUMMARY"
 	coalesce              "COALESCE"
 	collation             "COLLATION"
 	columnFormat          "COLUMN_FORMAT"
@@ -639,12 +640,15 @@ import (
 	now                   "NOW"
 	position              "POSITION"
 	recent                "RECENT"
+	running               "RUNNING"
 	s3                    "S3"
 	staleness             "STALENESS"
 	std                   "STD"
 	stddev                "STDDEV"
 	stddevPop             "STDDEV_POP"
 	stddevSamp            "STDDEV_SAMP"
+	stop                  "STOP"
+	strict                "STRICT"
 	strong                "STRONG"
 	subDate               "SUBDATE"
 	sum                   "SUM"
@@ -808,6 +812,7 @@ import (
 	AlterDatabaseStmt      "Alter database statement"
 	AlterTableStmt         "Alter table statement"
 	AlterUserStmt          "Alter user statement"
+	AlterImportStmt        "ALTER IMPORT statement"
 	AlterInstanceStmt      "Alter instance statement"
 	AlterSequenceStmt      "Alter sequence statement"
 	AnalyzeTableStmt       "Analyze table statement"
@@ -821,11 +826,13 @@ import (
 	CreateRoleStmt         "CREATE Role statement"
 	CreateDatabaseStmt     "Create Database Statement"
 	CreateIndexStmt        "CREATE INDEX statement"
+	CreateImportStmt       "CREATE IMPORT statement"
 	CreateBindingStmt      "CREATE BINDING  statement"
 	CreateSequenceStmt     "CREATE SEQUENCE statement"
 	CreateStatisticsStmt   "CREATE STATISTICS statement"
 	DoStmt                 "Do statement"
 	DropDatabaseStmt       "DROP DATABASE statement"
+	DropImportStmt         "DROP IMPORT statement"
 	DropIndexStmt          "DROP INDEX statement"
 	DropStatisticsStmt     "DROP STATISTICS statement"
 	DropStatsStmt          "DROP STATS statement"
@@ -861,6 +868,7 @@ import (
 	RenameTableStmt        "rename table statement"
 	ReplaceIntoStmt        "REPLACE INTO statement"
 	RecoverTableStmt       "recover table statement"
+	ResumeImportStmt       "RESUME IMPORT statement"
 	RevokeStmt             "Revoke statement"
 	RevokeRoleStmt         "Revoke role statement"
 	RollbackStmt           "ROLLBACK statement"
@@ -869,8 +877,10 @@ import (
 	ChangeStmt             "Change statement"
 	SetRoleStmt            "Set active role statement"
 	SetDefaultRoleStmt     "Set default statement for some user"
+	ShowImportStmt         "SHOW IMPORT statement"
 	ShowStmt               "Show engines/databases/tables/user/columns/warnings/status statement"
 	Statement              "statement"
+	StopImportStmt         "STOP IMPORT statement"
 	TraceStmt              "TRACE statement"
 	TraceableStmt          "traceable statement"
 	TruncateTableStmt      "TRUNCATE TABLE statement"
@@ -943,6 +953,7 @@ import (
 	RequireClause                          "Encrypted connections options"
 	RequireClauseOpt                       "optional Encrypted connections options"
 	EqOpt                                  "= or empty"
+	ErrorHandling                          "specify exit, replace or skip when meet error"
 	EscapedTableRef                        "escaped table reference"
 	ExpressionList                         "expression list"
 	ExtendedPriv                           "Extended privileges like LOAD FROM S3 or dynamic privileges"
@@ -970,7 +981,10 @@ import (
 	HandleRangeList                        "handle range list"
 	IfExists                               "If Exists"
 	IfNotExists                            "If Not Exists"
+	IfNotRunning                           "If Not Running"
+	IfRunning                              "If Running"
 	IgnoreOptional                         "IGNORE or empty"
+	ImportTruncate                         "truncate all data or data related to errors"
 	IndexHint                              "index hint"
 	IndexHintList                          "index hint list"
 	IndexHintListOpt                       "index hint list opt"
@@ -1010,6 +1024,7 @@ import (
 	ObjectType                             "Grant statement object type"
 	OnDuplicateKeyUpdate                   "ON DUPLICATE KEY UPDATE value list"
 	DuplicateOpt                           "[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
+	OptErrors                              "ERRORS or empty"
 	OptFull                                "Full or empty"
 	OptTemporary                           "TEMPORARY or empty"
 	OptOrder                               "Optional ordering keyword: ASC/DESC. Default to ASC"
@@ -1118,6 +1133,7 @@ import (
 	TableNameOptWild                       "Table name with optional wildcard"
 	TableNameList                          "Table name list"
 	TableNameListOpt                       "Table name list opt"
+	TableNameListOpt2                      "Optional table name list with a preceding TABLE"
 	TableOption                            "create table option"
 	TableOptionList                        "create table option list"
 	TableRef                               "table reference"
@@ -1685,7 +1701,7 @@ AlterTableSpec:
 			Num:             getUint64FromNUM($6),
 		}
 	}
-|	"ADD" "TIDB_STATS" IfNotExists Identifier StatsType '(' ColumnNameList ')'
+|	"ADD" "STATS_EXTENDED" IfNotExists Identifier StatsType '(' ColumnNameList ')'
 	{
 		statsSpec := &ast.StatisticsSpec{
 			StatsName: $4,
@@ -1753,7 +1769,7 @@ AlterTableSpec:
 			PartitionNames: $4.([]model.CIStr),
 		}
 	}
-|	"DROP" "TIDB_STATS" IfExists Identifier
+|	"DROP" "STATS_EXTENDED" IfExists Identifier
 	{
 		statsSpec := &ast.StatisticsSpec{
 			StatsName: $4,
@@ -4348,8 +4364,6 @@ ExplainFormatType:
  *	BACKUP TABLE [ db1.tbl1, db2.tbl2 ] TO 'scheme://location' [ options... ]
  *	RESTORE DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
  *	RESTORE TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
- *	IMPORT DATABASE [ * | db1, db2, db3 ] FROM 'scheme://location' [ options... ]
- *	IMPORT TABLE [ db1.tbl1, db2.tbl2 ] FROM 'scheme://location' [ options... ]
  */
 BRIEStmt:
 	"BACKUP" BRIETables "TO" stringLit BRIEOptions
@@ -4364,14 +4378,6 @@ BRIEStmt:
 	{
 		stmt := $2.(*ast.BRIEStmt)
 		stmt.Kind = ast.BRIEKindRestore
-		stmt.Storage = $4
-		stmt.Options = $5.([]*ast.BRIEOption)
-		$$ = stmt
-	}
-|	"IMPORT" BRIETables "FROM" stringLit BRIEOptions
-	{
-		stmt := $2.(*ast.BRIEStmt)
-		stmt.Kind = ast.BRIEKindImport
 		stmt.Storage = $4
 		stmt.Options = $5.([]*ast.BRIEOption)
 		$$ = stmt
@@ -4674,6 +4680,157 @@ PurgeImportStmt:
 	"PURGE" "IMPORT" NUM
 	{
 		$$ = &ast.PurgeImportStmt{TaskID: getUint64FromNUM($3)}
+	}
+
+/*******************************************************************
+ * import statements
+ *
+ *	CREATE IMPORT [IF NOT EXISTS] import_name
+ *		FROM data_location [REPLACE | SKIP {ALL | CONSTRAINT | DUPLICATE ｜ STRICT}]
+ *		[options_list]
+ *	STOP IMPORT [IF RUNNING] import_name
+ *	RESUME IMPORT [IF NOT RUNNING] import_name
+ *	ALTER IMPORT import_name
+ *		[REPLACE | SKIP {ALL | CONSTRAINT | DUPLICATE | STRICT}]
+ *		[options_list]
+ *		[TRUNCATE
+ *			{ALL | ERRORS} [TABLE table_name [, table_name] ...]
+ *		]
+ *	DROP IMPORT [IF EXISTS] import_name
+ *	SHOW IMPORT import_name [ERRORS] [TABLE table_name [, table_name] ...]
+ */
+CreateImportStmt:
+	"CREATE" "IMPORT" IfNotExists Identifier "FROM" stringLit ErrorHandling BRIEOptions
+	{
+		$$ = &ast.CreateImportStmt{
+			IfNotExists:   $3.(bool),
+			Name:          $4,
+			Storage:       $6,
+			ErrorHandling: $7.(ast.ErrorHandlingOption),
+			Options:       $8.([]*ast.BRIEOption),
+		}
+	}
+
+StopImportStmt:
+	"STOP" "IMPORT" IfRunning Identifier
+	{
+		$$ = &ast.StopImportStmt{
+			IfRunning: $3.(bool),
+			Name:      $4,
+		}
+	}
+
+ResumeImportStmt:
+	"RESUME" "IMPORT" IfNotRunning Identifier
+	{
+		$$ = &ast.ResumeImportStmt{
+			IfNotRunning: $3.(bool),
+			Name:         $4,
+		}
+	}
+
+AlterImportStmt:
+	"ALTER" "IMPORT" Identifier ErrorHandling BRIEOptions ImportTruncate
+	{
+		s := &ast.AlterImportStmt{
+			Name:          $3,
+			ErrorHandling: $4.(ast.ErrorHandlingOption),
+			Options:       $5.([]*ast.BRIEOption),
+		}
+		if $6 != nil {
+			s.Truncate = $6.(*ast.ImportTruncate)
+		}
+		$$ = s
+	}
+
+DropImportStmt:
+	"DROP" "IMPORT" IfExists Identifier
+	{
+		$$ = &ast.DropImportStmt{
+			IfExists: $3.(bool),
+			Name:     $4,
+		}
+	}
+
+ShowImportStmt:
+	"SHOW" "IMPORT" Identifier OptErrors TableNameListOpt2
+	{
+		$$ = &ast.ShowImportStmt{
+			Name:       $3,
+			ErrorsOnly: $4.(bool),
+			TableNames: $5.([]*ast.TableName),
+		}
+	}
+
+IfRunning:
+	{
+		$$ = false
+	}
+|	"IF" "RUNNING"
+	{
+		$$ = true
+	}
+
+IfNotRunning:
+	{
+		$$ = false
+	}
+|	"IF" NotSym "RUNNING"
+	{
+		$$ = true
+	}
+
+OptErrors:
+	{
+		$$ = false
+	}
+|	"ERRORS"
+	{
+		$$ = true
+	}
+
+ErrorHandling:
+	{
+		$$ = ast.ErrorHandleError
+	}
+|	"REPLACE"
+	{
+		$$ = ast.ErrorHandleReplace
+	}
+|	"SKIP" "ALL"
+	{
+		$$ = ast.ErrorHandleSkipAll
+	}
+|	"SKIP" "CONSTRAINT"
+	{
+		$$ = ast.ErrorHandleSkipConstraint
+	}
+|	"SKIP" "DUPLICATE"
+	{
+		$$ = ast.ErrorHandleSkipDuplicate
+	}
+|	"SKIP" "STRICT"
+	{
+		$$ = ast.ErrorHandleSkipStrict
+	}
+
+ImportTruncate:
+	{
+		$$ = nil
+	}
+|	"TRUNCATE" "ALL" TableNameListOpt2
+	{
+		$$ = &ast.ImportTruncate{
+			IsErrorsOnly: false,
+			TableNames:   $3.([]*ast.TableName),
+		}
+	}
+|	"TRUNCATE" "ERRORS" TableNameListOpt2
+	{
+		$$ = &ast.ImportTruncate{
+			IsErrorsOnly: true,
+			TableNames:   $3.([]*ast.TableName),
+		}
 	}
 
 Expression:
@@ -5583,6 +5740,7 @@ UnReservedKeyword:
 |	"REPLICAS"
 |	"POLICY"
 |	"WAIT"
+|	"CLIENT_ERRORS_SUMMARY"
 |	"BERNOULLI"
 |	"SYSTEM"
 |	"PERCENT"
@@ -5656,8 +5814,10 @@ NotKeywordToken:
 |	"MAX"
 |	"NOW"
 |	"RECENT"
+|	"RUNNING"
 |	"POSITION"
 |	"S3"
+|	"STRICT"
 |	"SUBDATE"
 |	"SUBSTRING"
 |	"SUM"
@@ -5665,6 +5825,7 @@ NotKeywordToken:
 |	"STDDEV"
 |	"STDDEV_POP"
 |	"STDDEV_SAMP"
+|	"STOP"
 |	"VARIANCE"
 |	"VAR_POP"
 |	"VAR_SAMP"
@@ -9370,7 +9531,7 @@ AdminStmt:
 			Tp: ast.AdminReloadBindings,
 		}
 	}
-|	"ADMIN" "RELOAD" "TIDB_STATS"
+|	"ADMIN" "RELOAD" "STATS_EXTENDED"
 	{
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminReloadStatistics,
@@ -9503,6 +9664,13 @@ ShowStmt:
 		$$ = &ast.ShowStmt{
 			Tp:   ast.ShowCreateUser,
 			User: $4.(*auth.UserIdentity),
+		}
+	}
+|	"SHOW" "CREATE" "IMPORT" Identifier
+	{
+		$$ = &ast.ShowStmt{
+			Tp:     ast.ShowCreateImport,
+			DBName: $4, // we reuse DBName of ShowStmt
 		}
 	}
 |	"SHOW" "TABLE" TableName PartitionNameListOpt "REGIONS" WhereClauseOptional
@@ -9996,6 +10164,12 @@ FlushOption:
 			ReadLock: $3.(bool),
 		}
 	}
+|	"CLIENT_ERRORS_SUMMARY"
+	{
+		$$ = &ast.FlushStmt{
+			Tp: ast.FlushClientErrorsSummary,
+		}
+	}
 
 LogTypeOpt:
 	/* empty */
@@ -10044,6 +10218,16 @@ TableNameListOpt:
 	}
 |	TableNameList
 
+TableNameListOpt2:
+	%prec empty
+	{
+		$$ = []*ast.TableName{}
+	}
+|	"TABLE" TableNameList
+	{
+		$$ = $2
+	}
+
 WithReadLockOpt:
 	{
 		$$ = false
@@ -10059,6 +10243,7 @@ Statement:
 |	AlterDatabaseStmt
 |	AlterTableStmt
 |	AlterUserStmt
+|	AlterImportStmt
 |	AlterInstanceStmt
 |	AlterSequenceStmt
 |	AnalyzeTableStmt
@@ -10072,6 +10257,7 @@ Statement:
 |	ExplainStmt
 |	ChangeStmt
 |	CreateDatabaseStmt
+|	CreateImportStmt
 |	CreateIndexStmt
 |	CreateTableStmt
 |	CreateViewStmt
@@ -10082,6 +10268,7 @@ Statement:
 |	CreateStatisticsStmt
 |	DoStmt
 |	DropDatabaseStmt
+|	DropImportStmt
 |	DropIndexStmt
 |	DropTableStmt
 |	DropSequenceStmt
@@ -10108,6 +10295,7 @@ Statement:
 |	RenameTableStmt
 |	ReplaceIntoStmt
 |	RecoverTableStmt
+|	ResumeImportStmt
 |	RevokeStmt
 |	RevokeRoleStmt
 |	SetOprStmt1
@@ -10115,6 +10303,8 @@ Statement:
 |	SetRoleStmt
 |	SetDefaultRoleStmt
 |	SplitRegionStmt
+|	StopImportStmt
+|	ShowImportStmt
 |	ShowStmt
 |	SubSelect
 	{
