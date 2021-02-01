@@ -151,3 +151,8 @@ func HasIsBooleanFlag(flag uint) bool {
 func HasPreventNullInsertFlag(flag uint) bool {
 	return (flag & PreventNullInsertFlag) > 0
 }
+
+// HasEnumSetAsIntFlag checks if PreventNullInsertFlag is set.
+func HasEnumSetAsIntFlag(flag uint) bool {
+	return (flag & EnumSetAsIntFlag) > 0
+}
