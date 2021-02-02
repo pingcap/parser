@@ -414,7 +414,7 @@ func (n *BeginStmt) Restore(ctx *format.RestoreCtx) error {
 				}
 			}
 		} else if n.WithoutExternalConsistency {
-			ctx.WriteKeyWord("START TRANSACTION WITHOUT EXTERNAL CONSISTENCY")
+			ctx.WriteKeyWord("START TRANSACTION WITH CAUSAL CONSISTENCY")
 		} else {
 			ctx.WriteKeyWord("START TRANSACTION")
 		}

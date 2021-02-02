@@ -318,6 +318,7 @@ import (
 	cache                 "CACHE"
 	capture               "CAPTURE"
 	cascaded              "CASCADED"
+	causal                "CAUSAL"
 	chain                 "CHAIN"
 	charsetKwd            "CHARSET"
 	checkpoint            "CHECKPOINT"
@@ -385,7 +386,6 @@ import (
 	execute               "EXECUTE"
 	expansion             "EXPANSION"
 	expire                "EXPIRE"
-	external              "EXTERNAL"
 	extended              "EXTENDED"
 	faultsSym             "FAULTS"
 	fields                "FIELDS"
@@ -2617,7 +2617,7 @@ BeginTransactionStmt:
 			Bound:    $8.(*ast.TimestampBound),
 		}
 	}
-|	"START" "TRANSACTION" "WITHOUT" "EXTERNAL" "CONSISTENCY"
+|	"START" "TRANSACTION" "WITH" "CAUSAL" "CONSISTENCY"
 	{
 		$$ = &ast.BeginStmt{
 			WithoutExternalConsistency: true,
@@ -5450,6 +5450,7 @@ UnReservedKeyword:
 |	"BTREE"
 |	"BYTE"
 |	"CAPTURE"
+|	"CAUSAL"
 |	"CLEANUP"
 |	"CHAIN"
 |	"CHARSET"
@@ -5481,7 +5482,6 @@ UnReservedKeyword:
 |	"ESCAPE"
 |	"EVOLVE"
 |	"EXECUTE"
-|	"EXTERNAL"
 |	"EXTENDED"
 |	"FIELDS"
 |	"FILE"
