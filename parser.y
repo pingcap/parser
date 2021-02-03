@@ -2620,7 +2620,7 @@ BeginTransactionStmt:
 |	"START" "TRANSACTION" "WITH" "CAUSAL" "CONSISTENCY"
 	{
 		$$ = &ast.BeginStmt{
-			WithoutExternalConsistency: true,
+			CausalConsistency: true,
 		}
 	}
 
