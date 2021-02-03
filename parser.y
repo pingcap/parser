@@ -2617,10 +2617,10 @@ BeginTransactionStmt:
 			Bound:    $8.(*ast.TimestampBound),
 		}
 	}
-|	"START" "TRANSACTION" "WITH" "CAUSAL" "CONSISTENCY"
+|	"START" "TRANSACTION" "WITH" "CAUSAL" "CONSISTENCY" "ONLY"
 	{
 		$$ = &ast.BeginStmt{
-			CausalConsistency: true,
+			CausalConsistencyOnly: true,
 		}
 	}
 

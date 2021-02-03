@@ -384,10 +384,10 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type BeginStmt struct {
 	stmtNode
-	Mode              string
-	ReadOnly          bool
-	Bound             *TimestampBound
-	CausalConsistency bool
+	Mode                  string
+	ReadOnly              bool
+	Bound                 *TimestampBound
+	CausalConsistencyOnly bool
 }
 
 // Restore implements Node interface.
@@ -413,8 +413,8 @@ func (n *BeginStmt) Restore(ctx *format.RestoreCtx) error {
 					return n.Bound.Timestamp.Restore(ctx)
 				}
 			}
-		} else if n.CausalConsistency {
-			ctx.WriteKeyWord("START TRANSACTION WITH CAUSAL CONSISTENCY")
+		} else if n.CausalConsistencyOnly {
+			ctx.WriteKeyWord("START TRANSACTION WITH CAUSAL CONSISTENCY ONLY")
 		} else {
 			ctx.WriteKeyWord("START TRANSACTION")
 		}
