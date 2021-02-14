@@ -338,7 +338,7 @@ func (d *sqlDigester) isLit(t token) (beLit bool) {
 		beLit = true
 	} else if t.lit == "*" {
 		beLit = true
-	} else if tok == null || strings.ToLower(t.lit) == "null" {
+	} else if tok == null || (tok == identifier && strings.ToLower(t.lit) == "null") {
 		beLit = true
 	}
 	return
