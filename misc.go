@@ -550,6 +550,7 @@ var tokenMap = map[string]int{
 	"ROW_FORMAT":               rowFormat,
 	"ROW":                      row,
 	"RTREE":                    rtree,
+	"S3":                       s3,
 	"SAMPLES":                  samples,
 	"SCHEMA":                   database,
 	"SCHEMAS":                  databases,
