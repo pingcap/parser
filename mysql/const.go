@@ -251,8 +251,16 @@ const (
 	// ConfigPriv is the privilege to enable the use SET CONFIG statements.
 	ConfigPriv
 
+	/*
+	 *  Please add the new priv before AllPriv to keep the values consistent across versions.
+	 */
+
 	// AllPriv is the privilege for all actions.
 	AllPriv
+
+	// ExtendedPriv is used to successful parse privileges not included above.
+	// these are dynamic privileges in MySQL 8.0 and other extended privileges like LOAD FROM S3 in Aurora.
+	ExtendedPriv
 )
 
 // AllPrivMask is the mask for PrivilegeType with all bits set to 1.

@@ -613,6 +613,7 @@ import (
 	now                   "NOW"
 	position              "POSITION"
 	recent                "RECENT"
+	s3                    "S3"
 	staleness             "STALENESS"
 	std                   "STD"
 	stddev                "STDDEV"
@@ -894,6 +895,7 @@ import (
 	EqOpt                                  "= or empty"
 	EscapedTableRef                        "escaped table reference"
 	ExpressionList                         "expression list"
+	ExtendedPriv                           "Extended privileges like LOAD FROM S3 or dynamic privileges"
 	MaxValueOrExpressionList               "maxvalue or expression list"
 	ExpressionListOpt                      "expression list opt"
 	FuncDatetimePrecListOpt                "Function datetime precision list opt"
@@ -987,7 +989,6 @@ import (
 	PrepareSQL                             "Prepare statement sql string"
 	PriorityOpt                            "Statement priority option"
 	PrivElem                               "Privilege element"
-	PrivElemList                           "Privilege element list"
 	PrivLevel                              "Privilege scope"
 	PrivType                               "Privilege type"
 	ReferDef                               "Reference definition"
@@ -1000,7 +1001,11 @@ import (
 	RequireList                            "require list"
 	RequireListElement                     "require list element"
 	Rolename                               "Rolename"
+	RolenameComposed                       "Rolename that composed with more than 1 symbol"
 	RolenameList                           "RolenameList"
+	RolenameWithoutIdent                   "Rolename except identifier"
+	RoleOrPrivElem                         "Element that may be a Rolename or PrivElem"
+	RoleOrPrivElemList                     "RoleOrPrivElem list"
 	RoleSpec                               "Rolename and auth option"
 	RoleSpecList                           "Rolename and auth option list"
 	RowFormat                              "Row format option"
@@ -5286,6 +5291,7 @@ NotKeywordToken:
 |	"NOW"
 |	"RECENT"
 |	"POSITION"
+|	"S3"
 |	"SUBDATE"
 |	"SUBSTRING"
 |	"SUM"
@@ -8461,18 +8467,34 @@ RoleNameString:
 	stringLit
 |	identifier
 
-Rolename:
-	RoleNameString
-	{
-		$$ = &auth.RoleIdentity{Username: $1, Hostname: "%"}
-	}
-|	StringName '@' StringName
+RolenameComposed:
+	StringName '@' StringName
 	{
 		$$ = &auth.RoleIdentity{Username: $1, Hostname: $3}
 	}
 |	StringName singleAtIdentifier
 	{
 		$$ = &auth.RoleIdentity{Username: $1, Hostname: strings.TrimPrefix($2, "@")}
+	}
+
+RolenameWithoutIdent:
+	stringLit
+	{
+		$$ = &auth.RoleIdentity{Username: $1, Hostname: "%"}
+	}
+|	RolenameComposed
+	{
+		$$ = $1
+	}
+
+Rolename:
+	RoleNameString
+	{
+		$$ = &auth.RoleIdentity{Username: $1, Hostname: "%"}
+	}
+|	RolenameComposed
+	{
+		$$ = $1
 	}
 
 RolenameList:
@@ -10849,10 +10871,15 @@ DropBindingStmt:
  * See https://dev.mysql.com/doc/refman/5.7/en/grant.html
  *************************************************************************************/
 GrantStmt:
-	"GRANT" PrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList RequireClauseOpt WithGrantOptionOpt
+	"GRANT" RoleOrPrivElemList "ON" ObjectType PrivLevel "TO" UserSpecList RequireClauseOpt WithGrantOptionOpt
 	{
+		p, err := convertToPriv($2.([]*ast.RoleOrPriv))
+		if err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.GrantStmt{
-			Privs:      $2.([]*ast.PrivElem),
+			Privs:      p,
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level:      $5.(*ast.GrantLevel),
 			Users:      $7.([]*ast.UserSpec),
@@ -10862,10 +10889,15 @@ GrantStmt:
 	}
 
 GrantRoleStmt:
-	"GRANT" RolenameList "TO" UsernameList
+	"GRANT" RoleOrPrivElemList "TO" UsernameList
 	{
+		r, err := convertToRole($2.([]*ast.RoleOrPriv))
+		if err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.GrantRoleStmt{
-			Roles: $2.([]*auth.RoleIdentity),
+			Roles: r,
 			Users: $4.([]*auth.UserIdentity),
 		}
 	}
@@ -10895,6 +10927,58 @@ WithGrantOptionOpt:
 		$$ = false
 	}
 
+ExtendedPriv:
+	identifier
+	{
+		$$ = []string{$1}
+	}
+|	ExtendedPriv identifier
+	{
+		$$ = append($1.([]string), $2)
+	}
+
+RoleOrPrivElem:
+	PrivElem
+	{
+		$$ = &ast.RoleOrPriv{
+			Node: $1,
+		}
+	}
+|	RolenameWithoutIdent
+	{
+		$$ = &ast.RoleOrPriv{
+			Node: $1,
+		}
+	}
+|	ExtendedPriv
+	{
+		$$ = &ast.RoleOrPriv{
+			Symbols: strings.Join($1.([]string), " "),
+		}
+	}
+|	"LOAD" "FROM" "S3"
+	{
+		$$ = &ast.RoleOrPriv{
+			Symbols: "LOAD FROM S3",
+		}
+	}
+|	"SELECT" "INTO" "S3"
+	{
+		$$ = &ast.RoleOrPriv{
+			Symbols: "SELECT INTO S3",
+		}
+	}
+
+RoleOrPrivElemList:
+	RoleOrPrivElem
+	{
+		$$ = []*ast.RoleOrPriv{$1.(*ast.RoleOrPriv)}
+	}
+|	RoleOrPrivElemList ',' RoleOrPrivElem
+	{
+		$$ = append($1.([]*ast.RoleOrPriv), $3.(*ast.RoleOrPriv))
+	}
+
 PrivElem:
 	PrivType
 	{
@@ -10908,16 +10992,6 @@ PrivElem:
 			Priv: $1.(mysql.PrivilegeType),
 			Cols: $3.([]*ast.ColumnName),
 		}
-	}
-
-PrivElemList:
-	PrivElem
-	{
-		$$ = []*ast.PrivElem{$1.(*ast.PrivElem)}
-	}
-|	PrivElemList ',' PrivElem
-	{
-		$$ = append($1.([]*ast.PrivElem), $3.(*ast.PrivElem))
 	}
 
 PrivType:
@@ -11107,10 +11181,15 @@ PrivLevel:
  * See https://dev.mysql.com/doc/refman/5.7/en/revoke.html
  *******************************************************************************************/
 RevokeStmt:
-	"REVOKE" PrivElemList "ON" ObjectType PrivLevel "FROM" UserSpecList
+	"REVOKE" RoleOrPrivElemList "ON" ObjectType PrivLevel "FROM" UserSpecList
 	{
+		p, err := convertToPriv($2.([]*ast.RoleOrPriv))
+		if err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.RevokeStmt{
-			Privs:      $2.([]*ast.PrivElem),
+			Privs:      p,
 			ObjectType: $4.(ast.ObjectTypeType),
 			Level:      $5.(*ast.GrantLevel),
 			Users:      $7.([]*ast.UserSpec),
@@ -11118,10 +11197,15 @@ RevokeStmt:
 	}
 
 RevokeRoleStmt:
-	"REVOKE" RolenameList "FROM" UsernameList
+	"REVOKE" RoleOrPrivElemList "FROM" UsernameList
 	{
+		r, err := convertToRole($2.([]*ast.RoleOrPriv))
+		if err != nil {
+			yylex.AppendError(err)
+			return 1
+		}
 		$$ = &ast.RevokeRoleStmt{
-			Roles: $2.([]*auth.RoleIdentity),
+			Roles: r,
 			Users: $4.([]*auth.UserIdentity),
 		}
 	}
