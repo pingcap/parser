@@ -284,7 +284,7 @@ type TableInfo struct {
 	// CommonHandleVersion is the version of the clustered index.
 	// 0 for the clustered index created == 5.0.0 RC.
 	// 1 for the clustered index created > 5.0.0 RC.
-	CommonHandleVersion uint64 `json:"common_handle_version"`
+	CommonHandleVersion uint16 `json:"common_handle_version"`
 
 	Comment         string `json:"comment"`
 	AutoIncID       int64  `json:"auto_inc_id"`
