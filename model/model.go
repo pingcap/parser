@@ -281,8 +281,10 @@ type TableInfo struct {
 	// IsCommonHandle is true when clustered index feature is
 	// enabled and the primary key is not a single integer column.
 	IsCommonHandle bool `json:"is_common_handle"`
-	// IsV5CommonHandle is true when this table uses the clustered index and is created after v5.0.0 RC ( > 5.0.0 RC).
-	IsV5CommonHandle bool `json:"is_v5_common_handle"`
+	// CommonHandleVersion is the version of the clustered index.
+	// 0 for the clustered index created == 5.0.0 RC.
+	// 1 for the clustered index created > 5.0.0 RC.
+	CommonHandleVersion uint64 `json:"common_handle_version"`
 
 	Comment         string `json:"comment"`
 	AutoIncID       int64  `json:"auto_inc_id"`
