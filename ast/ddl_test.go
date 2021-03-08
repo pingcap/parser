@@ -39,7 +39,7 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&DropDatabaseStmt{}, 0, 0},
 		{&DropIndexStmt{Table: &TableName{}}, 0, 0},
 		{&DropTableStmt{Tables: []*TableName{{}, {}}}, 0, 0},
-		{&RenameTableStmt{OldTable: &TableName{}, NewTable: &TableName{}}, 0, 0},
+		{&RenameTableStmt{TableToTables: []*TableToTable{}}, 0, 0},
 		{&TruncateTableStmt{Table: &TableName{}}, 0, 0},
 
 		// TODO: cover children
@@ -213,11 +213,11 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"null", "NULL"},
 		{"auto_increment", "AUTO_INCREMENT"},
 		{"DEFAULT 10", "DEFAULT 10"},
-		{"DEFAULT '10'", "DEFAULT '10'"},
-		{"DEFAULT 'hello'", "DEFAULT 'hello'"},
+		{"DEFAULT '10'", "DEFAULT _UTF8MB4'10'"},
+		{"DEFAULT 'hello'", "DEFAULT _UTF8MB4'hello'"},
 		{"DEFAULT 1.1", "DEFAULT 1.1"},
 		{"DEFAULT NULL", "DEFAULT NULL"},
-		{"DEFAULT ''", "DEFAULT ''"},
+		{"DEFAULT ''", "DEFAULT _UTF8MB4''"},
 		{"DEFAULT TRUE", "DEFAULT TRUE"},
 		{"DEFAULT FALSE", "DEFAULT FALSE"},
 		{"UNIQUE KEY", "UNIQUE KEY"},
@@ -293,7 +293,7 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id INT(11) NULL", "`id` INT(11) NULL"},
 		{"id INT(11) auto_increment", "`id` INT(11) AUTO_INCREMENT"},
 		{"id INT(11) DEFAULT 10", "`id` INT(11) DEFAULT 10"},
-		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
+		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT _UTF8MB4'10'"},
 		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
 		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
 		{"id INT(11) COLLATE ascii_bin", "`id` INT(11) COLLATE ascii_bin"},
@@ -516,6 +516,14 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		{"coalesce partition 3", "COALESCE PARTITION 3"},
 		{"drop partition p1", "DROP PARTITION `p1`"},
 		{"TRUNCATE PARTITION p0", "TRUNCATE PARTITION `p0`"},
+		{"add stats_extended s1 cardinality(a,b)", "ADD STATS_EXTENDED `s1` CARDINALITY(`a`, `b`)"},
+		{"add stats_extended if not exists s1 cardinality(a,b)", "ADD STATS_EXTENDED IF NOT EXISTS `s1` CARDINALITY(`a`, `b`)"},
+		{"add stats_extended s1 correlation(a,b)", "ADD STATS_EXTENDED `s1` CORRELATION(`a`, `b`)"},
+		{"add stats_extended if not exists s1 correlation(a,b)", "ADD STATS_EXTENDED IF NOT EXISTS `s1` CORRELATION(`a`, `b`)"},
+		{"add stats_extended s1 dependency(a,b)", "ADD STATS_EXTENDED `s1` DEPENDENCY(`a`, `b`)"},
+		{"add stats_extended if not exists s1 dependency(a,b)", "ADD STATS_EXTENDED IF NOT EXISTS `s1` DEPENDENCY(`a`, `b`)"},
+		{"drop stats_extended s1", "DROP STATS_EXTENDED `s1`"},
+		{"drop stats_extended if exists s1", "DROP STATS_EXTENDED IF EXISTS `s1`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*AlterTableStmt).Specs[0]

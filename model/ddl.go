@@ -77,7 +77,8 @@ const (
 	ActionDropCheckConstraint           ActionType = 44
 	ActionAlterCheckConstraint          ActionType = 45
 	ActionAlterTableAlterPartition      ActionType = 46
-	ActionDropIndexes                   ActionType = 47
+	ActionRenameTables                  ActionType = 47
+	ActionDropIndexes                   ActionType = 48
 )
 
 const (
