@@ -22,6 +22,7 @@ import (
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
@@ -52,7 +53,9 @@ var (
 	// ErrWarnDeprecatedSyntaxNoReplacement return when the syntax was deprecated and there is no replacement.
 	ErrWarnDeprecatedSyntaxNoReplacement = terror.ClassParser.NewStd(mysql.ErrWarnDeprecatedSyntaxNoReplacement)
 	// ErrWarnDeprecatedIntegerDisplayWidth share the same code 1681, and it will be returned when length is specified in integer.
-	ErrWarnDeprecatedIntegerDisplayWidth = terror.ClassParser.NewStdErr(mysql.ErrWarnDeprecatedSyntaxNoReplacement, mysql.Message("Integer display width is deprecated and will be removed in a future release.", nil), "", "")
+	ErrWarnDeprecatedIntegerDisplayWidth = terror.ClassParser.NewStdErr(mysql.ErrWarnDeprecatedSyntaxNoReplacement, mysql.Message("Integer display width is deprecated and will be removed in a future release.", nil))
+	// ErrWrongUsage returns for incorrect usages.
+	ErrWrongUsage = terror.ClassParser.NewStd(mysql.ErrWrongUsage)
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
 	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
@@ -65,6 +68,11 @@ func TrimComment(txt string) string {
 	return specCodeEnd.ReplaceAllString(txt, "")
 }
 
+type ParserConfig struct {
+	EnableWindowFunction        bool
+	EnableStrictDoubleTypeCheck bool
+}
+
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
 type Parser struct {
 	charset    string
@@ -74,12 +82,22 @@ type Parser struct {
 	lexer      Scanner
 	hintParser *hintParser
 
-	explicitCharset bool
+	explicitCharset       bool
+	strictDoubleFieldType bool
 
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
 	yylval yySymType
 	yyVAL  *yySymType
+}
+
+func yySetOffset(yyVAL *yySymType, offset int) {
+	if yyVAL.expr != nil {
+		yyVAL.expr.SetOriginTextPosition(offset)
+	}
+}
+
+func yyhintSetOffset(_ *yyhintSymType, _ int) {
 }
 
 type stmtTexter interface {
@@ -99,9 +117,19 @@ func New() *Parser {
 		cache: make([]yySymType, 200),
 	}
 	p.EnableWindowFunc(true)
+	p.SetStrictDoubleTypeCheck(true)
 	mode, _ := mysql.GetSQLMode(mysql.DefaultSQLMode)
 	p.SetSQLMode(mode)
 	return p
+}
+
+func (parser *Parser) SetStrictDoubleTypeCheck(val bool) {
+	parser.strictDoubleFieldType = val
+}
+
+func (parser *Parser) SetParserConfig(config ParserConfig) {
+	parser.EnableWindowFunc(config.EnableWindowFunction)
+	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
 }
 
 // Parse parses a query string to raw ast.StmtNode.
@@ -292,4 +320,30 @@ func getInt64FromNUM(num interface{}) (val int64, errMsg string) {
 		return v, ""
 	}
 	return -1, fmt.Sprintf("%d is out of range [–9223372036854775808,9223372036854775807]", num)
+}
+
+// convertToRole tries to convert elements of roleOrPrivList to RoleIdentity
+func convertToRole(roleOrPrivList []*ast.RoleOrPriv) ([]*auth.RoleIdentity, error) {
+	var roles []*auth.RoleIdentity
+	for _, elem := range roleOrPrivList {
+		role, err := elem.ToRole()
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
+	}
+	return roles, nil
+}
+
+// convertToPriv tries to convert elements of roleOrPrivList to PrivElem
+func convertToPriv(roleOrPrivList []*ast.RoleOrPriv) ([]*ast.PrivElem, error) {
+	var privileges []*ast.PrivElem
+	for _, elem := range roleOrPrivList {
+		priv, err := elem.ToPriv()
+		if err != nil {
+			return nil, err
+		}
+		privileges = append(privileges, priv)
+	}
+	return privileges, nil
 }

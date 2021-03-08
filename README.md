@@ -47,7 +47,7 @@ found you are one of the users but not listed here:
 
 ## Contributing
 
-Contributions are welcomed and greatly appreciated. See [CONTRIBUTING.md](https://github.com/pingcap/community/blob/master/CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
+Contributions are welcomed and greatly appreciated. See [Contribution Guide](https://github.com/pingcap/community/blob/master/contributors/README.md) for details on submitting patches and the contribution workflow.
 
 Here is how to [update parser for TiDB](https://github.com/pingcap/parser/blob/master/docs/update-parser-for-tidb.md).
 
@@ -57,3 +57,17 @@ Thanks [cznic](https://github.com/cznic) for providing some great open-source to
 
 ## License
 Parser is under the Apache 2.0 license. See the LICENSE file for details.
+
+## More resources
+
+- TiDB documentation
+
+    - [English](https://docs.pingcap.com/tidb/stable)
+    - [简体中文](https://docs.pingcap.com/zh/tidb/stable)
+    
+- TiDB blog
+
+    - [English](https://pingcap.com/blog/)
+    - [简体中文](https://pingcap.com/blog-cn/)
+
+- [TiDB Monthly](https://pingcap.com/weekly/)

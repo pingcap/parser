@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
@@ -85,8 +86,26 @@ var (
 )
 
 var errClass2Desc = make(map[ErrClass]string)
-var errCodeMap = make(map[ErrCode]*Error)
-var rfcCode2errClass = make(map[string]ErrClass)
+var rfcCode2errClass = newCode2ErrClassMap()
+
+type code2ErrClassMap struct {
+	data sync.Map
+}
+
+func newCode2ErrClassMap() *code2ErrClassMap {
+	return &code2ErrClassMap{
+		data: sync.Map{},
+	}
+}
+
+func (m *code2ErrClassMap) Get(key string) (ErrClass, bool) {
+	ret, have := m.data.Load(key)
+	return ret.(ErrClass), have
+}
+
+func (m *code2ErrClassMap) Put(key string, err ErrClass) {
+	m.data.Store(key, err)
+}
 
 // RegisterErrorClass registers new error class for terror.
 func RegisterErrorClass(classCode int, desc string) ErrClass {
@@ -115,7 +134,7 @@ func (ec ErrClass) EqualClass(err error) bool {
 	if te, ok := e.(*Error); ok {
 		rfcCode := te.RFCCode()
 		if index := strings.Index(string(rfcCode), ":"); index > 0 {
-			if class, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+			if class, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
 				return class == ec
 			}
 		}
@@ -137,7 +156,7 @@ func (ec ErrClass) initError(code ErrCode) string {
 	clsMap[code] = struct{}{}
 	class := errClass2Desc[ec]
 	rfcCode := fmt.Sprintf("%s:%d", class, code)
-	rfcCode2errClass[class] = ec
+	rfcCode2errClass.Put(class, ec)
 	return rfcCode
 }
 
@@ -151,16 +170,14 @@ func (ec ErrClass) initError(code ErrCode) string {
 func (ec ErrClass) New(code ErrCode, message string) *Error {
 	rfcCode := ec.initError(code)
 	err := errors.Normalize(message, errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
-	errCodeMap[code] = err
 	return err
 }
 
 // NewStdErr defines an *Error with an error code, an error
 // message and workaround to create standard error.
-func (ec ErrClass) NewStdErr(code ErrCode, message *mysql.ErrMessage, desc string, workaround string) *Error {
+func (ec ErrClass) NewStdErr(code ErrCode, message *mysql.ErrMessage) *Error {
 	rfcCode := ec.initError(code)
-	err := errors.Normalize(message.Raw, errors.RedactArgs(message.RedactArgPos), errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode), errors.Description(desc), errors.Workaround(workaround))
-	errCodeMap[code] = err
+	err := errors.Normalize(message.Raw, errors.RedactArgs(message.RedactArgPos), errors.MySQLErrorCode(int(code)), errors.RFCCodeText(rfcCode))
 	return err
 }
 
@@ -169,7 +186,7 @@ func (ec ErrClass) NewStdErr(code ErrCode, message *mysql.ErrMessage, desc strin
 // this method is not goroutine-safe and
 // usually be used in global variable initializer
 func (ec ErrClass) NewStd(code ErrCode) *Error {
-	return ec.NewStdErr(code, mysql.MySQLErrName[uint16(code)], "", "")
+	return ec.NewStdErr(code, mysql.MySQLErrName[uint16(code)])
 }
 
 // Synthesize synthesizes an *Error in the air
@@ -192,7 +209,7 @@ func getMySQLErrorCode(e *Error) uint16 {
 	rfcCode := e.RFCCode()
 	var class ErrClass
 	if index := strings.Index(string(rfcCode), ":"); index > 0 {
-		if ec, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+		if ec, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
 			class = ec
 		} else {
 			log.Warn("Unknown error class", zap.String("class", string(rfcCode)[:index]))
@@ -215,8 +232,8 @@ func getMySQLErrorCode(e *Error) uint16 {
 var (
 	// ErrClassToMySQLCodes is the map of ErrClass to code-set.
 	ErrClassToMySQLCodes  = make(map[ErrClass]map[ErrCode]struct{})
-	ErrCritical           = ClassGlobal.NewStdErr(CodeExecResultIsEmpty, mysql.Message("critical error %v", nil), "", "")
-	ErrResultUndetermined = ClassGlobal.NewStdErr(CodeResultUndetermined, mysql.Message("execution result undetermined", nil), "", "")
+	ErrCritical           = ClassGlobal.NewStdErr(CodeExecResultIsEmpty, mysql.Message("critical error %v", nil))
+	ErrResultUndetermined = ClassGlobal.NewStdErr(CodeResultUndetermined, mysql.Message("execution result undetermined", nil))
 )
 
 func init() {
@@ -278,7 +295,7 @@ func Log(err error) {
 func GetErrClass(e *Error) ErrClass {
 	rfcCode := e.RFCCode()
 	if index := strings.Index(string(rfcCode), ":"); index > 0 {
-		if class, has := rfcCode2errClass[string(rfcCode)[:index]]; has {
+		if class, has := rfcCode2errClass.Get(string(rfcCode)[:index]); has {
 			return class
 		}
 	}
