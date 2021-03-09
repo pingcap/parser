@@ -3900,8 +3900,6 @@ OptTemporary:
 |	"TEMPORARY"
 	{
 		$$ = true
-		yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
-		parser.lastErrorAsWarn()
 	}
 
 DropViewStmt:
