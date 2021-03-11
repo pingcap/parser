@@ -142,7 +142,7 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	c.Assert(no, Equals, false)
 
 	extraPK := NewExtraHandleColInfo()
-	c.Assert(extraPK.Flag, Equals, uint(mysql.NotNullFlag | mysql.PriKeyFlag))
+	c.Assert(extraPK.Flag, Equals, uint(mysql.NotNullFlag|mysql.PriKeyFlag))
 }
 
 func (*testModelSuite) TestJobStartTime(c *C) {
