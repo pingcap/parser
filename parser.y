@@ -319,6 +319,7 @@ import (
 	cipher                "CIPHER"
 	cleanup               "CLEANUP"
 	client                "CLIENT"
+	clientErrorsSummary   "CLIENT_ERRORS_SUMMARY"
 	coalesce              "COALESCE"
 	collation             "COLLATION"
 	columnFormat          "COLUMN_FORMAT"
@@ -5267,6 +5268,7 @@ UnReservedKeyword:
 |	"CSV_SEPARATOR"
 |	"ON_DUPLICATE"
 |	"TIKV_IMPORTER"
+|	"CLIENT_ERRORS_SUMMARY"
 
 TiDBKeyword:
 	"ADMIN"
@@ -9279,6 +9281,12 @@ FlushOption:
 			Tp:       ast.FlushTables,
 			Tables:   $2.([]*ast.TableName),
 			ReadLock: $3.(bool),
+		}
+	}
+|	"CLIENT_ERRORS_SUMMARY"
+	{
+		$$ = &ast.FlushStmt{
+			Tp: ast.FlushClientErrorsSummary,
 		}
 	}
 
