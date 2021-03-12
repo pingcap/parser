@@ -140,6 +140,9 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	}
 	no := anIndex.HasPrefixIndex()
 	c.Assert(no, Equals, false)
+
+	extraPK := NewExtraHandleColInfo()
+	c.Assert(extraPK.Flag, Equals, uint(mysql.NotNullFlag|mysql.PriKeyFlag))
 }
 
 func (*testModelSuite) TestJobStartTime(c *C) {
@@ -300,6 +303,7 @@ func (testModelSuite) TestString(c *C) {
 		{ActionDropColumn, "drop column"},
 		{ActionDropColumns, "drop multi-columns"},
 		{ActionModifySchemaCharsetAndCollate, "modify schema charset and collate"},
+		{ActionDropIndexes, "drop multi-indexes"},
 	}
 
 	for _, v := range acts {
