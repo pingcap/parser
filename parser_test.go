@@ -855,8 +855,8 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select 1 where 1=1", true, "SELECT 1 FROM DUAL WHERE 1=1"},
 
 		// for https://github.com/pingcap/parser/issues/963
-		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`=_UTF8MB4'')"},
-		{"select min(b) b from (select min(t.b) b from t where t.a = '') as t1;", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM (`t`) WHERE `t`.`a`=_UTF8MB4'') AS `t1`"},
+		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM `t` WHERE `t`.`a`=_UTF8MB4'')"},
+		{"select min(b) b from (select min(t.b) b from t where t.a = '') as t1;", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM `t` WHERE `t`.`a`=_UTF8MB4'') AS `t1`"},
 
 		// for https://github.com/pingcap/tidb/issues/1050
 		{`SELECT /*!40001 SQL_NO_CACHE */ * FROM test WHERE 1 limit 0, 2000;`, true, "SELECT SQL_NO_CACHE * FROM `test` WHERE 1 LIMIT 0,2000"},
@@ -1062,6 +1062,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show create sequence
 		{"show create sequence seq", true, "SHOW CREATE SEQUENCE `seq`"},
 		{"show create sequence test.seq", true, "SHOW CREATE SEQUENCE `test`.`seq`"},
+		// for show stats_extended.
+		{"show stats_extended", true, "SHOW STATS_EXTENDED"},
+		{"show stats_extended where table_name = 't'", true, "SHOW STATS_EXTENDED WHERE `table_name`=_UTF8MB4't'"},
 		// for show stats_meta.
 		{"show stats_meta", true, "SHOW STATS_META"},
 		{"show stats_meta where table_name = 't'", true, "SHOW STATS_META WHERE `table_name`=_UTF8MB4't'"},
@@ -2304,6 +2307,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"drop view if exists xxx", true, "DROP VIEW IF EXISTS `xxx`"},
 		{"drop view if exists xxx, yyy", true, "DROP VIEW IF EXISTS `xxx`, `yyy`"},
 		{"drop stats t", true, "DROP STATS `t`"},
+		{"drop stats t partition p0", true, "DROP STATS `t` PARTITION `p0`"},
+		{"drop stats t partition p0, p1, p2", true, "DROP STATS `t` PARTITION `p0`,`p1`,`p2`"},
+		{"drop stats t global", true, "DROP STATS `t` GLOBAL"},
 		// for issue 974
 		{`CREATE TABLE address (
 		id bigint(20) NOT NULL AUTO_INCREMENT,
