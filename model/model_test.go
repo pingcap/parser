@@ -151,7 +151,7 @@ func (*testModelSuite) TestJobStartTime(c *C) {
 	}
 	t := time.Unix(0, 0)
 	c.Assert(t, Equals, TSConvert2Time(job.StartTS))
-	c.Assert(job.String(), Equals, job.String())
+	c.Assert(job.String(), Equals, "ID:123, Type:none, State:none, SchemaState:none, SchemaID:0, TableID:0, RowCount:0, ArgLen:0, start time: 1970-01-01 08:00:00 +0800 CST, Err:<nil>, ErrCount:0, SnapshotVersion:0")
 }
 
 func (*testModelSuite) TestJobCodec(c *C) {
