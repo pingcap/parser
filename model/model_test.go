@@ -121,7 +121,8 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	c.Assert(has, Equals, true)
 	t := table.GetUpdateTime()
 	c.Assert(t, Equals, TSConvert2Time(table.UpdateTS))
-	c.Assert(table2.IsSequence(), Equals, true)
+	c.Assert(table2.IsSequence(), IsTrue)
+	c.Assert(table2.IsBaseTable(), IsFalse)
 
 	// Corner cases
 	column.Flag ^= mysql.PriKeyFlag
@@ -139,6 +140,9 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	}
 	no := anIndex.HasPrefixIndex()
 	c.Assert(no, Equals, false)
+
+	extraPK := NewExtraHandleColInfo()
+	c.Assert(extraPK.Flag, Equals, uint(mysql.NotNullFlag|mysql.PriKeyFlag))
 }
 
 func (*testModelSuite) TestJobStartTime(c *C) {
@@ -255,6 +259,7 @@ func (testModelSuite) TestState(c *C) {
 		StateWriteReorganization,
 		StateDeleteReorganization,
 		StatePublic,
+		StateGlobalTxnOnly,
 	}
 
 	for _, state := range schemaTbl {
@@ -298,6 +303,7 @@ func (testModelSuite) TestString(c *C) {
 		{ActionDropColumn, "drop column"},
 		{ActionDropColumns, "drop multi-columns"},
 		{ActionModifySchemaCharsetAndCollate, "modify schema charset and collate"},
+		{ActionDropIndexes, "drop multi-indexes"},
 	}
 
 	for _, v := range acts {

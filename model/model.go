@@ -44,6 +44,8 @@ const (
 	StatePublic
 	// StateReplica means we're waiting tiflash replica to be finished.
 	StateReplicaOnly
+	// StateGlobalTxnOnly means we can only use global txn for operator on this schema element
+	StateGlobalTxnOnly
 	/*
 	 *  Please add the new state at the end to keep the values consistent across versions.
 	 */
@@ -76,6 +78,8 @@ func (s SchemaState) String() string {
 		return "create index delete only"
 	case StateCreateIndexWriteOnly:
 		return "create index write only"
+	case StateGlobalTxnOnly:
+		return "global txn only"
 	default:
 		return "none"
 	}
@@ -256,9 +260,14 @@ const (
 	// However, the convert is missed in some scenarios before v2.1.9, so for all those tables prior to TableInfoVersion3, their
 	// charsets / collations will be converted to lower-case while loading from the storage.
 	TableInfoVersion3 = uint16(3)
+	// TableInfoVersion4 indicates that the auto_increment allocator in TiDB has been separated from
+	// _tidb_rowid allocator. This version is introduced to preserve the compatibility of old tables:
+	// the tables with version < TableInfoVersion4 still use a single allocator for auto_increment and _tidb_rowid.
+	// Also see https://github.com/pingcap/tidb/issues/982.
+	TableInfoVersion4 = uint16(4)
 
 	// CurrLatestTableInfoVersion means the latest table info in the current TiDB.
-	CurrLatestTableInfoVersion = TableInfoVersion3
+	CurrLatestTableInfoVersion = TableInfoVersion4
 )
 
 // ExtraHandleName is the name of ExtraHandle Column.
@@ -284,6 +293,10 @@ type TableInfo struct {
 	// IsCommonHandle is true when clustered index feature is
 	// enabled and the primary key is not a single integer column.
 	IsCommonHandle bool `json:"is_common_handle"`
+	// CommonHandleVersion is the version of the clustered index.
+	// 0 for the clustered index created == 5.0.0 RC.
+	// 1 for the clustered index created > 5.0.0 RC.
+	CommonHandleVersion uint16 `json:"common_handle_version"`
 
 	Comment         string `json:"comment"`
 	AutoIncID       int64  `json:"auto_inc_id"`
@@ -398,6 +411,9 @@ const (
 	TableLockRead
 	// TableLockReadLocal is not supported.
 	TableLockReadLocal
+	// TableLockReadOnly is used to set a table into read-only status,
+	// when the session exits, it will not release its lock automatically.
+	TableLockReadOnly
 	// TableLockWrite means only the session with this lock has write/read permission.
 	// Only the session that holds the lock can access the table. No other session can access it until the lock is released.
 	TableLockWrite
@@ -413,6 +429,8 @@ func (t TableLockType) String() string {
 		return "READ"
 	case TableLockReadLocal:
 		return "READ LOCAL"
+	case TableLockReadOnly:
+		return "READ ONLY"
 	case TableLockWriteLocal:
 		return "WRITE LOCAL"
 	case TableLockWrite:
@@ -571,7 +589,7 @@ func NewExtraHandleColInfo() *ColumnInfo {
 		ID:   ExtraHandleID,
 		Name: ExtraHandleName,
 	}
-	colInfo.Flag = mysql.PriKeyFlag
+	colInfo.Flag = mysql.PriKeyFlag | mysql.NotNullFlag
 	colInfo.Tp = mysql.TypeLonglong
 	colInfo.Flen, colInfo.Decimal = mysql.GetDefaultFieldLengthAndDecimal(mysql.TypeLonglong)
 	return colInfo
@@ -608,6 +626,11 @@ func (t *TableInfo) IsView() bool {
 // IsSequence checks if TableInfo is a sequence.
 func (t *TableInfo) IsSequence() bool {
 	return t.Sequence != nil
+}
+
+// IsBaseTable checks to see the table is neither a view or a sequence.
+func (t *TableInfo) IsBaseTable() bool {
+	return t.Sequence == nil && t.View == nil
 }
 
 // ViewAlgorithm is VIEW's SQL AlGORITHM characteristic.
@@ -755,17 +778,69 @@ type PartitionInfo struct {
 	AddingDefinitions []PartitionDefinition `json:"adding_definitions"`
 	// DroppingDefinitions is filled when dropping a partition that is in the mid state.
 	DroppingDefinitions []PartitionDefinition `json:"dropping_definitions"`
+	States              []PartitionState      `json:"states"`
 	Num                 uint64                `json:"num"`
 }
 
 // GetNameByID gets the partition name by ID.
 func (pi *PartitionInfo) GetNameByID(id int64) string {
-	for _, def := range pi.Definitions {
-		if id == def.ID {
-			return def.Name.L
+	definitions := pi.Definitions
+	// do not convert this loop to `for _, def := range definitions`.
+	// see https://github.com/pingcap/parser/pull/1072 for the benchmark.
+	for i := range definitions {
+		if id == definitions[i].ID {
+			return definitions[i].Name.L
 		}
 	}
 	return ""
+}
+
+func (pi *PartitionInfo) GetStateByID(id int64) SchemaState {
+	for _, pstate := range pi.States {
+		if pstate.ID == id {
+			return pstate.State
+		}
+	}
+	return StatePublic
+}
+
+func (pi *PartitionInfo) SetStateByID(id int64, state SchemaState) {
+	newState := PartitionState{ID: id, State: state}
+	for i, pstate := range pi.States {
+		if pstate.ID == id {
+			pi.States[i] = newState
+			return
+		}
+	}
+	if pi.States == nil {
+		pi.States = make([]PartitionState, 0, 1)
+	}
+	pi.States = append(pi.States, newState)
+}
+
+func (pi *PartitionInfo) GCPartitionStates() {
+	if len(pi.States) < 1 {
+		return
+	}
+	newStates := make([]PartitionState, 0, len(pi.Definitions))
+	for _, state := range pi.States {
+		found := false
+		for _, def := range pi.Definitions {
+			if def.ID == state.ID {
+				found = true
+				break
+			}
+		}
+		if found {
+			newStates = append(newStates, state)
+		}
+	}
+	pi.States = newStates
+}
+
+type PartitionState struct {
+	ID    int64       `json:"id"`
+	State SchemaState `json:"state"`
 }
 
 // PartitionDefinition defines a single partition.
@@ -788,8 +863,9 @@ func (ci *PartitionDefinition) Clone() PartitionDefinition {
 // FindPartitionDefinitionByName finds PartitionDefinition by name.
 func (t *TableInfo) FindPartitionDefinitionByName(partitionDefinitionName string) *PartitionDefinition {
 	lowConstrName := strings.ToLower(partitionDefinitionName)
-	for i, pd := range t.Partition.Definitions {
-		if pd.Name.L == lowConstrName {
+	definitions := t.Partition.Definitions
+	for i := range definitions {
+		if definitions[i].Name.L == lowConstrName {
 			return &t.Partition.Definitions[i]
 		}
 	}
@@ -811,6 +887,27 @@ func (i *IndexColumn) Clone() *IndexColumn {
 	ni := *i
 	return &ni
 }
+
+// PrimaryKeyType is the type of primary key.
+// Available values are 'clustered', 'nonclustered', and ''(default).
+type PrimaryKeyType int8
+
+func (p PrimaryKeyType) String() string {
+	switch p {
+	case PrimaryKeyTypeClustered:
+		return "CLUSTERED"
+	case PrimaryKeyTypeNonClustered:
+		return "NONCLUSTERED"
+	default:
+		return ""
+	}
+}
+
+const (
+	PrimaryKeyTypeDefault PrimaryKeyType = iota
+	PrimaryKeyTypeClustered
+	PrimaryKeyTypeNonClustered
+)
 
 // IndexType is the type of index
 type IndexType int
