@@ -31,21 +31,33 @@ func (s *testPrivsSuite) TestPrivString(c *C) {
 	}
 }
 
-func (s *testPrivsSuite) TestPrivColumnString(c *C) {
+func (s *testPrivsSuite) TestPrivColumn(c *C) {
 	for _, p := range AllGlobalPrivs {
 		c.Assert(p.ColumnString(), Not(Equals), "", Commentf("%s", p))
+		np, ok := NewPrivFromColumn(p.ColumnString())
+		c.Assert(ok, IsTrue, Commentf("%s", p))
+		c.Assert(np, Equals, p)
 	}
 	for _, p := range AllDBPrivs {
 		c.Assert(p.ColumnString(), Not(Equals), "", Commentf("%s", p))
+		np, ok := NewPrivFromColumn(p.ColumnString())
+		c.Assert(ok, IsTrue, Commentf("%s", p))
+		c.Assert(np, Equals, p)
 	}
 }
 
 func (s *testPrivsSuite) TestPrivSetString(c *C) {
 	for _, p := range AllTablePrivs {
 		c.Assert(p.SetString(), Not(Equals), "", Commentf("%s", p))
+		np, ok := NewPrivFromSetEnum(p.SetString())
+		c.Assert(ok, IsTrue, Commentf("%s", p))
+		c.Assert(np, Equals, p)
 	}
 	for _, p := range AllColumnPrivs {
 		c.Assert(p.SetString(), Not(Equals), "", Commentf("%s", p))
+		np, ok := NewPrivFromSetEnum(p.SetString())
+		c.Assert(ok, IsTrue, Commentf("%s", p))
+		c.Assert(np, Equals, p)
 	}
 }
 
@@ -70,15 +82,6 @@ func (s *testPrivsSuite) TestPrivAllConsistency(c *C) {
 	}
 
 	c.Assert(len(Priv2UserCol), Equals, len(AllGlobalPrivs)+1)
-
-	for _, v := range Priv2UserCol {
-		_, ok := Col2PrivType[v]
-		c.Assert(ok, IsTrue)
-	}
-	for _, v := range Col2PrivType {
-		_, ok := Priv2UserCol[v]
-		c.Assert(ok, IsTrue)
-	}
 
 	// USAGE privilege doesn't have a column in Priv2UserCol
 	// ALL privilege doesn't have a column in Priv2UserCol

@@ -148,8 +148,20 @@ var Col2PrivType = map[string]PrivilegeType{
 	"Repl_slave_priv":        ReplicationSlavePriv,
 }
 
-// PrivilegeType  privilege
+// PrivilegeType privilege
 type PrivilegeType uint64
+
+// NewPrivFromColumn constructs priv from a column name. False means invalid priv column name.
+func NewPrivFromColumn(col string) (PrivilegeType, bool) {
+	p, o := Col2PrivType[col]
+	return p, o
+}
+
+// NewPrivFromSetEnum constructs priv from a set enum. False means invalid priv enum.
+func NewPrivFromSetEnum(e string) (PrivilegeType, bool) {
+	p, o := SetStr2Priv[e]
+	return p, o
+}
 
 // String returns the corresponding identifier in SQLs.
 func (p PrivilegeType) String() string {
