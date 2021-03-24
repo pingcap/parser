@@ -31,6 +31,19 @@ func (s *testPrivsSuite) TestPrivString(c *C) {
 	}
 }
 
+func (s *testPrivsSuite) TestPrivsHas(c *C) {
+	// it is a simple helper, does not handle all&dynamic privs
+	privs := Privileges{AllPriv}
+	c.Assert(privs.Has(AllPriv), IsTrue)
+	c.Assert(privs.Has(InsertPriv), IsFalse)
+
+	// multiple privs
+	privs = Privileges{InsertPriv, SelectPriv}
+	c.Assert(privs.Has(SelectPriv), IsTrue)
+	c.Assert(privs.Has(InsertPriv), IsTrue)
+	c.Assert(privs.Has(DropPriv), IsFalse)
+}
+
 func (s *testPrivsSuite) TestPrivAllConsistency(c *C) {
 	// AllPriv in mysql.user columns.
 	for priv := PrivilegeType(CreatePriv); priv != AllPriv; priv = priv << 1 {
