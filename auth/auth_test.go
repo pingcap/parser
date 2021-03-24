@@ -45,6 +45,6 @@ func (s *testAuthSuite) TestCheckScramble(c *C) {
 	c.Assert(res, IsTrue)
 
 	// Do not panic for invalid input.
-	res := CheckScrambledPassword(salt, hpwd, []byte("xxyyzz"))
-	c.Assert(res, False)
+	res = CheckScrambledPassword(salt, hpwd, []byte("xxyyzz"))
+	c.Assert(res, IsFalse)
 }
