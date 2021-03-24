@@ -1,5 +1,81 @@
 package mysql
 
+// AllPrivilegeLiteral is the string literal for All Privilege.
+const AllPrivilegeLiteral = "ALL PRIVILEGES"
+
+// Priv2Str is the map for privilege to string.
+var Priv2Str = map[PrivilegeType]string{
+	CreatePriv:            "Create",
+	SelectPriv:            "Select",
+	InsertPriv:            "Insert",
+	UpdatePriv:            "Update",
+	DeletePriv:            "Delete",
+	ShowDBPriv:            "Show Databases",
+	SuperPriv:             "Super",
+	CreateUserPriv:        "Create User",
+	CreateTablespacePriv:  "Create Tablespace",
+	TriggerPriv:           "Trigger",
+	DropPriv:              "Drop",
+	ProcessPriv:           "Process",
+	GrantPriv:             "Grant Option",
+	ReferencesPriv:        "References",
+	AlterPriv:             "Alter",
+	ExecutePriv:           "Execute",
+	IndexPriv:             "Index",
+	CreateViewPriv:        "Create View",
+	ShowViewPriv:          "Show View",
+	CreateRolePriv:        "Create Role",
+	DropRolePriv:          "Drop Role",
+	CreateTMPTablePriv:    "CREATE TEMPORARY TABLES",
+	LockTablesPriv:        "LOCK TABLES",
+	CreateRoutinePriv:     "CREATE ROUTINE",
+	AlterRoutinePriv:      "ALTER ROUTINE",
+	EventPriv:             "EVENT",
+	ShutdownPriv:          "SHUTDOWN",
+	ReloadPriv:            "RELOAD",
+	FilePriv:              "FILE",
+	ConfigPriv:            "CONFIG",
+	UsagePriv:             "USAGE",
+	ReplicationClientPriv: "REPLICATION CLIENT",
+	ReplicationSlavePriv:  "REPLICATION SLAVE",
+	AllPriv:               AllPrivilegeLiteral,
+}
+
+// Priv2SetStr is the map for privilege to string.
+var Priv2SetStr = map[PrivilegeType]string{
+	CreatePriv:     "Create",
+	SelectPriv:     "Select",
+	InsertPriv:     "Insert",
+	UpdatePriv:     "Update",
+	DeletePriv:     "Delete",
+	DropPriv:       "Drop",
+	GrantPriv:      "Grant",
+	AlterPriv:      "Alter",
+	ExecutePriv:    "Execute",
+	IndexPriv:      "Index",
+	CreateViewPriv: "Create View",
+	ShowViewPriv:   "Show View",
+	CreateRolePriv: "Create Role",
+	DropRolePriv:   "Drop Role",
+	ShutdownPriv:   "Shutdown Role",
+}
+
+// SetStr2Priv is the map for privilege set string to privilege type.
+var SetStr2Priv = map[string]PrivilegeType{
+	"Create":      CreatePriv,
+	"Select":      SelectPriv,
+	"Insert":      InsertPriv,
+	"Update":      UpdatePriv,
+	"Delete":      DeletePriv,
+	"Drop":        DropPriv,
+	"Grant":       GrantPriv,
+	"Alter":       AlterPriv,
+	"Execute":     ExecutePriv,
+	"Index":       IndexPriv,
+	"Create View": CreateViewPriv,
+	"Show View":   ShowViewPriv,
+}
+
 // Priv2UserCol is the privilege to mysql.user table column name.
 var Priv2UserCol = map[PrivilegeType]string{
 	CreatePriv:            "Create_priv",
@@ -72,80 +148,16 @@ var Col2PrivType = map[string]PrivilegeType{
 	"Repl_slave_priv":        ReplicationSlavePriv,
 }
 
-// Priv2Str is the map for privilege to string.
-var Priv2Str = map[PrivilegeType]string{
-	CreatePriv:            "Create",
-	SelectPriv:            "Select",
-	InsertPriv:            "Insert",
-	UpdatePriv:            "Update",
-	DeletePriv:            "Delete",
-	ShowDBPriv:            "Show Databases",
-	SuperPriv:             "Super",
-	CreateUserPriv:        "Create User",
-	CreateTablespacePriv:  "Create Tablespace",
-	TriggerPriv:           "Trigger",
-	DropPriv:              "Drop",
-	ProcessPriv:           "Process",
-	GrantPriv:             "Grant Option",
-	ReferencesPriv:        "References",
-	AlterPriv:             "Alter",
-	ExecutePriv:           "Execute",
-	IndexPriv:             "Index",
-	CreateViewPriv:        "Create View",
-	ShowViewPriv:          "Show View",
-	CreateRolePriv:        "Create Role",
-	DropRolePriv:          "Drop Role",
-	CreateTMPTablePriv:    "CREATE TEMPORARY TABLES",
-	LockTablesPriv:        "LOCK TABLES",
-	CreateRoutinePriv:     "CREATE ROUTINE",
-	AlterRoutinePriv:      "ALTER ROUTINE",
-	EventPriv:             "EVENT",
-	ShutdownPriv:          "SHUTDOWN",
-	ReloadPriv:            "RELOAD",
-	FilePriv:              "FILE",
-	ConfigPriv:            "CONFIG",
-	UsagePriv:             "USAGE",
-	ReplicationClientPriv: "REPLICATION CLIENT",
-	ReplicationSlavePriv:  "REPLICATION SLAVE",
-}
-
-// Priv2SetStr is the map for privilege to string.
-var Priv2SetStr = map[PrivilegeType]string{
-	CreatePriv:     "Create",
-	SelectPriv:     "Select",
-	InsertPriv:     "Insert",
-	UpdatePriv:     "Update",
-	DeletePriv:     "Delete",
-	DropPriv:       "Drop",
-	GrantPriv:      "Grant",
-	AlterPriv:      "Alter",
-	ExecutePriv:    "Execute",
-	IndexPriv:      "Index",
-	CreateViewPriv: "Create View",
-	ShowViewPriv:   "Show View",
-	CreateRolePriv: "Create Role",
-	DropRolePriv:   "Drop Role",
-	ShutdownPriv:   "Shutdown Role",
-}
-
-// SetStr2Priv is the map for privilege set string to privilege type.
-var SetStr2Priv = map[string]PrivilegeType{
-	"Create":      CreatePriv,
-	"Select":      SelectPriv,
-	"Insert":      InsertPriv,
-	"Update":      UpdatePriv,
-	"Delete":      DeletePriv,
-	"Drop":        DropPriv,
-	"Grant":       GrantPriv,
-	"Alter":       AlterPriv,
-	"Execute":     ExecutePriv,
-	"Index":       IndexPriv,
-	"Create View": CreateViewPriv,
-	"Show View":   ShowViewPriv,
-}
-
 // PrivilegeType  privilege
 type PrivilegeType uint64
+
+// String returns the identifier of the priv
+func (p PrivilegeType) String() string {
+	if s, ok := Priv2Str[p]; ok {
+		return s
+	}
+	return ""
+}
 
 const (
 	// UsagePriv is a synonym for “no privileges”
@@ -240,6 +252,3 @@ var AllTablePrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePr
 
 // AllColumnPrivs is all the privileges in column scope.
 var AllColumnPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv}
-
-// AllPrivilegeLiteral is the string literal for All Privilege.
-const AllPrivilegeLiteral = "ALL PRIVILEGES"

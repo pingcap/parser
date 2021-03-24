@@ -17,9 +17,19 @@ import (
 	. "github.com/pingcap/check"
 )
 
-var _ = Suite(&testConstSuite{})
+var _ = Suite(&testPrivsSuite{})
 
 type testPrivsSuite struct{}
+
+func (s *testPrivsSuite) TestPrivString(c *C) {
+	for i := 0; ; i++ {
+		p := PrivilegeType(1 << i)
+		if p > AllPriv {
+			break
+		}
+		c.Assert(p.String(), Not(Equals), "", Commentf("%d-th", i))
+	}
+}
 
 func (s *testPrivsSuite) TestPrivAllConsistency(c *C) {
 	// AllPriv in mysql.user columns.
@@ -44,6 +54,8 @@ func (s *testPrivsSuite) TestPrivAllConsistency(c *C) {
 		c.Assert(ok, IsTrue)
 	}
 
-	// USAGE privilege doesn't have a column, so +1
-	c.Assert(len(Priv2Str), Equals, len(Priv2UserCol)+1)
+	// USAGE privilege doesn't have a column in Priv2UserCol
+	// ALL privilege doesn't have a column in Priv2UserCol
+	// so it's +2
+	c.Assert(len(Priv2Str), Equals, len(Priv2UserCol)+2)
 }
