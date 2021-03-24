@@ -31,6 +31,24 @@ func (s *testPrivsSuite) TestPrivString(c *C) {
 	}
 }
 
+func (s *testPrivsSuite) TestPrivColumnString(c *C) {
+	for _, p := range AllGlobalPrivs {
+		c.Assert(p.ColumnString(), Not(Equals), "", Commentf("%s", p))
+	}
+	for _, p := range AllDBPrivs {
+		c.Assert(p.ColumnString(), Not(Equals), "", Commentf("%s", p))
+	}
+}
+
+func (s *testPrivsSuite) TestPrivSetString(c *C) {
+	for _, p := range AllTablePrivs {
+		c.Assert(p.SetString(), Not(Equals), "", Commentf("%s", p))
+	}
+	for _, p := range AllColumnPrivs {
+		c.Assert(p.SetString(), Not(Equals), "", Commentf("%s", p))
+	}
+}
+
 func (s *testPrivsSuite) TestPrivsHas(c *C) {
 	// it is a simple helper, does not handle all&dynamic privs
 	privs := Privileges{AllPriv}
@@ -49,11 +67,6 @@ func (s *testPrivsSuite) TestPrivAllConsistency(c *C) {
 	for priv := PrivilegeType(CreatePriv); priv != AllPriv; priv = priv << 1 {
 		_, ok := Priv2UserCol[priv]
 		c.Assert(ok, IsTrue, Commentf("priv fail %d", priv))
-	}
-
-	for _, v := range AllGlobalPrivs {
-		_, ok := Priv2UserCol[v]
-		c.Assert(ok, IsTrue)
 	}
 
 	c.Assert(len(Priv2UserCol), Equals, len(AllGlobalPrivs)+1)

@@ -151,9 +151,25 @@ var Col2PrivType = map[string]PrivilegeType{
 // PrivilegeType  privilege
 type PrivilegeType uint64
 
-// String returns the corresponding identifier in SQL.
+// String returns the corresponding identifier in SQLs.
 func (p PrivilegeType) String() string {
 	if s, ok := Priv2Str[p]; ok {
+		return s
+	}
+	return ""
+}
+
+// ColumnString returns the corresponding name of columns in mysql.user/mysql.db.
+func (p PrivilegeType) ColumnString() string {
+	if s, ok := Priv2UserCol[p]; ok {
+		return s
+	}
+	return ""
+}
+
+// SetString returns the corresponding set enum string in Table_priv/Column_priv of mysql.tables_priv/mysql.columns_priv.
+func (p PrivilegeType) SetString() string {
+	if s, ok := Priv2SetStr[p]; ok {
 		return s
 	}
 	return ""
