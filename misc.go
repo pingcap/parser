@@ -206,6 +206,7 @@ var tokenMap = map[string]int{
 	"CIPHER":                   cipher,
 	"CLEANUP":                  cleanup,
 	"CLIENT":                   client,
+	"CLIENT_ERRORS_SUMMARY":    clientErrorsSummary,
 	"CMSKETCH":                 cmSketch,
 	"COALESCE":                 coalesce,
 	"COLLATE":                  collate,
