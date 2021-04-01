@@ -23,6 +23,13 @@ import (
 	"github.com/pingcap/parser/types"
 )
 
+// Pos represents the position of a token.
+type Pos struct {
+	Line   int
+	Col    int
+	Offset int
+}
+
 // Node is the basic element of the AST.
 // Interfaces embed Node should have 'Node' name suffix.
 type Node interface {
@@ -45,6 +52,10 @@ type Node interface {
 	SetOriginTextPosition(offset int)
 	// OriginTextPosition get the start offset of this node in the origin text.
 	OriginTextPosition() int
+	// SetOriginTextPos set the Pos information of this node in the origin text.
+	SetOriginTextPos(pos Pos)
+	// OriginTextPos get the Pos information of this node in the origin text.
+	OriginTextPos() Pos
 }
 
 // Flags indicates whether an expression contains certain types of expression.

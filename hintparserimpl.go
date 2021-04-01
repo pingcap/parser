@@ -125,11 +125,11 @@ func newHintParser() *hintParser {
 	return &hintParser{cache: make([]yyhintSymType, 50)}
 }
 
-func (hp *hintParser) parse(input string, sqlMode mysql.SQLMode, initPos Pos) ([]*ast.TableOptimizerHint, []error) {
+func (hp *hintParser) parse(input string, sqlMode mysql.SQLMode, initPos ast.Pos) ([]*ast.TableOptimizerHint, []error) {
 	hp.result = nil
 	hp.lexer.reset(input[3:])
 	hp.lexer.SetSQLMode(sqlMode)
-	hp.lexer.r.p = Pos{
+	hp.lexer.r.p = ast.Pos{
 		Line:   initPos.Line,
 		Col:    initPos.Col + 3, // skipped the initial '/*+'
 		Offset: 0,
@@ -146,7 +146,7 @@ func (hp *hintParser) parse(input string, sqlMode mysql.SQLMode, initPos Pos) ([
 }
 
 // ParseHint parses an optimizer hint (the interior of `/*+ ... */`).
-func ParseHint(input string, sqlMode mysql.SQLMode, initPos Pos) ([]*ast.TableOptimizerHint, []error) {
+func ParseHint(input string, sqlMode mysql.SQLMode, initPos ast.Pos) ([]*ast.TableOptimizerHint, []error) {
 	hp := newHintParser()
 	return hp.parse(input, sqlMode, initPos)
 }

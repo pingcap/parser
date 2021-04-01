@@ -15,6 +15,7 @@ package parser
 
 import (
 	"fmt"
+	"github.com/pingcap/parser/ast"
 	"unicode"
 
 	. "github.com/pingcap/check"
@@ -264,12 +265,12 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "select")
-	c.Assert(pos, Equals, Pos{0, 9, 9})
+	c.Assert(pos, Equals, ast.Pos{0, 9, 9})
 
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, intLit)
 	c.Assert(lit, Equals, "5")
-	c.Assert(pos, Equals, Pos{1, 1, 16})
+	c.Assert(pos, Equals, ast.Pos{1, 1, 16})
 }
 
 func (s *testLexerSuite) TestFeatureIDsComment(c *C) {
@@ -278,12 +279,12 @@ func (s *testLexerSuite) TestFeatureIDsComment(c *C) {
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "auto_random")
-	c.Assert(pos, Equals, Pos{0, 16, 16})
+	c.Assert(pos, Equals, ast.Pos{0, 16, 16})
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int('('))
 	tok, pos, lit = l.scan()
 	c.Assert(lit, Equals, "5")
-	c.Assert(pos, Equals, Pos{0, 28, 28})
+	c.Assert(pos, Equals, ast.Pos{0, 28, 28})
 	tok, pos, lit = l.scan()
 	c.Assert(tok, Equals, int(')'))
 

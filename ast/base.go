@@ -22,6 +22,7 @@ import (
 type node struct {
 	text   string
 	offset int
+	pos Pos
 }
 
 // SetOriginTextPosition implements Node interface.
@@ -32,6 +33,16 @@ func (n *node) SetOriginTextPosition(offset int) {
 // OriginTextPosition implements Node interface.
 func (n *node) OriginTextPosition() int {
 	return n.offset
+}
+
+// SetOriginTextPos implements Node interface.
+func (n *node) SetOriginTextPos(pos Pos) {
+	n.pos = pos
+}
+
+// OriginTextPos implements Node interface.
+func (n *node) OriginTextPos() Pos {
+	return n.pos
 }
 
 // SetText implements Node interface.

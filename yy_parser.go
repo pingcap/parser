@@ -92,8 +92,26 @@ type Parser struct {
 }
 
 func yySetOffset(yyVAL *yySymType, offset int) {
-	if yyVAL.expr != nil {
+	if _, ok := yyVAL.expr.(ast.Node); ok {
 		yyVAL.expr.SetOriginTextPosition(offset)
+	}
+	if _, ok := yyVAL.statement.(ast.Node); ok {
+		yyVAL.statement.SetOriginTextPosition(offset)
+	}
+	if _, ok := yyVAL.item.(ast.Node); ok {
+		yyVAL.item.(ast.Node).SetOriginTextPosition(offset)
+	}
+}
+
+func yySetPos(yyVAL *yySymType, pos ast.Pos) {
+	if _, ok := yyVAL.expr.(ast.Node); ok {
+		yyVAL.expr.SetOriginTextPos(pos)
+	}
+	if _, ok := yyVAL.statement.(ast.Node); ok {
+		yyVAL.statement.SetOriginTextPos(pos)
+	}
+	if _, ok := yyVAL.item.(ast.Node); ok {
+		yyVAL.item.(ast.Node).SetOriginTextPos(pos)
 	}
 }
 

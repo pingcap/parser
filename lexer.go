@@ -21,17 +21,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 )
 
 var _ = yyLexer(&Scanner{})
-
-// Pos represents the position of a token.
-type Pos struct {
-	Line   int
-	Col    int
-	Offset int
-}
 
 // Scanner implements the yyLexer interface.
 type Scanner struct {
@@ -69,7 +63,7 @@ type Scanner struct {
 	lastKeyword3 int
 
 	// hintPos records the start position of the previous optimizer hint.
-	lastHintPos Pos
+	lastHintPos ast.Pos
 
 	// true if a dot follows an identifier
 	identifierDot bool
@@ -82,7 +76,7 @@ func (s *Scanner) Errors() (warns []error, errs []error) {
 
 // reset resets the sql string to be scanned.
 func (s *Scanner) reset(sql string) {
-	s.r = reader{s: sql, p: Pos{Line: 1}}
+	s.r = reader{s: sql, p: ast.Pos{Line: 1}}
 	s.buf.Reset()
 	s.errs = s.errs[:0]
 	s.warns = s.warns[:0]
@@ -142,6 +136,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 	s.lastKeyword2 = s.lastKeyword
 	s.lastKeyword = 0
 	v.offset = pos.Offset
+	v.pos = pos
 	v.ident = lit
 	if tok == identifier {
 		tok = handleIdent(v)
@@ -226,7 +221,7 @@ func (s *Scanner) skipWhitespace() rune {
 	return s.r.incAsLongAs(unicode.IsSpace)
 }
 
-func (s *Scanner) scan() (tok int, pos Pos, lit string) {
+func (s *Scanner) scan() (tok int, pos ast.Pos, lit string) {
 	ch0 := s.r.peek()
 	if unicode.IsSpace(ch0) {
 		ch0 = s.skipWhitespace()
@@ -260,7 +255,7 @@ func (s *Scanner) scan() (tok int, pos Pos, lit string) {
 	return
 }
 
-func startWithXx(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithXx(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 	if s.r.peek() == '\'' {
@@ -278,7 +273,7 @@ func startWithXx(s *Scanner) (tok int, pos Pos, lit string) {
 	return scanIdentifier(s)
 }
 
-func startWithNn(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithNn(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	tok, pos, lit = scanIdentifier(s)
 	// The National Character Set, N'some text' or n'some test'.
 	// See https://dev.mysql.com/doc/refman/5.7/en/string-literals.html
@@ -292,7 +287,7 @@ func startWithNn(s *Scanner) (tok int, pos Pos, lit string) {
 	return
 }
 
-func startWithBb(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithBb(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 	if s.r.peek() == '\'' {
@@ -310,14 +305,14 @@ func startWithBb(s *Scanner) (tok int, pos Pos, lit string) {
 	return scanIdentifier(s)
 }
 
-func startWithSharp(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithSharp(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	s.r.incAsLongAs(func(ch rune) bool {
 		return ch != '\n'
 	})
 	return s.scan()
 }
 
-func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithDash(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	if strings.HasPrefix(s.r.s[pos.Offset:], "--") {
 		remainLen := len(s.r.s[pos.Offset:])
@@ -344,7 +339,7 @@ func startWithDash(s *Scanner) (tok int, pos Pos, lit string) {
 	return
 }
 
-func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithSlash(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 	if s.r.peek() != '*' {
@@ -435,7 +430,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 	}
 }
 
-func startWithStar(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithStar(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 
@@ -450,7 +445,7 @@ func startWithStar(s *Scanner) (tok int, pos Pos, lit string) {
 	return '*', pos, "*"
 }
 
-func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithAt(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 
@@ -486,7 +481,7 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 	return
 }
 
-func scanIdentifier(s *Scanner) (int, Pos, string) {
+func scanIdentifier(s *Scanner) (int, ast.Pos, string) {
 	pos := s.r.pos()
 	s.r.incAsLongAs(isIdentChar)
 	s.identifierDot = s.r.peek() == '.'
@@ -516,7 +511,7 @@ var (
 	quotedIdentifier = -identifier
 )
 
-func scanQuotedIdent(s *Scanner) (tok int, pos Pos, lit string) {
+func scanQuotedIdent(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 	s.buf.Reset()
@@ -539,7 +534,7 @@ func scanQuotedIdent(s *Scanner) (tok int, pos Pos, lit string) {
 	}
 }
 
-func startString(s *Scanner) (tok int, pos Pos, lit string) {
+func startString(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	return s.scanString()
 }
 
@@ -551,7 +546,7 @@ type lazyBuf struct {
 	useBuf bool
 	r      *reader
 	b      *bytes.Buffer
-	p      *Pos
+	p      *ast.Pos
 }
 
 func (mb *lazyBuf) setUseBuf(str string) {
@@ -583,7 +578,7 @@ func (mb *lazyBuf) data() string {
 	return lit
 }
 
-func (s *Scanner) scanString() (tok int, pos Pos, lit string) {
+func (s *Scanner) scanString() (tok int, pos ast.Pos, lit string) {
 	tok, pos = stringLit, s.r.pos()
 	mb := lazyBuf{false, &s.r, &s.buf, &pos}
 	ending := s.r.readByte()
@@ -640,7 +635,7 @@ func handleEscape(s *Scanner) rune {
 	return ch0
 }
 
-func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithNumber(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	if s.identifierDot {
 		return scanIdentifier(s)
 	}
@@ -699,7 +694,7 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 	return
 }
 
-func startWithDot(s *Scanner) (tok int, pos Pos, lit string) {
+func startWithDot(s *Scanner) (tok int, pos ast.Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
 	if s.identifierDot {
@@ -736,7 +731,7 @@ func (s *Scanner) scanBit() {
 	})
 }
 
-func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
+func (s *Scanner) scanFloat(beg *ast.Pos) (tok int, pos ast.Pos, lit string) {
 	s.r.p = *beg
 	// float = D1 . D2 e D3
 	s.scanDigits()
@@ -849,11 +844,11 @@ func (s *Scanner) lastErrorAsWarn() {
 
 type reader struct {
 	s string
-	p Pos
+	p ast.Pos
 	w int
 }
 
-var eof = Pos{-1, -1, -1}
+var eof = ast.Pos{-1, -1, -1}
 
 func (r *reader) eof() bool {
 	return r.p.Offset >= len(r.s)
@@ -907,11 +902,11 @@ func (r *reader) readByte() (ch rune) {
 	return
 }
 
-func (r *reader) pos() Pos {
+func (r *reader) pos() ast.Pos {
 	return r.p
 }
 
-func (r *reader) data(from *Pos) string {
+func (r *reader) data(from *ast.Pos) string {
 	return r.s[from.Offset:r.p.Offset]
 }
 

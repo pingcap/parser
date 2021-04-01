@@ -126,6 +126,7 @@ type nodeTextCleaner struct {
 func (checker *nodeTextCleaner) Enter(in Node) (out Node, skipChildren bool) {
 	in.SetText("")
 	in.SetOriginTextPosition(0)
+	in.SetOriginTextPos(Pos{Line: 0, Col: 0, Offset: 0})
 	switch node := in.(type) {
 	case *Constraint:
 		if node.Option != nil {

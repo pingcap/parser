@@ -340,7 +340,7 @@ func (s *testHintParserSuite) TestParseHint(c *C) {
 	}
 
 	for _, tc := range testCases {
-		output, errs := parser.ParseHint("/*+"+tc.input+"*/", tc.mode, parser.Pos{Line: 1})
+		output, errs := parser.ParseHint("/*+"+tc.input+"*/", tc.mode, ast.Pos{Line: 1})
 		c.Assert(errs, HasLen, len(tc.errs), Commentf("input = %s,\n... errs = %q", tc.input, errs))
 		for i, err := range errs {
 			c.Assert(err, ErrorMatches, tc.errs[i], Commentf("input = %s, i = %d", tc.input, i))

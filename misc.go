@@ -16,6 +16,7 @@ package parser
 import (
 	"strings"
 
+	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/charset"
 )
 
@@ -42,7 +43,7 @@ func isUserVarChar(ch rune) bool {
 type trieNode struct {
 	childs [256]*trieNode
 	token  int
-	fn     func(s *Scanner) (int, Pos, string)
+	fn     func(s *Scanner) (int, ast.Pos, string)
 }
 
 var ruleTable trieNode
@@ -65,7 +66,7 @@ func initTokenString(str string, tok int) {
 	node.token = tok
 }
 
-func initTokenFunc(str string, fn func(s *Scanner) (int, Pos, string)) {
+func initTokenFunc(str string, fn func(s *Scanner) (int, ast.Pos, string)) {
 	for i := 0; i < len(str); i++ {
 		c := str[i]
 		if ruleTable.childs[c] == nil {
