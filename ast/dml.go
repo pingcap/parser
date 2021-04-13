@@ -3296,7 +3296,7 @@ type TimestampBound struct {
 
 type AsOfClause struct {
 	node
-	Mode   TimestampBoundMode
+	Mode   TimestampReadModes
 	TsExpr ExprNode
 }
 

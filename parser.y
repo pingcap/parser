@@ -5349,8 +5349,15 @@ AsOfClause:
 	"AS" "OF" Expression
 	{
 		$$ = &ast.AsOfClause{
-			Mode:   ast.TimestampBoundReadTimestamp,
+			Mode:   ast.TimestampReadBoundTimestamp,
 			TsExpr: $3.(ast.ExprNode),
+		}
+	}
+|	"AS" "OF" "EXACT" Expression
+	{
+		$$ = &ast.AsOfClause{
+			Mode:   ast.TimestampReadExactTimestamp,
+			TsExpr: $4.(ast.ExprNode),
 		}
 	}
 
@@ -5967,7 +5974,7 @@ NotKeywordToken:
 |	"EXPR_PUSHDOWN_BLACKLIST"
 |	"OPT_RULE_BLACKLIST"
 |	"BOUND"
-|	"EXACT"
+|	"EXACT" %prec lowerThanStringLitToken
 |	"STALENESS"
 |	"STRONG"
 |	"FLASHBACK"
@@ -7812,7 +7819,7 @@ SelectStmtFromTable:
 		st.From = $3.(*ast.TableRefsClause)
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
-			lastEnd := parser.endOffset(&yyS[yypt-5])
+			lastEnd := parser.endOffset(&yyS[yypt-6])
 			lastField.SetText(parser.src[lastField.Offset:lastEnd])
 		}
 		if $4 != nil {

@@ -5900,3 +5900,26 @@ func (s *testParserSuite) TestCTE(c *C) {
 
 	s.RunTest(c, table)
 }
+
+func (s *testParserSuite) TestAsOfClause(c *C) {
+	table := []testCase{
+		{`select * from t as of '2021-04-15 00:00:00'`, true, "2021-04-15 00:00:00"},
+	}
+
+	parser := parser.New()
+	var sb strings.Builder
+	for _, tt := range table {
+		stmt, _, err := parser.Parse(tt.src, "", "")
+		c.Assert(err, IsNil)
+
+		sel := stmt[0].(*ast.SelectStmt)
+		mode := ast.TimestampReadBoundTimestamp
+		if !tt.ok {
+			mode = ast.TimestampReadExactTimestamp
+		}
+		c.Assert(sel.AsOf.Mode, Equals, mode)
+		err = sel.AsOf.TsExpr.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
+		c.Assert(err, IsNil)
+		c.Assert(sb.String(), Equals, tt.restore)
+	}
+}
