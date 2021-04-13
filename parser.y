@@ -470,6 +470,7 @@ import (
 	nowait                "NOWAIT"
 	nvarcharType          "NVARCHAR"
 	nulls                 "NULLS"
+	of                    "OF"
 	off                   "OFF"
 	offset                "OFFSET"
 	onDuplicate           "ON_DUPLICATE"
@@ -986,6 +987,7 @@ import (
 	GlobalScope                            "The scope of variable"
 	GroupByClause                          "GROUP BY clause"
 	HavingClause                           "HAVING clause"
+	AsOfClause                             "AS OF clause"
 	HandleRange                            "handle range"
 	HandleRangeList                        "handle range list"
 	IfExists                               "If Exists"
@@ -5334,6 +5336,15 @@ HavingClause:
 		$$ = &ast.HavingClause{Expr: $2}
 	}
 
+AsOfClause:
+	"AS" "OF" Expression
+	{
+		$$ = &ast.AsOfClause{
+			Mode:   ast.TimestampReadBoundTimestamp,
+			TsExpr: $3.(ast.ExprNode),
+		}
+	}
+
 IfExists:
 	{
 		$$ = false
@@ -7785,7 +7796,7 @@ SelectStmtFromDualTable:
 	}
 
 SelectStmtFromTable:
-	SelectStmtBasic "FROM" TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
+	SelectStmtBasic "FROM" TableRefsClause AsOfClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
 	{
 		st := $1.(*ast.SelectStmt)
 		st.From = $3.(*ast.TableRefsClause)
@@ -7805,6 +7816,9 @@ SelectStmtFromTable:
 		}
 		if $7 != nil {
 			st.WindowSpecs = ($7.([]ast.WindowSpec))
+		}
+		if $8 != nil {
+			st.AsOf = $8.(*ast.AsOfClause)
 		}
 		$$ = st
 	}
@@ -9228,6 +9242,17 @@ TransactionChar:
 		varAssigns := []*ast.VariableAssignment{}
 		expr := ast.NewValueExpr("1", parser.charset, parser.collation)
 		varAssigns = append(varAssigns, &ast.VariableAssignment{Name: "tx_read_only", Value: expr, IsSystem: true})
+		$$ = varAssigns
+	}
+|	"READ" "ONLY" AsOfClause
+	{
+		varAssigns := []*ast.VariableAssignment{}
+		expr := ast.NewValueExpr("1", parser.charset, parser.collation)
+		varAssigns = append(varAssigns, &ast.VariableAssignment{Name: "tx_read_only", Value: expr, IsSystem: true})
+		asof := $3.(*ast.AsOfClause)
+		if asof != nil {
+			varAssigns = append(varAssigns, &ast.VariableAssignment{Name: "tx_read_ts", Value: asof.TsExpr, IsSystem: true})
+		}
 		$$ = varAssigns
 	}
 

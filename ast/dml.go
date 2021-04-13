@@ -38,6 +38,7 @@ var (
 	_ Node = &FieldList{}
 	_ Node = &GroupByClause{}
 	_ Node = &HavingClause{}
+	_ Node = &AsOfClause{}
 	_ Node = &Join{}
 	_ Node = &Limit{}
 	_ Node = &OnCondition{}
@@ -1048,6 +1049,8 @@ type SelectStmt struct {
 	// Lists is filled only when Kind == SelectStmtKindValues
 	Lists []*RowExpr
 	With  *WithClause
+	// AS OF is used to see the data as it was at a specific point in time.
+	AsOf *AsOfClause
 }
 
 func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
@@ -3267,11 +3270,7 @@ func (m FulltextSearchModifier) WithQueryExpansion() bool {
 	return m&FulltextSearchModifierWithQueryExpansion == FulltextSearchModifierWithQueryExpansion
 }
 
-type TimestampBound struct {
-	Mode      TimestampBoundMode
-	Timestamp ExprNode
-}
-
+// TODO: remove the TimestampBoundMode.
 type TimestampBoundMode int
 
 const (
@@ -3281,3 +3280,46 @@ const (
 	TimestampBoundReadTimestamp
 	TimestampBoundMinReadTimestamp
 )
+
+type TimestampReadModes int
+
+const (
+	TimestampReadStrong TimestampReadModes = iota
+	TimestampReadBoundTimestamp
+	TimestampReadExactTimestamp
+)
+
+type TimestampBound struct {
+	Mode      TimestampBoundMode
+	Timestamp ExprNode
+}
+
+type AsOfClause struct {
+	node
+	Mode   TimestampBoundMode
+	TsExpr ExprNode
+}
+
+// Restore implements Node interface.
+func (n *AsOfClause) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("AS OF")
+	if err := n.TsExpr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore AsOfClause.Expr")
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *AsOfClause) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AsOfClause)
+	node, ok := n.TsExpr.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.TsExpr = node.(ExprNode)
+	return v.Leave(n)
+}
