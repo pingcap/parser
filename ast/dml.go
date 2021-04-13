@@ -69,7 +69,6 @@ const (
 // Join represents table join.
 type Join struct {
 	node
-	resultSetNode
 
 	// Left table can be TableSource or JoinNode.
 	Left ResultSetNode
@@ -145,15 +144,27 @@ func NewCrossJoin(left, right ResultSetNode) (n *Join) {
 
 // Restore implements Node interface.
 func (n *Join) Restore(ctx *format.RestoreCtx) error {
-	if ctx.JoinLevel != 0 {
-		ctx.WritePlain("(")
-		defer ctx.WritePlain(")")
+	useCommaJoin := false
+	_, leftIsJoin := n.Left.(*Join)
+
+	if leftIsJoin && n.Left.(*Join).Right == nil {
+		if ts, ok := n.Left.(*Join).Left.(*TableSource); ok {
+			switch ts.Source.(type) {
+			case *SelectStmt, *SetOprStmt:
+				useCommaJoin = true
+			}
+		}
 	}
-	ctx.JoinLevel++
+
+	if leftIsJoin && !useCommaJoin {
+		ctx.WritePlain("(")
+	}
 	if err := n.Left.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore Join.Left")
 	}
-	ctx.JoinLevel--
+	if leftIsJoin && !useCommaJoin {
+		ctx.WritePlain(")")
+	}
 	if n.Right == nil {
 		return nil
 	}
@@ -169,13 +180,22 @@ func (n *Join) Restore(ctx *format.RestoreCtx) error {
 	if n.StraightJoin {
 		ctx.WriteKeyWord(" STRAIGHT_JOIN ")
 	} else {
-		ctx.WriteKeyWord(" JOIN ")
+		if useCommaJoin {
+			ctx.WritePlain(", ")
+		} else {
+			ctx.WriteKeyWord(" JOIN ")
+		}
 	}
-	ctx.JoinLevel++
+	_, rightIsJoin := n.Right.(*Join)
+	if rightIsJoin {
+		ctx.WritePlain("(")
+	}
 	if err := n.Right.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore Join.Right")
 	}
-	ctx.JoinLevel--
+	if rightIsJoin {
+		ctx.WritePlain(")")
+	}
 
 	if n.On != nil {
 		ctx.WritePlain(" ")
@@ -232,7 +252,6 @@ func (n *Join) Accept(v Visitor) (Node, bool) {
 // TableName represents a table name.
 type TableName struct {
 	node
-	resultSetNode
 
 	Schema model.CIStr
 	Name   model.CIStr
@@ -991,7 +1010,6 @@ type WithClause struct {
 // See https://dev.mysql.com/doc/refman/5.7/en/select.html
 type SelectStmt struct {
 	dmlNode
-	resultSetNode
 
 	// SelectStmtOpts wraps around select hints and switches.
 	*SelectStmtOpts
@@ -1444,7 +1462,6 @@ func (s *SetOprType) String() string {
 // See https://mariadb.com/kb/en/except/
 type SetOprStmt struct {
 	dmlNode
-	resultSetNode
 
 	SelectList *SetOprSelectList
 	OrderBy    *OrderByClause
@@ -2392,6 +2409,7 @@ const (
 	ShowCreateDatabase
 	ShowConfig
 	ShowEvents
+	ShowStatsExtended
 	ShowStatsMeta
 	ShowStatsHistograms
 	ShowStatsTopN
@@ -2434,7 +2452,6 @@ const (
 // See https://dev.mysql.com/doc/refman/5.7/en/show.html
 type ShowStmt struct {
 	dmlNode
-	resultSetNode
 
 	Tp          ShowStmtType // Databases/Tables/Columns/....
 	DBName      string
@@ -2546,6 +2563,11 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 	case ShowProcessList:
 		restoreOptFull()
 		ctx.WriteKeyWord("PROCESSLIST")
+	case ShowStatsExtended:
+		ctx.WriteKeyWord("STATS_EXTENDED")
+		if err := restoreShowLikeOrWhereOpt(); err != nil {
+			return err
+		}
 	case ShowStatsMeta:
 		ctx.WriteKeyWord("STATS_META")
 		if err := restoreShowLikeOrWhereOpt(); err != nil {

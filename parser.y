@@ -869,6 +869,7 @@ import (
 	PurgeImportStmt        "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt             "SELECT statement"
 	RenameTableStmt        "rename table statement"
+	RenameUserStmt         "rename user statement"
 	ReplaceIntoStmt        "REPLACE INTO statement"
 	RecoverTableStmt       "recover table statement"
 	ResumeImportStmt       "RESUME IMPORT statement"
@@ -1164,6 +1165,8 @@ import (
 	UserSpec                               "Username and auth option"
 	UserSpecList                           "Username and auth option list"
 	UserVariableList                       "User defined variable name list"
+	UserToUser                             "rename user to user"
+	UserToUserList                         "rename user to user by list"
 	UsingRoles                             "UsingRoles is role option for SHOW GRANT"
 	Values                                 "values"
 	ValuesList                             "values list"
@@ -1807,8 +1810,6 @@ AlterTableSpec:
 		}
 		if $3 == nil {
 			ret.OnAllPartitions = true
-			yylex.AppendError(yylex.Errorf("The TRUNCATE PARTITION ALL clause is parsed but ignored by all storage engines."))
-			parser.lastErrorAsWarn()
 		} else {
 			ret.PartitionNames = $3.([]model.CIStr)
 		}
@@ -2335,6 +2336,40 @@ TableToTable:
 		$$ = &ast.TableToTable{
 			OldTable: $1.(*ast.TableName),
 			NewTable: $3.(*ast.TableName),
+		}
+	}
+
+/**************************************RenameUserStmt***************************************
+ * See https://dev.mysql.com/doc/refman/5.7/en/rename-user.html
+ *
+ * RENAME USER
+ *     old_user TO new_user
+ *     [, old_user2 TO new_user2] ...
+ *******************************************************************************************/
+RenameUserStmt:
+	"RENAME" "USER" UserToUserList
+	{
+		$$ = &ast.RenameUserStmt{
+			UserToUsers: $3.([]*ast.UserToUser),
+		}
+	}
+
+UserToUserList:
+	UserToUser
+	{
+		$$ = []*ast.UserToUser{$1.(*ast.UserToUser)}
+	}
+|	UserToUserList ',' UserToUser
+	{
+		$$ = append($1.([]*ast.UserToUser), $3.(*ast.UserToUser))
+	}
+
+UserToUser:
+	Username "TO" Username
+	{
+		$$ = &ast.UserToUser{
+			OldUser: $1.(*auth.UserIdentity),
+			NewUser: $3.(*auth.UserIdentity),
 		}
 	}
 
@@ -4342,6 +4377,20 @@ DropStatsStmt:
 	"DROP" "STATS" TableName
 	{
 		$$ = &ast.DropStatsStmt{Table: $3.(*ast.TableName)}
+	}
+|	"DROP" "STATS" TableName "PARTITION" PartitionNameList
+	{
+		$$ = &ast.DropStatsStmt{
+			Table:          $3.(*ast.TableName),
+			PartitionNames: $5.([]model.CIStr),
+		}
+	}
+|	"DROP" "STATS" TableName "GLOBAL"
+	{
+		$$ = &ast.DropStatsStmt{
+			Table:         $3.(*ast.TableName),
+			IsGlobalStats: true,
+		}
 	}
 
 RestrictOrCascadeOpt:
@@ -10175,6 +10224,10 @@ ShowTargetFilterable:
 			Tp: ast.ShowPlugins,
 		}
 	}
+|	"STATS_EXTENDED"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowStatsExtended}
+	}
 |	"STATS_META"
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowStatsMeta}
@@ -10453,6 +10506,7 @@ Statement:
 |	PurgeImportStmt
 |	RollbackStmt
 |	RenameTableStmt
+|	RenameUserStmt
 |	ReplaceIntoStmt
 |	RecoverTableStmt
 |	ResumeImportStmt
@@ -10498,6 +10552,7 @@ ExplainableStmt:
 |	InsertIntoStmt
 |	ReplaceIntoStmt
 |	SetOprStmt1
+|	AlterTableStmt
 
 StatementList:
 	Statement

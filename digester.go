@@ -23,6 +23,8 @@ import (
 	"sync"
 	"unicode"
 	"unsafe"
+
+	"github.com/pingcap/parser/charset"
 )
 
 // DigestHash generates the digest of statements.
@@ -159,19 +161,41 @@ func (d *sqlDigester) normalize(sql string) {
 
 		d.reduceLit(&currTok)
 
-		d.tokens = append(d.tokens, currTok)
+		if currTok.tok == identifier {
+			if strings.HasPrefix(currTok.lit, "_") {
+				_, _, err := charset.GetCharsetInfo(currTok.lit[1:])
+				if err == nil {
+					currTok.tok = underscoreCS
+					goto APPEND
+				}
+			}
+
+			if tok1 := d.lexer.isTokenIdentifier(currTok.lit, pos.Offset); tok1 != 0 {
+				currTok.tok = tok1
+			}
+		}
+	APPEND:
+		d.tokens.pushBack(currTok)
 	}
 	d.lexer.reset("")
 	for i, token := range d.tokens {
-		if token.tok == singleAtIdentifier {
-			d.buffer.WriteString("@")
-		}
-		d.buffer.WriteString(token.lit)
-		if i != len(d.tokens)-1 {
+		if i > 0 {
 			d.buffer.WriteRune(' ')
 		}
+		if token.tok == singleAtIdentifier {
+			d.buffer.WriteString("@")
+			d.buffer.WriteString(token.lit)
+		} else if token.tok == underscoreCS {
+			d.buffer.WriteString("(_charset)")
+		} else if token.tok == identifier || token.tok == quotedIdentifier {
+			d.buffer.WriteByte('`')
+			d.buffer.WriteString(token.lit)
+			d.buffer.WriteByte('`')
+		} else {
+			d.buffer.WriteString(token.lit)
+		}
 	}
-	d.tokens = d.tokens[:0]
+	d.tokens.reset()
 }
 
 func (d *sqlDigester) reduceOptimizerHint(tok *token) (reduced bool) {
@@ -247,7 +271,6 @@ func (d *sqlDigester) reduceLit(currTok *token) {
 	// 2 => ?
 	currTok.tok = genericSymbol
 	currTok.lit = "?"
-	return
 }
 
 func (d *sqlDigester) isPrefixByUnary(currTok int) (isUnary bool) {
@@ -338,6 +361,8 @@ func (d *sqlDigester) isLit(t token) (beLit bool) {
 		beLit = true
 	} else if t.lit == "*" {
 		beLit = true
+	} else if tok == null || (tok == identifier && strings.ToLower(t.lit) == "null") {
+		beLit = true
 	}
 	return
 }
@@ -362,6 +387,10 @@ type token struct {
 }
 
 type tokenDeque []token
+
+func (s *tokenDeque) reset() {
+	*s = (*s)[:0]
+}
 
 func (s *tokenDeque) pushBack(t token) {
 	*s = append(*s, t)
