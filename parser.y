@@ -51,6 +51,7 @@ import (
 
 	/*yy:token "%c"     */
 	identifier "identifier"
+	asof       "AS OF"
 
 	/*yy:token "_%c"    */
 	underscoreCS "UNDERSCORE_CHARSET"
@@ -1355,7 +1356,6 @@ import (
 	TextString                      "text string item"
 
 %precedence empty
-%precedence as
 %precedence lowerThanSelectOpt
 %precedence sqlBufferResult
 %precedence sqlBigResult
@@ -5346,17 +5346,17 @@ AsOfClauseOpt:
 |	AsOfClause
 
 AsOfClause:
-	"AS" "OF" "TIMESTAMP" Expression
-	{
-		$$ = &ast.AsOfClause{
-			Mode:   ast.TimestampReadBoundTimestamp,
-			TsExpr: $3.(ast.ExprNode),
-		}
-	}
-|	"AS" "OF" "TIMESTAMP" "EXACT" Expression
+	asof "TIMESTAMP" Expression
 	{
 		$$ = &ast.AsOfClause{
 			Mode:   ast.TimestampReadExactTimestamp,
+			TsExpr: $3.(ast.ExprNode),
+		}
+	}
+|	asof "TIMESTAMP" "BETWEEN" Expression
+	{
+		$$ = &ast.AsOfClause{
+			Mode:   ast.TimestampReadBoundTimestamp,
 			TsExpr: $4.(ast.ExprNode),
 		}
 	}

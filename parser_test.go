@@ -5905,6 +5905,7 @@ func (s *testParserSuite) TestAsOfClause(c *C) {
 	table := []testCase{
 		{`select * from t as of timestamp '2021-04-15 00:00:00'`, true, "2021-04-15 00:00:00"},
 		{`select * from t as of timestamp '-5s'`, true, "-5s"},
+		{`select * from t as of timestamp between (now()-3s, now)`, false, "(now()-3s, now)"},
 	}
 
 	parser := parser.New()
@@ -5914,13 +5915,13 @@ func (s *testParserSuite) TestAsOfClause(c *C) {
 		c.Assert(err, IsNil)
 
 		sel := stmt[0].(*ast.SelectStmt)
-		mode := ast.TimestampReadBoundTimestamp
+		mode := ast.TimestampReadExactTimestamp
 		if !tt.ok {
-			mode = ast.TimestampReadExactTimestamp
+			mode = ast.TimestampReadBoundTimestamp
 		}
 		c.Assert(sel.AsOf.Mode, Equals, mode)
 		err = sel.AsOf.TsExpr.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
 		c.Assert(err, IsNil)
-		c.Assert(sb.String(), Equals, tt.restore)
+		c.Assert(strings.Contains(sb.String(), tt.restore), Equals, true)
 	}
 }
