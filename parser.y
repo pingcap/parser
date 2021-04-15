@@ -5346,14 +5346,14 @@ AsOfClauseOpt:
 |	AsOfClause
 
 AsOfClause:
-	"AS" "OF" Expression
+	"AS" "OF" "TIMESTAMP" Expression
 	{
 		$$ = &ast.AsOfClause{
 			Mode:   ast.TimestampReadBoundTimestamp,
 			TsExpr: $3.(ast.ExprNode),
 		}
 	}
-|	"AS" "OF" "EXACT" Expression
+|	"AS" "OF" "TIMESTAMP" "EXACT" Expression
 	{
 		$$ = &ast.AsOfClause{
 			Mode:   ast.TimestampReadExactTimestamp,

@@ -5903,7 +5903,8 @@ func (s *testParserSuite) TestCTE(c *C) {
 
 func (s *testParserSuite) TestAsOfClause(c *C) {
 	table := []testCase{
-		{`select * from t as of '2021-04-15 00:00:00'`, true, "2021-04-15 00:00:00"},
+		{`select * from t as of timestamp '2021-04-15 00:00:00'`, true, "2021-04-15 00:00:00"},
+		{`select * from t as of timestamp '-5s'`, true, "-5s"},
 	}
 
 	parser := parser.New()
