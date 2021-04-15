@@ -1055,29 +1055,22 @@ func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 	if n.IsRecursive {
 		ctx.WriteKeyWord("RECURSIVE ")
 	}
-	first := true
-	for _, cte := range n.CTEs {
-		if !first {
+	for i, cte := range n.CTEs {
+		if i != 0 {
 			ctx.WritePlain(", ")
-		} else {
-			first = false
 		}
 		ctx.WriteName(cte.Name.String())
 		if len(cte.ColNameList) > 0 {
-			ctx.WritePlain(" ")
-			ctx.WritePlain("(")
-			f := true
-			for _, name := range cte.ColNameList {
-				if !f {
+			ctx.WritePlain(" (")
+			for j, name := range cte.ColNameList {
+				if j != 0 {
 					ctx.WritePlain(", ")
-				} else {
-					f = false
 				}
-				ctx.WritePlain(name.String())
+				ctx.WriteName(name.String())
 			}
 			ctx.WritePlain(")")
 		}
-		ctx.WritePlain(" AS ")
+		ctx.WriteKeyWord(" AS ")
 		err := cte.Query.Restore(ctx)
 		if err != nil {
 			return err
