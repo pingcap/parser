@@ -862,7 +862,6 @@ import (
 	ColumnNameOrUserVariableList           "column name or user variable list"
 	ColumnList                             "column list"
 	ColumnNameListOpt                      "column name list opt"
-	ColumnNameListWithParenOpt             "column name list opt with parentheses"
 	ColumnNameOrUserVarListOpt             "column name or user vairiabe list opt"
 	ColumnNameOrUserVarListOptWithBrackets "column name or user variable list opt with brackets"
 	ColumnSetValue                         "insert statement set value by column name"
@@ -872,7 +871,6 @@ import (
 	ColumnOptionList                       "column definition option list"
 	VirtualOrStored                        "indicate generated column is stored or not"
 	ColumnOptionListOpt                    "optional column definition option list"
-	CommonTableExpr                        "Common table expression"
 	CompletionTypeWithinTransaction        "overwrite system variable completion_type within current transaction"
 	ConnectionOption                       "single connection options"
 	ConnectionOptionList                   "connection options for CREATE USER statement"
@@ -1096,8 +1094,6 @@ import (
 	WhereClauseOptional                    "Optional WHERE clause"
 	WhenClause                             "When clause"
 	WhenClauseList                         "When clause list"
-	WithClause                             "With Clause"
-	WithList                               "With list"
 	WithReadLockOpt                        "With Read Lock opt"
 	WithGrantOptionOpt                     "With Grant Option opt"
 	WithValidation                         "with validation"
@@ -1111,7 +1107,6 @@ import (
 	OptNullTreatment                       "Optional NULL treatment"
 	OptPartitionClause                     "Optional PARTITION clause"
 	OptWild                                "Optional Wildcard"
-	OptWithClause                          "Optional with Clause"
 	OptWindowOrderByClause                 "Optional ORDER BY clause in WINDOW"
 	OptWindowFrameClause                   "Optional FRAME clause in WINDOW"
 	OptWindowingClause                     "Optional OVER clause"
@@ -2446,16 +2441,6 @@ ColumnNameListOpt:
 		$$ = []*ast.ColumnName{}
 	}
 |	ColumnNameList
-
-ColumnNameListWithParenOpt:
-	/* EMPTY */
-	{
-		$$ = []*ast.ColumnName{}
-	}
-|	'(' ColumnNameList ')'
-	{
-		$$ = $2
-	}
 
 ColumnNameOrUserVarListOpt:
 	/* EMPTY */
@@ -7068,42 +7053,6 @@ SelectStmt:
 		}
 		$$ = st
 	}
-|	WithClause SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
-	{
-		st := $2.(*ast.SelectStmt)
-		st.LockTp = $5.(ast.SelectLockType)
-		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
-		if lastField.Expr != nil && lastField.AsName.O == "" {
-			src := parser.src
-			var lastEnd int
-			if $3 != nil {
-				lastEnd = yyS[yypt-3].offset - 1
-			} else if $4 != nil {
-				lastEnd = yyS[yypt-2].offset - 1
-			} else if $5 != ast.SelectLockNone {
-				lastEnd = yyS[yypt-1].offset - 1
-			} else if $6 != nil {
-				lastEnd = yyS[yypt].offset - 1
-			} else {
-				lastEnd = len(src)
-				if src[lastEnd-1] == ';' {
-					lastEnd--
-				}
-			}
-			lastField.SetText(src[lastField.Offset:lastEnd])
-		}
-		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
-		}
-		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
-		}
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
-		}
-		st.With = $1.(*ast.WithClause)
-		$$ = st
-	}
 |	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
@@ -7117,22 +7066,6 @@ SelectStmt:
 		if $5 != nil {
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
-		$$ = st
-	}
-|	WithClause SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
-	{
-		st := $2.(*ast.SelectStmt)
-		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
-		}
-		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
-		}
-		st.LockTp = $5.(ast.SelectLockType)
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
-		}
-		st.With = $1.(*ast.WithClause)
 		$$ = st
 	}
 |	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
@@ -7149,60 +7082,6 @@ SelectStmt:
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
 		$$ = st
-	}
-|	WithClause SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
-	{
-		st := $2.(*ast.SelectStmt)
-		st.LockTp = $5.(ast.SelectLockType)
-		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
-		}
-		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
-		}
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
-		}
-		st.With = $1.(*ast.WithClause)
-		$$ = st
-	}
-
-WithClause:
-	"WITH" WithList
-	{
-		$$ = $2
-	}
-
-OptWithClause:
-	/* empty */
-	{
-		$$ = nil
-	}
-|	WithClause
-
-WithList:
-	WithList CommonTableExpr
-	{
-		ws := $1.(*ast.WithClause)
-		ws.CTEs = append(ws.CTEs, $2.(*ast.CommonTableExpression))
-		$$ = ws
-	}
-|	CommonTableExpr
-	{
-		ws := &ast.WithClause{}
-		ws.CTEs = make([]*ast.CommonTableExpression, 0, 4)
-		ws.CTEs = append(ws.CTEs, $1.(*ast.CommonTableExpression))
-		$$ = ws
-	}
-
-CommonTableExpr:
-	Identifier ColumnNameListWithParenOpt "AS" SubSelect
-	{
-		cte := &ast.CommonTableExpression{}
-		cte.Name = model.NewCIStr($1)
-		cte.NameList = $2.([]*ast.ColumnName)
-		cte.Query = $4.(*ast.SubqueryExpr)
-		$$ = cte
 	}
 
 FromDual:
