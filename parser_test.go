@@ -5213,6 +5213,7 @@ func (s *testParserSuite) TestCTE(c *C) {
 	table := []testCase{
 		{"WITH `cte` AS (SELECT 1,2) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT 1,2) SELECT `col1`,`col2` FROM `cte`"},
 		{"WITH `cte` (col1, col2) AS (SELECT 1,2 UNION ALL SELECT 3,4) SELECT col1, col2 FROM cte;", true, "WITH `cte` (col1, col2) AS (SELECT 1,2 UNION ALL SELECT 3,4) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH `cte` AS (SELECT 1,2), cte2 as (select 3) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT 1,2), `cte2` AS (SELECT 3) SELECT `col1`,`col2` FROM `cte`"},
 	}
 
 	s.RunTest(c, table)

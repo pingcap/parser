@@ -770,9 +770,9 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 type CommonTableExpression struct {
 	node
 
-	Name     model.CIStr
-	Query    *SubqueryExpr
-	NameList []*ColumnName
+	Name        model.CIStr
+	Query       *SubqueryExpr
+	ColNameList []model.CIStr
 }
 
 type WithClause struct {
@@ -832,11 +832,11 @@ func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 			first = false
 		}
 		ctx.WriteName(cte.Name.String())
-		if len(cte.NameList) > 0 {
+		if len(cte.ColNameList) > 0 {
 			ctx.WritePlain(" ")
 			ctx.WritePlain("(")
 			f := true
-			for _, name := range cte.NameList {
+			for _, name := range cte.ColNameList {
 				if !f {
 					ctx.WritePlain(", ")
 				} else {
@@ -854,6 +854,22 @@ func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 	}
 	ctx.WritePlain(" ")
 	return nil
+}
+
+func (n *WithClause) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+
+	for _, cte := range n.CTEs {
+		node, ok := cte.Query.Accept(v)
+		if !ok {
+			return n, false
+		}
+		cte.Query = node.(*SubqueryExpr)
+	}
+	return v.Leave(n)
 }
 
 // Restore implements Node interface.
@@ -998,6 +1014,15 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 	}
 
 	n = newNode.(*SelectStmt)
+
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
+
 	if n.TableHints != nil && len(n.TableHints) != 0 {
 		newHints := make([]*TableOptimizerHint, len(n.TableHints))
 		for i, hint := range n.TableHints {
@@ -1132,10 +1157,17 @@ type UnionStmt struct {
 	SelectList *UnionSelectList
 	OrderBy    *OrderByClause
 	Limit      *Limit
+	With       *WithClause
 }
 
 // Restore implements Node interface.
 func (n *UnionStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		if err := n.With.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore UnionStmt.With")
+		}
+	}
+
 	if err := n.SelectList.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore UnionStmt.SelectList")
 	}
@@ -1163,6 +1195,13 @@ func (n *UnionStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*UnionStmt)
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
 	if n.SelectList != nil {
 		node, ok := n.SelectList.Accept(v)
 		if !ok {

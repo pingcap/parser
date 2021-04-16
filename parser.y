@@ -807,6 +807,7 @@ import (
 	LockTablesStmt       "Lock tables statement"
 	PreparedStmt         "PreparedStmt"
 	SelectStmt           "SELECT statement"
+	SelectStmtNoWith     "SELECT statement no with part"
 	RenameTableStmt      "rename table statement"
 	RenameDatabaseStmt   "rename database statment"
 	ReplaceIntoStmt      "REPLACE INTO statement"
@@ -826,7 +827,8 @@ import (
 	TruncateTableStmt    "TRUNCATE TABLE statement"
 	UnlockTablesStmt     "Unlock tables statement"
 	UpdateStmt           "UPDATE statement"
-	UnionStmt            "Union select state ment"
+	UnionStmt            "Union select statement"
+	UnionStmtNoWith      "Union select statement no with part"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
 	CreateViewSelectOpt  "Select/Union statement in CREATE VIEW ... AS SELECT"
@@ -862,7 +864,8 @@ import (
 	ColumnNameOrUserVariableList           "column name or user variable list"
 	ColumnList                             "column list"
 	ColumnNameListOpt                      "column name list opt"
-	ColumnNameListWithParenOpt             "column name list opt with parentheses"
+	IdentList                              "identifier list"
+	IdentListWithParenOpt                  "column name list opt with parentheses"
 	ColumnNameOrUserVarListOpt             "column name or user vairiabe list opt"
 	ColumnNameOrUserVarListOptWithBrackets "column name or user variable list opt with brackets"
 	ColumnSetValue                         "insert statement set value by column name"
@@ -1265,6 +1268,8 @@ import (
 %precedence stringLit
 %precedence lowerThanSetKeyword
 %precedence set
+%precedence selectKwd
+%precedence lowerThanSelectStmt
 %precedence lowerThanInsertValues
 %precedence insertValues
 %precedence lowerThanCreateTableSelect
@@ -2447,14 +2452,24 @@ ColumnNameListOpt:
 	}
 |	ColumnNameList
 
-ColumnNameListWithParenOpt:
+IdentListWithParenOpt:
 	/* EMPTY */
 	{
-		$$ = []*ast.ColumnName{}
+		$$ = []model.CIStr{}
 	}
-|	'(' ColumnNameList ')'
+|	'(' IdentList ')'
 	{
 		$$ = $2
+	}
+
+IdentList:
+	Identifier
+	{
+		$$ = []model.CIStr{model.NewCIStr($1)}
+	}
+|	IdentList ',' Identifier
+	{
+		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
 	}
 
 ColumnNameOrUserVarListOpt:
@@ -7033,6 +7048,15 @@ SelectStmtFromTable:
 	}
 
 SelectStmt:
+	SelectStmtNoWith
+|	WithClause SelectStmtNoWith
+	{
+		st := $2.(*ast.SelectStmt)
+		st.With = $1.(*ast.WithClause)
+		$$ = st
+	}
+
+SelectStmtNoWith:
 	SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
@@ -7068,42 +7092,6 @@ SelectStmt:
 		}
 		$$ = st
 	}
-|	WithClause SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
-	{
-		st := $2.(*ast.SelectStmt)
-		st.LockTp = $5.(ast.SelectLockType)
-		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
-		if lastField.Expr != nil && lastField.AsName.O == "" {
-			src := parser.src
-			var lastEnd int
-			if $3 != nil {
-				lastEnd = yyS[yypt-3].offset - 1
-			} else if $4 != nil {
-				lastEnd = yyS[yypt-2].offset - 1
-			} else if $5 != ast.SelectLockNone {
-				lastEnd = yyS[yypt-1].offset - 1
-			} else if $6 != nil {
-				lastEnd = yyS[yypt].offset - 1
-			} else {
-				lastEnd = len(src)
-				if src[lastEnd-1] == ';' {
-					lastEnd--
-				}
-			}
-			lastField.SetText(src[lastField.Offset:lastEnd])
-		}
-		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
-		}
-		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
-		}
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
-		}
-		st.With = $1.(*ast.WithClause)
-		$$ = st
-	}
 |	SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
@@ -7117,22 +7105,6 @@ SelectStmt:
 		if $5 != nil {
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
-		$$ = st
-	}
-|	WithClause SelectStmtFromDualTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
-	{
-		st := $2.(*ast.SelectStmt)
-		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
-		}
-		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
-		}
-		st.LockTp = $5.(ast.SelectLockType)
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
-		}
-		st.With = $1.(*ast.WithClause)
 		$$ = st
 	}
 |	SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
@@ -7150,22 +7122,6 @@ SelectStmt:
 		}
 		$$ = st
 	}
-|	WithClause SelectStmtFromTable OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
-	{
-		st := $2.(*ast.SelectStmt)
-		st.LockTp = $5.(ast.SelectLockType)
-		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
-		}
-		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
-		}
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
-		}
-		st.With = $1.(*ast.WithClause)
-		$$ = st
-	}
 
 WithClause:
 	"WITH" WithList
@@ -7181,10 +7137,10 @@ OptWithClause:
 |	WithClause
 
 WithList:
-	WithList CommonTableExpr
+	WithList ',' CommonTableExpr
 	{
 		ws := $1.(*ast.WithClause)
-		ws.CTEs = append(ws.CTEs, $2.(*ast.CommonTableExpression))
+		ws.CTEs = append(ws.CTEs, $3.(*ast.CommonTableExpression))
 		$$ = ws
 	}
 |	CommonTableExpr
@@ -7196,11 +7152,11 @@ WithList:
 	}
 
 CommonTableExpr:
-	Identifier ColumnNameListWithParenOpt "AS" SubSelect
+	Identifier IdentListWithParenOpt "AS" SubSelect
 	{
 		cte := &ast.CommonTableExpression{}
 		cte.Name = model.NewCIStr($1)
-		cte.NameList = $2.([]*ast.ColumnName)
+		cte.ColNameList = $2.([]model.CIStr)
 		cte.Query = $4.(*ast.SubqueryExpr)
 		$$ = cte
 	}
@@ -7954,6 +7910,15 @@ SelectLockOpt:
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
 UnionStmt:
+	UnionStmtNoWith
+|	WithClause UnionStmtNoWith
+	{
+		union := $2.(*ast.UnionStmt)
+		union.With = $1.(*ast.WithClause)
+		$$ = union
+	}
+
+UnionStmtNoWith:
 	UnionClauseList "UNION" UnionOpt SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
 	{
 		st := $4.(*ast.SelectStmt)
@@ -8056,7 +8021,7 @@ UnionClauseList:
 	}
 
 UnionSelect:
-	SelectStmt
+	SelectStmtNoWith
 |	'(' SelectStmt ')'
 	{
 		st := $2.(*ast.SelectStmt)
