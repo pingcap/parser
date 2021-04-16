@@ -69,7 +69,7 @@ func (s SchemaState) String() string {
 	case StateGlobalTxnOnly:
 		return "global txn only"
 	default:
-		return "none"
+		return "queueing"
 	}
 }
 
