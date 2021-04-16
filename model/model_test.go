@@ -151,7 +151,7 @@ func (*testModelSuite) TestJobStartTime(c *C) {
 		BinlogInfo: &HistoryInfo{},
 	}
 	t := time.Unix(0, 0)
-	c.Assert(t, Equals, TSConvert2Time(job.StartTS))
+	c.Assert(t, Equals, TSConvert2Time(job.CreateTS))
 	c.Assert(job.String(), Equals, fmt.Sprintf("ID:123, Type:none, State:none, SchemaState:none, SchemaID:0, TableID:0, RowCount:0, ArgLen:0, start time: %s, Err:<nil>, ErrCount:0, SnapshotVersion:0", t))
 }
 
