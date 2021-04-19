@@ -60,7 +60,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"interval", "is", "join", "key", "keys", "kill", "leading", "left", "like", "limit", "lines", "load",
 		"localtime", "localtimestamp", "lock", "longblob", "longtext", "mediumblob", "maxvalue", "mediumint", "mediumtext",
 		"minute_microsecond", "minute_second", "mod", "not", "no_write_to_binlog", "null", "numeric",
-		"on", "option", "optionally", "or", "order", "outer", "partition", "precision", "primary", "procedure", "range", "read", "real",
+		"on", "option", "optionally", "or", "order", "outer", "partition", "precision", "primary", "procedure", "range", "read", "real", "recursive",
 		"references", "regexp", "rename", "repeat", "replace", "revoke", "restrict", "right", "rlike",
 		"schema", "schemas", "second_microsecond", "select", "set", "show", "smallint",
 		"starting", "table", "terminated", "then", "tinyblob", "tinyint", "tinytext", "to",
@@ -170,7 +170,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 	for _, src := range srcs {
 		st, err = parser.ParseOneStmt(src, "", "")
 		c.Assert(err, IsNil)
-		ss, ok = st.(*ast.SelectStmt)
+		_, ok = st.(*ast.SelectStmt)
 		c.Assert(ok, IsTrue)
 	}
 
@@ -291,6 +291,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 	sel, ok = st.(*ast.SelectStmt)
 	c.Assert(ok, IsTrue)
 	colExpr, ok := sel.Fields.Fields[0].Expr.(*ast.ColumnNameExpr)
+	c.Assert(ok, IsTrue)
 	c.Assert(colExpr.Name.Table.O, Equals, "t")
 	c.Assert(colExpr.Name.Name.O, Equals, "1e")
 	tName := sel.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName)
@@ -3199,12 +3200,12 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
 	c.Assert(warns[0], ErrorMatches, `.*Optimizer hint syntax error at line 1 column 40 near "tidb_unknow\(T1,t2, 1\) \*/" `)
-	stmt, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
+	_, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil) // Hints are ignored after the "FROM" keyword!
-	stmt, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	_, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
-	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
+	_, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "line 1 column 47 near \"t1, t2 where t1.c1 = t2.c1\" ")
 	_, _, err = parser.Parse("SELECT 1 FROM DUAL WHERE 1 IN (SELECT /*+ DEBUG_HINT3 */ 1)", "", "")
@@ -3217,12 +3218,12 @@ func (s *testParserSuite) TestHintError(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(stmt[0].(*ast.InsertStmt).TableHints), Equals, 1)
 
-	stmt, warns, err = parser.Parse("SELECT id FROM tbl WHERE id = 0 FOR UPDATE /*+ xyz */", "", "")
+	_, warns, err = parser.Parse("SELECT id FROM tbl WHERE id = 0 FOR UPDATE /*+ xyz */", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
 	c.Assert(warns[0], ErrorMatches, `.*near '/\*\+' at line 1`)
 
-	stmt, warns, err = parser.Parse("create global binding for select /*+ max_execution_time(1) */ 1 using select /*+ max_execution_time(1) */ 1;\n", "", "")
+	_, warns, err = parser.Parse("create global binding for select /*+ max_execution_time(1) */ 1 using select /*+ max_execution_time(1) */ 1;\n", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 0)
 }
@@ -3341,6 +3342,25 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[0].Indexes[0].L, Equals, "t2")
 
 	c.Assert(hints[1].HintName.L, Equals, "use_index")
+	c.Assert(hints[1].Tables, HasLen, 1)
+	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
+	c.Assert(hints[1].Indexes, HasLen, 1)
+	c.Assert(hints[1].Indexes[0].L, Equals, "t4")
+
+	// Test FORCE_INDEX
+	stmt, _, err = parser.Parse("select /*+ FORCE_INDEX(T1,T2), force_index(t3,t4) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
+	c.Assert(err, IsNil)
+	selectStmt = stmt[0].(*ast.SelectStmt)
+
+	hints = selectStmt.TableHints
+	c.Assert(hints, HasLen, 2)
+	c.Assert(hints[0].HintName.L, Equals, "force_index")
+	c.Assert(hints[0].Tables, HasLen, 1)
+	c.Assert(hints[0].Tables[0].TableName.L, Equals, "t1")
+	c.Assert(hints[0].Indexes, HasLen, 1)
+	c.Assert(hints[0].Indexes[0].L, Equals, "t2")
+
+	c.Assert(hints[1].HintName.L, Equals, "force_index")
 	c.Assert(hints[1].Tables, HasLen, 1)
 	c.Assert(hints[1].Tables[0].TableName.L, Equals, "t3")
 	c.Assert(hints[1].Indexes, HasLen, 1)
@@ -3711,7 +3731,7 @@ func (s *testParserSuite) TestOptimizerHints(c *C) {
 	c.Assert(hints[1].HintName.L, Equals, "memory_quota")
 	c.Assert(hints[1].HintData.(int64), Equals, int64(1024*1024*1024))
 
-	stmt, _, err = parser.Parse("select /*+ MEMORY_QUOTA(18446744073709551612 MB), memory_quota(8689934592 GB) */ 1", "", "")
+	_, _, err = parser.Parse("select /*+ MEMORY_QUOTA(18446744073709551612 MB), memory_quota(8689934592 GB) */ 1", "", "")
 	c.Assert(err, IsNil)
 
 	// Test HASH_AGG
@@ -3885,6 +3905,9 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"ALTER USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;", true, "ALTER USER `ttt`@`localhost` REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
 		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, "DROP USER `root`@`localhost`, `root1`@`localhost`"},
 		{`DROP USER IF EXISTS 'root'@'localhost'`, true, "DROP USER IF EXISTS `root`@`localhost`"},
+		{`RENAME USER 'root'@'localhost' TO 'root'@'%'`, true, "RENAME USER `root`@`localhost` TO `root`@`%`"},
+		{`RENAME USER 'fred' TO 'barry'`, true, "RENAME USER `fred`@`%` TO `barry`@`%`"},
+		{`RENAME USER u1 to u2, u3 to u4`, true, "RENAME USER `u1`@`%` TO `u2`@`%`, `u3`@`%` TO `u4`@`%`"},
 		{`DROP ROLE 'role'@'localhost', 'role1'@'localhost'`, true, "DROP ROLE `role`@`localhost`, `role1`@`localhost`"},
 		{`DROP ROLE 'administrator', 'developer';`, true, "DROP ROLE `administrator`@`%`, `developer`@`%`"},
 		{`DROP ROLE IF EXISTS 'role'@'localhost'`, true, "DROP ROLE IF EXISTS `role`@`localhost`"},
@@ -4370,6 +4393,8 @@ func (s *testParserSuite) TestExplain(c *C) {
 		{"EXPLAIN FORMAT = JSON FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'json' FOR CONNECTION 1"},
 		{"EXPLAIN FORMAT = JSON SELECT 1", true, "EXPLAIN FORMAT = 'json' SELECT 1"},
 		{"EXPLAIN FORMAT = 'hint' SELECT 1", true, "EXPLAIN FORMAT = 'hint' SELECT 1"},
+		{"EXPLAIN ALTER TABLE t1 ADD INDEX (a)", true, "EXPLAIN FORMAT = 'row' ALTER TABLE `t1` ADD INDEX(`a`)"},
+		{"EXPLAIN ALTER TABLE t1 ADD a varchar(255)", true, "EXPLAIN FORMAT = 'row' ALTER TABLE `t1` ADD COLUMN `a` VARCHAR(255)"},
 	}
 	s.RunTest(c, table)
 }
@@ -4761,7 +4786,7 @@ func (s *testParserSuite) TestDDLStatements(c *C) {
 		c_enum enum('1') collate utf8_bin,
 		c_set set('1') collate utf8_bin,
 		c_json json collate utf8_bin)`
-	stmts, _, err = parser.Parse(createTableStr, "", "")
+	_, _, err = parser.Parse(createTableStr, "", "")
 	c.Assert(err, IsNil)
 
 	createTableStr = `CREATE TABLE t (c_double double(10))`
@@ -5857,4 +5882,21 @@ func (s *testParserSuite) TestHighNotPrecedenceMode(c *C) {
 	c.Assert(err, IsNil)
 	restoreSQL = sb.String()
 	c.Assert(restoreSQL, Equals, "SELECT !1 BETWEEN -5 AND 5")
+}
+
+// For CTE
+func (s *testParserSuite) TestCTE(c *C) {
+	table := []testCase{
+		{"WITH `cte` AS (SELECT 1,2) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT 1,2) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH `cte` (col1, col2) AS (SELECT 1,2 UNION ALL SELECT 3,4) SELECT col1, col2 FROM cte;", true, "WITH `cte` (`col1`, `col2`) AS (SELECT 1,2 UNION ALL SELECT 3,4) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH `cte` AS (SELECT 1,2), cte2 as (select 3) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT 1,2), `cte2` AS (SELECT 3) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH RECURSIVE cte (n) AS (  SELECT 1  UNION ALL  SELECT n + 1 FROM cte WHERE n < 5)SELECT * FROM cte;", true, "WITH RECURSIVE `cte` (`n`) AS (SELECT 1 UNION ALL SELECT `n`+1 FROM `cte` WHERE `n`<5) SELECT * FROM `cte`"},
+		{"with cte(a) as (select 1) update t, cte set t.a=1  where t.a=cte.a;", true, "WITH `cte` (`a`) AS (SELECT 1) UPDATE (`t`) JOIN `cte` SET `t`.`a`=1 WHERE `t`.`a`=`cte`.`a`"},
+		{"with cte(a) as (select 1) delete t from t, cte where t.a=cte.a;", true, "WITH `cte` (`a`) AS (SELECT 1) DELETE `t` FROM (`t`) JOIN `cte` WHERE `t`.`a`=`cte`.`a`"},
+		{"WITH cte1 AS (SELECT 1) SELECT * FROM (WITH cte2 AS (SELECT 2) SELECT * FROM cte2 JOIN cte1) AS dt;", true, "WITH `cte1` AS (SELECT 1) SELECT * FROM (WITH `cte2` AS (SELECT 2) SELECT * FROM `cte2` JOIN `cte1`) AS `dt`"},
+		{"WITH cte AS (SELECT 1) SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM cte;", true, "WITH `cte` AS (SELECT 1) SELECT /*+ MAX_EXECUTION_TIME(1000)*/ * FROM `cte`"},
+		{"with cte as (table t) table cte;", true, "WITH `cte` AS (TABLE `t`) TABLE `cte`"},
+	}
+
+	s.RunTest(c, table)
 }
