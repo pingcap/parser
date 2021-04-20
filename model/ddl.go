@@ -215,11 +215,11 @@ type Job struct {
 	SchemaState SchemaState     `json:"schema_state"`
 	// SnapshotVer means snapshot version for this job.
 	SnapshotVer uint64 `json:"snapshot_ver"`
-	// CreateTS uses timestamp allocated by TSO.
-	// Now it's the TS when we put the job to TiKV queue.
-	CreateTS uint64 `json:"create_ts"`
+	// RealStartTS uses timestamp allocated by TSO.
+	// Now it's the TS when we actually start the job.
+	RealStartTS uint64 `json:"real_start_ts"`
 	// StartTS uses timestamp allocated by TSO.
-	// Now it's the TS when the Job actually started
+	// Now it's the TS when we put the job to TiKV queue.
 	StartTS uint64 `json:"start_ts"`
 	// DependencyID is the job's ID that the current job depends on.
 	DependencyID int64 `json:"dependency_id"`
@@ -338,7 +338,7 @@ func (job *Job) DecodeArgs(args ...interface{}) error {
 func (job *Job) String() string {
 	rowCount := job.GetRowCount()
 	return fmt.Sprintf("ID:%d, Type:%s, State:%s, SchemaState:%s, SchemaID:%d, TableID:%d, RowCount:%d, ArgLen:%d, start time: %v, Err:%v, ErrCount:%d, SnapshotVersion:%v",
-		job.ID, job.Type, job.State, job.SchemaState, job.SchemaID, job.TableID, rowCount, len(job.Args), TSConvert2Time(job.CreateTS), job.Error, job.ErrorCount, job.SnapshotVer)
+		job.ID, job.Type, job.State, job.SchemaState, job.SchemaID, job.TableID, rowCount, len(job.Args), TSConvert2Time(job.StartTS), job.Error, job.ErrorCount, job.SnapshotVer)
 }
 
 func (job *Job) hasDependentSchema(other *Job) (bool, error) {
