@@ -152,7 +152,7 @@ func HasPreventNullInsertFlag(flag uint) bool {
 	return (flag & PreventNullInsertFlag) > 0
 }
 
-// HasEnumSetAsIntFlag checks if PreventNullInsertFlag is set.
+// HasEnumSetAsIntFlag checks if EnumSetAsIntFlag is set.
 func HasEnumSetAsIntFlag(flag uint) bool {
 	return (flag & EnumSetAsIntFlag) > 0
 }
