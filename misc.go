@@ -73,7 +73,6 @@ func initTokenFunc(str string, fn func(s *Scanner) (int, Pos, string)) {
 		}
 		ruleTable.childs[c].fn = fn
 	}
-	return
 }
 
 func init() {
@@ -550,6 +549,7 @@ var tokenMap = map[string]int{
 	"REBUILD":                  rebuild,
 	"RECENT":                   recent,
 	"RECOVER":                  recover,
+	"RECURSIVE":                recursive,
 	"REDUNDANT":                redundant,
 	"REFERENCES":               references,
 	"REGEXP":                   regexpKwd,
@@ -906,6 +906,7 @@ var hintTokenMap = map[string]int{
 	"TIME_RANGE":              hintTimeRange,
 	"USE_CASCADES":            hintUseCascades,
 	"NTH_PLAN":                hintNthPlan,
+	"FORCE_INDEX":             hintForceIndex,
 
 	// TiDB hint aliases
 	"TIDB_HJ":   hintHashJoin,
