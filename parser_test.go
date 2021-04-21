@@ -5903,25 +5903,9 @@ func (s *testParserSuite) TestCTE(c *C) {
 
 func (s *testParserSuite) TestAsOfClause(c *C) {
 	table := []testCase{
-		{`select * from t as of timestamp '2021-04-15 00:00:00'`, true, "2021-04-15 00:00:00"},
-		{`select * from t as of timestamp '-5s'`, true, "-5s"},
-		{`select * from t as of timestamp between (now()-3s, now)`, false, "(now()-3s, now)"},
+		{"SELECT * FROM `t` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW());", true, "SELECT * FROM `t` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())"},
+		{"select * from `t` as of timestamp '2021-04-15 00:00:00'", true, "SELECT * FROM `t` AS OF TIMESTAMP _UTF8MB4'2021-04-15 00:00:00'"},
+		{"SELECT * FROM (`a` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())) JOIN `b` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW());", true, "SELECT * FROM (`a` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())) JOIN `b` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())"},
 	}
-
-	parser := parser.New()
-	var sb strings.Builder
-	for _, tt := range table {
-		stmt, _, err := parser.Parse(tt.src, "", "")
-		c.Assert(err, IsNil)
-
-		sel := stmt[0].(*ast.SelectStmt)
-		mode := ast.TimestampReadExactTimestamp
-		if !tt.ok {
-			mode = ast.TimestampReadBoundTimestamp
-		}
-		c.Assert(sel.AsOf.Mode, Equals, mode)
-		err = sel.AsOf.TsExpr.Restore(NewRestoreCtx(DefaultRestoreFlags, &sb))
-		c.Assert(err, IsNil)
-		c.Assert(strings.Contains(sb.String(), tt.restore), Equals, true)
-	}
+	s.RunTest(c, table)
 }

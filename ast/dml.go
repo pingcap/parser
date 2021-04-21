@@ -263,6 +263,8 @@ type TableName struct {
 	IndexHints     []*IndexHint
 	PartitionNames []model.CIStr
 	TableSample    *TableSample
+	// AS OF is used to see the data as it was at a specific point in time.
+	AsOf *AsOfClause
 }
 
 // Restore implements Node interface.
@@ -306,6 +308,12 @@ func (n *TableName) Restore(ctx *format.RestoreCtx) error {
 	n.restorePartitions(ctx)
 	if err := n.restoreIndexHints(ctx); err != nil {
 		return err
+	}
+	if n.AsOf != nil {
+		ctx.WritePlain(" ")
+		if err := n.AsOf.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while splicing TableName.Asof")
+		}
 	}
 	if n.TableSample != nil {
 		ctx.WritePlain(" ")
@@ -502,6 +510,14 @@ func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
 		if asName := n.AsName.String(); asName != "" {
 			ctx.WriteKeyWord(" AS ")
 			ctx.WriteName(asName)
+		}
+
+		if tn.AsOf != nil {
+			ctx.WritePlain(" ")
+			if err := tn.AsOf.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore TableSource.AsOf")
+			}
+
 		}
 		if err := tn.restoreIndexHints(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore TableSource.Source.(*TableName).IndexHints")
@@ -1049,8 +1065,6 @@ type SelectStmt struct {
 	// Lists is filled only when Kind == SelectStmtKindValues
 	Lists []*RowExpr
 	With  *WithClause
-	// AS OF is used to see the data as it was at a specific point in time.
-	AsOf *AsOfClause
 }
 
 func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
@@ -3302,7 +3316,7 @@ type AsOfClause struct {
 
 // Restore implements Node interface.
 func (n *AsOfClause) Restore(ctx *format.RestoreCtx) error {
-	ctx.WriteKeyWord("AS OF")
+	ctx.WriteKeyWord("AS OF TIMESTAMP ")
 	if err := n.TsExpr.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore AsOfClause.Expr")
 	}

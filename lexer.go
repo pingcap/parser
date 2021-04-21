@@ -181,12 +181,13 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return not2
 	}
 	if tok == as && s.getNextToken() == of {
-		_, pos, _ = s.scan()
-		v.ident = v.ident + " of"
+		_, pos, lit = s.scan()
+		v.ident = fmt.Sprintf("%s %s", v.ident, lit)
 		v.offset = pos.Offset
 		s.lastKeyword = asof
 		return asof
 	}
+
 	switch tok {
 	case intLit:
 		return toInt(s, v, lit)

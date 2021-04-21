@@ -5353,13 +5353,6 @@ AsOfClause:
 			TsExpr: $3.(ast.ExprNode),
 		}
 	}
-|	asof "TIMESTAMP" "BETWEEN" Expression
-	{
-		$$ = &ast.AsOfClause{
-			Mode:   ast.TimestampReadBoundTimestamp,
-			TsExpr: $4.(ast.ExprNode),
-		}
-	}
 
 IfExists:
 	{
@@ -7813,29 +7806,26 @@ SelectStmtFromDualTable:
 	}
 
 SelectStmtFromTable:
-	SelectStmtBasic "FROM" TableRefsClause AsOfClauseOpt WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
+	SelectStmtBasic "FROM" TableRefsClause WhereClauseOptional SelectStmtGroup HavingClause WindowClauseOptional
 	{
 		st := $1.(*ast.SelectStmt)
 		st.From = $3.(*ast.TableRefsClause)
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
-			lastEnd := parser.endOffset(&yyS[yypt-6])
+			lastEnd := parser.endOffset(&yyS[yypt-5])
 			lastField.SetText(parser.src[lastField.Offset:lastEnd])
 		}
 		if $4 != nil {
-			st.AsOf = $4.(*ast.AsOfClause)
+			st.Where = $4.(ast.ExprNode)
 		}
 		if $5 != nil {
-			st.Where = $5.(ast.ExprNode)
+			st.GroupBy = $5.(*ast.GroupByClause)
 		}
 		if $6 != nil {
-			st.GroupBy = $6.(*ast.GroupByClause)
+			st.Having = $6.(*ast.HavingClause)
 		}
 		if $7 != nil {
-			st.Having = $7.(*ast.HavingClause)
-		}
-		if $8 != nil {
-			st.WindowSpecs = ($8.([]ast.WindowSpec))
+			st.WindowSpecs = ($7.([]ast.WindowSpec))
 		}
 		$$ = st
 	}
@@ -8415,13 +8405,16 @@ TableRef:
 |	JoinTable
 
 TableFactor:
-	TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt TableSampleOpt
+	TableName PartitionNameListOpt TableAsNameOpt AsOfClauseOpt IndexHintListOpt TableSampleOpt
 	{
 		tn := $1.(*ast.TableName)
 		tn.PartitionNames = $2.([]model.CIStr)
-		tn.IndexHints = $4.([]*ast.IndexHint)
-		if $5 != nil {
-			tn.TableSample = $5.(*ast.TableSample)
+		tn.IndexHints = $5.([]*ast.IndexHint)
+		if $6 != nil {
+			tn.TableSample = $6.(*ast.TableSample)
+		}
+		if $4 != nil {
+			tn.AsOf = $4.(*ast.AsOfClause)
 		}
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
