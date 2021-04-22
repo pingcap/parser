@@ -5604,6 +5604,7 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 		}
 	case *ast.FuncCallExpr:
 		node.FnName.O = strings.ToLower(node.FnName.O)
+		node.SetOriginTextPosition(0)
 	case *ast.AggregateFuncExpr:
 		node.F = strings.ToLower(node.F)
 	case *ast.SelectField:
@@ -5903,6 +5904,7 @@ func (s *testParserSuite) TestCTE(c *C) {
 
 func (s *testParserSuite) TestAsOfClause(c *C) {
 	table := []testCase{
+		{"SELECT * FROM `t` AS /* comment */ a;", true, "SELECT * FROM `t` AS `a`"},
 		{"SELECT * FROM `t` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW());", true, "SELECT * FROM `t` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())"},
 		{"select * from `t` as of timestamp '2021-04-15 00:00:00'", true, "SELECT * FROM `t` AS OF TIMESTAMP _UTF8MB4'2021-04-15 00:00:00'"},
 		{"SELECT * FROM (`a` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())) JOIN `b` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW());", true, "SELECT * FROM (`a` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())) JOIN `b` AS OF TIMESTAMP READ_TS_IN(DATE_SUB(NOW(), INTERVAL 3 SECOND), NOW())"},

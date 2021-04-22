@@ -183,8 +183,9 @@ func (s *Scanner) Lex(v *yySymType) int {
 	if tok == as && s.getNextToken() == of {
 		_, pos, lit = s.scan()
 		v.ident = fmt.Sprintf("%s %s", v.ident, lit)
-		v.offset = pos.Offset
 		s.lastKeyword = asof
+		s.lastScanOffset = pos.Offset
+		v.offset = pos.Offset
 		return asof
 	}
 
