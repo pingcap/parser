@@ -176,7 +176,11 @@ const (
 	Year             = "year"
 	YearWeek         = "yearweek"
 	LastDay          = "last_day"
-	TiDBParseTso     = "tidb_parse_tso"
+	// TSO functions
+	// ReadTSIn is used to determine the TS for a read only request.
+	// For more info, please see AsOfClause.
+	ReadTSIn     = "read_ts_in"
+	TiDBParseTso = "tidb_parse_tso"
 
 	// string functions
 	ASCII           = "ascii"
