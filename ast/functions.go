@@ -177,10 +177,11 @@ const (
 	YearWeek         = "yearweek"
 	LastDay          = "last_day"
 	// TSO functions
-	// ReadTSIn is used to determine the TS for a read only request.
+	// TiDBBoundStaleness is used to determine the TS for a read only request.
+	// It will be used in the Stale Read feature.
 	// For more info, please see AsOfClause.
-	ReadTSIn     = "read_ts_in"
-	TiDBParseTso = "tidb_parse_tso"
+	TiDBBoundStaleness = "tidb_bound_staleness"
+	TiDBParseTso       = "tidb_parse_tso"
 
 	// string functions
 	ASCII           = "ascii"
