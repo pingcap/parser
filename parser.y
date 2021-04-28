@@ -900,7 +900,7 @@ import (
 	ShutdownStmt           "SHUTDOWN statement"
 	CreateViewSelectOpt    "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	BindableStmt           "Statement that can be created binding on"
-	UpdateStmtNoWith       "Update statement with CTE clause"
+	UpdateStmtNoWith       "Update statement without CTE clause"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
