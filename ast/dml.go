@@ -1060,7 +1060,8 @@ type SelectStmt struct {
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
 	// IsInBraces indicates whether it's a stmt in brace.
-	IsInBraces bool
+	IsInBraces       bool
+	WithBeforeBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
@@ -1122,13 +1123,19 @@ func (n *WithClause) Accept(v Visitor) (Node, bool) {
 
 // Restore implements Node interface.
 func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.WithBeforeBraces {
+		err := n.With.Restore(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	if n.IsInBraces {
 		ctx.WritePlain("(")
 		defer func() {
 			ctx.WritePlain(")")
 		}()
 	}
-	if n.With != nil {
+	if !n.WithBeforeBraces && n.With != nil {
 		err := n.With.Restore(ctx)
 		if err != nil {
 			return err
