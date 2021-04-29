@@ -9150,6 +9150,21 @@ SetOprClause:
 		}
 		$$ = setList
 	}
+|	'(' WithClause SetOprClauseList ')'
+	{
+		setList := $3.([]ast.Node)
+		if sel, isSelect := setList[0].(*ast.SelectStmt); isSelect && len(setList) == 1 {
+			endOffset := parser.endOffset(&yyS[yypt])
+			parser.setLastSelectFieldText(sel, endOffset)
+			sel.IsInBraces = true
+			sel.With = $2.(*ast.WithClause)
+		} else {
+			set := &ast.SetOprSelectList{Selects: $3.([]ast.Node)}
+			set.With = $2.(*ast.WithClause)
+			setList = []ast.Node{set}
+		}
+		$$ = setList
+	}
 
 SetOpr:
 	"UNION" SetOprOpt

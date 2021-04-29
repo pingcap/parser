@@ -1404,12 +1404,18 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 type SetOprSelectList struct {
 	node
 
+	With             *WithClause
 	AfterSetOperator *SetOprType
 	Selects          []Node
 }
 
 // Restore implements Node interface.
 func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		if err := n.With.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SetOprSelectList.With")
+		}
+	}
 	for i, stmt := range n.Selects {
 		switch selectStmt := stmt.(type) {
 		case *SelectStmt:
@@ -1441,6 +1447,13 @@ func (n *SetOprSelectList) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*SetOprSelectList)
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
 	for i, sel := range n.Selects {
 		node, ok := sel.Accept(v)
 		if !ok {
