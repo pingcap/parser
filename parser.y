@@ -495,6 +495,7 @@ import (
 	preSplitRegions       "PRE_SPLIT_REGIONS"
 	preceding             "PRECEDING"
 	prepare               "PREPARE"
+	preserve              "PRESERVE"
 	privileges            "PRIVILEGES"
 	process               "PROCESS"
 	processlist           "PROCESSLIST"
@@ -899,8 +900,7 @@ import (
 	ShutdownStmt           "SHUTDOWN statement"
 	CreateViewSelectOpt    "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	BindableStmt           "Statement that can be created binding on"
-	SelectStmtNoWith       "Select statement with CTE clause"
-	UpdateStmtNoWith       "Update statement with CTE clause"
+	UpdateStmtNoWith       "Update statement without CTE clause"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -1036,6 +1036,7 @@ import (
 	NoWriteToBinLogAliasOpt                "NO_WRITE_TO_BINLOG alias LOCAL or empty"
 	ObjectType                             "Grant statement object type"
 	OnDuplicateKeyUpdate                   "ON DUPLICATE KEY UPDATE value list"
+	OnCommitOpt                            "ON COMMIT DELETE |PRESERVE ROWS"
 	DuplicateOpt                           "[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
 	OptErrors                              "ERRORS or empty"
 	OptFull                                "Full or empty"
@@ -3621,28 +3622,56 @@ DatabaseOptionList:
  *      )
  *******************************************************************/
 CreateTableStmt:
-	"CREATE" OptTemporary "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt
+	"CREATE" OptTemporary "TABLE" IfNotExists TableName TableElementListOpt CreateTableOptionListOpt PartitionOpt DuplicateOpt AsOpt CreateTableSelectOpt OnCommitOpt
 	{
 		stmt := $6.(*ast.CreateTableStmt)
 		stmt.Table = $5.(*ast.TableName)
 		stmt.IfNotExists = $4.(bool)
-		stmt.IsTemporary = $2.(bool)
+		stmt.TemporaryKeyword = $2.(ast.TemporaryKeyword)
 		stmt.Options = $7.([]*ast.TableOption)
 		if $8 != nil {
 			stmt.Partition = $8.(*ast.PartitionOptions)
 		}
 		stmt.OnDuplicate = $9.(ast.OnDuplicateKeyHandlingType)
 		stmt.Select = $11.(*ast.CreateTableStmt).Select
+		if ($12 != nil && stmt.TemporaryKeyword != ast.TemporaryGlobal) || (stmt.TemporaryKeyword == ast.TemporaryGlobal && $12 == nil) {
+			yylex.AppendError(yylex.Errorf("GLOBAL TEMPORARY and ON COMMIT DELETE|PRESERVE ROWS must appear together"))
+		} else {
+			if stmt.TemporaryKeyword == ast.TemporaryGlobal {
+				stmt.OnCommitDelete = $12.(bool)
+			}
+		}
 		$$ = stmt
 	}
-|	"CREATE" OptTemporary "TABLE" IfNotExists TableName LikeTableWithOrWithoutParen
+|	"CREATE" OptTemporary "TABLE" IfNotExists TableName LikeTableWithOrWithoutParen OnCommitOpt
 	{
-		$$ = &ast.CreateTableStmt{
-			Table:       $5.(*ast.TableName),
-			ReferTable:  $6.(*ast.TableName),
-			IfNotExists: $4.(bool),
-			IsTemporary: $2.(bool),
+		tmp := &ast.CreateTableStmt{
+			Table:            $5.(*ast.TableName),
+			ReferTable:       $6.(*ast.TableName),
+			IfNotExists:      $4.(bool),
+			TemporaryKeyword: $2.(ast.TemporaryKeyword),
 		}
+		if ($7 != nil && tmp.TemporaryKeyword != ast.TemporaryGlobal) || (tmp.TemporaryKeyword == ast.TemporaryGlobal && $7 == nil) {
+			yylex.AppendError(yylex.Errorf("GLOBAL TEMPORARY and ON COMMIT DELETE|PRESERVE ROWS must appear together"))
+		} else {
+			if tmp.TemporaryKeyword == ast.TemporaryGlobal {
+				tmp.OnCommitDelete = $7.(bool)
+			}
+		}
+		$$ = tmp
+	}
+
+OnCommitOpt:
+	{
+		$$ = nil
+	}
+|	"ON" "COMMIT" "DELETE" "ROWS"
+	{
+		$$ = true
+	}
+|	"ON" "COMMIT" "PRESERVE" "ROWS"
+	{
+		$$ = false
 	}
 
 DefaultKwdOpt:
@@ -4260,19 +4289,21 @@ DropIndexStmt:
 DropTableStmt:
 	"DROP" OptTemporary TableOrTables IfExists TableNameList RestrictOrCascadeOpt
 	{
-		$$ = &ast.DropTableStmt{IfExists: $4.(bool), Tables: $5.([]*ast.TableName), IsView: false, IsTemporary: $2.(bool)}
+		$$ = &ast.DropTableStmt{IfExists: $4.(bool), Tables: $5.([]*ast.TableName), IsView: false, TemporaryKeyword: $2.(ast.TemporaryKeyword)}
 	}
 
 OptTemporary:
 	/* empty */
 	{
-		$$ = false
+		$$ = ast.TemporaryNone
 	}
 |	"TEMPORARY"
 	{
-		$$ = true
-		yylex.AppendError(yylex.Errorf("TiDB doesn't support TEMPORARY TABLE, TEMPORARY will be parsed but ignored."))
-		parser.lastErrorAsWarn()
+		$$ = ast.TemporaryLocal
+	}
+|	"GLOBAL" "TEMPORARY"
+	{
+		$$ = ast.TemporaryGlobal
 	}
 
 DropViewStmt:
@@ -5874,6 +5905,7 @@ UnReservedKeyword:
 |	"LOCKED"
 |	"CLUSTERED"
 |	"NONCLUSTERED"
+|	"PRESERVE"
 
 TiDBKeyword:
 	"ADMIN"
@@ -7902,15 +7934,6 @@ RepeatableOpt:
 	}
 
 SelectStmt:
-	SelectStmtNoWith
-|	WithClause SelectStmtNoWith
-	{
-		st := $2.(*ast.SelectStmt)
-		st.With = $1.(*ast.WithClause)
-		$$ = st
-	}
-
-SelectStmtNoWith:
 	SelectStmtBasic WhereClauseOptional OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
@@ -8932,6 +8955,33 @@ SetOprStmt1:
 		}
 	}
 |	SetOprStmt
+|	WithClause SetOprClauseList %prec lowerThanParenthese
+	{
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $2.([]ast.Node)}}
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && len(setOpr.SelectList.Selects) == 1 {
+			sel.With = $1.(*ast.WithClause)
+			if sel.IsInBraces {
+				sel.WithBeforeBraces = true
+			}
+			$$ = sel
+		} else {
+			if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+				setOpr.OrderBy = sel.OrderBy
+				setOpr.Limit = sel.Limit
+				sel.OrderBy = nil
+				sel.Limit = nil
+			}
+			setOpr.With = $1.(*ast.WithClause)
+			$$ = setOpr
+		}
+	}
+|	WithClause SetOprStmt
+	{
+		setOpr := $2.(*ast.SetOprStmt)
+		setOpr.With = $1.(*ast.WithClause)
+		$$ = setOpr
+	}
 
 SetOprStmt2:
 	SetOprClauseList %prec higherThanParenthese
@@ -8951,6 +9001,33 @@ SetOprStmt2:
 		}
 	}
 |	SetOprStmt
+|	WithClause SetOprClauseList %prec higherThanParenthese
+	{
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $2.([]ast.Node)}}
+		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
+		if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && len(setOpr.SelectList.Selects) == 1 {
+			sel.With = $1.(*ast.WithClause)
+			if sel.IsInBraces {
+				sel.WithBeforeBraces = true
+			}
+			$$ = sel
+		} else {
+			if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+				setOpr.OrderBy = sel.OrderBy
+				setOpr.Limit = sel.Limit
+				sel.OrderBy = nil
+				sel.Limit = nil
+			}
+			setOpr.With = $1.(*ast.WithClause)
+			$$ = setOpr
+		}
+	}
+|	WithClause SetOprStmt
+	{
+		setOpr := $2.(*ast.SetOprStmt)
+		setOpr.With = $1.(*ast.WithClause)
+		$$ = setOpr
+	}
 
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
 // See https://mariadb.com/kb/en/intersect/
@@ -9070,6 +9147,21 @@ SetOprClause:
 			sel.IsInBraces = true
 		} else {
 			setList = []ast.Node{&ast.SetOprSelectList{Selects: $2.([]ast.Node)}}
+		}
+		$$ = setList
+	}
+|	'(' WithClause SetOprClauseList ')'
+	{
+		setList := $3.([]ast.Node)
+		if sel, isSelect := setList[0].(*ast.SelectStmt); isSelect && len(setList) == 1 {
+			endOffset := parser.endOffset(&yyS[yypt])
+			parser.setLastSelectFieldText(sel, endOffset)
+			sel.IsInBraces = true
+			sel.With = $2.(*ast.WithClause)
+		} else {
+			set := &ast.SetOprSelectList{Selects: $3.([]ast.Node)}
+			set.With = $2.(*ast.WithClause)
+			setList = []ast.Node{set}
 		}
 		$$ = setList
 	}
