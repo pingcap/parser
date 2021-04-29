@@ -1060,7 +1060,7 @@ type SelectStmt struct {
 	// TableHints represents the table level Optimizer Hint for join type
 	TableHints []*TableOptimizerHint
 	// IsInBraces indicates whether it's a stmt in brace.
-	IsInBraces       bool
+	IsInBraces bool
 	// WithBeforeBraces indicates whether stmt's with clause is before the brace.
 	// It's used to distinguish (with xxx select xxx) and with xxx (select xxx)
 	WithBeforeBraces bool
