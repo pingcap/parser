@@ -11,11 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package auth_test
 
 import (
+	"testing"
+
 	. "github.com/pingcap/check"
+	. "github.com/pingcap/parser/auth"
 )
+
+func TestT(t *testing.T) {
+	TestingT(t)
+}
 
 var _ = Suite(&testAuthSuite{})
 
@@ -47,4 +54,21 @@ func (s *testAuthSuite) TestCheckScramble(c *C) {
 	// Do not panic for invalid input.
 	res = CheckScrambledPassword(salt, hpwd, []byte("xxyyzz"))
 	c.Assert(res, IsFalse)
+}
+
+func (s *testAuthSuite) TestEscapeAccountName(c *C) {
+	c.Assert(EscapeAccountName(""), Equals, "''")
+	c.Assert(EscapeAccountName("User"), Equals, "'User'")
+	c.Assert(EscapeAccountName("User's"), Equals, "'User\\'s'")
+	c.Assert(EscapeAccountName("User is me"), Equals, "'User is me'")
+	u := UserIdentity{Username: "U & I @ Party", Hostname: "10.%", CurrentUser: false, AuthUsername: "root's friend", AuthHostname: "server"}
+	c.Assert(u.String(), Equals, "'U & I @ Party'@'10.%'")
+	c.Assert(u.AuthIdentityString(), Equals, "'root\\'s friend'@'server'")
+	u = UserIdentity{Username: "", Hostname: "", CurrentUser: false, AuthUsername: "ceo", AuthHostname: "%"}
+	c.Assert(u.String(), Equals, "''@''")
+	c.Assert(u.AuthIdentityString(), Equals, "'ceo'@'%'")
+	var uNil *UserIdentity = nil
+	c.Assert(uNil.String(), Equals, "")
+	r := RoleIdentity{Username: "Admin", Hostname: "192.168.%"}
+	c.Assert(r.String(), Equals, "'Admin'@'192.168.%'")
 }
