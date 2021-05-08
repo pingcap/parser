@@ -59,11 +59,11 @@ func (s *testAuthSuite) TestCheckScramble(c *C) {
 func (s *testAuthSuite) TestEscapeAccountName(c *C) {
 	c.Assert(EscapeAccountName(""), Equals, "''")
 	c.Assert(EscapeAccountName("User"), Equals, "'User'")
-	c.Assert(EscapeAccountName("User's"), Equals, "'User\\'s'")
+	c.Assert(EscapeAccountName("User's"), Equals, "'User''s'")
 	c.Assert(EscapeAccountName("User is me"), Equals, "'User is me'")
 	u := UserIdentity{Username: "U & I @ Party", Hostname: "10.%", CurrentUser: false, AuthUsername: "root's friend", AuthHostname: "server"}
 	c.Assert(u.String(), Equals, "'U & I @ Party'@'10.%'")
-	c.Assert(u.AuthIdentityString(), Equals, "'root\\'s friend'@'server'")
+	c.Assert(u.AuthIdentityString(), Equals, "'root''s friend'@'server'")
 	u = UserIdentity{Username: "", Hostname: "", CurrentUser: false, AuthUsername: "ceo", AuthHostname: "%"}
 	c.Assert(u.String(), Equals, "''@''")
 	c.Assert(u.AuthIdentityString(), Equals, "'ceo'@'%'")

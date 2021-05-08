@@ -47,7 +47,10 @@ func (user *UserIdentity) Restore(ctx *format.RestoreCtx) error {
 }
 
 func EscapeAccountName(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", "\\'") + "'"
+	// We do not have access to the sql_mode here,
+	// so assume NO_BACKSLASH_ESCAPES in effect,
+	// since it is still correct if not set.
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
 
 // String converts UserIdentity to the format 'user'@'host'.
