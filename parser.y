@@ -7934,25 +7934,27 @@ RepeatableOpt:
 	}
 
 SelectStmt:
-	SelectStmtBasic WhereClauseOptional OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
+	SelectStmtBasic WhereClauseOptional SelectStmtGroup OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
-		if $5 != nil {
-			st.LockInfo = $5.(*ast.SelectLockInfo)
+		if $6 != nil {
+			st.LockInfo = $6.(*ast.SelectLockInfo)
 		}
 		lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 		if lastField.Expr != nil && lastField.AsName.O == "" {
 			src := parser.src
 			var lastEnd int
 			if $2 != nil {
-				lastEnd = yyS[yypt-4].offset - 1
+				lastEnd = yyS[yypt-5].offset - 1
 			} else if $3 != nil {
-				lastEnd = yyS[yypt-3].offset - 1
+				lastEnd = yyS[yypt-4].offset - 1
 			} else if $4 != nil {
+				lastEnd = yyS[yypt-3].offset - 1
+			} else if $5 != nil {
 				lastEnd = yyS[yypt-2].offset - 1
 			} else if st.LockInfo != nil && st.LockInfo.LockType != ast.SelectLockNone {
 				lastEnd = yyS[yypt-1].offset - 1
-			} else if $6 != nil {
+			} else if $7 != nil {
 				lastEnd = yyS[yypt].offset - 1
 			} else {
 				lastEnd = len(src)
@@ -7966,13 +7968,16 @@ SelectStmt:
 			st.Where = $2.(ast.ExprNode)
 		}
 		if $3 != nil {
-			st.OrderBy = $3.(*ast.OrderByClause)
+			st.GroupBy = $3.(*ast.GroupByClause)
 		}
 		if $4 != nil {
-			st.Limit = $4.(*ast.Limit)
+			st.OrderBy = $4.(*ast.OrderByClause)
 		}
-		if $6 != nil {
-			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
+		if $5 != nil {
+			st.Limit = $5.(*ast.Limit)
+		}
+		if $7 != nil {
+			st.SelectIntoOpt = $7.(*ast.SelectIntoOption)
 		}
 		$$ = st
 	}
