@@ -3309,7 +3309,8 @@ func (n *PartitionMethod) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord(n.Tp.String())
 
 	if n.KeyAlgorithm != nil {
-		ctx.WritePlain(fmt.Sprintf(" ALGORITHM = %d", n.KeyAlgorithm.Type))
+		ctx.WriteKeyWord(" ALGORITHM")
+		ctx.WritePlainf(" = %d", n.KeyAlgorithm.Type)
 	}
 
 	switch {
