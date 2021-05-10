@@ -391,7 +391,7 @@ type BeginStmt struct {
 	ReadOnly              bool
 	Bound                 *TimestampBound
 	CausalConsistencyOnly bool
-	// AS OF is used to see the data as it was at a specific point in time.
+	// AS OF is used to read the data at a specific point of time.
 	// Should only be used when ReadOnly is true.
 	AsOf *AsOfClause
 }
