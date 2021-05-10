@@ -7981,20 +7981,23 @@ SelectStmt:
 		}
 		$$ = st
 	}
-|	SelectStmtFromDualTable OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
+|	SelectStmtFromDualTable SelectStmtGroup OrderByOptional SelectStmtLimitOpt SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
 		if $2 != nil {
-			st.OrderBy = $2.(*ast.OrderByClause)
+			st.GroupBy = $2.(*ast.GroupByClause)
 		}
 		if $3 != nil {
-			st.Limit = $3.(*ast.Limit)
+			st.OrderBy = $3.(*ast.OrderByClause)
 		}
 		if $4 != nil {
-			st.LockInfo = $4.(*ast.SelectLockInfo)
+			st.Limit = $4.(*ast.Limit)
 		}
 		if $5 != nil {
-			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
+			st.LockInfo = $5.(*ast.SelectLockInfo)
+		}
+		if $6 != nil {
+			st.SelectIntoOpt = $6.(*ast.SelectIntoOption)
 		}
 		$$ = st
 	}
