@@ -184,7 +184,7 @@ func (p PrivilegeType) String() string {
 	return ""
 }
 
-// ColumnString returns the corresponding name of columns in mysql.user/db.
+// ColumnString returns the corresponding name of columns in mysql.user/mysql.db.
 func (p PrivilegeType) ColumnString() string {
 	if s, ok := Priv2UserCol[p]; ok {
 		return s
@@ -192,7 +192,7 @@ func (p PrivilegeType) ColumnString() string {
 	return ""
 }
 
-// SetString returns the corresponding set enum string in Table_priv/Column_priv of mysql.tables_priv/columns_priv.
+// SetString returns the corresponding set enum string in Table_priv/Column_priv of mysql.tables_priv/mysql.columns_priv.
 func (p PrivilegeType) SetString() string {
 	if s, ok := Priv2SetStr[p]; ok {
 		return s
