@@ -184,7 +184,7 @@ func (p PrivilegeType) String() string {
 	return ""
 }
 
-// ColumnString returns the corresponding name of columns in mysql.user/mysql.db.
+// ColumnString returns the corresponding name of columns in mysql.user/db.
 func (p PrivilegeType) ColumnString() string {
 	if s, ok := Priv2UserCol[p]; ok {
 		return s
@@ -192,7 +192,7 @@ func (p PrivilegeType) ColumnString() string {
 	return ""
 }
 
-// SetString returns the corresponding set enum string in Table_priv/Column_priv of mysql.tables_priv/mysql.columns_priv.
+// SetString returns the corresponding set enum string in Table_priv/Column_priv of mysql.tables_priv/columns_priv.
 func (p PrivilegeType) SetString() string {
 	if s, ok := Priv2SetStr[p]; ok {
 		return s
@@ -304,3 +304,6 @@ var AllTablePrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, C
 
 // AllColumnPrivs is all the privileges in column scope.
 var AllColumnPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv}
+
+// StaticGlobalOnlyPrivs is all the privileges only in global scope and different from dynamic privileges.
+var StaticGlobalOnlyPrivs = Privileges{ProcessPriv, ShowDBPriv, SuperPriv, CreateUserPriv, CreateTablespacePriv, ShutdownPriv, ReloadPriv, FilePriv, ReplicationClientPriv, ReplicationSlavePriv, ConfigPriv}
