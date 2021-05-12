@@ -177,10 +177,10 @@ const (
 	YearWeek         = "yearweek"
 	LastDay          = "last_day"
 	// TSO functions
-	// TiDBBoundStaleness is used to determine the TS for a read only request.
+	// TiDBStalenessBound is used to determine the TS for a read only request with the given bounded staleness.
 	// It will be used in the Stale Read feature.
 	// For more info, please see AsOfClause.
-	TiDBBoundStaleness = "tidb_bound_staleness"
+	TiDBStalenessBound = "tidb_staleness_bound"
 	TiDBParseTso       = "tidb_parse_tso"
 
 	// string functions
