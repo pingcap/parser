@@ -4010,7 +4010,7 @@ CreateTableSelectOpt:
 	}
 |	SetOprStmt1
 	{
-		$$ = &ast.CreateTableStmt{Select: $1}
+		$$ = &ast.CreateTableStmt{Select: $1.(ast.ResultSetNode)}
 	}
 
 CreateViewSelectOpt:
