@@ -307,6 +307,17 @@ func (s *testParserSuite) TestSimple(c *C) {
 	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "a")
 	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Table.O, Equals, "t")
 	c.Assert(bExpr.R.(ast.ValueExpr).GetValue().(int64), Equals, int64(10))
+
+	parser.SetSQLMode(mysql.ModeANSIQuotes)
+	src = `select t."dot"=10 from t;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	bExpr, ok = st.(*ast.SelectStmt).Fields.Fields[0].Expr.(*ast.BinaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(bExpr.Op, Equals, opcode.EQ)
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "dot")
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Table.O, Equals, "t")
+	c.Assert(bExpr.R.(ast.ValueExpr).GetValue().(int64), Equals, int64(10))
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
@@ -854,6 +865,10 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 
 		//https://github.com/pingcap/tidb/issues/14297
 		{"select 1 where 1=1", true, "SELECT 1 FROM DUAL WHERE 1=1"},
+
+		//https://github.com/pingcap/tidb/issues/24496
+		{"select 1 group by 1", true, "SELECT 1 GROUP BY 1"},
+		{"select 1 from dual group by 1", true, "SELECT 1 GROUP BY 1"},
 
 		// for https://github.com/pingcap/parser/issues/963
 		{"select min(b) b from (select min(t.b) b from t where t.a = '');", true, "SELECT MIN(`b`) AS `b` FROM (SELECT MIN(`t`.`b`) AS `b` FROM `t` WHERE `t`.`a`=_UTF8MB4'')"},
@@ -5928,5 +5943,17 @@ func (s *testParserSuite) TestAsOfClause(c *C) {
 		{"INSERT INTO `employees` (SELECT * FROM `employees` AS OF TIMESTAMP (DATE_SUB(NOW(), INTERVAL _UTF8MB4'60' MINUTE)) NOT IN (SELECT * FROM `employees`))", true, "INSERT INTO `employees` (SELECT * FROM `employees` AS OF TIMESTAMP (DATE_SUB(NOW(), INTERVAL _UTF8MB4'60' MINUTE)) NOT IN (SELECT * FROM `employees`))"},
 		{"SET TRANSACTION READ ONLY as of timestamp '2021-04-21 00:42:12'", true, "SET @@SESSION.`tx_read_only`=_UTF8MB4'1', @@SESSION.`tx_read_ts`=_UTF8MB4'2021-04-21 00:42:12'"},
 	}
+	s.RunTest(c, table)
+}
+
+// For `PARTITION BY [LINEAR] KEY ALGORITHM` syntax
+func (s *testParserSuite) TestPartitionKeyAlgorithm(c *C) {
+	table := []testCase{
+		{"CREATE TABLE t  (c1 integer ,c2 integer) PARTITION BY LINEAR KEY ALGORITHM = 1 (c1,c2) PARTITIONS 4", true, "CREATE TABLE `t` (`c1` INT,`c2` INT) PARTITION BY LINEAR KEY ALGORITHM = 1 (`c1`,`c2`) PARTITIONS 4"},
+		{"CREATE TABLE t  (c1 integer ,c2 integer) PARTITION BY LINEAR KEY ALGORITHM = -1 (c1,c2) PARTITIONS 4", false, ""},
+		{"CREATE TABLE t  (c1 integer ,c2 integer) PARTITION BY LINEAR KEY ALGORITHM = 0 (c1,c2) PARTITIONS 4", false, ""},
+		{"CREATE TABLE t  (c1 integer ,c2 integer) PARTITION BY LINEAR KEY ALGORITHM = 3 (c1,c2) PARTITIONS 4", false, ""},
+	}
+
 	s.RunTest(c, table)
 }
