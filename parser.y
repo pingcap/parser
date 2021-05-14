@@ -3711,10 +3711,12 @@ PartitionOpt:
 SubPartitionMethod:
 	LinearOpt "KEY" PartitionKeyAlgorithmOpt '(' ColumnNameListOpt ')'
 	{
+		keyAlgorithm, _ := $3.(*ast.PartitionKeyAlgorithm)
 		$$ = &ast.PartitionMethod{
-			Tp:          model.PartitionTypeKey,
-			Linear:      len($1) != 0,
-			ColumnNames: $5.([]*ast.ColumnName),
+			Tp:           model.PartitionTypeKey,
+			Linear:       len($1) != 0,
+			ColumnNames:  $5.([]*ast.ColumnName),
+			KeyAlgorithm: keyAlgorithm,
 		}
 	}
 |	LinearOpt "HASH" '(' BitExpr ')'
@@ -3728,9 +3730,20 @@ SubPartitionMethod:
 
 PartitionKeyAlgorithmOpt:
 	/* empty */
-	{}
-|	"ALGORITHM" '=' NUM
-	{}
+	{
+		$$ = nil
+	}
+|	"ALGORITHM" eq NUM
+	{
+		tp := getUint64FromNUM($3)
+		if tp != 1 && tp != 2 {
+			yylex.AppendError(ErrSyntax)
+			return 1
+		}
+		$$ = &ast.PartitionKeyAlgorithm{
+			Type: tp,
+		}
+	}
 
 PartitionMethod:
 	SubPartitionMethod
