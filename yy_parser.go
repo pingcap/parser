@@ -158,7 +158,24 @@ func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode
 		warns = nil
 	}
 	if len(errs) != 0 {
-		return nil, warns, errors.Trace(errs[0])
+		err := errs[0]
+		var isErr = true
+		if len(parser.result) != 0 {
+			node := parser.result[0]
+			newStd := terror.ClassTypes.NewStd(mysql.ErrDataOutOfRange)
+			if newStd.Equal(err) {
+				if _, ok := node.(*ast.SelectStmt); ok {
+					isErr = false
+				} else if _, ok := node.(*ast.InsertStmt); ok {
+					isErr = false
+				}
+			}
+
+		}
+		if isErr {
+			return nil, warns, errors.Trace(err)
+		}
+
 	}
 	for _, stmt := range parser.result {
 		ast.SetFlag(stmt)
@@ -265,7 +282,11 @@ func toInt(l yyLexer, lval *yySymType, str string) int {
 func toDecimal(l yyLexer, lval *yySymType, str string) int {
 	dec, err := ast.NewDecimal(str)
 	if err != nil {
-		l.AppendError(l.Errorf("decimal literal: %v", err))
+		if terror.ClassTypes.NewStd(mysql.ErrDataOutOfRange).Equal(err) {
+			l.AppendError(err)
+		} else {
+			l.AppendError(l.Errorf("decimal literal: %v", err))
+		}
 	}
 	lval.item = dec
 	return decLit
