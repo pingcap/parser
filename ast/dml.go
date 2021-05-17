@@ -418,9 +418,8 @@ func (n *TableName) Accept(v Visitor) (Node, bool) {
 		}
 		n.TableSample = newTs.(*TableSample)
 	}
-
 	if n.AsOf != nil {
-		newNode , skipChildren := n.AsOf.Accept(v)
+		newNode, skipChildren := n.AsOf.Accept(v)
 		if skipChildren {
 			return v.Leave(n)
 		}
