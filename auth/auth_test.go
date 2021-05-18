@@ -14,12 +14,18 @@
 package auth
 
 import (
+	"testing"
+
 	. "github.com/pingcap/check"
 )
 
 var _ = Suite(&testAuthSuite{})
 
 type testAuthSuite struct {
+}
+
+func TestT(t *testing.T) {
+	TestingT(t)
 }
 
 func (s *testAuthSuite) TestEncodePassword(c *C) {
