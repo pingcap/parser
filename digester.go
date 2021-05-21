@@ -16,6 +16,7 @@ package parser
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	hash2 "hash"
 	"reflect"
@@ -26,6 +27,29 @@ import (
 
 	"github.com/pingcap/parser/charset"
 )
+
+type Digest struct {
+	b   []byte
+	str string
+}
+
+// NewDigest returns a new digest.
+func NewDigest(b []byte) *Digest {
+	return &Digest{
+		b:   b,
+		str: hex.EncodeToString(b),
+	}
+}
+
+// String returns the digest hex string.
+func (d *Digest) String() string {
+	return d.str
+}
+
+// Bytes returns the digest byte slice.
+func (d *Digest) Bytes() []byte {
+	return d.b
+}
 
 // DigestHash generates the digest of statements.
 // it will generate a hash on normalized form of statement text
@@ -68,7 +92,7 @@ func Normalize(sql string) (result string) {
 }
 
 // NormalizeDigest combines Normalize and DigestNormalized into one method.
-func NormalizeDigest(sql string) (normalized, digest string) {
+func NormalizeDigest(sql string) (normalized string, digest *Digest) {
 	d := digesterPool.Get().(*sqlDigester)
 	normalized, digest = d.doNormalizeDigest(sql)
 	digesterPool.Put(d)
@@ -92,7 +116,7 @@ type sqlDigester struct {
 	tokens tokenDeque
 }
 
-func (d *sqlDigester) doDigestNormalized(normalized string) (result string) {
+func (d *sqlDigester) doDigestNormalized(normalized string) (digest *Digest) {
 	hdr := *(*reflect.StringHeader)(unsafe.Pointer(&normalized))
 	b := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
 		Data: hdr.Data,
@@ -100,16 +124,16 @@ func (d *sqlDigester) doDigestNormalized(normalized string) (result string) {
 		Cap:  hdr.Len,
 	}))
 	d.hasher.Write(b)
-	result = fmt.Sprintf("%x", d.hasher.Sum(nil))
+	digest = NewDigest(d.hasher.Sum(nil))
 	d.hasher.Reset()
 	return
 }
 
-func (d *sqlDigester) doDigest(sql string) (result string) {
+func (d *sqlDigester) doDigest(sql string) (digest *Digest) {
 	d.normalize(sql)
 	d.hasher.Write(d.buffer.Bytes())
 	d.buffer.Reset()
-	result = fmt.Sprintf("%x", d.hasher.Sum(nil))
+	digest = NewDigest(d.hasher.Sum(nil))
 	d.hasher.Reset()
 	return
 }
@@ -121,12 +145,12 @@ func (d *sqlDigester) doNormalize(sql string) (result string) {
 	return
 }
 
-func (d *sqlDigester) doNormalizeDigest(sql string) (normalized, digest string) {
+func (d *sqlDigester) doNormalizeDigest(sql string) (normalized string, digest *Digest) {
 	d.normalize(sql)
 	normalized = d.buffer.String()
 	d.hasher.Write(d.buffer.Bytes())
 	d.buffer.Reset()
-	digest = fmt.Sprintf("%x", d.hasher.Sum(nil))
+	digest = NewDigest(d.hasher.Sum(nil))
 	d.hasher.Reset()
 	return
 }

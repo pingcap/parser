@@ -14,6 +14,11 @@
 package parser_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"testing"
+
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 )
@@ -128,5 +133,34 @@ func (s *testSQLDigestSuite) TestDigestHashNotEqForSimpleSQL(c *C) {
 			}
 			c.Assert(d, Not(Equals), dig)
 		}
+	}
+}
+
+func (s *testSQLDigestSuite) TestGenDigest(c *C) {
+	hash := genRandDigest("abc")
+	digest := parser.NewDigest(hash)
+	c.Assert(digest.String(), Equals, fmt.Sprintf("%x", hash))
+	c.Assert(digest.Bytes(), DeepEquals, hash)
+}
+
+func genRandDigest(str string) []byte {
+	hasher := sha256.New()
+	hasher.Write([]byte(str))
+	return hasher.Sum(nil)
+}
+
+func BenchmarkDigestHexEncode(b *testing.B) {
+	digest1 := genRandDigest("abc")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		hex.EncodeToString(digest1)
+	}
+}
+
+func BenchmarkDigestSprintf(b *testing.B) {
+	digest1 := genRandDigest("abc")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fmt.Sprintf("%x", digest1)
 	}
 }
