@@ -387,10 +387,8 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type BeginStmt struct {
 	stmtNode
-	Mode                  string
-	ReadOnly              bool
-	Bound                 *TimestampBound
-	CausalConsistencyOnly bool
+	Mode     string
+	ReadOnly bool
 	// AS OF is used to read the data at a specific point of time.
 	// Should only be used when ReadOnly is true.
 	AsOf *AsOfClause
@@ -401,29 +399,10 @@ func (n *BeginStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.Mode == "" {
 		if n.ReadOnly {
 			ctx.WriteKeyWord("START TRANSACTION READ ONLY")
-			if n.Bound != nil {
-				switch n.Bound.Mode {
-				case TimestampBoundStrong:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND STRONG")
-				case TimestampBoundMaxStaleness:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MAX STALENESS ")
-					return n.Bound.Timestamp.Restore(ctx)
-				case TimestampBoundExactStaleness:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND EXACT STALENESS ")
-					return n.Bound.Timestamp.Restore(ctx)
-				case TimestampBoundReadTimestamp:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND READ TIMESTAMP ")
-					return n.Bound.Timestamp.Restore(ctx)
-				case TimestampBoundMinReadTimestamp:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MIN READ TIMESTAMP ")
-					return n.Bound.Timestamp.Restore(ctx)
-				}
-			} else if n.AsOf != nil {
+			if n.AsOf != nil {
 				ctx.WriteKeyWord(" ")
 				return n.AsOf.Restore(ctx)
 			}
-		} else if n.CausalConsistencyOnly {
-			ctx.WriteKeyWord("START TRANSACTION WITH CAUSAL CONSISTENCY ONLY")
 		} else {
 			ctx.WriteKeyWord("START TRANSACTION")
 		}
@@ -441,13 +420,6 @@ func (n *BeginStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*BeginStmt)
-	if n.Bound != nil && n.Bound.Timestamp != nil {
-		newTimestamp, ok := n.Bound.Timestamp.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Bound.Timestamp = newTimestamp.(ExprNode)
-	}
 	return v.Leave(n)
 }
 
