@@ -141,6 +141,9 @@ func (s *testSQLDigestSuite) TestGenDigest(c *C) {
 	digest := parser.NewDigest(hash)
 	c.Assert(digest.String(), Equals, fmt.Sprintf("%x", hash))
 	c.Assert(digest.Bytes(), DeepEquals, hash)
+	digest = parser.NewDigest(nil)
+	c.Assert(digest.String(), Equals, "")
+	c.Assert(digest.Bytes(), IsNil)
 }
 
 func genRandDigest(str string) []byte {
