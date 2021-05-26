@@ -2653,6 +2653,12 @@ BeginTransactionStmt:
 	{
 		$$ = &ast.BeginStmt{}
 	}
+|	"START" "TRANSACTION" "WITH" "CAUSAL" "CONSISTENCY" "ONLY"
+	{
+		$$ = &ast.BeginStmt{
+			CausalConsistencyOnly: true,
+		}
+	}
 |	"START" "TRANSACTION" "READ" "ONLY"
 	{
 		$$ = &ast.BeginStmt{

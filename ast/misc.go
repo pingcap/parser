@@ -387,8 +387,9 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 // See https://dev.mysql.com/doc/refman/5.7/en/commit.html
 type BeginStmt struct {
 	stmtNode
-	Mode     string
-	ReadOnly bool
+	Mode                  string
+	CausalConsistencyOnly bool
+	ReadOnly              bool
 	// AS OF is used to read the data at a specific point of time.
 	// Should only be used when ReadOnly is true.
 	AsOf *AsOfClause
@@ -403,6 +404,8 @@ func (n *BeginStmt) Restore(ctx *format.RestoreCtx) error {
 				ctx.WriteKeyWord(" ")
 				return n.AsOf.Restore(ctx)
 			}
+		} else if n.CausalConsistencyOnly {
+			ctx.WriteKeyWord("START TRANSACTION WITH CAUSAL CONSISTENCY ONLY")
 		} else {
 			ctx.WriteKeyWord("START TRANSACTION")
 		}
