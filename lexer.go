@@ -182,8 +182,9 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return tok
 	case null:
 		v.item = nil
-	case quotedIdentifier:
+	case quotedIdentifier, identifier:
 		tok = identifier
+		s.identifierDot = s.r.peek() == '.'
 	}
 
 	if tok == unicode.ReplacementChar {
@@ -489,7 +490,6 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
 	s.r.incAsLongAs(isIdentChar)
-	s.identifierDot = s.r.peek() == '.'
 	return identifier, pos, s.r.data(&pos)
 }
 
@@ -530,7 +530,6 @@ func scanQuotedIdent(s *Scanner) (tok int, pos Pos, lit string) {
 			if s.r.peek() != '`' {
 				// don't return identifier in case that it's interpreted as keyword token later.
 				tok, lit = quotedIdentifier, s.buf.String()
-				s.identifierDot = false
 				return
 			}
 			s.r.inc()

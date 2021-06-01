@@ -306,6 +306,17 @@ func (s *testParserSuite) TestSimple(c *C) {
 	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "a")
 	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Table.O, Equals, "t")
 	c.Assert(bExpr.R.(ast.ValueExpr).GetValue().(int64), Equals, int64(10))
+
+	parser.SetSQLMode(mysql.ModeANSIQuotes)
+	src = `select t."dot"=10 from t;`
+	st, err = parser.ParseOneStmt(src, "", "")
+	c.Assert(err, IsNil)
+	bExpr, ok = st.(*ast.SelectStmt).Fields.Fields[0].Expr.(*ast.BinaryOperationExpr)
+	c.Assert(ok, IsTrue)
+	c.Assert(bExpr.Op, Equals, opcode.EQ)
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Name.O, Equals, "dot")
+	c.Assert(bExpr.L.(*ast.ColumnNameExpr).Name.Table.O, Equals, "t")
+	c.Assert(bExpr.R.(ast.ValueExpr).GetValue().(int64), Equals, int64(10))
 }
 
 func (s *testParserSuite) TestSpecialComments(c *C) {
@@ -981,6 +992,9 @@ AAAAAAAAAAAA5gm5Mg==
 		{"CREATE SEQUENCE seq INCREMENT - 9223372036854775808", true, "CREATE SEQUENCE `seq` INCREMENT BY -9223372036854775808"},
 		{"CREATE SEQUENCE seq INCREMENT -9223372036854775808", true, "CREATE SEQUENCE `seq` INCREMENT BY -9223372036854775808"},
 		{"CREATE SEQUENCE seq INCREMENT -9223372036854775809", false, ""},
+
+		{"select `t`.`1a`.1 from t;", true, "SELECT `t`.`1a`.`1` FROM `t`"},
+		{"select * from 1db.1table;", true, "SELECT * FROM `1db`.`1table`"},
 	}
 	s.RunTest(c, table)
 }
