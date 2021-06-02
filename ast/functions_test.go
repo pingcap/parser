@@ -128,7 +128,7 @@ func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {
 		{"BIT_OR(test_score)", "BIT_OR(`test_score`)"},
 		{"BIT_XOR(test_score)", "BIT_XOR(`test_score`)"},
 		{"COUNT(test_score)", "COUNT(`test_score`)"},
-		{"COUNT(*)", "COUNT(1)"},
+		{"COUNT(*)", "COUNT(*)"},
 		{"COUNT(DISTINCT scores, results)", "COUNT(DISTINCT `scores`, `results`)"},
 		{"MIN(test_score)", "MIN(`test_score`)"},
 		{"MIN(DISTINCT test_score)", "MIN(DISTINCT `test_score`)"},
@@ -150,7 +150,7 @@ func (ts *testFunctionsSuite) TestAggregateFuncExprRestore(c *C) {
 		{"GROUP_CONCAT(a order by b desc, c separator '--')", "GROUP_CONCAT(`a` ORDER BY `b` DESC,`c` SEPARATOR '--')"},
 	}
 	extractNodeFunc := func(node Node) Node {
-		return node.(*SelectStmt).Fields.Fields[0].Expr
+		return node.(*SelectStmt).Fields.Fields[0]
 	}
 	RunNodeRestoreTest(c, testCases, "select %s", extractNodeFunc)
 }

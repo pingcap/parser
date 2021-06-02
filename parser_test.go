@@ -1986,7 +1986,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`select count(c1) from t;`, true, "SELECT COUNT(`c1`) FROM `t`"},
 		{`select count(distinct *) from t;`, false, ""},
 		{`select count(distinctrow *) from t;`, false, ""},
-		{`select count(*) from t;`, true, "SELECT COUNT(1) FROM `t`"},
+		{`select count(*) from t;`, true, "SELECT COUNT(*) FROM `t`"},
 		{`select count(distinct c1, c2) from t;`, true, "SELECT COUNT(DISTINCT `c1`, `c2`) FROM `t`"},
 		{`select count(distinctrow c1, c2) from t;`, true, "SELECT COUNT(DISTINCT `c1`, `c2`) FROM `t`"},
 		{`select count(c1, c2) from t;`, false, ""},
