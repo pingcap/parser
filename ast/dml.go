@@ -14,9 +14,9 @@
 package ast
 
 import (
-	"github.com/pingcap/errors"
 	"strings"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
@@ -285,7 +285,7 @@ func (n *TableName) restoreName(ctx *format.RestoreCtx) {
 		ctx.WriteName(n.Schema.String())
 		ctx.WritePlain(".")
 	} else if ctx.DefaultDB != "" {
-		// Try CTE
+		// Try CTE, for a CTE table name, we shouldn't write the database name.
 		ok := false
 		for _, name := range ctx.CTENames {
 			if strings.EqualFold(name, n.Name.String()) {
@@ -1114,6 +1114,8 @@ func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 		}
 		ctx.WriteName(cte.Name.String())
 		if n.IsRecursive {
+			// If the CTE is recursive, we should make it visible for the CTE's query.
+			// Otherwise, we should put it to stack after building the CTE's query.
 			ctx.CTENames = append(ctx.CTENames, cte.Name.L)
 		}
 		if len(cte.ColNameList) > 0 {
