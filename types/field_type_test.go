@@ -191,6 +191,18 @@ func (s *testFieldTypeSuite) TestFieldType(c *C) {
 	ft.Decimal = 2
 	c.Assert(ft.String(), Equals, "year(2)") // Note: Invalid year.
 	c.Assert(HasCharset(ft), IsFalse)
+
+	ft = NewFieldType(mysql.TypeVarchar)
+	ft.Flen = 0
+	ft.Decimal = 0
+	c.Assert(ft.String(), Equals, "varchar(0)")
+	c.Assert(HasCharset(ft), IsTrue)
+
+	ft = NewFieldType(mysql.TypeString)
+	ft.Flen = 0
+	ft.Decimal = 0
+	c.Assert(ft.String(), Equals, "char(0)")
+	c.Assert(HasCharset(ft), IsTrue)
 }
 
 func (s *testFieldTypeSuite) TestHasCharsetFromStmt(c *C) {
@@ -239,4 +251,64 @@ func (s *testFieldTypeSuite) TestHasCharsetFromStmt(c *C) {
 		col := stmt.(*ast.CreateTableStmt).Cols[0]
 		c.Assert(HasCharset(col.Tp), Equals, t.hasCharset)
 	}
+}
+
+func (s *testFieldTypeSuite) TestEnumSetFlen(c *C) {
+	p := parser.New()
+	cases := []struct {
+		sql string
+		ex  int
+	}{
+		{"enum('a')", 1},
+		{"enum('a', 'b')", 1},
+		{"enum('a', 'bb')", 2},
+		{"enum('a', 'b', 'c')", 1},
+		{"enum('a', 'bb', 'c')", 2},
+		{"enum('a', 'bb', 'c')", 2},
+		{"enum('')", 0},
+		{"enum('a', '')", 1},
+		{"set('a')", 1},
+		{"set('a', 'b')", 3},
+		{"set('a', 'bb')", 4},
+		{"set('a', 'b', 'c')", 5},
+		{"set('a', 'bb', 'c')", 6},
+		{"set('')", 0},
+		{"set('a', '')", 2},
+	}
+
+	for _, ca := range cases {
+		stmt, err := p.ParseOneStmt(fmt.Sprintf("create table t (e %v)", ca.sql), "", "")
+		c.Assert(err, IsNil)
+		col := stmt.(*ast.CreateTableStmt).Cols[0]
+		c.Assert(col.Tp.Flen, Equals, ca.ex)
+
+	}
+}
+
+func (s *testFieldTypeSuite) TestFieldTypeEqual(c *C) {
+
+	// Tp not equal
+	ft1 := NewFieldType(mysql.TypeDouble)
+	ft2 := NewFieldType(mysql.TypeFloat)
+	c.Assert(ft1.Equal(ft2), Equals, false)
+
+	// Decimal not equal
+	ft2 = NewFieldType(mysql.TypeDouble)
+	ft2.Decimal = 5
+	c.Assert(ft1.Equal(ft2), Equals, false)
+
+	// Flen not equal and decimal not -1
+	ft1.Decimal = 5
+	ft1.Flen = 22
+	c.Assert(ft1.Equal(ft2), Equals, false)
+
+	// Flen equal
+	ft2.Flen = 22
+	c.Assert(ft1.Equal(ft2), Equals, true)
+
+	// Decimal is -1
+	ft1.Decimal = -1
+	ft2.Decimal = -1
+	ft1.Flen = 23
+	c.Assert(ft1.Equal(ft2), Equals, true)
 }

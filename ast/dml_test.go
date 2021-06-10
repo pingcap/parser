@@ -53,11 +53,11 @@ func (ts *testDMLSuite) TestDMLVisitorCover(c *C) {
 
 		// TODO: cover childrens
 		{&InsertStmt{Table: tableRefsClause}, 1, 1},
-		{&UnionStmt{}, 0, 0},
+		{&SetOprStmt{}, 0, 0},
 		{&UpdateStmt{TableRefs: tableRefsClause}, 1, 1},
 		{&SelectStmt{}, 0, 0},
 		{&FieldList{}, 0, 0},
-		{&UnionSelectList{}, 0, 0},
+		{&SetOprSelectList{}, 0, 0},
 		{&WindowSpec{}, 0, 0},
 		{&PartitionByClause{}, 0, 0},
 		{&FrameClause{}, 0, 0},
@@ -218,15 +218,30 @@ func (tc *testDMLSuite) TestJoinRestore(c *C) {
 		{"t1 inner join t2 using (b)", "`t1` JOIN `t2` USING (`b`)"},
 		{"t1 join t2 using (b,c) left join t3 on t1.a>t3.a", "(`t1` JOIN `t2` USING (`b`,`c`)) LEFT JOIN `t3` ON `t1`.`a`>`t3`.`a`"},
 		{"t1 natural join t2 right outer join t3 using (b,c)", "(`t1` NATURAL JOIN `t2`) RIGHT JOIN `t3` USING (`b`,`c`)"},
-		{"(a al left join b bl on al.a1 > bl.b1) join (a ar right join b br on ar.a1 > br.b1)", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
-		{"a al left join b bl on al.a1 > bl.b1, a ar right join b br on ar.a1 > br.b1", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
 		{"t1, t2", "(`t1`) JOIN `t2`"},
 		{"t1, t2, t3", "((`t1`) JOIN `t2`) JOIN `t3`"},
+		{"(select * from t) t1, (t2, t3)", "(SELECT * FROM `t`) AS `t1`, ((`t2`) JOIN `t3`)"},
+		{"(select * from t) t1, t2", "(SELECT * FROM `t`) AS `t1`, `t2`"},
+		{"(select * from (select a from t1) tb1) tb;", "(SELECT * FROM (SELECT `a` FROM `t1`) AS `tb1`) AS `tb`"},
+		{"(select * from t) t1 cross join t2", "(SELECT * FROM `t`) AS `t1` JOIN `t2`"},
+		{"(select * from t) t1 natural join t2", "(SELECT * FROM `t`) AS `t1` NATURAL JOIN `t2`"},
+		{"(select * from t) t1 cross join t2 on t1.a>t2.a", "(SELECT * FROM `t`) AS `t1` JOIN `t2` ON `t1`.`a`>`t2`.`a`"},
+		{"(select * from t union select * from t1) tb1, t2;", "(SELECT * FROM `t` UNION SELECT * FROM `t1`) AS `tb1`, `t2`"},
+		//todo: uncomment this after https://github.com/pingcap/parser/issues/1127 fixed
+		//{"(select a from t) t1 join t t2, t3;", "((SELECT `a` FROM `t`) AS `t1` JOIN `t` AS `t2`) JOIN `t3`"},
+	}
+	testChangedCases := []NodeRestoreTestCase{
+		{"(a al left join b bl on al.a1 > bl.b1) join (a ar right join b br on ar.a1 > br.b1)", "((`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN `b` AS `br`) LEFT JOIN `a` AS `ar` ON `ar`.`a1`>`br`.`b1`"},
+		{"a al left join b bl on al.a1 > bl.b1, a ar right join b br on ar.a1 > br.b1", "(`a` AS `al` LEFT JOIN `b` AS `bl` ON `al`.`a1`>`bl`.`b1`) JOIN (`a` AS `ar` RIGHT JOIN `b` AS `br` ON `ar`.`a1`>`br`.`b1`)"},
+		{"t1 join (t2 right join t3 on t2.a > t3.a join (t4 right join t5 on t4.a > t5.a))", "(((`t1` JOIN `t2`) RIGHT JOIN `t3` ON `t2`.`a`>`t3`.`a`) JOIN `t5`) LEFT JOIN `t4` ON `t4`.`a`>`t5`.`a`"},
+		{"t1 join t2 right join t3 on t2.a=t3.a", "(`t1` JOIN `t2`) RIGHT JOIN `t3` ON `t2`.`a`=`t3`.`a`"},
+		{"t1 join (t2 right join t3 on t2.a=t3.a)", "(`t1` JOIN `t3`) LEFT JOIN `t2` ON `t2`.`a`=`t3`.`a`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From.TableRefs
 	}
 	RunNodeRestoreTest(c, testCases, "select * from %s", extractNodeFunc)
+	RunNodeRestoreTestWithFlagsStmtChange(c, testChangedCases, "select * from %s", extractNodeFunc)
 }
 
 func (ts *testDMLSuite) TestTableRefsClauseRestore(c *C) {
@@ -299,10 +314,10 @@ func (tc *testDMLSuite) TestOrderByClauseRestore(c *C) {
 	}
 	RunNodeRestoreTest(c, testCases, "SELECT 1 FROM t1 %s", extractNodeFunc)
 
-	extractNodeFromUnionStmtFunc := func(node Node) Node {
-		return node.(*UnionStmt).OrderBy
+	extractNodeFromSetOprStmtFunc := func(node Node) Node {
+		return node.(*SetOprStmt).OrderBy
 	}
-	RunNodeRestoreTest(c, testCases, "SELECT 1 FROM t1 UNION SELECT 2 FROM t2 %s", extractNodeFromUnionStmtFunc)
+	RunNodeRestoreTest(c, testCases, "SELECT 1 FROM t1 UNION SELECT 2 FROM t2 %s", extractNodeFromSetOprStmtFunc)
 }
 
 func (tc *testDMLSuite) TestAssignmentRestore(c *C) {
@@ -338,7 +353,7 @@ func (ts *testDMLSuite) TestFrameBoundRestore(c *C) {
 		{"UNBOUNDED FOLLOWING", "UNBOUNDED FOLLOWING"},
 		{"1 FOLLOWING", "1 FOLLOWING"},
 		{"? FOLLOWING", "? FOLLOWING"},
-		{"INTERVAL '2:30' MINUTE_SECOND FOLLOWING", "INTERVAL '2:30' MINUTE_SECOND FOLLOWING"},
+		{"INTERVAL '2:30' MINUTE_SECOND FOLLOWING", "INTERVAL _UTF8MB4'2:30' MINUTE_SECOND FOLLOWING"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return &node.(*SelectStmt).Fields.Fields[0].Expr.(*WindowFuncExpr).Spec.Frame.Extent.Start
@@ -352,7 +367,7 @@ func (ts *testDMLSuite) TestFrameClauseRestore(c *C) {
 		{"ROWS UNBOUNDED PRECEDING", "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW"},
 		{"ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING", "ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING"},
 		{"RANGE BETWEEN ? PRECEDING AND ? FOLLOWING", "RANGE BETWEEN ? PRECEDING AND ? FOLLOWING"},
-		{"RANGE BETWEEN INTERVAL 5 DAY PRECEDING AND INTERVAL '2:30' MINUTE_SECOND FOLLOWING", "RANGE BETWEEN INTERVAL 5 DAY PRECEDING AND INTERVAL '2:30' MINUTE_SECOND FOLLOWING"},
+		{"RANGE BETWEEN INTERVAL 5 DAY PRECEDING AND INTERVAL '2:30' MINUTE_SECOND FOLLOWING", "RANGE BETWEEN INTERVAL 5 DAY PRECEDING AND INTERVAL _UTF8MB4'2:30' MINUTE_SECOND FOLLOWING"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).Fields.Fields[0].Expr.(*WindowFuncExpr).Spec.Frame

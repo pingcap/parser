@@ -14,6 +14,11 @@
 package parser_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"testing"
+
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser"
 )
@@ -28,29 +33,41 @@ func (s *testSQLDigestSuite) TestNormalize(c *C) {
 		input  string
 		expect string
 	}{
+		{"select _utf8mb4'123'", "select (_charset) ?"},
 		{"SELECT 1", "select ?"},
-		{"select * from b where id = 1", "select * from b where id = ?"},
-		{"select 1 from b where id in (1, 3, '3', 1, 2, 3, 4)", "select ? from b where id in ( ... )"},
-		{"select 1 from b where id in (1, a, 4)", "select ? from b where id in ( ? , a , ? )"},
-		{"select 1 from b order by 2", "select ? from b order by 2"},
+		{"select null", "select ?"},
+		{"select \\N", "select ?"},
+		{"SELECT `null`", "select `null`"},
+		{"select * from b where id = 1", "select * from `b` where `id` = ?"},
+		{"select 1 from b where id in (1, 3, '3', 1, 2, 3, 4)", "select ? from `b` where `id` in ( ... )"},
+		{"select 1 from b where id in (1, a, 4)", "select ? from `b` where `id` in ( ? , `a` , ? )"},
+		{"select 1 from b order by 2", "select ? from `b` order by 2"},
 		{"select /*+ a hint */ 1", "select ?"},
 		{"select /* a hint */ 1", "select ?"},
 		{"select truncate(1, 2)", "select truncate ( ... )"},
-		{"select -1 + - 2 + b - c + 0.2 + (-2) from c where d in (1, -2, +3)", "select ? + ? + b - c + ? + ( ? ) from c where d in ( ... )"},
-		{"select * from t where a <= -1 and b < -2 and c = -3 and c > -4 and c >= -5 and e is 1", "select * from t where a <= ? and b < ? and c = ? and c > ? and c >= ? and e is ?"},
-		{"select count(a), b from t group by 2", "select count ( a ) , b from t group by 2"},
-		{"select count(a), b, c from t group by 2, 3", "select count ( a ) , b , c from t group by 2 , 3"},
-		{"select count(a), b, c from t group by (2, 3)", "select count ( a ) , b , c from t group by ( 2 , 3 )"},
-		{"select a, b from t order by 1, 2", "select a , b from t order by 1 , 2"},
-		{"select count(*) from t", "select count ( ? ) from t"},
-		{"select * from t Force Index(kk)", "select * from t"},
-		{"select * from t USE Index(kk)", "select * from t"},
-		{"select * from t Ignore Index(kk)", "select * from t"},
-		{"select * from t1 straight_join t2 on t1.id=t2.id", "select * from t1 join t2 on t1 . id = t2 . id"},
+		{"select -1 + - 2 + b - c + 0.2 + (-2) from c where d in (1, -2, +3)", "select ? + ? + `b` - `c` + ? + ( ? ) from `c` where `d` in ( ... )"},
+		{"select * from t where a <= -1 and b < -2 and c = -3 and c > -4 and c >= -5 and e is 1", "select * from `t` where `a` <= ? and `b` < ? and `c` = ? and `c` > ? and `c` >= ? and `e` is ?"},
+		{"select count(a), b from t group by 2", "select count ( `a` ) , `b` from `t` group by 2"},
+		{"select count(a), b, c from t group by 2, 3", "select count ( `a` ) , `b` , `c` from `t` group by 2 , 3"},
+		{"select count(a), b, c from t group by (2, 3)", "select count ( `a` ) , `b` , `c` from `t` group by ( 2 , 3 )"},
+		{"select a, b from t order by 1, 2", "select `a` , `b` from `t` order by 1 , 2"},
+		{"select count(*) from t", "select count ( ? ) from `t`"},
+		{"select * from t Force Index(kk)", "select * from `t`"},
+		{"select * from t USE Index(kk)", "select * from `t`"},
+		{"select * from t Ignore Index(kk)", "select * from `t`"},
+		{"select * from t1 straight_join t2 on t1.id=t2.id", "select * from `t1` join `t2` on `t1` . `id` = `t2` . `id`"},
+		{"select * from `table`", "select * from `table`"},
+		{"select * from `30`", "select * from `30`"},
+		{"select * from `select`", "select * from `select`"},
 		// test syntax error, it will be checked by parser, but it should not make normalize dead loop.
-		{"select * from t ignore index(", "select * from t ignore index"},
+		{"select * from t ignore index(", "select * from `t` ignore index"},
 		{"select /*+ ", "select "},
 		{"select * from 🥳", "select * from"},
+		{"select 1 / 2", "select ? / ?"},
+		{"select * from t where a = 40 limit ?, ?", "select * from `t` where `a` = ? limit ..."},
+		{"select * from t where a > ?", "select * from `t` where `a` > ?"},
+		{"select @a=b from t", "select @a = `b` from `t`"},
+		{"select * from `table", "select * from"},
 	}
 	for _, test := range tests {
 		normalized := parser.Normalize(test.input)
@@ -59,7 +76,7 @@ func (s *testSQLDigestSuite) TestNormalize(c *C) {
 
 		normalized2, digest2 := parser.NormalizeDigest(test.input)
 		c.Assert(normalized2, Equals, normalized)
-		c.Assert(digest2, Equals, digest, Commentf("%+v", test))
+		c.Assert(digest2.String(), Equals, digest.String(), Commentf("%+v", test))
 	}
 }
 
@@ -69,17 +86,17 @@ func (s *testSQLDigestSuite) TestNormalizeDigest(c *C) {
 		normalized string
 		digest     string
 	}{
-		{"select 1 from b where id in (1, 3, '3', 1, 2, 3, 4)", "select ? from b where id in ( ... )", "f36161eef94dbfbd5e2f6b9a2f498a4c7facc6860621fbeb8084f63898275016"},
+		{"select 1 from b where id in (1, 3, '3', 1, 2, 3, 4)", "select ? from `b` where `id` in ( ... )", "e1c8cc2738f596dc24f15ef8eb55e0d902910d7298983496362a7b46dbc0b310"},
 	}
 	for _, test := range tests {
 		normalized, digest := parser.NormalizeDigest(test.sql)
 		c.Assert(normalized, Equals, test.normalized)
-		c.Assert(digest, Equals, test.digest)
+		c.Assert(digest.String(), Equals, test.digest)
 
 		normalized = parser.Normalize(test.sql)
 		digest = parser.DigestNormalized(normalized)
 		c.Assert(normalized, Equals, test.normalized)
-		c.Assert(digest, Equals, test.digest)
+		c.Assert(digest.String(), Equals, test.digest)
 	}
 }
 
@@ -94,10 +111,10 @@ func (s *testSQLDigestSuite) TestDigestHashEqForSimpleSQL(c *C) {
 		for _, sql := range sqlGroup {
 			dig := parser.DigestHash(sql)
 			if d == "" {
-				d = dig
+				d = dig.String()
 				continue
 			}
-			c.Assert(d, Equals, dig)
+			c.Assert(d, Equals, dig.String())
 		}
 	}
 }
@@ -111,10 +128,42 @@ func (s *testSQLDigestSuite) TestDigestHashNotEqForSimpleSQL(c *C) {
 		for _, sql := range sqlGroup {
 			dig := parser.DigestHash(sql)
 			if d == "" {
-				d = dig
+				d = dig.String()
 				continue
 			}
-			c.Assert(d, Not(Equals), dig)
+			c.Assert(d, Not(Equals), dig.String())
 		}
+	}
+}
+
+func (s *testSQLDigestSuite) TestGenDigest(c *C) {
+	hash := genRandDigest("abc")
+	digest := parser.NewDigest(hash)
+	c.Assert(digest.String(), Equals, fmt.Sprintf("%x", hash))
+	c.Assert(digest.Bytes(), DeepEquals, hash)
+	digest = parser.NewDigest(nil)
+	c.Assert(digest.String(), Equals, "")
+	c.Assert(digest.Bytes(), IsNil)
+}
+
+func genRandDigest(str string) []byte {
+	hasher := sha256.New()
+	hasher.Write([]byte(str))
+	return hasher.Sum(nil)
+}
+
+func BenchmarkDigestHexEncode(b *testing.B) {
+	digest1 := genRandDigest("abc")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		hex.EncodeToString(digest1)
+	}
+}
+
+func BenchmarkDigestSprintf(b *testing.B) {
+	digest1 := genRandDigest("abc")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fmt.Sprintf("%x", digest1)
 	}
 }

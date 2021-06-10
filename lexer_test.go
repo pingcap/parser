@@ -125,23 +125,23 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{"N'some text'", underscoreCS},
 		{"n'some text'", underscoreCS},
 		{"\\N", null},
-		{".*", int('.')},       // `.`, `*`
-		{".1_t_1_x", int('.')}, // `.`, `1_t_1_x`
-		{"9e9e", floatLit},     // 9e9e = 9e9 + e
+		{".*", int('.')},     // `.`, `*`
+		{".1_t_1_x", decLit}, // `.1`, `_t_1_x`
+		{"9e9e", floatLit},   // 9e9e = 9e9 + e
+		{".1e", invalid},
 		// Issue #3954
-		{".1e23", floatLit}, // `.1e23`
-		{".123", decLit},    // `.123`
-		{".1*23", decLit},   // `.1`, `*`, `23`
-		{".1,23", decLit},   // `.1`, `,`, `23`
-		{".1 23", decLit},   // `.1`, `23`
-		// TODO: See #3963. The following test cases do not test the ambiguity.
-		{".1$23", int('.')},    // `.`, `1$23`
-		{".1a23", int('.')},    // `.`, `1a23`
-		{".1e23$23", int('.')}, // `.`, `1e23$23`
-		{".1e23a23", int('.')}, // `.`, `1e23a23`
-		{".1C23", int('.')},    // `.`, `1C23`
-		{".1\u0081", int('.')}, // `.`, `1\u0081`
-		{".1\uff34", int('.')}, // `.`, `1\uff34`
+		{".1e23", floatLit},    // `.1e23`
+		{".123", decLit},       // `.123`
+		{".1*23", decLit},      // `.1`, `*`, `23`
+		{".1,23", decLit},      // `.1`, `,`, `23`
+		{".1 23", decLit},      // `.1`, `23`
+		{".1$23", decLit},      // `.1`, `$23`
+		{".1a23", decLit},      // `.1`, `a23`
+		{".1e23$23", floatLit}, // `.1e23`, `$23`
+		{".1e23a23", floatLit}, // `.1e23`, `a23`
+		{".1C23", decLit},      // `.1`, `C23`
+		{".1\u0081", decLit},   // `.1`, `\u0081`
+		{".1\uff34", decLit},   // `.1`, `\uff34`
 		{`b''`, bitLit},
 		{`b'0101'`, bitLit},
 		{`0b0101`, bitLit},
@@ -159,7 +159,7 @@ func runTest(c *C, table []testCaseItem) {
 }
 
 func (s *testLexerSuite) TestComment(c *C) {
-
+	SpecialCommentsController.Register("test")
 	table := []testCaseItem{
 		{"-- select --\n1", intLit},
 		{"/*!40101 SET character_set_client = utf8 */;", set},
@@ -178,8 +178,8 @@ SELECT`, selectKwd},
 
 		// The odd behavior of '*/' inside conditional comment is the same as
 		// that of MySQL.
-		{"/*T!99999 '*/0 -- ' */", intLit},    // equivalent to 0
-		{"/*T!00000 '*/0 -- ' */", stringLit}, // equivalent to '*/0 -- '
+		{"/*T![unsupported] '*/0 -- ' */", intLit}, // equivalent to 0
+		{"/*T![test] '*/0 -- ' */", stringLit},     // equivalent to '*/0 -- '
 	}
 	runTest(c, table)
 }
@@ -201,7 +201,7 @@ func (s *testLexerSuite) TestscanString(c *C) {
 		{`' \n\tTest String'`, " \n\tTest String"},
 		{`'\x\B'`, "xB"},
 		{`'\0\'\"\b\n\r\t\\'`, "\000'\"\b\n\r\t\\"},
-		{`'\Z'`, string(26)},
+		{`'\Z'`, "\x1a"},
 		{`'\%\_'`, `\%\_`},
 		{`'hello'`, "hello"},
 		{`'"hello"'`, `"hello"`},
@@ -216,7 +216,7 @@ func (s *testLexerSuite) TestscanString(c *C) {
 		{`'disappearing\ backslash'`, "disappearing backslash"},
 		{"'한국의中文UTF8およびテキストトラック'", "한국의中文UTF8およびテキストトラック"},
 		{"'\\a\x90'", "a\x90"},
-		{`"\aèàø»"`, `aèàø»`},
+		{"'\\a\x18èàø»\x05'", "a\x18èàø»\x05"},
 	}
 
 	for _, v := range table {
@@ -272,22 +272,23 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 	c.Assert(pos, Equals, Pos{1, 1, 16})
 }
 
-func (s *testLexerSuite) TestSpecialCodeComment(c *C) {
-	l := NewScanner("/*T!40000 auto_random(5) */")
+func (s *testLexerSuite) TestFeatureIDsComment(c *C) {
+	SpecialCommentsController.Register("auto_rand")
+	l := NewScanner("/*T![auto_rand] auto_random(5) */")
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
 	c.Assert(lit, Equals, "auto_random")
-	c.Assert(pos, Equals, Pos{0, 10, 10})
-	tok, pos, lit = l.scan()
+	c.Assert(pos, Equals, Pos{0, 16, 16})
+	tok, pos, _ = l.scan()
 	c.Assert(tok, Equals, int('('))
-	tok, pos, lit = l.scan()
+	_, pos, lit = l.scan()
 	c.Assert(lit, Equals, "5")
-	c.Assert(pos, Equals, Pos{0, 22, 22})
-	tok, pos, lit = l.scan()
+	c.Assert(pos, Equals, Pos{0, 28, 28})
+	tok, pos, _ = l.scan()
 	c.Assert(tok, Equals, int(')'))
 
-	l = NewScanner(WrapStringWithCodeVersion("auto_random(5)", CommentCodeCurrentVersion+1))
-	tok, pos, lit = l.scan()
+	l = NewScanner("/*T![unsupported_feature] unsupported(123) */")
+	tok, pos, _ = l.scan()
 	c.Assert(tok, Equals, 0)
 }
 
@@ -316,6 +317,7 @@ func (s *testLexerSuite) TestOptimizerHint(c *C) {
 }
 
 func (s *testLexerSuite) TestOptimizerHintAfterCertainKeywordOnly(c *C) {
+	SpecialCommentsController.Register("test")
 	tests := []struct {
 		input  string
 		tokens []int
@@ -357,11 +359,11 @@ func (s *testLexerSuite) TestOptimizerHintAfterCertainKeywordOnly(c *C) {
 			tokens: []int{selectKwd, '*', 0},
 		},
 		{
-			input:  "SELECT /*T!000000 * */ /*+ hint */",
+			input:  "SELECT /*T![test] * */ /*+ hint */",
 			tokens: []int{selectKwd, '*', 0},
 		},
 		{
-			input:  "SELECT /*T!999999 * */ /*+ hint */",
+			input:  "SELECT /*T![unsupported] * */ /*+ hint */",
 			tokens: []int{selectKwd, hintComment, 0},
 		},
 		{
@@ -479,77 +481,66 @@ func (s *testLexerSuite) TestVersionDigits(c *C) {
 		input    string
 		min      int
 		max      int
-		version  CommentCodeVersion
 		nextChar rune
 	}{
 		{
 			input:    "12345",
 			min:      5,
 			max:      5,
-			version:  12345,
 			nextChar: unicode.ReplacementChar,
 		},
 		{
 			input:    "12345xyz",
 			min:      5,
 			max:      5,
-			version:  12345,
 			nextChar: 'x',
 		},
 		{
 			input:    "1234xyz",
 			min:      5,
 			max:      5,
-			version:  CommentCodeNoVersion,
 			nextChar: '1',
 		},
 		{
 			input:    "123456",
 			min:      5,
 			max:      5,
-			version:  12345,
 			nextChar: '6',
 		},
 		{
 			input:    "1234",
 			min:      5,
 			max:      5,
-			version:  CommentCodeNoVersion,
 			nextChar: '1',
 		},
 		{
 			input:    "",
 			min:      5,
 			max:      5,
-			version:  CommentCodeNoVersion,
 			nextChar: unicode.ReplacementChar,
 		},
 		{
 			input:    "1234567xyz",
 			min:      5,
 			max:      6,
-			version:  123456,
 			nextChar: '7',
 		},
 		{
 			input:    "12345xyz",
 			min:      5,
 			max:      6,
-			version:  12345,
 			nextChar: 'x',
 		},
 		{
 			input:    "12345",
 			min:      5,
 			max:      6,
-			version:  12345,
 			nextChar: unicode.ReplacementChar,
 		},
 		{
 			input:    "1234xyz",
 			min:      5,
 			max:      6,
-			version:  CommentCodeNoVersion,
 			nextChar: '1',
 		},
 	}
@@ -558,8 +549,80 @@ func (s *testLexerSuite) TestVersionDigits(c *C) {
 	for _, t := range tests {
 		comment := Commentf("input = %s", t.input)
 		scanner.reset(t.input)
-		version := scanner.scanVersionDigits(t.min, t.max)
-		c.Assert(version, Equals, t.version, comment)
+		scanner.scanVersionDigits(t.min, t.max)
+		nextChar := scanner.r.readByte()
+		c.Assert(nextChar, Equals, t.nextChar, comment)
+	}
+}
+
+func (s *testLexerSuite) TestFeatureIDs(c *C) {
+	tests := []struct {
+		input      string
+		featureIDs []string
+		nextChar   rune
+	}{
+		{
+			input:      "[feature]",
+			featureIDs: []string{"feature"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[feature] xx",
+			featureIDs: []string{"feature"},
+			nextChar:   ' ',
+		},
+		{
+			input:      "[feature1,feature2]",
+			featureIDs: []string{"feature1", "feature2"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[feature1,feature2,feature3]",
+			featureIDs: []string{"feature1", "feature2", "feature3"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[id_en_ti_fier]",
+			featureIDs: []string{"id_en_ti_fier"},
+			nextChar:   unicode.ReplacementChar,
+		},
+		{
+			input:      "[invalid,    whitespace]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "[unclosed_brac",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "unclosed_brac]",
+			featureIDs: nil,
+			nextChar:   'u',
+		},
+		{
+			input:      "[invalid_comma,]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "[,]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+		{
+			input:      "[]",
+			featureIDs: nil,
+			nextChar:   '[',
+		},
+	}
+	scanner := NewScanner("")
+	for _, t := range tests {
+		comment := Commentf("input = %s", t.input)
+		scanner.reset(t.input)
+		featureIDs := scanner.scanFeatureIDs()
+		c.Assert(featureIDs, DeepEquals, t.featureIDs, comment)
 		nextChar := scanner.r.readByte()
 		c.Assert(nextChar, Equals, t.nextChar, comment)
 	}

@@ -22,42 +22,44 @@ import (
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
 
 var (
 	// ErrSyntax returns for sql syntax error.
-	ErrSyntax = terror.ClassParser.New(mysql.ErrSyntax, mysql.MySQLErrName[mysql.ErrSyntax])
+	ErrSyntax = terror.ClassParser.NewStd(mysql.ErrSyntax)
 	// ErrParse returns for sql parse error.
-	ErrParse = terror.ClassParser.New(mysql.ErrParse, mysql.MySQLErrName[mysql.ErrParse])
+	ErrParse = terror.ClassParser.NewStd(mysql.ErrParse)
 	// ErrUnknownCharacterSet returns for no character set found error.
-	ErrUnknownCharacterSet = terror.ClassParser.New(mysql.ErrUnknownCharacterSet, mysql.MySQLErrName[mysql.ErrUnknownCharacterSet])
+	ErrUnknownCharacterSet = terror.ClassParser.NewStd(mysql.ErrUnknownCharacterSet)
 	// ErrInvalidYearColumnLength returns for illegal column length for year type.
-	ErrInvalidYearColumnLength = terror.ClassParser.New(mysql.ErrInvalidYearColumnLength, mysql.MySQLErrName[mysql.ErrInvalidYearColumnLength])
+	ErrInvalidYearColumnLength = terror.ClassParser.NewStd(mysql.ErrInvalidYearColumnLength)
 	// ErrWrongArguments returns for illegal argument.
-	ErrWrongArguments = terror.ClassParser.New(mysql.ErrWrongArguments, mysql.MySQLErrName[mysql.ErrWrongArguments])
+	ErrWrongArguments = terror.ClassParser.NewStd(mysql.ErrWrongArguments)
 	// ErrWrongFieldTerminators returns for illegal field terminators.
-	ErrWrongFieldTerminators = terror.ClassParser.New(mysql.ErrWrongFieldTerminators, mysql.MySQLErrName[mysql.ErrWrongFieldTerminators])
+	ErrWrongFieldTerminators = terror.ClassParser.NewStd(mysql.ErrWrongFieldTerminators)
 	// ErrTooBigDisplayWidth returns for data display width exceed limit .
-	ErrTooBigDisplayWidth = terror.ClassParser.New(mysql.ErrTooBigDisplaywidth, mysql.MySQLErrName[mysql.ErrTooBigDisplaywidth])
+	ErrTooBigDisplayWidth = terror.ClassParser.NewStd(mysql.ErrTooBigDisplaywidth)
 	// ErrTooBigPrecision returns for data precision exceed limit.
-	ErrTooBigPrecision = terror.ClassParser.New(mysql.ErrTooBigPrecision, mysql.MySQLErrName[mysql.ErrTooBigPrecision])
+	ErrTooBigPrecision = terror.ClassParser.NewStd(mysql.ErrTooBigPrecision)
 	// ErrUnknownAlterLock returns for no alter lock type found error.
-	ErrUnknownAlterLock = terror.ClassParser.New(mysql.ErrUnknownAlterLock, mysql.MySQLErrName[mysql.ErrUnknownAlterLock])
+	ErrUnknownAlterLock = terror.ClassParser.NewStd(mysql.ErrUnknownAlterLock)
 	// ErrUnknownAlterAlgorithm returns for no alter algorithm found error.
-	ErrUnknownAlterAlgorithm = terror.ClassParser.New(mysql.ErrUnknownAlterAlgorithm, mysql.MySQLErrName[mysql.ErrUnknownAlterAlgorithm])
+	ErrUnknownAlterAlgorithm = terror.ClassParser.NewStd(mysql.ErrUnknownAlterAlgorithm)
 	// ErrWrongValue returns for wrong value
-	ErrWrongValue = terror.ClassParser.New(mysql.ErrWrongValue, mysql.MySQLErrName[mysql.ErrWrongValue])
+	ErrWrongValue = terror.ClassParser.NewStd(mysql.ErrWrongValue)
+	// ErrWarnDeprecatedSyntaxNoReplacement return when the syntax was deprecated and there is no replacement.
+	ErrWarnDeprecatedSyntaxNoReplacement = terror.ClassParser.NewStd(mysql.ErrWarnDeprecatedSyntaxNoReplacement)
+	// ErrWarnDeprecatedIntegerDisplayWidth share the same code 1681, and it will be returned when length is specified in integer.
+	ErrWarnDeprecatedIntegerDisplayWidth = terror.ClassParser.NewStdErr(mysql.ErrWarnDeprecatedSyntaxNoReplacement, mysql.Message("Integer display width is deprecated and will be removed in a future release.", nil))
+	// ErrWrongUsage returns for incorrect usages.
+	ErrWrongUsage = terror.ClassParser.NewStd(mysql.ErrWrongUsage)
 	// SpecFieldPattern special result field pattern
 	SpecFieldPattern = regexp.MustCompile(`(\/\*!(M?[0-9]{5,6})?|\*\/)`)
-	specCodePattern  = regexp.MustCompile(`\/\*!(M?[0-9]{5,6})?([^*]|\*+[^*/])*\*+\/`)
 	specCodeStart    = regexp.MustCompile(`^\/\*!(M?[0-9]{5,6})?[ \t]*`)
 	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
-	// SpecVersionCodePattern is a pattern for special comments with version.
-	SpecVersionCodePattern = regexp.MustCompile(`\/\*T![0-9]{5,6}([^*]|\*+[^*/])*\*+\/`)
-	specVersionCodeStart   = regexp.MustCompile(`^\/\*T![0-9]{5,6}[ \t]*`)
-	specVersionCodeValue   = regexp.MustCompile(`[0-9]{5,6}`)
 )
 
 // TrimComment trim comment for special comment code of MySQL.
@@ -66,9 +68,9 @@ func TrimComment(txt string) string {
 	return specCodeEnd.ReplaceAllString(txt, "")
 }
 
-func TrimCodeVersionComment(txt string) string {
-	txt = specVersionCodeStart.ReplaceAllString(txt, "")
-	return specCodeEnd.ReplaceAllString(txt, "")
+type ParserConfig struct {
+	EnableWindowFunction        bool
+	EnableStrictDoubleTypeCheck bool
 }
 
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
@@ -80,17 +82,29 @@ type Parser struct {
 	lexer      Scanner
 	hintParser *hintParser
 
+	explicitCharset       bool
+	strictDoubleFieldType bool
+
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
 	yylval yySymType
 	yyVAL  *yySymType
 }
 
+func yySetOffset(yyVAL *yySymType, offset int) {
+	if yyVAL.expr != nil {
+		yyVAL.expr.SetOriginTextPosition(offset)
+	}
+}
+
+func yyhintSetOffset(_ *yyhintSymType, _ int) {
+}
+
 type stmtTexter interface {
 	stmtText() string
 }
 
-// New returns a Parser object.
+// New returns a Parser object with default SQL mode.
 func New() *Parser {
 	if ast.NewValueExpr == nil ||
 		ast.NewParamMarkerExpr == nil ||
@@ -99,9 +113,23 @@ func New() *Parser {
 		panic("no parser driver (forgotten import?) https://github.com/pingcap/parser/issues/43")
 	}
 
-	return &Parser{
+	p := &Parser{
 		cache: make([]yySymType, 200),
 	}
+	p.EnableWindowFunc(true)
+	p.SetStrictDoubleTypeCheck(true)
+	mode, _ := mysql.GetSQLMode(mysql.DefaultSQLMode)
+	p.SetSQLMode(mode)
+	return p
+}
+
+func (parser *Parser) SetStrictDoubleTypeCheck(val bool) {
+	parser.strictDoubleFieldType = val
+}
+
+func (parser *Parser) SetParserConfig(config ParserConfig) {
+	parser.EnableWindowFunc(config.EnableWindowFunction)
+	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
 }
 
 // Parse parses a query string to raw ast.StmtNode.
@@ -178,6 +206,9 @@ func ParseErrorWith(errstr string, lineno int) error {
 // field text was set from its offset to the end of the src string, update
 // the last field text.
 func (parser *Parser) setLastSelectFieldText(st *ast.SelectStmt, lastEnd int) {
+	if st.Kind != ast.SelectStmtKindSelect {
+		return
+	}
 	lastField := st.Fields.Fields[len(st.Fields.Fields)-1]
 	if lastField.Offset+len(lastField.Text()) >= len(parser.src)-1 {
 		lastField.SetText(parser.src[lastField.Offset:lastEnd])
@@ -283,10 +314,36 @@ func getUint64FromNUM(num interface{}) uint64 {
 	return 0
 }
 
-func getInt64FromNUM(num interface{}) int64 {
+func getInt64FromNUM(num interface{}) (val int64, errMsg string) {
 	switch v := num.(type) {
 	case int64:
-		return v
+		return v, ""
 	}
-	return -1
+	return -1, fmt.Sprintf("%d is out of range [–9223372036854775808,9223372036854775807]", num)
+}
+
+// convertToRole tries to convert elements of roleOrPrivList to RoleIdentity
+func convertToRole(roleOrPrivList []*ast.RoleOrPriv) ([]*auth.RoleIdentity, error) {
+	var roles []*auth.RoleIdentity
+	for _, elem := range roleOrPrivList {
+		role, err := elem.ToRole()
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
+	}
+	return roles, nil
+}
+
+// convertToPriv tries to convert elements of roleOrPrivList to PrivElem
+func convertToPriv(roleOrPrivList []*ast.RoleOrPriv) ([]*ast.PrivElem, error) {
+	var privileges []*ast.PrivElem
+	for _, elem := range roleOrPrivList {
+		priv, err := elem.ToPriv()
+		if err != nil {
+			return nil, err
+		}
+		privileges = append(privileges, priv)
+	}
+	return privileges, nil
 }

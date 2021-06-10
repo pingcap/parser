@@ -55,13 +55,10 @@ const (
 // Datum is a data box holds different kind of data.
 // It has better performance and is easier to use than `interface{}`.
 type Datum struct {
-	k         byte        // datum kind.
-	collation uint8       // collation can hold uint8 values.
-	decimal   uint16      // decimal can hold uint16 values.
-	length    uint32      // length can hold uint32 values.
-	i         int64       // i can hold int64 uint64 float64 values.
-	b         []byte      // b can hold string or []byte values.
-	x         interface{} // x hold all other types.
+	k byte        // datum kind.
+	i int64       // i can hold int64 uint64 float64 values.
+	b []byte      // b can hold string or []byte values.
+	x interface{} // x hold all other types.
 }
 
 // Kind gets the kind of the datum.
@@ -431,7 +428,7 @@ func SetBinChsClnFlag(ft *types.FieldType) {
 const DefaultFsp = int8(0)
 
 // DefaultTypeForValue returns the default FieldType for the value.
-func DefaultTypeForValue(value interface{}, tp *types.FieldType) {
+func DefaultTypeForValue(value interface{}, tp *types.FieldType, charset string, collate string) {
 	switch x := value.(type) {
 	case nil:
 		tp.Tp = mysql.TypeNull
@@ -465,7 +462,7 @@ func DefaultTypeForValue(value interface{}, tp *types.FieldType) {
 		// TODO: tp.Flen should be len(x) * 3 (max bytes length of CharsetUTF8)
 		tp.Flen = len(x)
 		tp.Decimal = types.UnspecifiedLength
-		tp.Charset, tp.Collate = charset.GetDefaultCharsetAndCollate()
+		tp.Charset, tp.Collate = charset, collate
 	case float32:
 		tp.Tp = mysql.TypeFloat
 		s := strconv.FormatFloat(float64(x), 'f', -1, 32)

@@ -41,6 +41,10 @@ type Node interface {
 	Text() string
 	// SetText sets original text to the Node.
 	SetText(text string)
+	// SetOriginTextPosition set the start offset of this node in the origin text.
+	SetOriginTextPosition(offset int)
+	// OriginTextPosition get the start offset of this node in the origin text.
+	OriginTextPosition() int
 }
 
 // Flags indicates whether an expression contains certain types of expression.
@@ -133,9 +137,11 @@ type ResultField struct {
 }
 
 // ResultSetNode interface has a ResultFields property, represents a Node that returns result set.
-// Implementations include SelectStmt, SubqueryExpr, TableSource, TableName and Join.
+// Implementations include SelectStmt, SubqueryExpr, TableSource, TableName, Join and SetOprStmt.
 type ResultSetNode interface {
 	Node
+
+	resultSet()
 }
 
 // SensitiveStmtNode overloads StmtNode and provides a SecureText method.

@@ -16,6 +16,7 @@ package ast
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -47,6 +48,7 @@ var (
 	_ ExprNode = &ValuesExpr{}
 	_ ExprNode = &VariableExpr{}
 	_ ExprNode = &MatchAgainst{}
+	_ ExprNode = &SetCollationExpr{}
 
 	_ Node = &ColumnName{}
 	_ Node = &WhenClause{}
@@ -64,7 +66,7 @@ type ValueExpr interface {
 }
 
 // NewValueExpr creates a ValueExpr with value, and sets default field type.
-var NewValueExpr func(interface{}) ValueExpr
+var NewValueExpr func(value interface{}, charset string, collate string) ValueExpr
 
 // NewParamMarkerExpr creates a ParamMarkerExpr.
 var NewParamMarkerExpr func(offset int) ParamMarkerExpr
@@ -155,19 +157,27 @@ type BinaryOperationExpr struct {
 	R ExprNode
 }
 
+func restoreBinaryOpWithSpacesAround(ctx *format.RestoreCtx, op opcode.Op) error {
+	shouldInsertSpace := ctx.Flags.HasSpacesAroundBinaryOperationFlag() || op.IsKeyword()
+	if shouldInsertSpace {
+		ctx.WritePlain(" ")
+	}
+	if err := op.Restore(ctx); err != nil {
+		return err // no need to annotate, the caller will annotate.
+	}
+	if shouldInsertSpace {
+		ctx.WritePlain(" ")
+	}
+	return nil
+}
+
 // Restore implements Node interface.
 func (n *BinaryOperationExpr) Restore(ctx *format.RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.L")
 	}
-	if ctx.Flags.HasSpacesAroundBinaryOperationFlag() {
-		ctx.WritePlain(" ")
-	}
-	if err := n.Op.Restore(ctx); err != nil {
+	if err := restoreBinaryOpWithSpacesAround(ctx, n.Op); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.Op")
-	}
-	if ctx.Flags.HasSpacesAroundBinaryOperationFlag() {
-		ctx.WritePlain(" ")
 	}
 	if err := n.R.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred when restore BinaryOperationExpr.R")
@@ -354,6 +364,8 @@ type SubqueryExpr struct {
 	Exists     bool
 }
 
+func (*SubqueryExpr) resultSet() {}
+
 // Restore implements Node interface.
 func (n *SubqueryExpr) Restore(ctx *format.RestoreCtx) error {
 	ctx.WritePlain("(")
@@ -405,7 +417,7 @@ func (n *CompareSubqueryExpr) Restore(ctx *format.RestoreCtx) error {
 	if err := n.L.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CompareSubqueryExpr.L")
 	}
-	if err := n.Op.Restore(ctx); err != nil {
+	if err := restoreBinaryOpWithSpacesAround(ctx, n.Op); err != nil {
 		return errors.Annotate(err, "An error occurred while restore CompareSubqueryExpr.Op")
 	}
 	if n.All {
@@ -616,13 +628,6 @@ func (n *DefaultExpr) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*DefaultExpr)
-	if n.Name != nil {
-		node, ok := n.Name.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Name = node.(*ColumnName)
-	}
 	return v.Leave(n)
 }
 
@@ -1220,9 +1225,9 @@ func (n *ValuesExpr) Accept(v Visitor) (Node, bool) {
 	if !ok {
 		return n, false
 	}
-	// `node` may be *ast.ValueExpr, to avoid panic, we write `ok` but do not use
+	// `node` may be *ast.ValueExpr, to avoid panic, we write `_` and do not use
 	// it.
-	n.Column, ok = node.(*ColumnNameExpr)
+	n.Column, _ = node.(*ColumnNameExpr)
 	return v.Leave(n)
 }
 
@@ -1395,4 +1400,82 @@ func (n *MatchAgainst) Accept(v Visitor) (Node, bool) {
 	}
 	n.Against = newAgainst.(ExprNode)
 	return v.Leave(n)
+}
+
+// SetCollationExpr is the expression for the `COLLATE collation_name` clause.
+type SetCollationExpr struct {
+	exprNode
+	// Expr is the expression to be set.
+	Expr ExprNode
+	// Collate is the name of collation to set.
+	Collate string
+}
+
+// Restore implements Node interface.
+func (n *SetCollationExpr) Restore(ctx *format.RestoreCtx) error {
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Trace(err)
+	}
+	ctx.WriteKeyWord(" COLLATE ")
+	ctx.WritePlain(n.Collate)
+	return nil
+}
+
+// Format the ExprNode into a Writer.
+func (n *SetCollationExpr) Format(w io.Writer) {
+	n.Expr.Format(w)
+	fmt.Fprintf(w, " COLLATE %s", n.Collate)
+}
+
+// Accept implements Node Accept interface.
+func (n *SetCollationExpr) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*SetCollationExpr)
+	node, ok := n.Expr.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Expr = node.(ExprNode)
+	return v.Leave(n)
+}
+
+type exprTextPositionCleaner struct {
+	oldTextPos []int
+	restore    bool
+}
+
+func (e *exprTextPositionCleaner) BeginRestore() {
+	e.restore = true
+}
+
+func (e *exprTextPositionCleaner) Enter(n Node) (node Node, skipChildren bool) {
+	if e.restore {
+		n.SetOriginTextPosition(e.oldTextPos[0])
+		e.oldTextPos = e.oldTextPos[1:]
+		return n, false
+	}
+	e.oldTextPos = append(e.oldTextPos, n.OriginTextPosition())
+	n.SetOriginTextPosition(0)
+	return n, false
+}
+
+func (e *exprTextPositionCleaner) Leave(n Node) (node Node, ok bool) {
+	return n, true
+}
+
+// ExpressionDeepEqual compares the equivalence of two expressions.
+func ExpressionDeepEqual(a ExprNode, b ExprNode) bool {
+	cleanerA := &exprTextPositionCleaner{}
+	cleanerB := &exprTextPositionCleaner{}
+	a.Accept(cleanerA)
+	b.Accept(cleanerB)
+	result := reflect.DeepEqual(a, b)
+	cleanerA.BeginRestore()
+	cleanerB.BeginRestore()
+	a.Accept(cleanerA)
+	b.Accept(cleanerB)
+	return result
 }

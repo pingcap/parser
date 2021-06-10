@@ -60,9 +60,19 @@ type Scanner struct {
 	// lastKeyword records the previous keyword returned by scan().
 	// determine whether an optimizer hint should be parsed or ignored.
 	lastKeyword int
+	// lastKeyword2 records the keyword before lastKeyword, it is used
+	// to disambiguate hint after for update, which should be ignored.
+	lastKeyword2 int
+	// lastKeyword3 records the keyword before lastKeyword2, it is used
+	// to disambiguate hint after create binding for update, which should
+	// be pertained.
+	lastKeyword3 int
 
 	// hintPos records the start position of the previous optimizer hint.
 	lastHintPos Pos
+
+	// true if a dot follows an identifier
+	identifierDot bool
 }
 
 // Errors returns the errors and warns during a scan.
@@ -120,6 +130,21 @@ func (s *Scanner) AppendError(err error) {
 	s.errs = append(s.errs, err)
 }
 
+func (s *Scanner) getNextToken() int {
+	r := s.r
+	tok, pos, lit := s.scan()
+	if tok == identifier {
+		tok = handleIdent(&yySymType{})
+	}
+	if tok == identifier {
+		if tok1 := s.isTokenIdentifier(lit, pos.Offset); tok1 != 0 {
+			tok = tok1
+		}
+	}
+	s.r = r
+	return tok
+}
+
 // Lex returns a token and store the token value in v.
 // Scanner satisfies yyLexer interface.
 // 0 and invalid are special token id this function would return:
@@ -128,6 +153,8 @@ func (s *Scanner) AppendError(err error) {
 func (s *Scanner) Lex(v *yySymType) int {
 	tok, pos, lit := s.scan()
 	s.lastScanOffset = pos.Offset
+	s.lastKeyword3 = s.lastKeyword2
+	s.lastKeyword2 = s.lastKeyword
 	s.lastKeyword = 0
 	v.offset = pos.Offset
 	v.ident = lit
@@ -153,6 +180,14 @@ func (s *Scanner) Lex(v *yySymType) int {
 	if tok == not && s.sqlMode.HasHighNotPrecedenceMode() {
 		return not2
 	}
+	if tok == as && s.getNextToken() == of {
+		_, pos, lit = s.scan()
+		v.ident = fmt.Sprintf("%s %s", v.ident, lit)
+		s.lastKeyword = asof
+		s.lastScanOffset = pos.Offset
+		v.offset = pos.Offset
+		return asof
+	}
 
 	switch tok {
 	case intLit:
@@ -170,8 +205,9 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return tok
 	case null:
 		v.item = nil
-	case quotedIdentifier:
+	case quotedIdentifier, identifier:
 		tok = identifier
+		s.identifierDot = s.r.peek() == '.'
 	}
 
 	if tok == unicode.ReplacementChar {
@@ -262,9 +298,8 @@ func startWithXx(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.incAsLongAs(isIdentChar)
-	tok, lit = identifier, s.r.data(&pos)
-	return
+	s.r.p = pos
+	return scanIdentifier(s)
 }
 
 func startWithNn(s *Scanner) (tok int, pos Pos, lit string) {
@@ -295,9 +330,8 @@ func startWithBb(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.incAsLongAs(isIdentChar)
-	tok, lit = identifier, s.r.data(&pos)
-	return
+	s.r.p = pos
+	return scanIdentifier(s)
 }
 
 func startWithSharp(s *Scanner) (tok int, pos Pos, lit string) {
@@ -339,6 +373,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 	s.r.inc()
 	if s.r.peek() != '*' {
 		tok = int('/')
+		lit = "/"
 		return
 	}
 
@@ -350,7 +385,7 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 	case '!': // '/*!' MySQL-specific comments
 		// See http://dev.mysql.com/doc/refman/5.7/en/comments.html
 		// in '/*!', which we always recognize regardless of version.
-		_ = s.scanVersionDigits(5, 5)
+		s.scanVersionDigits(5, 5)
 		s.inBangComment = true
 		return s.scan()
 
@@ -360,9 +395,9 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 			break
 		}
 		s.r.inc()
-		// in '/*T!', try to consume the 5 to 6 digit version string.
-		commentVersion := s.scanVersionDigits(5, 6)
-		if commentVersion <= CommentCodeCurrentVersion {
+		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
+		features := s.scanFeatureIDs()
+		if SpecialCommentsController.ContainsAll(features) {
 			s.inBangComment = true
 			return s.scan()
 		}
@@ -375,8 +410,18 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		// See https://dev.mysql.com/doc/refman/5.7/en/optimizer-hints.html
 		if _, ok := hintedTokens[s.lastKeyword]; ok {
 			// only recognize optimizers hints directly followed by certain
-			// keywords like SELECT, INSERT, etc.
-			isOptimizerHint = true
+			// keywords like SELECT, INSERT, etc., only a special case "FOR UPDATE" needs to be handled
+			// we will report a warning in order to match MySQL's behavior, but the hint content will be ignored
+			if s.lastKeyword2 == forKwd {
+				if s.lastKeyword3 == binding {
+					// special case of `create binding for update`
+					isOptimizerHint = true
+				} else {
+					s.warns = append(s.warns, ParseErrorWith(s.r.data(&pos), s.r.p.Line))
+				}
+			} else {
+				isOptimizerHint = true
+			}
 		}
 
 	case '*': // '/**' if the next char is '/' it would close the comment.
@@ -425,6 +470,7 @@ func startWithStar(s *Scanner) (tok int, pos Pos, lit string) {
 		return s.scan()
 	}
 	// otherwise it is just a normal star.
+	s.identifierDot = false
 	return '*', pos, "*"
 }
 
@@ -466,7 +512,6 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
-	s.r.inc()
 	s.r.incAsLongAs(isIdentChar)
 	return identifier, pos, s.r.data(&pos)
 }
@@ -618,6 +663,9 @@ func handleEscape(s *Scanner) rune {
 }
 
 func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
+	if s.identifierDot {
+		return scanIdentifier(s)
+	}
 	pos = s.r.pos()
 	tok = intLit
 	ch0 := s.r.readByte()
@@ -676,14 +724,15 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 func startWithDot(s *Scanner) (tok int, pos Pos, lit string) {
 	pos = s.r.pos()
 	s.r.inc()
-	save := s.r.pos()
+	if s.identifierDot {
+		return int('.'), pos, "."
+	}
 	if isDigit(s.r.peek()) {
-		tok, _, lit = s.scanFloat(&pos)
-		if s.r.eof() || !isIdentChar(s.r.peek()) {
-			return
+		tok, p, l := s.scanFloat(&pos)
+		if tok == identifier {
+			return invalid, p, l
 		}
-		// Fail to parse a float, reset to dot.
-		s.r.p = save
+		return tok, p, l
 	}
 	tok, lit = int('.'), "."
 	return
@@ -722,14 +771,17 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 	if ch0 == 'e' || ch0 == 'E' {
 		s.r.inc()
 		ch0 = s.r.peek()
-		if ch0 == '-' || ch0 == '+' || isDigit(ch0) {
+		if ch0 == '-' || ch0 == '+' {
 			s.r.inc()
+		}
+		if isDigit(s.r.peek()) {
 			s.scanDigits()
 			tok = floatLit
 		} else {
 			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
 			// 9e9e = 9e9(float) + e(identifier)
 			// 9est = 9est(identifier)
+			s.r.p = *beg
 			s.r.incAsLongAs(isIdentChar)
 			tok = identifier
 		}
@@ -748,21 +800,65 @@ func (s *Scanner) scanDigits() string {
 
 // scanVersionDigits scans for `min` to `max` digits (range inclusive) used in
 // `/*!12345 ... */` comments.
-func (s *Scanner) scanVersionDigits(min, max int) (version CommentCodeVersion) {
+func (s *Scanner) scanVersionDigits(min, max int) {
 	pos := s.r.pos()
 	for i := 0; i < max; i++ {
 		ch := s.r.peek()
 		if isDigit(ch) {
-			version = version*10 + CommentCodeVersion(ch-'0')
 			s.r.inc()
 		} else if i < min {
 			s.r.p = pos
-			return CommentCodeNoVersion
+			return
 		} else {
 			break
 		}
 	}
-	return
+}
+
+func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
+	pos := s.r.pos()
+	const init, expectChar, obtainChar = 0, 1, 2
+	state := init
+	var b strings.Builder
+	for !s.r.eof() {
+		ch := s.r.peek()
+		s.r.inc()
+		switch state {
+		case init:
+			if ch == '[' {
+				state = expectChar
+				break
+			}
+			s.r.p = pos
+			return nil
+		case expectChar:
+			if isIdentChar(ch) {
+				b.WriteRune(ch)
+				state = obtainChar
+				break
+			}
+			s.r.p = pos
+			return nil
+		case obtainChar:
+			if isIdentChar(ch) {
+				b.WriteRune(ch)
+				state = obtainChar
+				break
+			} else if ch == ',' {
+				featureIDs = append(featureIDs, b.String())
+				b.Reset()
+				state = expectChar
+				break
+			} else if ch == ']' {
+				featureIDs = append(featureIDs, b.String())
+				return featureIDs
+			}
+			s.r.p = pos
+			return nil
+		}
+	}
+	s.r.p = pos
+	return nil
 }
 
 func (s *Scanner) lastErrorAsWarn() {

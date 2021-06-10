@@ -27,7 +27,7 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 	ce := &checkExpr{}
 	constraint := &Constraint{Keys: []*IndexPartSpecification{{Column: &ColumnName{}}, {Column: &ColumnName{}}}, Refer: &ReferenceDef{}, Option: &IndexOption{}}
 
-	alterTableSpec := &AlterTableSpec{Constraint: constraint, Options: []*TableOption{{}}, NewTable: &TableName{}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}, OldColumnName: &ColumnName{}, Position: &ColumnPosition{RelativeColumn: &ColumnName{}}}
+	alterTableSpec := &AlterTableSpec{Constraint: constraint, Options: []*TableOption{{}}, NewTable: &TableName{}, NewColumns: []*ColumnDef{{Name: &ColumnName{}}}, OldColumnName: &ColumnName{}, Position: &ColumnPosition{RelativeColumn: &ColumnName{}}, PlacementSpecs: []*PlacementSpec{{}, {}}}
 
 	stmts := []struct {
 		node             Node
@@ -39,7 +39,7 @@ func (ts *testDDLSuite) TestDDLVisitorCover(c *C) {
 		{&DropDatabaseStmt{}, 0, 0},
 		{&DropIndexStmt{Table: &TableName{}}, 0, 0},
 		{&DropTableStmt{Tables: []*TableName{{}, {}}}, 0, 0},
-		{&RenameTableStmt{OldTable: &TableName{}, NewTable: &TableName{}}, 0, 0},
+		{&RenameTableStmt{TableToTables: []*TableToTable{}}, 0, 0},
 		{&TruncateTableStmt{Table: &TableName{}}, 0, 0},
 
 		// TODO: cover children
@@ -213,11 +213,11 @@ func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
 		{"null", "NULL"},
 		{"auto_increment", "AUTO_INCREMENT"},
 		{"DEFAULT 10", "DEFAULT 10"},
-		{"DEFAULT '10'", "DEFAULT '10'"},
-		{"DEFAULT 'hello'", "DEFAULT 'hello'"},
+		{"DEFAULT '10'", "DEFAULT _UTF8MB4'10'"},
+		{"DEFAULT 'hello'", "DEFAULT _UTF8MB4'hello'"},
 		{"DEFAULT 1.1", "DEFAULT 1.1"},
 		{"DEFAULT NULL", "DEFAULT NULL"},
-		{"DEFAULT ''", "DEFAULT ''"},
+		{"DEFAULT ''", "DEFAULT _UTF8MB4''"},
 		{"DEFAULT TRUE", "DEFAULT TRUE"},
 		{"DEFAULT FALSE", "DEFAULT FALSE"},
 		{"UNIQUE KEY", "UNIQUE KEY"},
@@ -272,10 +272,14 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id enum('a','b')", "`id` ENUM('a','b')"},
 		{"id enum('''a''','''b''')", "`id` ENUM('''a''','''b''')"},
 		{"id enum('a\\nb','a\\tb','a\\rb')", "`id` ENUM('a\nb','a\tb','a\rb')"},
+		{"id enum('a','b') binary", "`id` ENUM('a','b') BINARY"},
+		{"id enum(0x61, 0b01100010)", "`id` ENUM('a','b')"},
 		{"id set('a','b')", "`id` SET('a','b')"},
 		{"id set('''a''','''b''')", "`id` SET('''a''','''b''')"},
 		{"id set('a\\nb','a''	\\r\\nb','a\\rb')", "`id` SET('a\nb','a''	\r\nb','a\rb')"},
 		{`id set("a'\nb","a'b\tc")`, "`id` SET('a''\nb','a''b\tc')"},
+		{"id set('a','b') binary", "`id` SET('a','b') BINARY"},
+		{"id set(0x61, 0b01100010)", "`id` SET('a','b')"},
 		{"id TEXT CHARACTER SET UTF8 COLLATE UTF8_UNICODE_CI", "`id` TEXT CHARACTER SET UTF8 COLLATE utf8_unicode_ci"},
 		{"id text character set UTF8", "`id` TEXT CHARACTER SET UTF8"},
 		{"id text charset UTF8", "`id` TEXT CHARACTER SET UTF8"},
@@ -289,7 +293,7 @@ func (ts *testDDLSuite) TestDDLColumnDefRestore(c *C) {
 		{"id INT(11) NULL", "`id` INT(11) NULL"},
 		{"id INT(11) auto_increment", "`id` INT(11) AUTO_INCREMENT"},
 		{"id INT(11) DEFAULT 10", "`id` INT(11) DEFAULT 10"},
-		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT '10'"},
+		{"id INT(11) DEFAULT '10'", "`id` INT(11) DEFAULT _UTF8MB4'10'"},
 		{"id INT(11) DEFAULT 1.1", "`id` INT(11) DEFAULT 1.1"},
 		{"id INT(11) UNIQUE KEY", "`id` INT(11) UNIQUE KEY"},
 		{"id INT(11) COLLATE ascii_bin", "`id` INT(11) COLLATE ascii_bin"},
@@ -512,11 +516,30 @@ func (ts *testDDLSuite) TestAlterTableSpecRestore(c *C) {
 		{"coalesce partition 3", "COALESCE PARTITION 3"},
 		{"drop partition p1", "DROP PARTITION `p1`"},
 		{"TRUNCATE PARTITION p0", "TRUNCATE PARTITION `p0`"},
+		{"add stats_extended s1 cardinality(a,b)", "ADD STATS_EXTENDED `s1` CARDINALITY(`a`, `b`)"},
+		{"add stats_extended if not exists s1 cardinality(a,b)", "ADD STATS_EXTENDED IF NOT EXISTS `s1` CARDINALITY(`a`, `b`)"},
+		{"add stats_extended s1 correlation(a,b)", "ADD STATS_EXTENDED `s1` CORRELATION(`a`, `b`)"},
+		{"add stats_extended if not exists s1 correlation(a,b)", "ADD STATS_EXTENDED IF NOT EXISTS `s1` CORRELATION(`a`, `b`)"},
+		{"add stats_extended s1 dependency(a,b)", "ADD STATS_EXTENDED `s1` DEPENDENCY(`a`, `b`)"},
+		{"add stats_extended if not exists s1 dependency(a,b)", "ADD STATS_EXTENDED IF NOT EXISTS `s1` DEPENDENCY(`a`, `b`)"},
+		{"drop stats_extended s1", "DROP STATS_EXTENDED `s1`"},
+		{"drop stats_extended if exists s1", "DROP STATS_EXTENDED IF EXISTS `s1`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*AlterTableStmt).Specs[0]
 	}
 	RunNodeRestoreTest(c, testCases, "ALTER TABLE t %s", extractNodeFunc)
+}
+
+func (ts *testDDLSuite) TestAlterTableOptionRestore(c *C) {
+	testCases := []NodeRestoreTestCase{
+		{"ALTER TABLE t ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8", "ALTER TABLE `t` ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8"},
+		{"ALTER TABLE t ROW_FORMAT = COMPRESSED, KEY_BLOCK_SIZE = 8", "ALTER TABLE `t` ROW_FORMAT = COMPRESSED, KEY_BLOCK_SIZE = 8"},
+	}
+	extractNodeFunc := func(node Node) Node {
+		return node
+	}
+	RunNodeRestoreTest(c, testCases, "%s", extractNodeFunc)
 }
 
 func (ts *testDDLSuite) TestAdminRepairTableRestore(c *C) {
@@ -535,7 +558,7 @@ func (ts *testDDLSuite) TestSequenceRestore(c *C) {
 	testCases := []NodeRestoreTestCase{
 		{"create sequence seq", "CREATE SEQUENCE `seq`"},
 		{"create sequence if not exists seq", "CREATE SEQUENCE IF NOT EXISTS `seq`"},
-		{"create temporary sequence if not exists seq", "CREATE TEMPORARY SEQUENCE IF NOT EXISTS `seq`"},
+		{"create sequence if not exists seq", "CREATE SEQUENCE IF NOT EXISTS `seq`"},
 		{"create sequence if not exists seq increment 1", "CREATE SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1"},
 		{"create sequence if not exists seq increment = 1", "CREATE SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1"},
 		{"create sequence if not exists seq minvalue 1", "CREATE SEQUENCE IF NOT EXISTS `seq` MINVALUE 1"},
@@ -554,23 +577,20 @@ func (ts *testDDLSuite) TestSequenceRestore(c *C) {
 		{"create sequence if not exists seq cycle", "CREATE SEQUENCE IF NOT EXISTS `seq` CYCLE"},
 		{"create sequence if not exists seq nocycle", "CREATE SEQUENCE IF NOT EXISTS `seq` NOCYCLE"},
 		{"create sequence if not exists seq no cycle", "CREATE SEQUENCE IF NOT EXISTS `seq` NOCYCLE"},
-		{"create sequence if not exists seq order", "CREATE SEQUENCE IF NOT EXISTS `seq` ORDER"},
-		{"create sequence if not exists seq noorder", "CREATE SEQUENCE IF NOT EXISTS `seq` NOORDER"},
-		{"create sequence if not exists seq no order", "CREATE SEQUENCE IF NOT EXISTS `seq` NOORDER"},
-		{"create temporary sequence seq increment 1 minvalue 0 maxvalue 1000", "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY 1 MINVALUE 0 MAXVALUE 1000"},
-		{"create temporary sequence seq minvalue 0 maxvalue 1000 increment 1", "CREATE TEMPORARY SEQUENCE `seq` MINVALUE 0 MAXVALUE 1000 INCREMENT BY 1"},
-		{"create temporary sequence seq cache = 1 order minvalue 0 maxvalue -1000", "CREATE TEMPORARY SEQUENCE `seq` CACHE 1 ORDER MINVALUE 0 MAXVALUE -1000"},
-		{"create temporary sequence seq increment -1 minvalue 0 maxvalue -1000", "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY -1 MINVALUE 0 MAXVALUE -1000"},
-		{"create temporary sequence seq nocycle nocache maxvalue 1000 cache 1", "CREATE TEMPORARY SEQUENCE `seq` NOCYCLE NOCACHE MAXVALUE 1000 CACHE 1"},
-		{"create temporary sequence seq increment -1 no minvalue no maxvalue cache = 1", "CREATE TEMPORARY SEQUENCE `seq` INCREMENT BY -1 NO MINVALUE NO MAXVALUE CACHE 1"},
-		{"create temporary sequence if not exists seq increment 1 minvalue 0 nomaxvalue cache 100 nocycle noorder", "CREATE TEMPORARY SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1 MINVALUE 0 NO MAXVALUE CACHE 100 NOCYCLE NOORDER"},
+		{"create sequence seq increment 1 minvalue 0 maxvalue 1000", "CREATE SEQUENCE `seq` INCREMENT BY 1 MINVALUE 0 MAXVALUE 1000"},
+		{"create sequence seq minvalue 0 maxvalue 1000 increment 1", "CREATE SEQUENCE `seq` MINVALUE 0 MAXVALUE 1000 INCREMENT BY 1"},
+		{"create sequence seq cache = 1 minvalue 0 maxvalue -1000", "CREATE SEQUENCE `seq` CACHE 1 MINVALUE 0 MAXVALUE -1000"},
+		{"create sequence seq increment -1 minvalue 0 maxvalue -1000", "CREATE SEQUENCE `seq` INCREMENT BY -1 MINVALUE 0 MAXVALUE -1000"},
+		{"create sequence seq nocycle nocache maxvalue 1000 cache 1", "CREATE SEQUENCE `seq` NOCYCLE NOCACHE MAXVALUE 1000 CACHE 1"},
+		{"create sequence seq increment -1 no minvalue no maxvalue cache = 1", "CREATE SEQUENCE `seq` INCREMENT BY -1 NO MINVALUE NO MAXVALUE CACHE 1"},
+		{"create sequence if not exists seq increment 1 minvalue 0 nomaxvalue cache 100 nocycle", "CREATE SEQUENCE IF NOT EXISTS `seq` INCREMENT BY 1 MINVALUE 0 NO MAXVALUE CACHE 100 NOCYCLE"},
 
 		// test drop sequence
 		{"drop sequence seq", "DROP SEQUENCE `seq`"},
 		{"drop sequence seq, seq2", "DROP SEQUENCE `seq`, `seq2`"},
 		{"drop sequence if exists seq, seq2", "DROP SEQUENCE IF EXISTS `seq`, `seq2`"},
-		{"drop temporary sequence if exists seq", "DROP TEMPORARY SEQUENCE IF EXISTS `seq`"},
-		{"drop temporary sequence sequence", "DROP TEMPORARY SEQUENCE `sequence`"},
+		{"drop sequence if exists seq", "DROP SEQUENCE IF EXISTS `seq`"},
+		{"drop sequence sequence", "DROP SEQUENCE `sequence`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node

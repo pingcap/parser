@@ -121,7 +121,8 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	c.Assert(has, Equals, true)
 	t := table.GetUpdateTime()
 	c.Assert(t, Equals, TSConvert2Time(table.UpdateTS))
-	c.Assert(table2.IsSequence(), Equals, true)
+	c.Assert(table2.IsSequence(), IsTrue)
+	c.Assert(table2.IsBaseTable(), IsFalse)
 
 	// Corner cases
 	column.Flag ^= mysql.PriKeyFlag
@@ -139,6 +140,9 @@ func (*testModelSuite) TestModelBasic(c *C) {
 	}
 	no := anIndex.HasPrefixIndex()
 	c.Assert(no, Equals, false)
+
+	extraPK := NewExtraHandleColInfo()
+	c.Assert(extraPK.Flag, Equals, uint(mysql.NotNullFlag|mysql.PriKeyFlag))
 }
 
 func (*testModelSuite) TestJobStartTime(c *C) {
@@ -148,8 +152,7 @@ func (*testModelSuite) TestJobStartTime(c *C) {
 	}
 	t := time.Unix(0, 0)
 	c.Assert(t, Equals, TSConvert2Time(job.StartTS))
-	ret := fmt.Sprintf("%s", job)
-	c.Assert(job.String(), Equals, ret)
+	c.Assert(job.String(), Equals, fmt.Sprintf("ID:123, Type:none, State:none, SchemaState:queueing, SchemaID:0, TableID:0, RowCount:0, ArgLen:0, start time: %s, Err:<nil>, ErrCount:0, SnapshotVersion:0", t))
 }
 
 func (*testModelSuite) TestJobCodec(c *C) {
@@ -255,6 +258,7 @@ func (testModelSuite) TestState(c *C) {
 		StateWriteReorganization,
 		StateDeleteReorganization,
 		StatePublic,
+		StateGlobalTxnOnly,
 	}
 
 	for _, state := range schemaTbl {
@@ -294,8 +298,11 @@ func (testModelSuite) TestString(c *C) {
 		{ActionAddIndex, "add index"},
 		{ActionDropIndex, "drop index"},
 		{ActionAddColumn, "add column"},
+		{ActionAddColumns, "add multi-columns"},
 		{ActionDropColumn, "drop column"},
+		{ActionDropColumns, "drop multi-columns"},
 		{ActionModifySchemaCharsetAndCollate, "modify schema charset and collate"},
+		{ActionDropIndexes, "drop multi-indexes"},
 	}
 
 	for _, v := range acts {
@@ -316,8 +323,85 @@ func (testModelSuite) TestUnmarshalCIStr(c *C) {
 	c.Assert(ci.L, Equals, "aabb")
 
 	buf, err = json.Marshal(ci)
+	c.Assert(err, IsNil)
 	c.Assert(string(buf), Equals, `{"O":"aaBB","L":"aabb"}`)
 	ci.UnmarshalJSON(buf)
 	c.Assert(ci.O, Equals, str)
 	c.Assert(ci.L, Equals, "aabb")
+}
+
+func (testModelSuite) TestDefaultValue(c *C) {
+	srcCol := &ColumnInfo{
+		ID: 1,
+	}
+	randPlainStr := "random_plain_string"
+
+	oldPlainCol := srcCol.Clone()
+	oldPlainCol.Name = NewCIStr("oldPlainCol")
+	oldPlainCol.FieldType = *types.NewFieldType(mysql.TypeLong)
+	oldPlainCol.DefaultValue = randPlainStr
+	oldPlainCol.OriginDefaultValue = randPlainStr
+
+	newPlainCol := srcCol.Clone()
+	newPlainCol.Name = NewCIStr("newPlainCol")
+	newPlainCol.FieldType = *types.NewFieldType(mysql.TypeLong)
+	err := newPlainCol.SetDefaultValue(1)
+	c.Assert(err, IsNil)
+	c.Assert(newPlainCol.GetDefaultValue(), Equals, 1)
+	err = newPlainCol.SetDefaultValue(randPlainStr)
+	c.Assert(err, IsNil)
+	c.Assert(newPlainCol.GetDefaultValue(), Equals, randPlainStr)
+
+	randBitStr := string([]byte{25, 185})
+
+	oldBitCol := srcCol.Clone()
+	oldBitCol.Name = NewCIStr("oldBitCol")
+	oldBitCol.FieldType = *types.NewFieldType(mysql.TypeBit)
+	oldBitCol.DefaultValue = randBitStr
+	oldBitCol.OriginDefaultValue = randBitStr
+
+	newBitCol := srcCol.Clone()
+	newBitCol.Name = NewCIStr("newBitCol")
+	newBitCol.FieldType = *types.NewFieldType(mysql.TypeBit)
+	err = newBitCol.SetDefaultValue(1)
+	// Only string type is allowed in BIT column.
+	c.Assert(err, ErrorMatches, ".*Invalid default value.*")
+	c.Assert(newBitCol.GetDefaultValue(), Equals, 1)
+	err = newBitCol.SetDefaultValue(randBitStr)
+	c.Assert(err, IsNil)
+	c.Assert(newBitCol.GetDefaultValue(), Equals, randBitStr)
+
+	nullBitCol := srcCol.Clone()
+	nullBitCol.Name = NewCIStr("nullBitCol")
+	nullBitCol.FieldType = *types.NewFieldType(mysql.TypeBit)
+	err = nullBitCol.SetOriginDefaultValue(nil)
+	c.Assert(err, IsNil)
+	c.Assert(nullBitCol.GetOriginDefaultValue(), IsNil)
+
+	testCases := []struct {
+		col          *ColumnInfo
+		isConsistent bool
+	}{
+		{oldPlainCol, true},
+		{oldBitCol, false},
+		{newPlainCol, true},
+		{newBitCol, true},
+		{nullBitCol, true},
+	}
+	for _, tc := range testCases {
+		col, isConsistent := tc.col, tc.isConsistent
+		cmt := Commentf("%s assertion failed", col.Name.O)
+		bytes, err := json.Marshal(col)
+		c.Assert(err, IsNil, cmt)
+		var newCol ColumnInfo
+		err = json.Unmarshal(bytes, &newCol)
+		c.Assert(err, IsNil, cmt)
+		if isConsistent {
+			c.Assert(col.GetDefaultValue(), Equals, newCol.GetDefaultValue())
+			c.Assert(col.GetOriginDefaultValue(), Equals, newCol.GetOriginDefaultValue())
+		} else {
+			c.Assert(col.DefaultValue == newCol.DefaultValue, IsFalse, cmt)
+			c.Assert(col.OriginDefaultValue == newCol.OriginDefaultValue, IsFalse, cmt)
+		}
+	}
 }

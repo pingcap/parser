@@ -21,6 +21,7 @@ import (
 	"strconv"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/mysql"
 )
@@ -77,7 +78,7 @@ func (n *ValueExpr) Restore(ctx *format.RestoreCtx) error {
 	case KindFloat64:
 		ctx.WritePlain(strconv.FormatFloat(n.GetFloat64(), 'e', -1, 64))
 	case KindString:
-		if n.Type.Charset != "" && n.Type.Charset != mysql.DefaultCharset {
+		if n.Type.Charset != "" {
 			ctx.WritePlain("_")
 			ctx.WriteKeyWord(n.Type.Charset)
 		}
@@ -87,6 +88,11 @@ func (n *ValueExpr) Restore(ctx *format.RestoreCtx) error {
 	case KindMysqlDecimal:
 		ctx.WritePlain(n.GetMysqlDecimal().String())
 	case KindBinaryLiteral:
+		if n.Type.Charset != "" && n.Type.Charset != mysql.DefaultCharset &&
+			n.Type.Charset != charset.CharsetBin {
+			ctx.WritePlain("_")
+			ctx.WriteKeyWord(n.Type.Charset + " ")
+		}
 		if n.Type.Flag&mysql.UnsignedFlag != 0 {
 			ctx.WritePlainf("x'%x'", n.GetBytes())
 		} else {
@@ -148,13 +154,13 @@ func (n *ValueExpr) Format(w io.Writer) {
 }
 
 // newValueExpr creates a ValueExpr with value, and sets default field type.
-func newValueExpr(value interface{}) ast.ValueExpr {
+func newValueExpr(value interface{}, charset string, collate string) ast.ValueExpr {
 	if ve, ok := value.(*ValueExpr); ok {
 		return ve
 	}
 	ve := &ValueExpr{}
 	ve.SetValue(value)
-	DefaultTypeForValue(value, &ve.Type)
+	DefaultTypeForValue(value, &ve.Type, charset, collate)
 	ve.projectionOffset = -1
 	return ve
 }
