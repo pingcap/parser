@@ -38,7 +38,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
-      - name: validation
+      - name: format
         run: make fmt
 
   test:

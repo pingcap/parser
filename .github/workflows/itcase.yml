@@ -19,16 +19,18 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          path: parser
       - name: setup go
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
-      - name: validation
+      - name: test
         run: |
           git clone https://github.com/pingcap/tidb.git
           cd tidb
           rm go.sum
-          GO111MODULE=on go mod edit -replace github.com/pingcap/parser=github.com/${{github.repository}}@${{github.sha}}
+          GO111MODULE=on go mod edit -replace github.com/pingcap/parser=$GITHUB_WORKSPACE/parser
           go mod tidy
-          # use only 1 thread to minimize memory usage (we've only got 2 CPU + 4 GB on Circle CI).
+          # use only 1 thread to minimize memory usage
           make gotest P=1
