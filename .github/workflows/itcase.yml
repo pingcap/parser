@@ -32,5 +32,4 @@ jobs:
           rm go.sum
           GO111MODULE=on go mod edit -replace github.com/pingcap/parser=$GITHUB_WORKSPACE/parser
           go mod tidy
-          # use only 1 thread to minimize memory usage
-          make gotest P=1
+          make gotest
