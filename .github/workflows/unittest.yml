@@ -1,0 +1,50 @@
+name: Unit Test
+on:
+  push:
+    branches:
+      - master
+      - release-5.0
+      - release-4.0
+      - release-3.0
+  pull_request:
+    branches:
+      - master
+      - release-5.0
+      - release-4.0
+      - release-3.0
+
+jobs:
+  generated:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: validation
+        run: |
+          mv parser.go parser.go.committed
+          make parser
+          diff -u parser.go.committed parser.go
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: validation
+        run: make fmt
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: validation
+        run: make test
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: validation
+        run: curl -s https://codecov.io/bash | bash
