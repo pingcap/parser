@@ -19,6 +19,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
       - name: validation
         run: |
           mv parser.go parser.go.committed
@@ -30,6 +34,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
       - name: validation
         run: make fmt
 
@@ -38,6 +46,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
       - name: validation
         run: make test
 
@@ -46,5 +58,9 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
       - name: validation
         run: curl -s https://codecov.io/bash | bash
