@@ -821,6 +821,7 @@ import (
 	AlterImportStmt        "ALTER IMPORT statement"
 	AlterInstanceStmt      "Alter instance statement"
 	AlterSequenceStmt      "Alter sequence statement"
+	AlterViewStmt          "Alter view statement"
 	AnalyzeTableStmt       "Analyze table statement"
 	BeginTransactionStmt   "BEGIN TRANSACTION statement"
 	BinlogStmt             "Binlog base64 statement"
@@ -3998,6 +3999,32 @@ LikeTableWithOrWithoutParen:
 |	'(' "LIKE" TableName ')'
 	{
 		$$ = $3
+	}
+
+AlterViewStmt:
+	"ALTER" ViewAlgorithm ViewDefiner ViewSQLSecurity "VIEW" ViewName ViewFieldList "AS" CreateViewSelectOpt ViewCheckOption
+	{
+		startOffset := parser.startOffset(&yyS[yypt-1])
+		selStmt := $9.(ast.StmtNode)
+		selStmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+		x := &ast.AlterViewStmt{
+			ViewName:  $6.(*ast.TableName),
+			Select:    selStmt,
+			Algorithm: $2.(model.ViewAlgorithm),
+			Definer:   $3.(*auth.UserIdentity),
+			Security:  $4.(model.ViewSecurity),
+		}
+		if $7 != nil {
+			x.Cols = $7.([]model.CIStr)
+		}
+		if $10 != nil {
+			x.CheckOption = $10.(model.ViewCheckOption)
+			endOffset := parser.startOffset(&yyS[yypt])
+			selStmt.SetText(strings.TrimSpace(parser.src[startOffset:endOffset]))
+		} else {
+			x.CheckOption = model.CheckOptionCascaded
+		}
+		$$ = x
 	}
 
 /*******************************************************************
@@ -10506,6 +10533,7 @@ Statement:
 |	AlterImportStmt
 |	AlterInstanceStmt
 |	AlterSequenceStmt
+|	AlterViewStmt
 |	AnalyzeTableStmt
 |	BeginTransactionStmt
 |	BinlogStmt
