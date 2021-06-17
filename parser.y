@@ -4142,6 +4142,10 @@ ViewCheckOption:
 	{
 		$$ = nil
 	}
+|	"WITH" "CHECK" "OPTION"
+	{
+		$$ = model.CheckOptionCascaded
+	}
 |	"WITH" "CASCADED" "CHECK" "OPTION"
 	{
 		$$ = model.CheckOptionCascaded

@@ -4616,6 +4616,11 @@ func (s *testParserSuite) TestView(c *C) {
 		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with local check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`) WITH LOCAL CHECK OPTION"},
 		{"create or replace algorithm = merge definer = 'root' sql security invoker view v(a,b) as (select * from t union all select * from t) with cascaded check option", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = `root`@`%` SQL SECURITY INVOKER VIEW `v` (`a`,`b`) AS (SELECT * FROM `t` UNION ALL SELECT * FROM `t`)"},
 		{"create or replace algorithm = merge definer = current_user view v as select * from t union all select * from t", true, "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v` AS SELECT * FROM `t` UNION ALL SELECT * FROM `t`"},
+
+		// test alter
+		{"alter view v1 (c,d) as select a,max(b) from t1 group by a", true, "ALTER ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v1` (`c`,`d`) AS SELECT `a`,MAX(`b`) FROM `t1` GROUP BY `a`"},
+		{"alter view v2 as select * from t2 where s1 in (select s1 from t1) with check option", true, "ALTER ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v2` AS SELECT * FROM `t2` WHERE `s1` IN (SELECT `s1` FROM `t1`)"},
+		{"alter view v2 as select * from t2 where s1 in (select s1 from t1) with local check option", true, "ALTER ALGORITHM = UNDEFINED DEFINER = CURRENT_USER SQL SECURITY DEFINER VIEW `v2` AS SELECT * FROM `t2` WHERE `s1` IN (SELECT `s1` FROM `t1`) WITH LOCAL CHECK OPTION"},
 	}
 	s.RunTest(c, table)
 
