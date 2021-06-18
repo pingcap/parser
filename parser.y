@@ -8416,7 +8416,7 @@ TableFactor:
 		}
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
-|	'(' SetOprStmt1 ')' TableAsNameOpt
+|	'(' SetOprStmt1 ')' TableAsName
 	{
 		if st, isSel := $2.(*ast.SelectStmt); isSel {
 			endOffset := parser.endOffset(&yyS[yypt-1])
