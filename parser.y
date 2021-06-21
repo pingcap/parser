@@ -800,7 +800,6 @@ import (
 	SystemVariable         "System defined variable name"
 	UserVariable           "User defined variable name"
 	SubSelect              "Sub Select"
-	SubSelect2             "Sub Select2"
 	StringLiteral          "text literal"
 	ExpressionOpt          "Optional expression"
 	SignedLiteral          "Literal or NumLiteral with sign"
@@ -894,8 +893,7 @@ import (
 	UnlockTablesStmt       "Unlock tables statement"
 	UpdateStmt             "UPDATE statement"
 	SetOprStmt             "Union/Except/Intersect select statement"
-	SetOprStmt1            "Union/Except/Intersect select statement1"
-	SetOprStmt2            "Union/Except/Intersect select statement2"
+	SetOprStmtLimitOrderBy "Union/Except/Intersect select statement with limit and order by"
 	UseStmt                "USE statement"
 	ShutdownStmt           "SHUTDOWN statement"
 	CreateViewSelectOpt    "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
@@ -1356,6 +1354,7 @@ import (
 	TextString                      "text string item"
 
 %precedence empty
+%precedence as
 %precedence lowerThanSelectOpt
 %precedence sqlBufferResult
 %precedence sqlBigResult
@@ -1391,6 +1390,10 @@ import (
 
 /* A dummy token to force the priority of TableRef production in a join. */
 %left tableRefPriority
+%precedence lowerThanParenthese
+%right '('
+%left ')'
+%precedence higherThanParenthese
 %left join straightJoin inner cross left right full natural
 %precedence lowerThanOn
 %precedence on using
@@ -1413,9 +1416,6 @@ import (
 %right collate
 %right encryption
 %left labels
-%precedence lowerThanParenthese
-%precedence '(' ')'
-%precedence higherThanParenthese
 %precedence quick
 %precedence escape
 %precedence lowerThanComma
@@ -3977,17 +3977,13 @@ CreateTableSelectOpt:
 	{
 		$$ = &ast.CreateTableStmt{}
 	}
-|	SetOprStmt1
+|	SetOprStmt
 	{
 		$$ = &ast.CreateTableStmt{Select: $1.(ast.ResultSetNode)}
 	}
 
 CreateViewSelectOpt:
-	SetOprStmt1
-|	'(' SetOprStmt1 ')'
-	{
-		$$ = $2
-	}
+	SetOprStmt
 
 LikeTableWithOrWithoutParen:
 	"LIKE" TableName
@@ -5260,16 +5256,16 @@ LikeEscapeOpt:
 	}
 
 Field:
-	'*'
+	'*' %prec '*'
 	{
 		$$ = &ast.SelectField{WildCard: &ast.WildCardField{}}
 	}
-|	Identifier '.' '*'
+|	Identifier '.' '*' %prec '*'
 	{
 		wildCard := &ast.WildCardField{Table: model.NewCIStr($1)}
 		$$ = &ast.SelectField{WildCard: wildCard}
 	}
-|	Identifier '.' Identifier '.' '*'
+|	Identifier '.' Identifier '.' '*' %prec '*'
 	{
 		wildCard := &ast.WildCardField{Schema: model.NewCIStr($1), Table: model.NewCIStr($3)}
 		$$ = &ast.SelectField{WildCard: wildCard}
@@ -6061,7 +6057,7 @@ InsertValues:
 			Lists:   $5.([][]ast.ExprNode),
 		}
 	}
-|	'(' ColumnNameListOpt ')' SetOprStmt1
+|	'(' ColumnNameListOpt ')' SetOprStmt
 	{
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(ast.ResultSetNode)}
 	}
@@ -6069,7 +6065,7 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Lists: $2.([][]ast.ExprNode)}
 	}
-|	SetOprStmt1
+|	SetOprStmt
 	{
 		$$ = &ast.InsertStmt{Select: $1.(ast.ResultSetNode)}
 	}
@@ -6503,7 +6499,7 @@ SimpleExpr:
 	{
 		$$ = &ast.UnaryOperationExpr{Op: opcode.Not2, V: $2}
 	}
-|	SubSelect2
+|	SubSelect
 |	'(' Expression ')'
 	{
 		startOffset := parser.startOffset(&yyS[yypt-1])
@@ -8416,13 +8412,10 @@ TableFactor:
 		}
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
-|	'(' SetOprStmt1 ')' TableAsName
+|	SubSelect TableAsNameOpt
 	{
-		if st, isSel := $2.(*ast.SelectStmt); isSel {
-			endOffset := parser.endOffset(&yyS[yypt-1])
-			parser.setLastSelectFieldText(st, endOffset)
-		}
-		$$ = &ast.TableSource{Source: $2.(ast.ResultSetNode), AsName: $4.(model.CIStr)}
+		resultNode := $1.(*ast.SubqueryExpr).Query
+		$$ = &ast.TableSource{Source: resultNode, AsName: $2.(model.CIStr)}
 	}
 |	'(' TableRefs ')'
 	{
@@ -8844,29 +8837,45 @@ SelectStmtIntoOption:
 
 // See https://dev.mysql.com/doc/refman/5.7/en/subqueries.html
 SubSelect:
-	'(' SetOprStmt1 ')'
+	'(' SelectStmt ')'
 	{
-		if s, isSel := $2.(*ast.SelectStmt); isSel {
-			endOffset := parser.endOffset(&yyS[yypt])
-			parser.setLastSelectFieldText(s, endOffset)
-		}
-		rs := $2.(ast.ResultSetNode)
+		rs := $2.(*ast.SelectStmt)
+		endOffset := parser.endOffset(&yyS[yypt])
+		parser.setLastSelectFieldText(rs, endOffset)
 		src := parser.src
 		// See the implementation of yyParse function
 		rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: rs}
 	}
-
-SubSelect2:
-	'(' SetOprStmt2 ')'
+|	'(' WithClause SelectStmt ')'
 	{
-		if s, isSel := $2.(*ast.SelectStmt); isSel {
-			endOffset := parser.endOffset(&yyS[yypt])
-			parser.setLastSelectFieldText(s, endOffset)
+		sel := $3.(*ast.SelectStmt)
+		endOffset := parser.endOffset(&yyS[yypt])
+		parser.setLastSelectFieldText(sel, endOffset)
+		sel.With = $2.(*ast.WithClause)
+		src := parser.src
+		sel.SetText(src[yyS[yypt-2].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: sel}
+	}
+|	'(' SetOprClauseList SetOpr SelectStmt ')'
+	{
+		setOprList1 := $2.([]ast.Node)
+		sel := $4.(*ast.SelectStmt)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-1])
+			parser.setLastSelectFieldText(sel, endOffset)
 		}
+		sel.AfterSetOperator = $3.(*ast.SetOprType)
+		setOprList := append(setOprList1, sel)
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		src := parser.src
+		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: setOpr}
+	}
+|	'(' SetOprStmtLimitOrderBy ')'
+	{
 		rs := $2.(ast.ResultSetNode)
 		src := parser.src
-		// See the implementation of yyParse function
 		rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: rs}
 	}
@@ -8913,8 +8922,8 @@ SelectLockOpt:
 		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
 	}
 
-SetOprStmt1:
-	SetOprClauseList %prec lowerThanParenthese
+SetOprStmt:
+	SetOprClauseList
 	{
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $1.([]ast.Node)}}
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
@@ -8930,8 +8939,8 @@ SetOprStmt1:
 			$$ = setOpr
 		}
 	}
-|	SetOprStmt
-|	WithClause SetOprClauseList %prec lowerThanParenthese
+|	SetOprStmtLimitOrderBy
+|	WithClause SetOprClauseList
 	{
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $2.([]ast.Node)}}
 		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
@@ -8952,53 +8961,7 @@ SetOprStmt1:
 			$$ = setOpr
 		}
 	}
-|	WithClause SetOprStmt
-	{
-		setOpr := $2.(*ast.SetOprStmt)
-		setOpr.With = $1.(*ast.WithClause)
-		$$ = setOpr
-	}
-
-SetOprStmt2:
-	SetOprClauseList %prec higherThanParenthese
-	{
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $1.([]ast.Node)}}
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
-		if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && len(setOpr.SelectList.Selects) == 1 {
-			$$ = sel
-		} else {
-			if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && !sel.IsInBraces {
-				setOpr.OrderBy = sel.OrderBy
-				setOpr.Limit = sel.Limit
-				sel.OrderBy = nil
-				sel.Limit = nil
-			}
-			$$ = setOpr
-		}
-	}
-|	SetOprStmt
-|	WithClause SetOprClauseList %prec higherThanParenthese
-	{
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $2.([]ast.Node)}}
-		lastSelect := setOpr.SelectList.Selects[len(setOpr.SelectList.Selects)-1]
-		if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && len(setOpr.SelectList.Selects) == 1 {
-			sel.With = $1.(*ast.WithClause)
-			if sel.IsInBraces {
-				sel.WithBeforeBraces = true
-			}
-			$$ = sel
-		} else {
-			if sel, isSelect := lastSelect.(*ast.SelectStmt); isSelect && !sel.IsInBraces {
-				setOpr.OrderBy = sel.OrderBy
-				setOpr.Limit = sel.Limit
-				sel.OrderBy = nil
-				sel.Limit = nil
-			}
-			setOpr.With = $1.(*ast.WithClause)
-			$$ = setOpr
-		}
-	}
-|	WithClause SetOprStmt
+|	WithClause SetOprStmtLimitOrderBy
 	{
 		setOpr := $2.(*ast.SetOprStmt)
 		setOpr.With = $1.(*ast.WithClause)
@@ -9008,7 +8971,7 @@ SetOprStmt2:
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
 // See https://mariadb.com/kb/en/intersect/
 // See https://mariadb.com/kb/en/except/
-SetOprStmt:
+SetOprStmtLimitOrderBy:
 	SetOprClauseList SetOpr '(' SetOprClauseList ')' OrderBy
 	{
 		setOprList1 := $1.([]ast.Node)
@@ -9110,7 +9073,7 @@ SetOprClauseList:
 	}
 
 SetOprClause:
-	SelectStmt
+	SelectStmt %prec lowerThanParenthese
 	{
 		$$ = []ast.Node{$1.(*ast.SelectStmt)}
 	}
@@ -10551,7 +10514,7 @@ Statement:
 |	ResumeImportStmt
 |	RevokeStmt
 |	RevokeRoleStmt
-|	SetOprStmt1
+|	SetOprStmt
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
@@ -10559,12 +10522,6 @@ Statement:
 |	StopImportStmt
 |	ShowImportStmt
 |	ShowStmt
-|	SubSelect
-	{
-		// `(select 1)`; is a valid select statement
-		// TODO: This is used to fix issue #320. There may be a better solution.
-		$$ = $1.(*ast.SubqueryExpr).Query.(ast.StmtNode)
-	}
 |	TraceStmt
 |	TruncateTableStmt
 |	UpdateStmt
@@ -10578,7 +10535,7 @@ TraceableStmt:
 |	UpdateStmt
 |	InsertIntoStmt
 |	ReplaceIntoStmt
-|	SetOprStmt1
+|	SetOprStmt
 |	LoadDataStmt
 |	BeginTransactionStmt
 |	CommitStmt
@@ -10590,7 +10547,7 @@ ExplainableStmt:
 |	UpdateStmt
 |	InsertIntoStmt
 |	ReplaceIntoStmt
-|	SetOprStmt1
+|	SetOprStmt
 |	AlterTableStmt
 
 StatementList:
@@ -12052,7 +12009,7 @@ RoleSpecList:
 	}
 
 BindableStmt:
-	SetOprStmt1
+	SetOprStmt
 |	UpdateStmt
 |	DeleteWithoutUsingStmt
 |	InsertIntoStmt
