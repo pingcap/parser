@@ -52,6 +52,7 @@ var (
 	_ StmtNode = &DropBindingStmt{}
 	_ StmtNode = &ShutdownStmt{}
 	_ StmtNode = &RenameUserStmt{}
+	_ StmtNode = &HelpStmt{}
 
 	_ Node = &PrivElem{}
 	_ Node = &VariableAssignment{}
@@ -112,16 +113,21 @@ type AuthOption struct {
 	ByAuthString bool
 	AuthString   string
 	HashString   string
-	// TODO: support auth_plugin
+	AuthPlugin   string
 }
 
 // Restore implements Node interface.
 func (n *AuthOption) Restore(ctx *format.RestoreCtx) error {
-	ctx.WriteKeyWord("IDENTIFIED BY ")
+	ctx.WriteKeyWord("IDENTIFIED")
+	if n.AuthPlugin != "" {
+		ctx.WriteKeyWord(" WITH ")
+		ctx.WriteString(n.AuthPlugin)
+	}
 	if n.ByAuthString {
+		ctx.WriteKeyWord(" BY ")
 		ctx.WriteString(n.AuthString)
-	} else {
-		ctx.WriteKeyWord("PASSWORD ")
+	} else if n.HashString != "" {
+		ctx.WriteKeyWord(" AS ")
 		ctx.WriteString(n.HashString)
 	}
 	return nil
@@ -388,9 +394,11 @@ func (n *ExecuteStmt) Accept(v Visitor) (Node, bool) {
 type BeginStmt struct {
 	stmtNode
 	Mode                  string
-	ReadOnly              bool
-	Bound                 *TimestampBound
 	CausalConsistencyOnly bool
+	ReadOnly              bool
+	// AS OF is used to read the data at a specific point of time.
+	// Should only be used when ReadOnly is true.
+	AsOf *AsOfClause
 }
 
 // Restore implements Node interface.
@@ -398,23 +406,9 @@ func (n *BeginStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.Mode == "" {
 		if n.ReadOnly {
 			ctx.WriteKeyWord("START TRANSACTION READ ONLY")
-			if n.Bound != nil {
-				switch n.Bound.Mode {
-				case TimestampBoundStrong:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND STRONG")
-				case TimestampBoundMaxStaleness:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MAX STALENESS ")
-					return n.Bound.Timestamp.Restore(ctx)
-				case TimestampBoundExactStaleness:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND EXACT STALENESS ")
-					return n.Bound.Timestamp.Restore(ctx)
-				case TimestampBoundReadTimestamp:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND READ TIMESTAMP ")
-					return n.Bound.Timestamp.Restore(ctx)
-				case TimestampBoundMinReadTimestamp:
-					ctx.WriteKeyWord(" WITH TIMESTAMP BOUND MIN READ TIMESTAMP ")
-					return n.Bound.Timestamp.Restore(ctx)
-				}
+			if n.AsOf != nil {
+				ctx.WriteKeyWord(" ")
+				return n.AsOf.Restore(ctx)
 			}
 		} else if n.CausalConsistencyOnly {
 			ctx.WriteKeyWord("START TRANSACTION WITH CAUSAL CONSISTENCY ONLY")
@@ -435,13 +429,6 @@ func (n *BeginStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*BeginStmt)
-	if n.Bound != nil && n.Bound.Timestamp != nil {
-		newTimestamp, ok := n.Bound.Timestamp.Accept(v)
-		if !ok {
-			return n, false
-		}
-		n.Bound.Timestamp = newTimestamp.(ExprNode)
-	}
 	return v.Leave(n)
 }
 
@@ -1115,11 +1102,30 @@ func (n *UserSpec) EncodedPassword() (string, bool) {
 
 	opt := n.AuthOpt
 	if opt.ByAuthString {
-		return auth.EncodePassword(opt.AuthString), true
+		switch opt.AuthPlugin {
+		case mysql.AuthCachingSha2Password:
+			return auth.NewSha2Password(opt.AuthString), true
+		default:
+			return auth.EncodePassword(opt.AuthString), true
+		}
+	}
+
+	// In case we have 'IDENTIFIED WITH <plugin>' but no 'BY <password>' to set an empty password.
+	if opt.HashString == "" {
+		return opt.HashString, true
 	}
 
 	// Not a legal password string.
-	if len(opt.HashString) != 41 || !strings.HasPrefix(opt.HashString, "*") {
+	switch opt.AuthPlugin {
+	case mysql.AuthCachingSha2Password:
+		if len(opt.HashString) != mysql.SHAPWDHashLen {
+			return "", false
+		}
+	case "", mysql.AuthNativePassword:
+		if len(opt.HashString) != (mysql.PWDHashLen+1) || !strings.HasPrefix(opt.HashString, "*") {
+			return "", false
+		}
+	default:
 		return "", false
 	}
 	return opt.HashString, true
@@ -2460,6 +2466,31 @@ func (n *ShutdownStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*ShutdownStmt)
+	return v.Leave(n)
+}
+
+// HelpStmt is a statement for server side help
+// See https://dev.mysql.com/doc/refman/8.0/en/help.html
+type HelpStmt struct {
+	stmtNode
+
+	Topic string
+}
+
+// Restore implements Node interface.
+func (n *HelpStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("HELP ")
+	ctx.WriteString(n.Topic)
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *HelpStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*HelpStmt)
 	return v.Leave(n)
 }
 

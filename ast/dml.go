@@ -14,8 +14,9 @@
 package ast
 
 import (
-	"github.com/pingcap/errors"
+	"strings"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
@@ -87,6 +88,8 @@ type Join struct {
 	StraightJoin   bool
 	ExplicitParens bool
 }
+
+func (*Join) resultSet() {}
 
 // NewCrossJoin builds a cross join without `on` or `using` clause.
 // If the right child is a join tree, we need to handle it differently to make the precedence get right.
@@ -274,14 +277,26 @@ type TableName struct {
 	AsOf *AsOfClause
 }
 
+func (*TableName) resultSet() {}
+
 // Restore implements Node interface.
 func (n *TableName) restoreName(ctx *format.RestoreCtx) {
 	if n.Schema.String() != "" {
 		ctx.WriteName(n.Schema.String())
 		ctx.WritePlain(".")
 	} else if ctx.DefaultDB != "" {
-		ctx.WriteName(ctx.DefaultDB)
-		ctx.WritePlain(".")
+		// Try CTE, for a CTE table name, we shouldn't write the database name.
+		ok := false
+		for _, name := range ctx.CTENames {
+			if strings.EqualFold(name, n.Name.String()) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			ctx.WriteName(ctx.DefaultDB)
+			ctx.WritePlain(".")
+		}
 	}
 	ctx.WriteName(n.Name.String())
 }
@@ -414,6 +429,13 @@ func (n *TableName) Accept(v Visitor) (Node, bool) {
 		}
 		n.TableSample = newTs.(*TableSample)
 	}
+	if n.AsOf != nil {
+		newNode, skipChildren := n.AsOf.Accept(v)
+		if skipChildren {
+			return v.Leave(n)
+		}
+		n.AsOf = newNode.(*AsOfClause)
+	}
 	return v.Leave(n)
 }
 
@@ -497,6 +519,8 @@ type TableSource struct {
 	// AsName is the alias name of the table source.
 	AsName model.CIStr
 }
+
+func (*TableSource) resultSet() {}
 
 // Restore implements Node interface.
 func (n *TableSource) Restore(ctx *format.RestoreCtx) error {
@@ -1077,6 +1101,8 @@ type SelectStmt struct {
 	With  *WithClause
 }
 
+func (*SelectStmt) resultSet() {}
+
 func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("WITH ")
 	if n.IsRecursive {
@@ -1087,6 +1113,11 @@ func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlain(", ")
 		}
 		ctx.WriteName(cte.Name.String())
+		if n.IsRecursive {
+			// If the CTE is recursive, we should make it visible for the CTE's query.
+			// Otherwise, we should put it to stack after building the CTE's query.
+			ctx.CTENames = append(ctx.CTENames, cte.Name.L)
+		}
 		if len(cte.ColNameList) > 0 {
 			ctx.WritePlain(" (")
 			for j, name := range cte.ColNameList {
@@ -1101,6 +1132,9 @@ func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
 		err := cte.Query.Restore(ctx)
 		if err != nil {
 			return err
+		}
+		if !n.IsRecursive {
+			ctx.CTENames = append(ctx.CTENames, cte.Name.L)
 		}
 	}
 	ctx.WritePlain(" ")
@@ -1126,6 +1160,10 @@ func (n *WithClause) Accept(v Visitor) (Node, bool) {
 // Restore implements Node interface.
 func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.WithBeforeBraces {
+		l := len(ctx.CTENames)
+		defer func() {
+			ctx.CTENames = ctx.CTENames[:l]
+		}()
 		err := n.With.Restore(ctx)
 		if err != nil {
 			return err
@@ -1414,6 +1452,10 @@ type SetOprSelectList struct {
 // Restore implements Node interface.
 func (n *SetOprSelectList) Restore(ctx *format.RestoreCtx) error {
 	if n.With != nil {
+		l := len(ctx.CTENames)
+		defer func() {
+			ctx.CTENames = ctx.CTENames[:l]
+		}()
 		if err := n.With.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SetOprSelectList.With")
 		}
@@ -1508,9 +1550,15 @@ type SetOprStmt struct {
 	With       *WithClause
 }
 
+func (*SetOprStmt) resultSet() {}
+
 // Restore implements Node interface.
 func (n *SetOprStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.With != nil {
+		l := len(ctx.CTENames)
+		defer func() {
+			ctx.CTENames = ctx.CTENames[:l]
+		}()
 		if err := n.With.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore UnionStmt.With")
 		}
@@ -2086,6 +2134,10 @@ type DeleteStmt struct {
 // Restore implements Node interface.
 func (n *DeleteStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.With != nil {
+		l := len(ctx.CTENames)
+		defer func() {
+			ctx.CTENames = ctx.CTENames[:l]
+		}()
 		err := n.With.Restore(ctx)
 		if err != nil {
 			return err
@@ -2246,6 +2298,10 @@ type UpdateStmt struct {
 // Restore implements Node interface.
 func (n *UpdateStmt) Restore(ctx *format.RestoreCtx) error {
 	if n.With != nil {
+		l := len(ctx.CTENames)
+		defer func() {
+			ctx.CTENames = ctx.CTENames[:l]
+		}()
 		err := n.With.Restore(ctx)
 		if err != nil {
 			return err
@@ -3313,33 +3369,8 @@ func (m FulltextSearchModifier) WithQueryExpansion() bool {
 	return m&FulltextSearchModifierWithQueryExpansion == FulltextSearchModifierWithQueryExpansion
 }
 
-// TODO: remove the TimestampBoundMode.
-type TimestampBoundMode int
-
-const (
-	TimestampBoundStrong TimestampBoundMode = iota
-	TimestampBoundMaxStaleness
-	TimestampBoundExactStaleness
-	TimestampBoundReadTimestamp
-	TimestampBoundMinReadTimestamp
-)
-
-type TimestampReadModes int
-
-const (
-	TimestampReadStrong TimestampReadModes = iota
-	TimestampReadBoundTimestamp
-	TimestampReadExactTimestamp
-)
-
-type TimestampBound struct {
-	Mode      TimestampBoundMode
-	Timestamp ExprNode
-}
-
 type AsOfClause struct {
 	node
-	Mode   TimestampReadModes
 	TsExpr ExprNode
 }
 
