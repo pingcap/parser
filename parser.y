@@ -8905,6 +8905,39 @@ SubSelect:
 		setOpr.With = $2.(*ast.WithClause)
 		$$ = &ast.SubqueryExpr{Query: setOpr}
 	}
+|	'(' SetOprClauseList SetOpr '(' SetOprClauseList ')' ')'
+	{
+		setOprList1 := $2.([]ast.Node)
+		setOprList2 := $5.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-4])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
+		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
+		nextSetOprList.AfterSetOperator = $3.(*ast.SetOprType)
+		setOprList := append(setOprList1, nextSetOprList)
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		src := parser.src
+		setOpr.SetText(src[yyS[yypt-5].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: setOpr}
+	}
+|	'(' WithClause SetOprClauseList SetOpr '(' SetOprClauseList ')' ')'
+	{
+		setOprList1 := $3.([]ast.Node)
+		setOprList2 := $6.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-4])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
+		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
+		nextSetOprList.AfterSetOperator = $4.(*ast.SetOprType)
+		setOprList := append(setOprList1, nextSetOprList)
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		src := parser.src
+		setOpr.SetText(src[yyS[yypt-5].offset:yyS[yypt].offset])
+		setOpr.With = $2.(*ast.WithClause)
+		$$ = &ast.SubqueryExpr{Query: setOpr}
+	}
 |	'(' SetOprStmtLimitOrderBy ')'
 	{
 		rs := $2.(ast.ResultSetNode)
