@@ -8905,36 +8905,47 @@ SubSelect:
 		setOpr.With = $2.(*ast.WithClause)
 		$$ = &ast.SubqueryExpr{Query: setOpr}
 	}
-|	'(' SetOprClauseList SetOpr '(' SetOprClauseList ')' ')'
+|	'(' SetOprClauseList SetOpr SubSelect ')'
 	{
 		setOprList1 := $2.([]ast.Node)
-		setOprList2 := $5.([]ast.Node)
+		sel := $4.(*ast.SubqueryExpr).Query
 		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
 			endOffset := parser.endOffset(&yyS[yypt-4])
 			parser.setLastSelectFieldText(sel, endOffset)
 		}
-		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
-		nextSetOprList.AfterSetOperator = $3.(*ast.SetOprType)
-		setOprList := append(setOprList1, nextSetOprList)
+		switch x := sel.(type) {
+		case *ast.SelectStmt:
+			x.AfterSetOperator = $3.(*ast.SetOprType)
+			x.IsInBraces = true
+		case *ast.SetOprStmt:
+			x.SelectList.AfterSetOperator = $3.(*ast.SetOprType)
+		}
+		setOprList := append(setOprList1, sel)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
 		src := parser.src
-		setOpr.SetText(src[yyS[yypt-5].offset:yyS[yypt].offset])
+		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: setOpr}
 	}
-|	'(' WithClause SetOprClauseList SetOpr '(' SetOprClauseList ')' ')'
+|	'(' WithClause SetOprClauseList SetOpr SubSelect ')'
 	{
 		setOprList1 := $3.([]ast.Node)
-		setOprList2 := $6.([]ast.Node)
+		sel := $5.(*ast.SubqueryExpr).Query
 		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
 			endOffset := parser.endOffset(&yyS[yypt-4])
 			parser.setLastSelectFieldText(sel, endOffset)
 		}
-		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
-		nextSetOprList.AfterSetOperator = $4.(*ast.SetOprType)
-		setOprList := append(setOprList1, nextSetOprList)
+		switch x := sel.(type) {
+		case *ast.SelectStmt:
+			x.AfterSetOperator = $4.(*ast.SetOprType)
+			x.IsInBraces = true
+		case *ast.SetOprStmt:
+			x.SelectList.AfterSetOperator = $4.(*ast.SetOprType)
+		}
+		setOprList := append(setOprList1, sel)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
 		src := parser.src
-		setOpr.SetText(src[yyS[yypt-5].offset:yyS[yypt].offset])
+		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: setOpr}
 		setOpr.With = $2.(*ast.WithClause)
 		$$ = &ast.SubqueryExpr{Query: setOpr}
 	}
