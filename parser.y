@@ -8872,9 +8872,34 @@ SubSelect:
 		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: setOpr}
 	}
+|	'(' WithClause SetOprClauseList SetOpr SelectStmt ')'
+	{
+		setOprList1 := $3.([]ast.Node)
+		sel := $5.(*ast.SelectStmt)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-1])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
+		sel.AfterSetOperator = $4.(*ast.SetOprType)
+		setOprList := append(setOprList1, sel)
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		src := parser.src
+		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
+		setOpr.With = $2.(*ast.WithClause)
+		$$ = &ast.SubqueryExpr{Query: setOpr}
+	}
 |	'(' SetOprStmtLimitOrderBy ')'
 	{
 		rs := $2.(ast.ResultSetNode)
+		src := parser.src
+		rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: rs}
+	}
+|	'(' WithClause SetOprStmtLimitOrderBy ')'
+	{
+		setOpr := $3.(*ast.SetOprStmt)
+		setOpr.With = $2.(*ast.WithClause)
+		rs := $3.(ast.ResultSetNode)
 		src := parser.src
 		rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: rs}
