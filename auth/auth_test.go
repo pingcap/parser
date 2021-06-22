@@ -11,18 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth_test
+package auth
 
 import (
 	"testing"
 
 	. "github.com/pingcap/check"
-	. "github.com/pingcap/parser/auth"
 )
-
-func TestT(t *testing.T) {
-	TestingT(t)
-}
 
 var _ = Suite(&testAuthSuite{})
 
