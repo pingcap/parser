@@ -404,6 +404,7 @@ import (
 	global                "GLOBAL"
 	grants                "GRANTS"
 	hash                  "HASH"
+	help                  "HELP"
 	histogram             "HISTOGRAM"
 	history               "HISTORY"
 	hosts                 "HOSTS"
@@ -899,6 +900,7 @@ import (
 	CreateViewSelectOpt    "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	BindableStmt           "Statement that can be created binding on"
 	UpdateStmtNoWith       "Update statement without CTE clause"
+	HelpStmt               "HELP statement"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -5597,6 +5599,7 @@ UnReservedKeyword:
 |	"GENERAL"
 |	"GLOBAL"
 |	"HASH"
+|	"HELP"
 |	"HOUR"
 |	"INSERT_METHOD"
 |	"LESS"
@@ -7769,6 +7772,12 @@ ShutdownStmt:
 	"SHUTDOWN"
 	{
 		$$ = &ast.ShutdownStmt{}
+	}
+
+HelpStmt:
+	"HELP" stringLit
+	{
+		$$ = &ast.HelpStmt{Topic: $2}
 	}
 
 SelectStmtBasic:
@@ -10554,6 +10563,7 @@ Statement:
 |	UnlockTablesStmt
 |	LockTablesStmt
 |	ShutdownStmt
+|	HelpStmt
 
 TraceableStmt:
 	DeleteFromStmt
