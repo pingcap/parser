@@ -8877,6 +8877,10 @@ SubSelect:
 		sel.AfterSetOperator = $3.(*ast.SetOprType)
 		setOprList := append(setOprList1, sel)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		setOpr.OrderBy = sel.OrderBy
+		setOpr.Limit = sel.Limit
+		sel.OrderBy = nil
+		sel.Limit = nil
 		src := parser.src
 		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: setOpr}
@@ -8892,6 +8896,10 @@ SubSelect:
 		sel.AfterSetOperator = $4.(*ast.SetOprType)
 		setOprList := append(setOprList1, sel)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		setOpr.OrderBy = sel.OrderBy
+		setOpr.Limit = sel.Limit
+		sel.OrderBy = nil
+		sel.Limit = nil
 		src := parser.src
 		setOpr.SetText(src[yyS[yypt-3].offset:yyS[yypt].offset])
 		setOpr.With = $2.(*ast.WithClause)
