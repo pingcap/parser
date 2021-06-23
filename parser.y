@@ -871,6 +871,7 @@ import (
 	PreparedStmt               "PreparedStmt"
 	PurgeImportStmt            "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt                 "SELECT statement"
+	SelectStmtWithClause       "common table expression SELECT statement"
 	RenameTableStmt            "rename table statement"
 	RenameUserStmt             "rename user statement"
 	ReplaceIntoStmt            "REPLACE INTO statement"
@@ -3988,17 +3989,37 @@ CreateTableSelectOpt:
 	{
 		$$ = &ast.CreateTableStmt{Select: $1.(ast.ResultSetNode)}
 	}
+|	SelectStmtWithClause
+	{
+		$$ = &ast.CreateTableStmt{Select: $1.(ast.ResultSetNode)}
+	}
+|	SubSelect
+	{
+		var sel ast.ResultSetNode
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = &ast.CreateTableStmt{Select: sel}
+	}
 
 CreateViewSelectOpt:
 	SetOprStmt
 |	SelectStmt
+|	SelectStmtWithClause
 |	SubSelect
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
+			x.IsInBraces = true
 			sel = x
 		case *ast.SetOprStmt:
+			x.IsInBraces = true
 			sel = x
 		}
 		$$ = sel
@@ -6085,9 +6106,22 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(ast.ResultSetNode)}
 	}
+|	'(' ColumnNameListOpt ')' SelectStmtWithClause
+	{
+		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(ast.ResultSetNode)}
+	}
 |	'(' ColumnNameListOpt ')' SubSelect
 	{
-		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.SubqueryExpr).Query}
+		var sel ast.ResultSetNode
+		switch x := $4.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: sel}
 	}
 |	ValueSym ValuesList %prec insertValues
 	{
@@ -6101,9 +6135,22 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Select: $1.(ast.ResultSetNode)}
 	}
+|	SelectStmtWithClause
+	{
+		$$ = &ast.InsertStmt{Select: $1.(ast.ResultSetNode)}
+	}
 |	SubSelect
 	{
-		$$ = &ast.InsertStmt{Select: $1.(*ast.SubqueryExpr).Query}
+		var sel ast.ResultSetNode
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = &ast.InsertStmt{Select: sel}
 	}
 |	"SET" ColumnSetValueList
 	{
@@ -8068,6 +8115,29 @@ SelectStmt:
 		$$ = st
 	}
 
+SelectStmtWithClause:
+	WithClause SelectStmt
+	{
+		sel := $2.(*ast.SelectStmt)
+		sel.With = $1.(*ast.WithClause)
+		$$ = sel
+	}
+|	WithClause SubSelect
+	{
+		var sel ast.StmtNode
+		switch x := $2.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			x.With = $1.(*ast.WithClause)
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			x.With = $1.(*ast.WithClause)
+			sel = x
+		}
+		$$ = sel
+	}
+
 WithClause:
 	"WITH" WithList
 	{
@@ -8896,6 +8966,16 @@ SubSelect:
 		rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: rs}
 	}
+|	'(' SelectStmtWithClause ')'
+	{
+		rs := $2.(*ast.SelectStmt)
+		endOffset := parser.endOffset(&yyS[yypt])
+		parser.setLastSelectFieldText(rs, endOffset)
+		src := parser.src
+		// See the implementation of yyParse function
+		rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
+		$$ = &ast.SubqueryExpr{Query: rs}
+	}
 
 // See https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html
 SelectLockOpt:
@@ -8974,7 +9054,13 @@ SetOprStmtWoutLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect
 	{
 		setOprList1 := $1.([]ast.Node)
-		setOprList2 := []ast.Node{$3.(*ast.SubqueryExpr).Query}
+		var setOprList2 []ast.Node
+		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList2 = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList2 = x.SelectList.Selects
+		}
 		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
@@ -8986,7 +9072,13 @@ SetOprStmtWithLimitOrderBy:
 	SetOprClauseList SetOpr SubSelect OrderBy
 	{
 		setOprList1 := $1.([]ast.Node)
-		setOprList2 := []ast.Node{$3.(*ast.SubqueryExpr).Query}
+		var setOprList2 []ast.Node
+		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList2 = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList2 = x.SelectList.Selects
+		}
 		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
@@ -8997,7 +9089,13 @@ SetOprStmtWithLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect SelectStmtLimit
 	{
 		setOprList1 := $1.([]ast.Node)
-		setOprList2 := []ast.Node{$3.(*ast.SubqueryExpr).Query}
+		var setOprList2 []ast.Node
+		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList2 = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList2 = x.SelectList.Selects
+		}
 		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
@@ -9008,7 +9106,13 @@ SetOprStmtWithLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect OrderBy SelectStmtLimit
 	{
 		setOprList1 := $1.([]ast.Node)
-		setOprList2 := []ast.Node{$3.(*ast.SubqueryExpr).Query}
+		var setOprList2 []ast.Node
+		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList2 = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList2 = x.SelectList.Selects
+		}
 		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
@@ -9019,22 +9123,40 @@ SetOprStmtWithLimitOrderBy:
 	}
 |	SubSelect OrderBy
 	{
-		setOprList := []ast.Node{$1.(*ast.SubqueryExpr).Query}
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: []ast.Node{&ast.SetOprSelectList{Selects: setOprList}}}}
+		var setOprList []ast.Node
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList = x.SelectList.Selects
+		}
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
 		setOpr.OrderBy = $2.(*ast.OrderByClause)
 		$$ = setOpr
 	}
 |	SubSelect SelectStmtLimit
 	{
-		setOprList := []ast.Node{$1.(*ast.SubqueryExpr).Query}
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: []ast.Node{&ast.SetOprSelectList{Selects: setOprList}}}}
+		var setOprList []ast.Node
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList = x.SelectList.Selects
+		}
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
 		setOpr.Limit = $2.(*ast.Limit)
 		$$ = setOpr
 	}
 |	SubSelect OrderBy SelectStmtLimit
 	{
-		setOprList := []ast.Node{$1.(*ast.SubqueryExpr).Query}
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: []ast.Node{&ast.SetOprSelectList{Selects: setOprList}}}}
+		var setOprList []ast.Node
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			setOprList = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList = x.SelectList.Selects
+		}
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
 		setOpr.OrderBy = $2.(*ast.OrderByClause)
 		setOpr.Limit = $3.(*ast.Limit)
 		$$ = setOpr
@@ -9066,11 +9188,15 @@ SetOprClause:
 	}
 |	SubSelect
 	{
-		setList := []ast.Node{$1.(*ast.SubqueryExpr).Query}
-		if sel, isSelect := setList[0].(*ast.SelectStmt); isSelect && len(setList) == 1 {
-			sel.IsInBraces = true
+		var setOprList []ast.Node
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			setOprList = []ast.Node{x}
+		case *ast.SetOprStmt:
+			setOprList = []ast.Node{&ast.SetOprSelectList{Selects: x.SelectList.Selects}}
 		}
-		$$ = setList
+		$$ = setOprList
 	}
 
 SetOpr:
@@ -10484,6 +10610,20 @@ Statement:
 |	RevokeRoleStmt
 |	SetOprStmt
 |	SelectStmt
+|	SelectStmtWithClause
+|	SubSelect
+	{
+		var sel ast.StmtNode
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = sel
+	}
 |	SetStmt
 |	SetRoleStmt
 |	SetDefaultRoleStmt
@@ -10507,6 +10647,20 @@ TraceableStmt:
 |	ReplaceIntoStmt
 |	SetOprStmt
 |	SelectStmt
+|	SelectStmtWithClause
+|	SubSelect
+	{
+		var sel ast.StmtNode
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = sel
+	}
 |	LoadDataStmt
 |	BeginTransactionStmt
 |	CommitStmt
@@ -10520,6 +10674,20 @@ ExplainableStmt:
 |	ReplaceIntoStmt
 |	SetOprStmt
 |	SelectStmt
+|	SelectStmtWithClause
+|	SubSelect
+	{
+		var sel ast.StmtNode
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = sel
+	}
 |	AlterTableStmt
 
 StatementList:
@@ -11983,6 +12151,20 @@ RoleSpecList:
 BindableStmt:
 	SetOprStmt
 |	SelectStmt
+|	SelectStmtWithClause
+|	SubSelect
+	{
+		var sel ast.StmtNode
+		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
+			x.IsInBraces = true
+			sel = x
+		}
+		$$ = sel
+	}
 |	UpdateStmt
 |	DeleteWithoutUsingStmt
 |	InsertIntoStmt
