@@ -8128,6 +8128,7 @@ SelectStmtWithClause:
 		switch x := $2.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			x.IsInBraces = true
+			x.WithBeforeBraces = true
 			x.With = $1.(*ast.WithClause)
 			sel = x
 		case *ast.SetOprStmt:
@@ -9055,13 +9056,16 @@ SetOprStmtWoutLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		var setOprList2 []ast.Node
+		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList2 = []ast.Node{x}
+			with2 = x.With
 		case *ast.SetOprStmt:
 			setOprList2 = x.SelectList.Selects
+			with2 = x.With
 		}
-		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
+		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2, With: with2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
@@ -9073,13 +9077,16 @@ SetOprStmtWithLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		var setOprList2 []ast.Node
+		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList2 = []ast.Node{x}
+			with2 = x.With
 		case *ast.SetOprStmt:
 			setOprList2 = x.SelectList.Selects
+			with2 = x.With
 		}
-		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
+		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2, With: with2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
@@ -9090,13 +9097,16 @@ SetOprStmtWithLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		var setOprList2 []ast.Node
+		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList2 = []ast.Node{x}
+			with2 = x.With
 		case *ast.SetOprStmt:
 			setOprList2 = x.SelectList.Selects
+			with2 = x.With
 		}
-		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
+		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2, With: with2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
@@ -9107,13 +9117,16 @@ SetOprStmtWithLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		var setOprList2 []ast.Node
+		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList2 = []ast.Node{x}
+			with2 = x.With
 		case *ast.SetOprStmt:
 			setOprList2 = x.SelectList.Selects
+			with2 = x.With
 		}
-		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2}
+		nextSetOprList := &ast.SetOprSelectList{Selects: setOprList2, With: with2}
 		nextSetOprList.AfterSetOperator = $2.(*ast.SetOprType)
 		setOprList := append(setOprList1, nextSetOprList)
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
@@ -9124,39 +9137,48 @@ SetOprStmtWithLimitOrderBy:
 |	SubSelect OrderBy
 	{
 		var setOprList []ast.Node
+		var with *ast.WithClause
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList = []ast.Node{x}
+			with = x.With
 		case *ast.SetOprStmt:
 			setOprList = x.SelectList.Selects
+			with = x.With
 		}
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}, With: with}
 		setOpr.OrderBy = $2.(*ast.OrderByClause)
 		$$ = setOpr
 	}
 |	SubSelect SelectStmtLimit
 	{
 		var setOprList []ast.Node
+		var with *ast.WithClause
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList = []ast.Node{x}
+			with = x.With
 		case *ast.SetOprStmt:
 			setOprList = x.SelectList.Selects
+			with = x.With
 		}
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}, With: with}
 		setOpr.Limit = $2.(*ast.Limit)
 		$$ = setOpr
 	}
 |	SubSelect OrderBy SelectStmtLimit
 	{
 		var setOprList []ast.Node
+		var with *ast.WithClause
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
 			setOprList = []ast.Node{x}
+			with = x.With
 		case *ast.SetOprStmt:
 			setOprList = x.SelectList.Selects
+			with = x.With
 		}
-		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}}
+		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: setOprList}, With: with}
 		setOpr.OrderBy = $2.(*ast.OrderByClause)
 		setOpr.Limit = $3.(*ast.Limit)
 		$$ = setOpr
@@ -9191,10 +9213,9 @@ SetOprClause:
 		var setOprList []ast.Node
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
 		case *ast.SelectStmt:
-			x.IsInBraces = true
-			setOprList = []ast.Node{x}
+			setOprList = []ast.Node{&ast.SetOprSelectList{Selects: []ast.Node{x}}}
 		case *ast.SetOprStmt:
-			setOprList = []ast.Node{&ast.SetOprSelectList{Selects: x.SelectList.Selects}}
+			setOprList = []ast.Node{&ast.SetOprSelectList{Selects: x.SelectList.Selects, With: x.With}}
 		}
 		$$ = setOprList
 	}
