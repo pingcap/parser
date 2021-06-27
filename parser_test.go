@@ -1000,6 +1000,10 @@ AAAAAAAAAAAA5gm5Mg==
 
 		{"select `t`.`1a`.1 from t;", true, "SELECT `t`.`1a`.`1` FROM `t`"},
 		{"select * from 1db.1table;", true, "SELECT * FROM `1db`.`1table`"},
+
+		//for issue #25646
+		{"select a from (select a,b from t1) as t", true, "SELECT `a` FROM (SELECT `a`,`b` FROM `t1`) AS `t`"},
+		{"SELECT * FROM ((SELECT `tt`.`id`,`tt`.`name` FROM (SELECT `id`,`name` FROM `test`.`table1`) AS `tt`) AS `t1` LEFT JOIN `test`.`table1` AS `t2` ON `t1`.`name`=`t2`.`name`) LEFT JOIN `test`.`table2` AS `t3` ON `t1`.`name`=`t3`.`name`", true, "SELECT * FROM ((SELECT `tt`.`id`,`tt`.`name` FROM (SELECT `id`,`name` FROM `test`.`table1`) AS `tt`) AS `t1` LEFT JOIN `test`.`table1` AS `t2` ON `t1`.`name`=`t2`.`name`) LEFT JOIN `test`.`table2` AS `t3` ON `t1`.`name`=`t3`.`name`"},
 	}
 	s.RunTest(c, table)
 }
