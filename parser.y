@@ -10711,9 +10711,9 @@ TableOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
 	}
-|	"AUTO_RANDOM_BASE" EqOpt LengthNum
+|	ForceOpt "AUTO_RANDOM_BASE" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $3.(uint64)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $4.(uint64), BoolValue: $1.(bool)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
