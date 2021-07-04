@@ -628,11 +628,13 @@ import (
 	bitOr                 "BIT_OR"
 	bitXor                "BIT_XOR"
 	bound                 "BOUND"
+	briefType             "BRIEF"
 	cast                  "CAST"
 	copyKwd               "COPY"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
+	dotType               "DOT"
 	exact                 "EXACT"
 	extract               "EXTRACT"
 	flashback             "FLASHBACK"
@@ -683,6 +685,7 @@ import (
 	follower              "FOLLOWER"
 	leader                "LEADER"
 	learner               "LEARNER"
+	verboseType           "VERBOSE"
 	voter                 "VOTER"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
@@ -4425,16 +4428,18 @@ ExplainStmt:
 	}
 |	ExplainSym "FORMAT" "=" stringLit "FOR" "CONNECTION" NUM
 	{
+		format := mysql.GetDefaultExplainFormat($4)
 		$$ = &ast.ExplainForStmt{
-			Format:       $4,
+			Format:       format,
 			ConnectionID: getUint64FromNUM($7),
 		}
 	}
 |	ExplainSym "FORMAT" "=" stringLit ExplainableStmt
 	{
+		format := mysql.GetDefaultExplainFormat($4)
 		$$ = &ast.ExplainStmt{
 			Stmt:   $5,
-			Format: $4,
+			Format: format,
 		}
 	}
 |	ExplainSym "FORMAT" "=" ExplainFormatType "FOR" "CONNECTION" NUM
@@ -4468,6 +4473,22 @@ ExplainFormatType:
 |	"JSON"
 	{
 		$$ = "json"
+	}
+|	"ROW"
+	{
+		$$ = "row"
+	}
+|	"DOT"
+	{
+		$$ = "dot"
+	}
+|	"BRIEF"
+	{
+		$$ = "brief"
+	}
+|	"VERBOSE"
+	{
+		$$ = "verbose"
 	}
 
 /*******************************************************************
@@ -5921,11 +5942,13 @@ NotKeywordToken:
 |	"BIT_AND"
 |	"BIT_OR"
 |	"BIT_XOR"
+|	"BRIEF"
 |	"CAST"
 |	"COPY"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
+|	"DOT"
 |	"EXTRACT"
 |	"GET_FORMAT"
 |	"GROUP_CONCAT"
@@ -5977,6 +6000,7 @@ NotKeywordToken:
 |	"FOLLOWER"
 |	"LEADER"
 |	"LEARNER"
+|	"VERBOSE"
 |	"VOTER"
 
 /************************************************************************************

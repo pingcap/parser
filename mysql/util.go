@@ -13,6 +13,10 @@
 
 package mysql
 
+import (
+	"strings"
+)
+
 type lengthAndDecimal struct {
 	length  int
 	decimal int
@@ -92,4 +96,12 @@ func GetDefaultFieldLengthAndDecimalForCast(tp byte) (flen int, decimal int) {
 		return val.length, val.decimal
 	}
 	return -1, -1
+}
+
+// GetDefaultExplainFormat return the processed values for format of explain
+func GetDefaultExplainFormat(f string) string {
+	if strings.Compare(strings.ToUpper(f), "TRADITIONAL") == 0 {
+		return "row"
+	}
+	return f
 }
