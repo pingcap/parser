@@ -1027,11 +1027,3 @@ func (s *specialCommentsCtrl) ContainsAll(featureIDs []string) bool {
 	}
 	return true
 }
-
-// getDefaultExplainFormat return the processed values for format of explain
-func getDefaultExplainFormat(f string) string {
-	if strings.Compare(strings.ToUpper(f), "TRADITIONAL") == 0 {
-		return "row"
-	}
-	return f
-}

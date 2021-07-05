@@ -4428,18 +4428,16 @@ ExplainStmt:
 	}
 |	ExplainSym "FORMAT" "=" stringLit "FOR" "CONNECTION" NUM
 	{
-		format := getDefaultExplainFormat($4)
 		$$ = &ast.ExplainForStmt{
-			Format:       format,
+			Format:       $4,
 			ConnectionID: getUint64FromNUM($7),
 		}
 	}
 |	ExplainSym "FORMAT" "=" stringLit ExplainableStmt
 	{
-		format := getDefaultExplainFormat($4)
 		$$ = &ast.ExplainStmt{
 			Stmt:   $5,
-			Format: format,
+			Format: $4,
 		}
 	}
 |	ExplainSym "FORMAT" "=" ExplainFormatType "FOR" "CONNECTION" NUM
@@ -4468,7 +4466,7 @@ ExplainStmt:
 ExplainFormatType:
 	"TRADITIONAL"
 	{
-		$$ = "row"
+		$$ = "traditional"
 	}
 |	"JSON"
 	{
