@@ -4465,28 +4465,13 @@ ExplainStmt:
 
 ExplainFormatType:
 	"TRADITIONAL"
-	{
-		$$ = "traditional"
-	}
 |	"JSON"
-	{
-		$$ = "json"
-	}
 |	"ROW"
-	{
-		$$ = "row"
-	}
 |	"DOT"
-	{
-		$$ = "dot"
-	}
 |	"BRIEF"
-	{
-		$$ = "brief"
-	}
 |	"VERBOSE"
 	{
-		$$ = "verbose"
+		$$ = $1
 	}
 
 /*******************************************************************
