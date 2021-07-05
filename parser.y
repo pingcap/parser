@@ -4470,9 +4470,6 @@ ExplainFormatType:
 |	"DOT"
 |	"BRIEF"
 |	"VERBOSE"
-	{
-		$$ = $1
-	}
 
 /*******************************************************************
  * Backup / restore / import statements
