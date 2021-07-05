@@ -4428,7 +4428,7 @@ ExplainStmt:
 	}
 |	ExplainSym "FORMAT" "=" stringLit "FOR" "CONNECTION" NUM
 	{
-		format := mysql.GetDefaultExplainFormat($4)
+		format := getDefaultExplainFormat($4)
 		$$ = &ast.ExplainForStmt{
 			Format:       format,
 			ConnectionID: getUint64FromNUM($7),
@@ -4436,7 +4436,7 @@ ExplainStmt:
 	}
 |	ExplainSym "FORMAT" "=" stringLit ExplainableStmt
 	{
-		format := mysql.GetDefaultExplainFormat($4)
+		format := getDefaultExplainFormat($4)
 		$$ = &ast.ExplainStmt{
 			Stmt:   $5,
 			Format: format,
