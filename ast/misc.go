@@ -1114,7 +1114,7 @@ func (n *UserSpec) EncodedPassword() (string, bool) {
 }
 
 const (
-	TslNone = iota
+	TlsNone = iota
 	Ssl
 	X509
 	Cipher
@@ -1130,7 +1130,7 @@ type TLSOption struct {
 
 func (t *TLSOption) Restore(ctx *format.RestoreCtx) error {
 	switch t.Type {
-	case TslNone:
+	case TlsNone:
 		ctx.WriteKeyWord("NONE")
 	case Ssl:
 		ctx.WriteKeyWord("SSL")
