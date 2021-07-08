@@ -71,7 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "until", "placement", "tablesample",
+		"match", "until", "placement", "tablesample", "attributes",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -2782,6 +2782,13 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
+
+		// alter region label
+		{"ALTER TABLE t ADD ATTRIBUTES='str'", true, "ALTER TABLE `t` ADD ATTRIBUTES='str'"},
+		{"ALTER TABLE t ADD ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` ADD ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t DROP ATTRIBUTES='str'", true, "ALTER TABLE `t` DROP ATTRIBUTES='str'"},
+		{"ALTER TABLE t DROP ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` DROP ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t DROP ATTRIBUTES", false, ""},
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},

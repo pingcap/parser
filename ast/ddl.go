@@ -2244,6 +2244,7 @@ const (
 	AlterTablePlacement
 	AlterTableAddStatistics
 	AlterTableDropStatistics
+	AlterTableAttributes
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2343,6 +2344,7 @@ type AlterTableSpec struct {
 	PlacementSpecs  []*PlacementSpec
 	Writeable       bool
 	Statistics      *StatisticsSpec
+	AttributesSpec  *AttributesSpec
 }
 
 type TiFlashReplicaSpec struct {
@@ -2847,6 +2849,12 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
 		}
+	case AlterTableAttributes:
+		spec := n.AttributesSpec
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.AttributesSpec")
+		}
+
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -3665,6 +3673,45 @@ func (n *PlacementSpec) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*PlacementSpec)
+	return v.Leave(n)
+}
+
+type AttributesActionType int
+
+const (
+	AttributesAdd AttributesActionType = iota + 1
+	AttributesDrop
+)
+
+type AttributesSpec struct {
+	node
+
+	Tp         AttributesActionType
+	Attributes string
+}
+
+func (n *AttributesSpec) Restore(ctx *format.RestoreCtx) error {
+	switch n.Tp {
+	case AttributesAdd:
+		ctx.WriteKeyWord("ADD ")
+	case AttributesDrop:
+		ctx.WriteKeyWord("DROP ")
+	default:
+		return errors.Errorf("invalid AttributesActionType: %d", n.Tp)
+	}
+
+	ctx.WriteKeyWord("ATTRIBUTES")
+	ctx.WritePlain("=")
+	ctx.WriteString(n.Attributes)
+	return nil
+}
+
+func (n *AttributesSpec) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AttributesSpec)
 	return v.Leave(n)
 }
 
