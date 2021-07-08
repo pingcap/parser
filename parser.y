@@ -1290,7 +1290,7 @@ import (
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
-	Attributes                             "Region label attributes option"
+	Attributes                             "Attributes option"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1770,6 +1770,30 @@ AlterTableSpec:
 			Tp:             ast.AlterTableAlterPartition,
 			PartitionNames: []model.CIStr{model.NewCIStr($3)},
 			PlacementSpecs: $4.([]*ast.PlacementSpec),
+		}
+	}
+|	"ALTER" "PARTITION" Identifier "ADD" Attributes
+	{
+		attributesSpec := &ast.AttributesSpec{
+			Tp:         ast.AttributesAdd,
+			Attributes: $5.(string),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAlterPartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($3)},
+			AttributesSpec: attributesSpec,
+		}
+	}
+|	"ALTER" "PARTITION" Identifier "DROP" Attributes
+	{
+		attributesSpec := &ast.AttributesSpec{
+			Tp:         ast.AttributesDrop,
+			Attributes: $5.(string),
+		}
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAlterPartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($3)},
+			AttributesSpec: attributesSpec,
 		}
 	}
 |	"CHECK" "PARTITION" AllOrPartitionNameList

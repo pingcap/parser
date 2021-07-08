@@ -2213,6 +2213,7 @@ const (
 	AlterTableForce
 	AlterTableAddPartitions
 	AlterTableAlterPartition
+	AlterTableAlterPartitionAttributes
 	AlterTableCoalescePartitions
 	AlterTableDropPartition
 	AlterTableTruncatePartition
@@ -2649,6 +2650,19 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 			if err := spec.Restore(ctx); err != nil {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
+		}
+	case AlterTableAlterPartitionAttributes:
+		if len(n.PartitionNames) != 1 {
+			return errors.Errorf("Maybe partition options are combined.")
+		}
+
+		ctx.WriteKeyWord("ALTER PARTITION ")
+		ctx.WriteName(n.PartitionNames[0].O)
+		ctx.WritePlain(" ")
+
+		spec := n.AttributesSpec
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.AttributesSpec")
 		}
 	case AlterTableCoalescePartitions:
 		ctx.WriteKeyWord("COALESCE PARTITION ")
