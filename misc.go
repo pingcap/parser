@@ -73,7 +73,6 @@ func initTokenFunc(str string, fn func(s *Scanner) (int, Pos, string)) {
 		}
 		ruleTable.childs[c].fn = fn
 	}
-	return
 }
 
 func init() {
@@ -190,6 +189,7 @@ var tokenMap = map[string]int{
 	"BOOLEAN":                  booleanType,
 	"BOTH":                     both,
 	"BOUND":                    bound,
+	"BRIEF":                    briefType,
 	"BTREE":                    btree,
 	"BUCKETS":                  buckets,
 	"BUILTINS":                 builtins,
@@ -293,6 +293,7 @@ var tokenMap = map[string]int{
 	"DISTINCTROW":              distinct,
 	"DIV":                      div,
 	"DO":                       do,
+	"DOT":                      dotType,
 	"DOUBLE":                   doubleType,
 	"DRAINER":                  drainer,
 	"DROP":                     drop,
@@ -357,6 +358,7 @@ var tokenMap = map[string]int{
 	"GROUP":                    group,
 	"HASH":                     hash,
 	"HAVING":                   having,
+	"HELP":                     help,
 	"HIGH_PRIORITY":            highPriority,
 	"HISTORY":                  history,
 	"HISTOGRAM":                histogram,
@@ -492,6 +494,7 @@ var tokenMap = map[string]int{
 	"NULLS":                    nulls,
 	"NUMERIC":                  numericType,
 	"NVARCHAR":                 nvarcharType,
+	"OF":                       of,
 	"OFF":                      off,
 	"OFFSET":                   offset,
 	"ON_DUPLICATE":             onDuplicate,
@@ -529,6 +532,7 @@ var tokenMap = map[string]int{
 	"PRECEDING":                preceding,
 	"PRECISION":                precisionType,
 	"PREPARE":                  prepare,
+	"PRESERVE":                 preserve,
 	"PRIMARY":                  primary,
 	"PRIVILEGES":               privileges,
 	"PROCEDURE":                procedure,
@@ -550,6 +554,7 @@ var tokenMap = map[string]int{
 	"REBUILD":                  rebuild,
 	"RECENT":                   recent,
 	"RECOVER":                  recover,
+	"RECURSIVE":                recursive,
 	"REDUNDANT":                redundant,
 	"REFERENCES":               references,
 	"REGEXP":                   regexpKwd,
@@ -753,6 +758,7 @@ var tokenMap = map[string]int{
 	"VARIABLES":                variables,
 	"VARIANCE":                 varPop,
 	"VARYING":                  varying,
+	"VERBOSE":                  verboseType,
 	"VOTER":                    voter,
 	"VIEW":                     view,
 	"VIRTUAL":                  virtual,
@@ -906,6 +912,7 @@ var hintTokenMap = map[string]int{
 	"TIME_RANGE":              hintTimeRange,
 	"USE_CASCADES":            hintUseCascades,
 	"NTH_PLAN":                hintNthPlan,
+	"FORCE_INDEX":             hintForceIndex,
 
 	// TiDB hint aliases
 	"TIDB_HJ":   hintHashJoin,
