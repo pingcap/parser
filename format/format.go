@@ -219,6 +219,7 @@ const (
 
 	RestoreSpacesAroundBinaryOperation
 
+	RestoreStringWithoutCharset
 	RestoreStringWithoutDefaultCharset
 )
 
@@ -284,16 +285,21 @@ func (rf RestoreFlags) HasStringWithoutDefaultCharset() bool {
 	return rf.has(RestoreStringWithoutDefaultCharset)
 }
 
+func (rf RestoreFlags) HasStringWithoutCharset() bool {
+	return rf.has(RestoreStringWithoutCharset)
+}
+
 // RestoreCtx is `Restore` context to hold flags and writer.
 type RestoreCtx struct {
 	Flags     RestoreFlags
 	In        io.Writer
 	DefaultDB string
+	CTENames  []string
 }
 
 // NewRestoreCtx returns a new `RestoreCtx`.
 func NewRestoreCtx(flags RestoreFlags, in io.Writer) *RestoreCtx {
-	return &RestoreCtx{flags, in, ""}
+	return &RestoreCtx{flags, in, "", make([]string, 0)}
 }
 
 // WriteKeyWord writes the `keyWord` into writer.
