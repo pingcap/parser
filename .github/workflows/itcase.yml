@@ -1,6 +1,5 @@
 name: Integration Test
 
-TODO: skip for now as resource limitation
 on:
   push:
     branches:
@@ -17,6 +16,7 @@ on:
 
 jobs:
   test:
+    # TODO: skip for now as resource limitation
     if: false
     runs-on: ubuntu-latest
     steps:
