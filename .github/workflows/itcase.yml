@@ -1,22 +1,23 @@
 name: Integration Test
 
-# TODO: skip for now as resource limitation
-# on:
-#   push:
-#     branches:
-#       - master
-#       - release-5.0
-#       - release-4.0
-#       - release-3.0
-#   pull_request:
-#     branches:
-#       - master
-#       - release-5.0
-#       - release-4.0
-#       - release-3.0
+TODO: skip for now as resource limitation
+on:
+  push:
+    branches:
+      - master
+      - release-5.0
+      - release-4.0
+      - release-3.0
+  pull_request:
+    branches:
+      - master
+      - release-5.0
+      - release-4.0
+      - release-3.0
 
 jobs:
   test:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: checkout
