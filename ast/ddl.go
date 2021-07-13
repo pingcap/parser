@@ -2213,7 +2213,7 @@ const (
 	AlterTableForce
 	AlterTableAddPartitions
 	AlterTableAlterPartition
-	AlterTableAlterPartitionAttributes
+	AlterTablePartitionAttributes
 	AlterTableCoalescePartitions
 	AlterTableDropPartition
 	AlterTableTruncatePartition
@@ -2651,12 +2651,12 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
 		}
-	case AlterTableAlterPartitionAttributes:
+	case AlterTablePartitionAttributes:
 		if len(n.PartitionNames) != 1 {
 			return errors.Errorf("Maybe partition options are combined.")
 		}
 
-		ctx.WriteKeyWord("ALTER PARTITION ")
+		ctx.WriteKeyWord("PARTITION ")
 		ctx.WriteName(n.PartitionNames[0].O)
 		ctx.WritePlain(" ")
 
@@ -3690,30 +3690,13 @@ func (n *PlacementSpec) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-type AttributesActionType int
-
-const (
-	AttributesAdd AttributesActionType = iota + 1
-	AttributesDrop
-)
-
 type AttributesSpec struct {
 	node
 
-	Tp         AttributesActionType
 	Attributes string
 }
 
 func (n *AttributesSpec) Restore(ctx *format.RestoreCtx) error {
-	switch n.Tp {
-	case AttributesAdd:
-		ctx.WriteKeyWord("ADD ")
-	case AttributesDrop:
-		ctx.WriteKeyWord("DROP ")
-	default:
-		return errors.Errorf("invalid AttributesActionType: %d", n.Tp)
-	}
-
 	ctx.WriteKeyWord("ATTRIBUTES")
 	ctx.WritePlain("=")
 	ctx.WriteString(n.Attributes)

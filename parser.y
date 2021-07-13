@@ -1598,9 +1598,13 @@ AlterTablePartitionOpt:
 	PartitionOpt
 	{
 		if $1 != nil {
-			$$ = &ast.AlterTableSpec{
-				Tp:        ast.AlterTablePartition,
-				Partition: $1.(*ast.PartitionOptions),
+			if alterTableSpec, ok := $1.(*ast.AlterTableSpec); ok {
+				$$ = alterTableSpec
+			} else {
+				$$ = &ast.AlterTableSpec{
+					Tp:        ast.AlterTablePartition,
+					Partition: $1.(*ast.PartitionOptions),
+				}
 			}
 		} else {
 			$$ = nil
@@ -1753,15 +1757,13 @@ AlterTableSpec:
 			Statistics:  statsSpec,
 		}
 	}
-|	"ADD" Attributes
+|	Attributes
 	{
-		attributesSpec := &ast.AttributesSpec{
-			Tp:         ast.AttributesAdd,
-			Attributes: $2.(string),
-		}
 		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTableAttributes,
-			AttributesSpec: attributesSpec,
+			Tp: ast.AlterTableAttributes,
+			AttributesSpec: &ast.AttributesSpec{
+				Attributes: $1.(string),
+			},
 		}
 	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
@@ -1770,30 +1772,6 @@ AlterTableSpec:
 			Tp:             ast.AlterTableAlterPartition,
 			PartitionNames: []model.CIStr{model.NewCIStr($3)},
 			PlacementSpecs: $4.([]*ast.PlacementSpec),
-		}
-	}
-|	"ALTER" "PARTITION" Identifier "ADD" Attributes
-	{
-		attributesSpec := &ast.AttributesSpec{
-			Tp:         ast.AttributesAdd,
-			Attributes: $5.(string),
-		}
-		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTableAlterPartitionAttributes,
-			PartitionNames: []model.CIStr{model.NewCIStr($3)},
-			AttributesSpec: attributesSpec,
-		}
-	}
-|	"ALTER" "PARTITION" Identifier "DROP" Attributes
-	{
-		attributesSpec := &ast.AttributesSpec{
-			Tp:         ast.AttributesDrop,
-			Attributes: $5.(string),
-		}
-		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTableAlterPartitionAttributes,
-			PartitionNames: []model.CIStr{model.NewCIStr($3)},
-			AttributesSpec: attributesSpec,
 		}
 	}
 |	"CHECK" "PARTITION" AllOrPartitionNameList
@@ -1852,17 +1830,6 @@ AlterTableSpec:
 			Tp:         ast.AlterTableDropStatistics,
 			IfExists:   $3.(bool),
 			Statistics: statsSpec,
-		}
-	}
-|	"DROP" Attributes
-	{
-		attributesSpec := &ast.AttributesSpec{
-			Tp:         ast.AttributesDrop,
-			Attributes: $2.(string),
-		}
-		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTableAttributes,
-			AttributesSpec: attributesSpec,
 		}
 	}
 |	"EXCHANGE" "PARTITION" Identifier "WITH" "TABLE" TableName WithValidationOpt
@@ -3728,6 +3695,16 @@ PartitionOpt:
 			return 1
 		}
 		$$ = opt
+	}
+|	"PARTITION" Identifier Attributes
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($2)},
+			AttributesSpec: &ast.AttributesSpec{
+				Attributes: $3.(string),
+			},
+		}
 	}
 
 SubPartitionMethod:
