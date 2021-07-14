@@ -811,6 +811,13 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		// This case would be removed once TiDB PR to remove ADMIN RELOAD STATISTICS is merged.
 		{"admin reload statistics", true, "ADMIN RELOAD STATS_EXTENDED"},
 		{"admin reload stats_extended", true, "ADMIN RELOAD STATS_EXTENDED"},
+		{"admin capture bindings ignore table t1", true, "ADMIN CAPTURE BINDINGS IGNORE TABLE `t1`"},
+		{"admin capture bindings ignore table test.t1", true, "ADMIN CAPTURE BINDINGS IGNORE TABLE `test`.`t1`"},
+		{"admin capture bindings not ignore table t1", true, "ADMIN CAPTURE BINDINGS NOT IGNORE TABLE `t1`"},
+		{"admin capture bindings not ignore table test.t1", true, "ADMIN CAPTURE BINDINGS NOT IGNORE TABLE `test`.`t1`"},
+		{"admin capture bindings ignore database db1", true, "ADMIN CAPTURE BINDINGS IGNORE DATABASE `db1`"},
+		{"admin capture bindings not ignore database db1", true, "ADMIN CAPTURE BINDINGS NOT IGNORE DATABASE `db1`"},
+		{"admin capture bindings show ignore", true, "ADMIN CAPTURE BINDINGS SHOW IGNORE"},
 
 		// for on duplicate key update
 		{"INSERT INTO t (a,b,c) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);", true, "INSERT INTO `t` (`a`,`b`,`c`) VALUES (1,2,3),(4,5,6) ON DUPLICATE KEY UPDATE `c`=VALUES(`a`)+VALUES(`b`)"},

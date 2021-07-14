@@ -9781,6 +9781,44 @@ AdminStmt:
 			Tp: ast.AdminCaptureBindings,
 		}
 	}
+|	"ADMIN" "CAPTURE" "BINDINGS" "IGNORE" "TABLE" TableName
+	{
+		$$ = &ast.AdminStmt{
+			Tp:     ast.AdminCaptureFilterTable,
+			Tables: []*ast.TableName{$6.(*ast.TableName)},
+			Ignore: true,
+		}
+	}
+|	"ADMIN" "CAPTURE" "BINDINGS" "NOT" "IGNORE" "TABLE" TableName
+	{
+		$$ = &ast.AdminStmt{
+			Tp:     ast.AdminCaptureFilterTable,
+			Tables: []*ast.TableName{$7.(*ast.TableName)},
+			Ignore: false,
+		}
+	}
+|	"ADMIN" "CAPTURE" "BINDINGS" "IGNORE" "DATABASE" DBName
+	{
+		$$ = &ast.AdminStmt{
+			Tp:     ast.AdminCaptureFilterDB,
+			DBName: $6,
+			Ignore: true,
+		}
+	}
+|	"ADMIN" "CAPTURE" "BINDINGS" "NOT" "IGNORE" "DATABASE" DBName
+	{
+		$$ = &ast.AdminStmt{
+			Tp:     ast.AdminCaptureFilterDB,
+			DBName: $7,
+			Ignore: false,
+		}
+	}
+|	"ADMIN" "CAPTURE" "BINDINGS" "SHOW" "IGNORE"
+	{
+		$$ = &ast.AdminStmt{
+			Tp: ast.AdminShowCaptureFilter,
+		}
+	}
 |	"ADMIN" "EVOLVE" "BINDINGS"
 	{
 		$$ = &ast.AdminStmt{

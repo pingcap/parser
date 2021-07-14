@@ -1737,6 +1737,9 @@ const (
 	AdminShowTelemetry
 	AdminResetTelemetryID
 	AdminReloadStatistics
+	AdminCaptureFilterTable
+	AdminCaptureFilterDB
+	AdminShowCaptureFilter
 )
 
 // HandleRange represents a range where handle value >= Begin and < End.
@@ -1806,9 +1809,11 @@ type AdminStmt struct {
 
 	Tp        AdminStmtType
 	Index     string
+	DBName    string
 	Tables    []*TableName
 	JobIDs    []int64
 	JobNumber int64
+	Ignore    bool
 
 	HandleRanges []HandleRange
 	ShowSlow     *ShowSlow
@@ -1951,6 +1956,26 @@ func (n *AdminStmt) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("RESET TELEMETRY_ID")
 	case AdminReloadStatistics:
 		ctx.WriteKeyWord("RELOAD STATS_EXTENDED")
+	case AdminCaptureFilterTable:
+		ctx.WriteKeyWord("CAPTURE BINDINGS ")
+		if n.Ignore {
+			ctx.WriteKeyWord("IGNORE TABLE ")
+		} else {
+			ctx.WriteKeyWord("NOT IGNORE TABLE ")
+		}
+		if err := restoreTables(); err != nil {
+			return err
+		}
+	case AdminCaptureFilterDB:
+		ctx.WriteKeyWord("CAPTURE BINDINGS ")
+		if n.Ignore {
+			ctx.WriteKeyWord("IGNORE DATABASE ")
+		} else {
+			ctx.WriteKeyWord("NOT IGNORE DATABASE ")
+		}
+		ctx.WriteName(n.DBName)
+	case AdminShowCaptureFilter:
+		ctx.WriteKeyWord("CAPTURE BINDINGS SHOW IGNORE")
 	default:
 		return errors.New("Unsupported AdminStmt type")
 	}
