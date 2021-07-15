@@ -78,6 +78,7 @@ import (
 	and               "AND"
 	as                "AS"
 	asc               "ASC"
+	attributes        "ATTRIBUTES"
 	between           "BETWEEN"
 	bigIntType        "BIGINT"
 	binaryType        "BINARY"
@@ -1283,6 +1284,7 @@ import (
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
+	Attributes                             "Attributes option"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1500,6 +1502,12 @@ PlacementLabelConstraints:
 		$$ = $3
 	}
 
+Attributes:
+	"ATTRIBUTES" "=" stringLit
+	{
+		$$ = $3
+	}
+
 PlacementOptions:
 	PlacementCount
 	{
@@ -1584,9 +1592,13 @@ AlterTablePartitionOpt:
 	PartitionOpt
 	{
 		if $1 != nil {
-			$$ = &ast.AlterTableSpec{
-				Tp:        ast.AlterTablePartition,
-				Partition: $1.(*ast.PartitionOptions),
+			if alterTableSpec, ok := $1.(*ast.AlterTableSpec); ok {
+				$$ = alterTableSpec
+			} else {
+				$$ = &ast.AlterTableSpec{
+					Tp:        ast.AlterTablePartition,
+					Partition: $1.(*ast.PartitionOptions),
+				}
 			}
 		} else {
 			$$ = nil
@@ -1737,6 +1749,15 @@ AlterTableSpec:
 			Tp:          ast.AlterTableAddStatistics,
 			IfNotExists: $3.(bool),
 			Statistics:  statsSpec,
+		}
+	}
+|	Attributes
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp: ast.AlterTableAttributes,
+			AttributesSpec: &ast.AttributesSpec{
+				Attributes: $1.(string),
+			},
 		}
 	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
@@ -3668,6 +3689,16 @@ PartitionOpt:
 			return 1
 		}
 		$$ = opt
+	}
+|	"PARTITION" Identifier Attributes
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($2)},
+			AttributesSpec: &ast.AttributesSpec{
+				Attributes: $3.(string),
+			},
+		}
 	}
 
 SubPartitionMethod:
