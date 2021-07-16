@@ -1350,14 +1350,17 @@ func (s *testParserSuite) TestExpression(c *C) {
 
 		// The ODBC syntax for time/date/timestamp literal.
 		// See: https://dev.mysql.com/doc/refman/5.7/en/date-and-time-literals.html
-		{"select {ts '1989-09-10 11:11:11'}", true, "SELECT _UTF8MB4'1989-09-10 11:11:11'"},
-		{"select {d '1989-09-10'}", true, "SELECT _UTF8MB4'1989-09-10'"},
-		{"select {t '00:00:00.111'}", true, "SELECT _UTF8MB4'00:00:00.111'"},
+		{"select {ts '1989-09-10 11:11:11'}", true, "SELECT TIMESTAMP '1989-09-10 11:11:11'"},
+		{"select {d '1989-09-10'}", true, "SELECT DATE '1989-09-10'"},
+		{"select {t '00:00:00.111'}", true, "SELECT TIME '00:00:00.111'"},
+		{"select * from t where a > {ts '1989-09-10 11:11:11'}", true, "SELECT * FROM `t` WHERE `a`>TIMESTAMP '1989-09-10 11:11:11'"},
+		{"select * from t where a > {ts {abc '1989-09-10 11:11:11'}}", true, "SELECT * FROM `t` WHERE `a`>TIMESTAMP '1989-09-10 11:11:11'"},
 		// If the identifier is not in (t, d, ts), we just ignore it and consider the following expression as the value.
 		// See: https://dev.mysql.com/doc/refman/5.7/en/expressions.html
 		{"select {ts123 '1989-09-10 11:11:11'}", true, "SELECT _UTF8MB4'1989-09-10 11:11:11'"},
 		{"select {ts123 123}", true, "SELECT 123"},
 		{"select {ts123 1 xor 1}", true, "SELECT 1 XOR 1"},
+		{"select * from t where a > {ts123 '1989-09-10 11:11:11'}", true, "SELECT * FROM `t` WHERE `a`>_UTF8MB4'1989-09-10 11:11:11'"},
 		{"select .t.a from t", false, ""},
 	}
 	s.RunTest(c, table)
@@ -2108,6 +2111,7 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{`select * from t as "a"`, false, ""},
 		{`select * from t a`, true, "SELECT * FROM `t` AS `a`"},
 		// reserved keyword can't be used as identifier directly, but A.B pattern is an exception
+		{`select * from ROW`, false, ""},
 		{`select COUNT from DESC`, false, ""},
 		{`select COUNT from SELECT.DESC`, true, "SELECT `COUNT` FROM `SELECT`.`DESC`"},
 		{"use `select`", true, "USE `select`"},
@@ -2669,6 +2673,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t shard_row_id_bits = 1", true, "ALTER TABLE `t` SHARD_ROW_ID_BITS = 1"},
 		{"ALTER TABLE t AUTO_INCREMENT 3", true, "ALTER TABLE `t` AUTO_INCREMENT = 3"},
 		{"ALTER TABLE t AUTO_INCREMENT = 3", true, "ALTER TABLE `t` AUTO_INCREMENT = 3"},
+		{"ALTER TABLE t FORCE AUTO_INCREMENT 3", true, "ALTER TABLE `t` FORCE AUTO_INCREMENT = 3"},
+		{"ALTER TABLE t FORCE AUTO_INCREMENT = 3", true, "ALTER TABLE `t` FORCE AUTO_INCREMENT = 3"},
 		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = DEFAULT;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = DEFAULT"},
 		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = INPLACE;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = INPLACE"},
 		{"ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` mediumtext CHARACTER SET UTF8MB4 COLLATE UTF8MB4_UNICODE_CI NOT NULL , ALGORITHM = COPY;", true, "ALTER TABLE `hello-world@dev`.`User` ADD COLUMN `name` MEDIUMTEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_unicode_ci NOT NULL, ALGORITHM = COPY"},
@@ -3180,6 +3186,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a bigint primary key auto_random(4), b varchar(100)) auto_random_base 200", true, "CREATE TABLE `t` (`a` BIGINT PRIMARY KEY AUTO_RANDOM(4),`b` VARCHAR(100)) AUTO_RANDOM_BASE = 200"},
 		{"alter table t auto_random_base = 50", true, "ALTER TABLE `t` AUTO_RANDOM_BASE = 50"},
 		{"alter table t auto_increment 30, auto_random_base 40", true, "ALTER TABLE `t` AUTO_INCREMENT = 30, AUTO_RANDOM_BASE = 40"},
+		{"alter table t force auto_random_base = 50", true, "ALTER TABLE `t` FORCE AUTO_RANDOM_BASE = 50"},
+		{"alter table t auto_increment 30, force auto_random_base 40", true, "ALTER TABLE `t` AUTO_INCREMENT = 30, FORCE AUTO_RANDOM_BASE = 40"},
 
 		// for alter sequence
 		{"alter sequence seq", false, ""},
@@ -3876,7 +3884,7 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{`CREATE USER 'ttt' REQUIRE SAN 'DNS:mysql-user, URI:spiffe://example.org/myservice'`, true, "CREATE USER `ttt`@`%` REQUIRE SAN 'DNS:mysql-user, URI:spiffe://example.org/myservice'"},
 		{`CREATE USER 'ttt' WITH MAX_QUERIES_PER_HOUR 2;`, true, "CREATE USER `ttt`@`%` WITH MAX_QUERIES_PER_HOUR 2"},
 		{`CREATE USER 'ttt'@'localhost' REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK;`, true, "CREATE USER `ttt`@`localhost` REQUIRE NONE WITH MAX_QUERIES_PER_HOUR 1 MAX_UPDATES_PER_HOUR 10 PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
-		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED BY PASSWORD '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
+		{`CREATE USER 'u1'@'%' IDENTIFIED WITH 'mysql_native_password' AS '' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK ;`, true, "CREATE USER `u1`@`%` IDENTIFIED WITH 'mysql_native_password' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK"},
 		{`CREATE USER 'test'`, true, "CREATE USER `test`@`%`"},
 		{`CREATE USER test`, true, "CREATE USER `test`@`%`"},
 		{"CREATE USER `test`", true, "CREATE USER `test`@`%`"},
@@ -3900,21 +3908,26 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"create user 'test@localhost' password expire never;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE NEVER"},
 		{"create user 'test@localhost' password expire default;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE DEFAULT"},
 		{"create user 'test@localhost' password expire interval 3 day;", true, "CREATE USER `test@localhost`@`%` PASSWORD EXPIRE INTERVAL 3 DAY"},
+		{"CREATE USER 'sha_test'@'localhost' IDENTIFIED WITH 'caching_sha2_password' BY 'sha_test'", true, "CREATE USER `sha_test`@`localhost` IDENTIFIED WITH 'caching_sha2_password' BY 'sha_test'"},
+		{"CREATE USER 'sha_test3'@'localhost' IDENTIFIED WITH 'caching_sha2_password' AS 0x24412430303524255B03496C662C1055127B3B654A2F04207D01485276703644704B76303247474564416A516662346C5868646D32764C6B514F43585A473779565947514F34", true, "CREATE USER `sha_test3`@`localhost` IDENTIFIED WITH 'caching_sha2_password' AS '$A$005$%[\x03Ilf,\x10U\x12{;eJ/\x04 }\x01HRvp6DpKv02GGEdAjQfb4lXhdm2vLkQOCXZG7yVYGQO4'"},
+		{"CREATE USER 'sha_test4'@'localhost' IDENTIFIED WITH 'caching_sha2_password' AS '$A$005$%[\x03Ilf,\x10U\x12{;eJ/\x04 }\x01HRvp6DpKv02GGEdAjQfb4lXhdm2vLkQOCXZG7yVYGQO4'", true, "CREATE USER `sha_test4`@`localhost` IDENTIFIED WITH 'caching_sha2_password' AS '$A$005$%[\x03Ilf,\x10U\x12{;eJ/\x04 }\x01HRvp6DpKv02GGEdAjQfb4lXhdm2vLkQOCXZG7yVYGQO4'"},
+		{"CREATE USER 'nopwd_native'@'localhost' IDENTIFIED WITH 'mysql_native_password'", true, "CREATE USER `nopwd_native`@`localhost` IDENTIFIED WITH 'mysql_native_password'"},
+		{"CREATE USER 'nopwd_sha'@'localhost' IDENTIFIED WITH 'caching_sha2_password'", true, "CREATE USER `nopwd_sha`@`localhost` IDENTIFIED WITH 'caching_sha2_password'"},
 		{"CREATE ROLE `test-role`, `role1`@'localhost'", true, "CREATE ROLE `test-role`@`%`, `role1`@`localhost`"},
 		{"CREATE ROLE `test-role`", true, "CREATE ROLE `test-role`@`%`"},
 		{"CREATE ROLE role1", true, "CREATE ROLE `role1`@`%`"},
 		{"CREATE ROLE `role1`@'localhost'", true, "CREATE ROLE `role1`@`localhost`"},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, "CREATE USER `bug19354014user`@`%`"},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY 'new-password'"},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password as 'hashstring'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED WITH 'mysql_native_password'"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED WITH 'mysql_native_password' BY 'new-password'"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password as 'hashstring'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED WITH 'mysql_native_password' AS 'hashstring'"},
 		{`CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "CREATE USER IF NOT EXISTS `root`@`localhost` IDENTIFIED BY 'new-password'"},
 		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password'"},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY PASSWORD 'hashstring'"},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED WITH 'mysql_native_password' AS 'hashstring'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED WITH 'mysql_native_password' AS 'hashstring'"},
 		{`ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS `root`@`localhost` IDENTIFIED BY 'new-password'"},
 		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password'"},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY PASSWORD 'hashstring'"},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED WITH 'mysql_native_password' AS 'hashstring'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED WITH 'mysql_native_password' AS 'hashstring'"},
 		{`ALTER USER USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER USER() IDENTIFIED BY 'new-password'"},
 		{`ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'"},
 		{"alter user 'test@localhost' password expire;", true, "ALTER USER `test@localhost`@`%` PASSWORD EXPIRE"},
@@ -3957,8 +3970,8 @@ func (s *testParserSuite) TestPrivilege(c *C) {
 		{"GRANT SELECT (col1), INSERT (col1,col2) ON mydb.mytbl TO 'someuser'@'somehost';", true, "GRANT SELECT (`col1`), INSERT (`col1`,`col2`) ON `mydb`.`mytbl` TO `someuser`@`somehost`"},
 		{"grant all privileges on zabbix.* to 'zabbix'@'localhost' identified by 'password';", true, "GRANT ALL ON `zabbix`.* TO `zabbix`@`localhost` IDENTIFIED BY 'password'"},
 		{"GRANT SELECT ON test.* to 'test'", true, "GRANT SELECT ON `test`.* TO `test`@`%`"}, // For issue 2654.
-		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, "GRANT PROCESS, USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO `xxxxxxxxxx`@`%` IDENTIFIED BY PASSWORD 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'"},
-		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED BY PASSWORD '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
+		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, "GRANT PROCESS, USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO `xxxxxxxxxx`@`%` IDENTIFIED WITH 'mysql_native_password' AS 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'"},
+		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER ON *.* TO `root2`@`%` IDENTIFIED WITH 'mysql_native_password' AS '*sdsadsdsadssadsadsadsadsada' WITH GRANT OPTION"},
 		{"GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';", true, "GRANT `role1`@`%`, `role2`@`%` TO `user1`@`localhost`, `user2`@`localhost`"},
 		{"GRANT 'u1' TO 'u1';", true, "GRANT `u1`@`%` TO `u1`@`%`"},
 		{"GRANT 'app_read'@'%','app_write'@'%' TO 'rw_user1'@'localhost'", true, "GRANT `app_read`@`%`, `app_write`@`%` TO `rw_user1`@`localhost`"},
@@ -4408,17 +4421,31 @@ func (s *testParserSuite) TestExplain(c *C) {
 		{"DESCRIBE SCHE.TABL COLUM", true, "DESC `SCHE`.`TABL` `COLUM`"},
 		{"EXPLAIN ANALYZE SELECT 1", true, "EXPLAIN ANALYZE SELECT 1"},
 		{"EXPLAIN FORMAT = 'dot' SELECT 1", true, "EXPLAIN FORMAT = 'dot' SELECT 1"},
+		{"EXPLAIN FORMAT = DOT SELECT 1", true, "EXPLAIN FORMAT = 'DOT' SELECT 1"},
 		{"EXPLAIN FORMAT = 'row' SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
 		{"EXPLAIN FORMAT = 'ROW' SELECT 1", true, "EXPLAIN FORMAT = 'ROW' SELECT 1"},
+		{"EXPLAIN FORMAT = 'BRIEF' SELECT 1", true, "EXPLAIN FORMAT = 'BRIEF' SELECT 1"},
+		{"EXPLAIN FORMAT = BRIEF SELECT 1", true, "EXPLAIN FORMAT = 'BRIEF' SELECT 1"},
+		{"EXPLAIN FORMAT = 'verbose' SELECT 1", true, "EXPLAIN FORMAT = 'verbose' SELECT 1"},
+		{"EXPLAIN FORMAT = 'VERBOSE' SELECT 1", true, "EXPLAIN FORMAT = 'VERBOSE' SELECT 1"},
+		{"EXPLAIN FORMAT = VERBOSE SELECT 1", true, "EXPLAIN FORMAT = 'VERBOSE' SELECT 1"},
 		{"EXPLAIN SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
 		{"EXPLAIN FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
 		{"EXPLAIN FOR connection 42", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 42"},
 		{"EXPLAIN FORMAT = 'dot' FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'dot' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = DOT FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'DOT' FOR CONNECTION 1"},
 		{"EXPLAIN FORMAT = 'row' FOR connection 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
-		{"EXPLAIN FORMAT = TRADITIONAL FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
-		{"EXPLAIN FORMAT = TRADITIONAL SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
-		{"EXPLAIN FORMAT = JSON FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'json' FOR CONNECTION 1"},
-		{"EXPLAIN FORMAT = JSON SELECT 1", true, "EXPLAIN FORMAT = 'json' SELECT 1"},
+		{"EXPLAIN FORMAT = ROW FOR connection 1", true, "EXPLAIN FORMAT = 'ROW' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = TRADITIONAL FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'TRADITIONAL' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = TRADITIONAL SELECT 1", true, "EXPLAIN FORMAT = 'TRADITIONAL' SELECT 1"},
+		{"EXPLAIN FORMAT = BRIEF SELECT 1", true, "EXPLAIN FORMAT = 'BRIEF' SELECT 1"},
+		{"EXPLAIN FORMAT = 'brief' SELECT 1", true, "EXPLAIN FORMAT = 'brief' SELECT 1"},
+		{"EXPLAIN FORMAT = DOT SELECT 1", true, "EXPLAIN FORMAT = 'DOT' SELECT 1"},
+		{"EXPLAIN FORMAT = 'dot' SELECT 1", true, "EXPLAIN FORMAT = 'dot' SELECT 1"},
+		{"EXPLAIN FORMAT = VERBOSE SELECT 1", true, "EXPLAIN FORMAT = 'VERBOSE' SELECT 1"},
+		{"EXPLAIN FORMAT = 'verbose' SELECT 1", true, "EXPLAIN FORMAT = 'verbose' SELECT 1"},
+		{"EXPLAIN FORMAT = JSON FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'JSON' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = JSON SELECT 1", true, "EXPLAIN FORMAT = 'JSON' SELECT 1"},
 		{"EXPLAIN FORMAT = 'hint' SELECT 1", true, "EXPLAIN FORMAT = 'hint' SELECT 1"},
 		{"EXPLAIN ALTER TABLE t1 ADD INDEX (a)", true, "EXPLAIN FORMAT = 'row' ALTER TABLE `t1` ADD INDEX(`a`)"},
 		{"EXPLAIN ALTER TABLE t1 ADD a varchar(255)", true, "EXPLAIN FORMAT = 'row' ALTER TABLE `t1` ADD COLUMN `a` VARCHAR(255)"},
@@ -5967,4 +5994,71 @@ func (s *testParserSuite) TestPartitionKeyAlgorithm(c *C) {
 	}
 
 	s.RunTest(c, table)
+}
+
+// server side help syntax
+func (s *testParserSuite) TestHelp(c *C) {
+	table := []testCase{
+		{"HELP 'select'", true, "HELP 'select'"},
+	}
+
+	s.RunTest(c, table)
+}
+
+// For CTE bindings.
+func (s *testParserSuite) TestCTEBindings(c *C) {
+	table := []testCase{
+		{"WITH `cte` AS (SELECT * from t) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT * FROM `test`.`t`) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH `cte` (col1, col2) AS (SELECT * from t UNION ALL SELECT 3,4) SELECT col1, col2 FROM cte;", true, "WITH `cte` (`col1`, `col2`) AS (SELECT * FROM `test`.`t` UNION ALL SELECT 3,4) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH `cte` AS (SELECT * from t), cte2 as (select * from cte) SELECT `col1`,`col2` FROM `cte`", true, "WITH `cte` AS (SELECT * FROM `test`.`t`), `cte2` AS (SELECT * FROM `cte`) SELECT `col1`,`col2` FROM `cte`"},
+		{"WITH RECURSIVE cte (n) AS (  SELECT * from t  UNION ALL  SELECT n + 1 FROM cte WHERE n < 5)SELECT * FROM cte;", true, "WITH RECURSIVE `cte` (`n`) AS (SELECT * FROM `test`.`t` UNION ALL SELECT `n` + 1 FROM `cte` WHERE `n` < 5) SELECT * FROM `cte`"},
+		{"with cte(a) as (select * from t) update t, cte set t.a=1  where t.a=cte.a;", true, "WITH `cte` (`a`) AS (SELECT * FROM `test`.`t`) UPDATE (`test`.`t`) JOIN `cte` SET `t`.`a`=1 WHERE `t`.`a` = `cte`.`a`"},
+		{"with cte(a) as (select * from t) delete t from t, cte where t.a=cte.a;", true, "WITH `cte` (`a`) AS (SELECT * FROM `test`.`t`) DELETE `test`.`t` FROM (`test`.`t`) JOIN `cte` WHERE `t`.`a` = `cte`.`a`"},
+		{"WITH cte1 AS (SELECT * from t) SELECT * FROM (WITH cte2 AS (SELECT * from cte1) SELECT * FROM cte2 JOIN cte1) AS dt;", true, "WITH `cte1` AS (SELECT * FROM `test`.`t`) SELECT * FROM (WITH `cte2` AS (SELECT * FROM `cte1`) SELECT * FROM `cte2` JOIN `cte1`) AS `dt`"},
+		{"WITH cte AS (SELECT * from t) SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM cte;", true, "WITH `cte` AS (SELECT * FROM `test`.`t`) SELECT /*+ MAX_EXECUTION_TIME(1000)*/ * FROM `cte`"},
+		{"with cte as (table t) table cte;", true, "WITH `cte` AS (TABLE `test`.`t`) TABLE `cte`"},
+		{"with cte as (select * from t) select 1 union with cte as (select * from t) select * from cte;", false, ""},
+		{"with cte as (select * from t) (select * from t);", true, "WITH `cte` AS (SELECT * FROM `test`.`t`) (SELECT * FROM `test`.`t`)"},
+		{"with cte as (select 1) (select 1 union select * from t)", true, "WITH `cte` AS (SELECT 1) (SELECT 1 UNION SELECT * FROM `test`.`t`)"},
+		{"select * from (with cte as (select * from t) select 1 union select * from t) qn", true, "SELECT * FROM (WITH `cte` AS (SELECT * FROM `test`.`t`) SELECT 1 UNION SELECT * FROM `test`.`t`) AS `qn`"},
+		{"select * from t where 1 > (with cte as (select * from t) select * from cte)", true, "SELECT * FROM `test`.`t` WHERE 1 > (WITH `cte` AS (SELECT * FROM `test`.`t`) SELECT * FROM `cte`)"},
+		{"( with cte(n) as ( select * from t )  select n+1 from cte  union select n+2 from cte) union select 1", true, "(WITH `cte` (`n`) AS (SELECT * FROM `test`.`t`) SELECT `n` + 1 FROM `cte` UNION SELECT `n` + 2 FROM `cte`) UNION SELECT 1"},
+		{"( with cte(n) as ( select * from t )  select n+1 from cte) union select * from t", true, "(WITH `cte` (`n`) AS (SELECT * FROM `test`.`t`) SELECT `n` + 1 FROM `cte`) UNION SELECT * FROM `test`.`t`"},
+		{"with cte as (select * from t union select * from cte) select * from cte", true, "WITH `cte` AS (SELECT * FROM `test`.`t` UNION SELECT * FROM `test`.`cte`) SELECT * FROM `cte`"},
+	}
+
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	for _, t := range table {
+		_, _, err := parser.Parse(t.src, "", "")
+		comment := Commentf("source %v", t.src)
+		if !t.ok {
+			c.Assert(err, NotNil, comment)
+			continue
+		}
+		c.Assert(err, IsNil, comment)
+		// restore correctness test
+		if t.ok {
+			var sb strings.Builder
+			comment := Commentf("source %v", t.src)
+			stmts, _, err := parser.Parse(t.src, "", "")
+			c.Assert(err, IsNil, comment)
+			restoreSQLs := ""
+			for _, stmt := range stmts {
+				sb.Reset()
+				ctx := NewRestoreCtx(RestoreStringSingleQuotes|RestoreSpacesAroundBinaryOperation|RestoreStringWithoutCharset|RestoreNameBackQuotes, &sb)
+				ctx.DefaultDB = "test"
+				err = stmt.Restore(ctx)
+				c.Assert(err, IsNil, comment)
+				restoreSQL := sb.String()
+				comment = Commentf("source %v; restore %v", t.src, restoreSQL)
+				if restoreSQLs != "" {
+					restoreSQLs += "; "
+				}
+				restoreSQLs += restoreSQL
+			}
+			comment = Commentf("restore %v; expect %v", restoreSQLs, t.restore)
+			c.Assert(restoreSQLs, Equals, t.restore, comment)
+		}
+	}
 }

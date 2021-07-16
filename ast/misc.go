@@ -52,6 +52,7 @@ var (
 	_ StmtNode = &DropBindingStmt{}
 	_ StmtNode = &ShutdownStmt{}
 	_ StmtNode = &RenameUserStmt{}
+	_ StmtNode = &HelpStmt{}
 
 	_ Node = &PrivElem{}
 	_ Node = &VariableAssignment{}
@@ -64,33 +65,14 @@ const (
 	Serializable    = "SERIALIZABLE"
 	RepeatableRead  = "REPEATABLE-READ"
 
-	// Valid formats for explain statement.
-	ExplainFormatROW     = "row"
-	ExplainFormatDOT     = "dot"
-	ExplainFormatJSON    = "json"
-	ExplainFormatHint    = "hint"
-	ExplainFormatVerbose = "verbose"
-	ExplainFormatBrief   = "brief"
-	PumpType             = "PUMP"
-	DrainerType          = "DRAINER"
+	PumpType    = "PUMP"
+	DrainerType = "DRAINER"
 )
 
 // Transaction mode constants.
 const (
 	Optimistic  = "OPTIMISTIC"
 	Pessimistic = "PESSIMISTIC"
-)
-
-var (
-	// ExplainFormats stores the valid formats for explain statement, used by validator.
-	ExplainFormats = []string{
-		ExplainFormatROW,
-		ExplainFormatDOT,
-		ExplainFormatJSON,
-		ExplainFormatHint,
-		ExplainFormatVerbose,
-		ExplainFormatBrief,
-	}
 )
 
 // TypeOpt is used for parsing data type option from SQL.
@@ -112,16 +94,21 @@ type AuthOption struct {
 	ByAuthString bool
 	AuthString   string
 	HashString   string
-	// TODO: support auth_plugin
+	AuthPlugin   string
 }
 
 // Restore implements Node interface.
 func (n *AuthOption) Restore(ctx *format.RestoreCtx) error {
-	ctx.WriteKeyWord("IDENTIFIED BY ")
+	ctx.WriteKeyWord("IDENTIFIED")
+	if n.AuthPlugin != "" {
+		ctx.WriteKeyWord(" WITH ")
+		ctx.WriteString(n.AuthPlugin)
+	}
 	if n.ByAuthString {
+		ctx.WriteKeyWord(" BY ")
 		ctx.WriteString(n.AuthString)
-	} else {
-		ctx.WriteKeyWord("PASSWORD ")
+	} else if n.HashString != "" {
+		ctx.WriteKeyWord(" AS ")
 		ctx.WriteString(n.HashString)
 	}
 	return nil
@@ -1096,18 +1083,37 @@ func (n *UserSpec) EncodedPassword() (string, bool) {
 
 	opt := n.AuthOpt
 	if opt.ByAuthString {
-		return auth.EncodePassword(opt.AuthString), true
+		switch opt.AuthPlugin {
+		case mysql.AuthCachingSha2Password:
+			return auth.NewSha2Password(opt.AuthString), true
+		default:
+			return auth.EncodePassword(opt.AuthString), true
+		}
+	}
+
+	// In case we have 'IDENTIFIED WITH <plugin>' but no 'BY <password>' to set an empty password.
+	if opt.HashString == "" {
+		return opt.HashString, true
 	}
 
 	// Not a legal password string.
-	if len(opt.HashString) != 41 || !strings.HasPrefix(opt.HashString, "*") {
+	switch opt.AuthPlugin {
+	case mysql.AuthCachingSha2Password:
+		if len(opt.HashString) != mysql.SHAPWDHashLen {
+			return "", false
+		}
+	case "", mysql.AuthNativePassword:
+		if len(opt.HashString) != (mysql.PWDHashLen+1) || !strings.HasPrefix(opt.HashString, "*") {
+			return "", false
+		}
+	default:
 		return "", false
 	}
 	return opt.HashString, true
 }
 
 const (
-	TslNone = iota
+	TlsNone = iota
 	Ssl
 	X509
 	Cipher
@@ -1123,7 +1129,7 @@ type TLSOption struct {
 
 func (t *TLSOption) Restore(ctx *format.RestoreCtx) error {
 	switch t.Type {
-	case TslNone:
+	case TlsNone:
 		ctx.WriteKeyWord("NONE")
 	case Ssl:
 		ctx.WriteKeyWord("SSL")
@@ -2441,6 +2447,31 @@ func (n *ShutdownStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*ShutdownStmt)
+	return v.Leave(n)
+}
+
+// HelpStmt is a statement for server side help
+// See https://dev.mysql.com/doc/refman/8.0/en/help.html
+type HelpStmt struct {
+	stmtNode
+
+	Topic string
+}
+
+// Restore implements Node interface.
+func (n *HelpStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("HELP ")
+	ctx.WriteString(n.Topic)
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *HelpStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*HelpStmt)
 	return v.Leave(n)
 }
 

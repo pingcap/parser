@@ -404,6 +404,7 @@ import (
 	global                "GLOBAL"
 	grants                "GRANTS"
 	hash                  "HASH"
+	help                  "HELP"
 	histogram             "HISTOGRAM"
 	history               "HISTORY"
 	hosts                 "HOSTS"
@@ -627,11 +628,13 @@ import (
 	bitOr                 "BIT_OR"
 	bitXor                "BIT_XOR"
 	bound                 "BOUND"
+	briefType             "BRIEF"
 	cast                  "CAST"
 	copyKwd               "COPY"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
+	dotType               "DOT"
 	exact                 "EXACT"
 	extract               "EXTRACT"
 	flashback             "FLASHBACK"
@@ -682,6 +685,7 @@ import (
 	follower              "FOLLOWER"
 	leader                "LEADER"
 	learner               "LEARNER"
+	verboseType           "VERBOSE"
 	voter                 "VOTER"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
@@ -901,6 +905,7 @@ import (
 	CreateViewSelectOpt    "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	BindableStmt           "Statement that can be created binding on"
 	UpdateStmtNoWith       "Update statement without CTE clause"
+	HelpStmt               "HELP statement"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -977,6 +982,7 @@ import (
 	Fields                                 "Fields clause"
 	FieldList                              "field expression list"
 	FlushOption                            "Flush option"
+	ForceOpt                               "Force opt"
 	InstanceOption                         "Instance option"
 	FulltextSearchModifierOpt              "Fulltext modifier"
 	PluginNameList                         "Plugin Name List"
@@ -1319,7 +1325,6 @@ import (
 	RowOrRows         "ROW or ROWS"
 
 %type	<ident>
-	ODBCDateTimeType                "ODBC type keywords for date and time literals"
 	Identifier                      "identifier or unreserved keyword"
 	NotKeywordToken                 "Tokens not mysql keyword but treated specially"
 	UnReservedKeyword               "MySQL unreserved keywords"
@@ -1332,6 +1337,7 @@ import (
 	VariableName                    "A simple Identifier like xx or the xx.xx form"
 	ConfigItemName                  "A config item like aa or aa.bb or aa.bb-cc.dd"
 	AuthString                      "Password string value"
+	AuthPlugin                      "Authentication plugin name"
 	CharsetName                     "Character set name"
 	CollationName                   "Collation name"
 	ColumnFormat                    "Column format"
@@ -4459,13 +4465,11 @@ ExplainStmt:
 
 ExplainFormatType:
 	"TRADITIONAL"
-	{
-		$$ = "row"
-	}
 |	"JSON"
-	{
-		$$ = "json"
-	}
+|	"ROW"
+|	"DOT"
+|	"BRIEF"
+|	"VERBOSE"
 
 /*******************************************************************
  * Backup / restore / import statements
@@ -4971,7 +4975,7 @@ Expression:
 	{
 		expr, ok := $2.(*ast.ExistsSubqueryExpr)
 		if ok {
-			expr.Not = true
+			expr.Not = !expr.Not
 			$$ = $2
 		} else {
 			$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
@@ -5278,16 +5282,6 @@ Field:
 	{
 		expr := $1
 		asName := $2
-		$$ = &ast.SelectField{Expr: expr, AsName: model.NewCIStr(asName)}
-	}
-|	'{' Identifier Expression '}' FieldAsNameOpt
-	{
-		/*
-		 * ODBC escape syntax.
-		 * See https://dev.mysql.com/doc/refman/5.7/en/expressions.html
-		 */
-		expr := $3
-		asName := $5
 		$$ = &ast.SelectField{Expr: expr, AsName: model.NewCIStr(asName)}
 	}
 
@@ -5611,6 +5605,7 @@ UnReservedKeyword:
 |	"GENERAL"
 |	"GLOBAL"
 |	"HASH"
+|	"HELP"
 |	"HOUR"
 |	"INSERT_METHOD"
 |	"LESS"
@@ -5927,11 +5922,13 @@ NotKeywordToken:
 |	"BIT_AND"
 |	"BIT_OR"
 |	"BIT_XOR"
+|	"BRIEF"
 |	"CAST"
 |	"COPY"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
+|	"DOT"
 |	"EXTRACT"
 |	"GET_FORMAT"
 |	"GROUP_CONCAT"
@@ -5983,6 +5980,7 @@ NotKeywordToken:
 |	"FOLLOWER"
 |	"LEADER"
 |	"LEARNER"
+|	"VERBOSE"
 |	"VOTER"
 
 /************************************************************************************
@@ -6182,20 +6180,6 @@ ReplaceIntoStmt:
 		x.Table = &ast.TableRefsClause{TableRefs: &ast.Join{Left: ts}}
 		x.PartitionNames = $5.([]model.CIStr)
 		$$ = x
-	}
-
-ODBCDateTimeType:
-	"d"
-	{
-		$$ = ast.DateLiteral
-	}
-|	"t"
-	{
-		$$ = ast.TimeLiteral
-	}
-|	"ts"
-	{
-		$$ = ast.TimestampLiteral
 	}
 
 Literal:
@@ -6552,6 +6536,30 @@ SimpleExpr:
 		sq.Exists = true
 		$$ = &ast.ExistsSubqueryExpr{Sel: sq}
 	}
+|	'{' Identifier Expression '}'
+	{
+		/*
+		 * ODBC escape syntax.
+		 * See https://dev.mysql.com/doc/refman/5.7/en/expressions.html
+		 */
+		tp := $3.GetType()
+		switch $2 {
+		case "d":
+			tp.Charset = ""
+			tp.Collate = ""
+			$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.DateLiteral), Args: []ast.ExprNode{$3}}
+		case "t":
+			tp.Charset = ""
+			tp.Collate = ""
+			$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.TimeLiteral), Args: []ast.ExprNode{$3}}
+		case "ts":
+			tp.Charset = ""
+			tp.Collate = ""
+			$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.TimestampLiteral), Args: []ast.ExprNode{$3}}
+		default:
+			$$ = $3
+		}
+	}
 |	"BINARY" SimpleExpr %prec neg
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/cast-functions.html#operator_binary
@@ -6797,13 +6805,6 @@ FunctionCallKeyword:
 |	"PASSWORD" '(' ExpressionListOpt ')'
 	{
 		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr(ast.PasswordFunc), Args: $3.([]ast.ExprNode)}
-	}
-|	'{' ODBCDateTimeType stringLit '}'
-	{
-		// This is ODBC syntax for date and time literals.
-		// See: https://dev.mysql.com/doc/refman/5.7/en/date-and-time-literals.html
-		expr := ast.NewValueExpr($3, parser.charset, parser.collation)
-		$$ = &ast.FuncCallExpr{FnName: model.NewCIStr($2), Args: []ast.ExprNode{expr}}
 	}
 
 FunctionCallNonKeyword:
@@ -7780,6 +7781,12 @@ ShutdownStmt:
 	"SHUTDOWN"
 	{
 		$$ = &ast.ShutdownStmt{}
+	}
+
+HelpStmt:
+	"HELP" stringLit
+	{
+		$$ = &ast.HelpStmt{Topic: $2}
 	}
 
 SelectStmtBasic:
@@ -10579,6 +10586,7 @@ Statement:
 |	UnlockTablesStmt
 |	LockTablesStmt
 |	ShutdownStmt
+|	HelpStmt
 
 TraceableStmt:
 	DeleteFromStmt
@@ -10699,17 +10707,17 @@ TableOption:
 		$$ = &ast.TableOption{Tp: ast.TableOptionCollate, StrValue: $4,
 			UintValue: ast.TableOptionCharsetWithoutConvertTo}
 	}
-|	"AUTO_INCREMENT" EqOpt LengthNum
+|	ForceOpt "AUTO_INCREMENT" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $3.(uint64)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIncrement, UintValue: $4.(uint64), BoolValue: $1.(bool)}
 	}
 |	"AUTO_ID_CACHE" EqOpt LengthNum
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionAutoIdCache, UintValue: $3.(uint64)}
 	}
-|	"AUTO_RANDOM_BASE" EqOpt LengthNum
+|	ForceOpt "AUTO_RANDOM_BASE" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $3.(uint64)}
+		$$ = &ast.TableOption{Tp: ast.TableOptionAutoRandomBase, UintValue: $4.(uint64), BoolValue: $1.(bool)}
 	}
 |	"AVG_ROW_LENGTH" EqOpt LengthNum
 	{
@@ -10842,6 +10850,16 @@ TableOption:
 	{
 		// Parse it but will ignore it
 		$$ = &ast.TableOption{Tp: ast.TableOptionEncryption, StrValue: $3}
+	}
+
+ForceOpt:
+	/* empty */
+	{
+		$$ = false
+	}
+|	"FORCE"
+	{
+		$$ = true
 	}
 
 StatsPersistentVal:
@@ -11839,7 +11857,7 @@ RequireClause:
 	"REQUIRE" "NONE"
 	{
 		t := &ast.TLSOption{
-			Type: ast.TslNone,
+			Type: ast.TlsNone,
 		}
 		$$ = []*ast.TLSOption{t}
 	}
@@ -11995,32 +12013,44 @@ AuthOption:
 			ByAuthString: true,
 		}
 	}
-|	"IDENTIFIED" "WITH" StringName
-	{
-		$$ = nil
-	}
-|	"IDENTIFIED" "WITH" StringName "BY" AuthString
+|	"IDENTIFIED" "WITH" AuthPlugin
 	{
 		$$ = &ast.AuthOption{
+			AuthPlugin: $3,
+		}
+	}
+|	"IDENTIFIED" "WITH" AuthPlugin "BY" AuthString
+	{
+		$$ = &ast.AuthOption{
+			AuthPlugin:   $3,
 			AuthString:   $5,
 			ByAuthString: true,
 		}
 	}
-|	"IDENTIFIED" "WITH" StringName "AS" HashString
+|	"IDENTIFIED" "WITH" AuthPlugin "AS" HashString
 	{
 		$$ = &ast.AuthOption{
+			AuthPlugin: $3,
 			HashString: $5,
 		}
 	}
 |	"IDENTIFIED" "BY" "PASSWORD" HashString
 	{
 		$$ = &ast.AuthOption{
+			AuthPlugin: mysql.AuthNativePassword,
 			HashString: $4,
 		}
 	}
 
+AuthPlugin:
+	StringName
+
 HashString:
 	stringLit
+|	hexLit
+	{
+		$$ = $1.(ast.BinaryLiteral).ToString()
+	}
 
 RoleSpec:
 	Rolename
