@@ -700,6 +700,15 @@ func (n *SelectField) Restore(ctx *format.RestoreCtx) error {
 		}
 	}
 	if n.Expr != nil {
+		// https://github.com/pingcap/tidb/issues/24933
+		// `count(*)` will be written to `count(1)`.
+		if aggExpr, ok := n.Expr.(*AggregateFuncExpr); ok {
+			if strings.ToLower(aggExpr.F) == AggFuncCount && strings.Contains(n.Text(), "*") {
+				ctx.WriteKeyWord(aggExpr.F)
+				ctx.WritePlain("(*)")
+				return nil
+			}
+		}
 		if err := n.Expr.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore SelectField.Expr")
 		}
