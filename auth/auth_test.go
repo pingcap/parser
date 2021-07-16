@@ -27,3 +27,22 @@ type testAuthSuite struct {
 func TestT(t *testing.T) {
 	TestingT(t)
 }
+
+func (s *testAuthSuite) TestEscapeAccountName(c *C) {
+	c.Assert(EscapeAccountName(""), Equals, "''")
+	c.Assert(EscapeAccountName("User"), Equals, "'User'")
+	c.Assert(EscapeAccountName("User's"), Equals, "'User''s'")
+	c.Assert(EscapeAccountName("User is me"), Equals, "'User is me'")
+	c.Assert(EscapeAccountName(`u'v"w\'x\"y@z`+"`a"+`\b\\c`), Equals, "'u''v\"w\\''x\\\"y@z`a\\b\\\\c'") // u'v"\'x\"y@z`a\b\\c -> 'u''v"\''x\"y@z`a\b\\c'
+	c.Assert(EscapeAccountName("u'v\"w\\'x\\\"y@z`a\\b\\\\c"), Equals, `'u''v"w\''x\"y@z`+"`"+`a\b\\c'`) // u'v"\'x\"y@z`a\b\\c -> 'u''v"\''x\"y@z`a\b\\c'
+	u := UserIdentity{Username: "U & I @ Party", Hostname: "10.%", CurrentUser: false, AuthUsername: "root's friend", AuthHostname: "server"}
+	c.Assert(u.String(), Equals, "'U & I @ Party'@'10.%'")
+	c.Assert(u.AuthIdentityString(), Equals, "'root''s friend'@'server'")
+	u = UserIdentity{Username: "", Hostname: "", CurrentUser: false, AuthUsername: "ceo", AuthHostname: "%"}
+	c.Assert(u.String(), Equals, "''@''")
+	c.Assert(u.AuthIdentityString(), Equals, "'ceo'@'%'")
+	var uNil *UserIdentity = nil
+	c.Assert(uNil.String(), Equals, "")
+	r := RoleIdentity{Username: "Admin", Hostname: "192.168.%"}
+	c.Assert(r.String(), Equals, "'Admin'@'192.168.%'")
+}

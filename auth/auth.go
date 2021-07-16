@@ -15,6 +15,7 @@ package auth
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/parser/format"
 )
@@ -40,19 +41,24 @@ func (user *UserIdentity) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
-// String converts UserIdentity to the format user@host.
+func EscapeAccountName(s string) string {
+	// We do not have access to the sql_mode here,
+	// so assume NO_BACKSLASH_ESCAPES in effect,
+	// since it is still correct if not set.
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
+}
+
+// String converts UserIdentity to the format 'user'@'host'.
 func (user *UserIdentity) String() string {
-	// TODO: Escape username and hostname.
 	if user == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s@%s", user.Username, user.Hostname)
+	return fmt.Sprintf("%s@%s", EscapeAccountName(user.Username), EscapeAccountName(user.Hostname))
 }
 
-// AuthIdentityString returns matched identity in user@host format
+// AuthIdentityString returns matched identity in 'user'@'host' format
 func (user *UserIdentity) AuthIdentityString() string {
-	// TODO: Escape username and hostname.
-	return fmt.Sprintf("%s@%s", user.AuthUsername, user.AuthHostname)
+	return fmt.Sprintf("%s@%s", EscapeAccountName(user.AuthUsername), EscapeAccountName(user.AuthHostname))
 }
 
 type RoleIdentity struct {
@@ -69,8 +75,7 @@ func (role *RoleIdentity) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
-// String converts UserIdentity to the format user@host.
+// String converts UserIdentity to the format 'user'@'host'.
 func (role *RoleIdentity) String() string {
-	// TODO: Escape username and hostname.
-	return fmt.Sprintf("`%s`@`%s`", role.Username, role.Hostname)
+	return fmt.Sprintf("%s@%s", EscapeAccountName(role.Username), EscapeAccountName(role.Hostname))
 }
