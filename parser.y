@@ -370,6 +370,7 @@ import (
 	discard               "DISCARD"
 	disk                  "DISK"
 	do                    "DO"
+	dump                  "DUMP"
 	duplicate             "DUPLICATE"
 	dynamic               "DYNAMIC"
 	enable                "ENABLE"
@@ -491,6 +492,7 @@ import (
 	per_db                "PER_DB"
 	per_table             "PER_TABLE"
 	pipesAsOr
+	plan                  "PLAN"
 	plugins               "PLUGINS"
 	policy                "POLICY"
 	preSplitRegions       "PRE_SPLIT_REGIONS"
@@ -511,6 +513,7 @@ import (
 	rateLimit             "RATE_LIMIT"
 	rebuild               "REBUILD"
 	recover               "RECOVER"
+	recreator             "RECREATOR"
 	redundant             "REDUNDANT"
 	reload                "RELOAD"
 	remove                "REMOVE"
@@ -872,6 +875,7 @@ import (
 	LoadDataStmt           "Load data statement"
 	LoadStatsStmt          "Load statistic statement"
 	LockTablesStmt         "Lock tables statement"
+	PlanRecreatorStmt      "Plan recreator statement"
 	PreparedStmt           "PreparedStmt"
 	PurgeImportStmt        "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt             "SELECT statement"
@@ -5581,6 +5585,7 @@ UnReservedKeyword:
 |	"DAY"
 |	"DEALLOCATE"
 |	"DO"
+|	"DUMP"
 |	"DUPLICATE"
 |	"DYNAMIC"
 |	"ENCRYPTION"
@@ -5623,6 +5628,7 @@ UnReservedKeyword:
 |	"PROXY"
 |	"QUICK"
 |	"REBUILD"
+|	"RECREATOR"
 |	"REDUNDANT"
 |	"REORGANIZE"
 |	"RESTART"
@@ -5718,6 +5724,7 @@ UnReservedKeyword:
 |	"PROFILES"
 |	"MICROSECOND"
 |	"MINUTE"
+|	"PLAN"
 |	"PLUGINS"
 |	"PRECEDING"
 |	"QUERY"
@@ -10562,6 +10569,7 @@ Statement:
 |	KillStmt
 |	LoadDataStmt
 |	LoadStatsStmt
+|	PlanRecreatorStmt
 |	PreparedStmt
 |	PurgeImportStmt
 |	RollbackStmt
@@ -13157,5 +13165,103 @@ RowStmt:
 	"ROW" RowValue
 	{
 		$$ = &ast.RowExpr{Values: $2.([]ast.ExprNode)}
+	}
+
+/********************************************************************
+ *
+ * Plan Recreator Statement
+ * 
+ * PLAN RECREATOR
+ * 		[DUMP EXPLAIN
+ *			[ANALYZE]
+ *			{ExplainableStmt
+ *			| [WHERE where_condition]
+ *			  [ORDER BY {col_name | expr | position}
+ *    			[ASC | DESC], ... [WITH ROLLUP]]
+ *  		  [LIMIT {[offset,] row_count | row_count OFFSET offset}]}
+ *		| LOAD 'file_name']
+ *******************************************************************/
+PlanRecreatorStmt:
+	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" ExplainableStmt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    $5,
+			Analyze: false,
+			Load:    false,
+			File:    "",
+			Where:   nil,
+			OrderBy: nil,
+			Limit:   nil,
+		}
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" "ANALYZE" ExplainableStmt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    $6,
+			Analyze: true,
+			Load:    false,
+			File:    "",
+			Where:   nil,
+			OrderBy: nil,
+			Limit:   nil,
+		}
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" "SLOW" "QUERY" WhereClauseOptional OrderByOptional SelectStmtLimitOpt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    nil,
+			Analyze: false,
+			Load:    false,
+			File:    "",
+		}
+		if $7 != nil {
+			x.Where = $7.(ast.ExprNode)
+		}
+		if $8 != nil {
+			x.OrderBy = $8.(*ast.OrderByClause)
+		}
+		if $9 != nil {
+			x.Limit = $9.(*ast.Limit)
+		}
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" "ANALYZE" "SLOW" "QUERY" WhereClauseOptional OrderByOptional SelectStmtLimitOpt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    nil,
+			Analyze: true,
+			Load:    false,
+			File:    "",
+		}
+		if $8 != nil {
+			x.Where = $8.(ast.ExprNode)
+		}
+		if $9 != nil {
+			x.OrderBy = $9.(*ast.OrderByClause)
+		}
+		if $10 != nil {
+			x.Limit = $10.(*ast.Limit)
+		}
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "LOAD" stringLit
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    nil,
+			Analyze: false,
+			Load:    true,
+			File:    $4,
+			Where:   nil,
+			OrderBy: nil,
+			Limit:   nil,
+		}
+
+		$$ = x
 	}
 %%
