@@ -599,7 +599,6 @@ import (
 	trace                 "TRACE"
 	traditional           "TRADITIONAL"
 	transaction           "TRANSACTION"
-	translate             "TRANSLATE"
 	triggers              "TRIGGERS"
 	truncate              "TRUNCATE"
 	unbounded             "UNBOUNDED"
