@@ -599,6 +599,7 @@ import (
 	trace                 "TRACE"
 	traditional           "TRADITIONAL"
 	transaction           "TRANSACTION"
+	translate             "TRANSLATE"
 	triggers              "TRIGGERS"
 	truncate              "TRUNCATE"
 	unbounded             "UNBOUNDED"
@@ -749,6 +750,7 @@ import (
 	builtinSysDate
 	builtinStddevPop
 	builtinStddevSamp
+	builtinTranslate
 	builtinTrim
 	builtinUser
 	builtinVarPop
@@ -6967,6 +6969,13 @@ FunctionCallNonKeyword:
 		}
 	}
 |	FunctionNameSequence
+|	builtinTranslate '(' Expression ',' Expression ',' Expression ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{$3, $5, $7},
+		}
+	}
 
 GetFormatSelector:
 	"DATE"
