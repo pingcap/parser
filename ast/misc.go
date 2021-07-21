@@ -343,6 +343,11 @@ func (n *PlanRecreatorStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Stmt = node.(StmtNode)
+	stmt, ok := n.Stmt.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Stmt = stmt.(StmtNode)
 	return v.Leave(n)
 }
 

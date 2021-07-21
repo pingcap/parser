@@ -6080,4 +6080,19 @@ func (s *testParserSuite) TestPlanRecreator(c *C) {
 		{"PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'", true, "PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'"},
 	}
 	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsFalse)
+
+	sms, _, err = p.Parse("PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok = sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsTrue)
 }

@@ -13193,6 +13193,8 @@ PlanRecreatorStmt:
 			OrderBy: nil,
 			Limit:   nil,
 		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		x.Stmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		$$ = x
 	}
@@ -13207,6 +13209,8 @@ PlanRecreatorStmt:
 			OrderBy: nil,
 			Limit:   nil,
 		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		x.Stmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
 
 		$$ = x
 	}
