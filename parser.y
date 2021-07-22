@@ -1290,7 +1290,7 @@ import (
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
-	Attributes                             "Attributes option"
+	AttributesOpt                          "Attributes option"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1508,8 +1508,12 @@ PlacementLabelConstraints:
 		$$ = $3
 	}
 
-Attributes:
-	"ATTRIBUTES" "=" stringLit
+AttributesOpt:
+	"ATTRIBUTES" "=" "DEFAULT"
+	{
+		$$ = $3
+	}
+|	"ATTRIBUTES" "=" stringLit
 	{
 		$$ = $3
 	}
@@ -1757,13 +1761,22 @@ AlterTableSpec:
 			Statistics:  statsSpec,
 		}
 	}
-|	Attributes
+|	AttributesOpt
 	{
+		var attrSpec *ast.AttributesSpec
+		opt := $1.(string)
+		if opt == "DEFAULT" {
+			attrSpec = &ast.AttributesSpec{
+				Default: true,
+			}
+		} else {
+			attrSpec = &ast.AttributesSpec{
+				Attributes: opt,
+			}
+		}
 		$$ = &ast.AlterTableSpec{
-			Tp: ast.AlterTableAttributes,
-			AttributesSpec: &ast.AttributesSpec{
-				Attributes: $1.(string),
-			},
+			Tp:             ast.AlterTableAttributes,
+			AttributesSpec: attrSpec,
 		}
 	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
@@ -3696,14 +3709,23 @@ PartitionOpt:
 		}
 		$$ = opt
 	}
-|	"PARTITION" Identifier Attributes
+|	"PARTITION" Identifier AttributesOpt
 	{
+		var attrSpec *ast.AttributesSpec
+		opt := $3.(string)
+		if opt == "DEFAULT" {
+			attrSpec = &ast.AttributesSpec{
+				Default: true,
+			}
+		} else {
+			attrSpec = &ast.AttributesSpec{
+				Attributes: opt,
+			}
+		}
 		$$ = &ast.AlterTableSpec{
 			Tp:             ast.AlterTablePartitionAttributes,
 			PartitionNames: []model.CIStr{model.NewCIStr($2)},
-			AttributesSpec: &ast.AttributesSpec{
-				Attributes: $3.(string),
-			},
+			AttributesSpec: attrSpec,
 		}
 	}
 

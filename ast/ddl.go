@@ -3694,11 +3694,16 @@ type AttributesSpec struct {
 	node
 
 	Attributes string
+	Default    bool
 }
 
 func (n *AttributesSpec) Restore(ctx *format.RestoreCtx) error {
 	ctx.WriteKeyWord("ATTRIBUTES")
 	ctx.WritePlain("=")
+	if n.Default {
+		ctx.WriteKeyWord("DEFAULT")
+		return nil
+	}
 	ctx.WriteString(n.Attributes)
 	return nil
 }
