@@ -1,7 +1,5 @@
 # Security Vulnerability Disclosure and Response Process
 
-TiDB is a fast-growing open source database. To ensure its security, a security vulnerability disclosure and response process is adopted.
-
 The primary goal of this process is to reduce the total exposure time of users to publicly known vulnerabilities. To quickly fix vulnerabilities of TiDB products, the security team is responsible for the entire vulnerability management process, including internal communication and external disclosure.
 
 If you find a vulnerability or encounter a security incident involving vulnerabilities of TiDB products, please report it as soon as possible to the TiDB security team (security@tidb.io).
