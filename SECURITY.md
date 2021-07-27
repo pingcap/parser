@@ -2,7 +2,7 @@
 
 The primary goal of this process is to reduce the total exposure time of users to publicly known vulnerabilities. TiDB security team is responsible for the entire vulnerability management process, including internal communication and external disclosure.
 
-If you find a vulnerability or encounter a security incident involving vulnerabilities of TiDB products, please report it as soon as possible to the TiDB security team (security@tidb.io).
+If you find a vulnerability or encounter a security incident involving vulnerabilities of this repository, please report it as soon as possible to the TiDB security team (security@tidb.io).
 
 Please kindly help provide as much vulnerability information as possible in the following format:
 
