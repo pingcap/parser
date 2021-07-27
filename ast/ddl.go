@@ -2652,10 +2652,6 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 			}
 		}
 	case AlterTablePartitionAttributes:
-		if len(n.PartitionNames) != 1 {
-			return errors.Errorf("Maybe partition options are combined.")
-		}
-
 		ctx.WriteKeyWord("PARTITION ")
 		ctx.WriteName(n.PartitionNames[0].O)
 		ctx.WritePlain(" ")

@@ -1290,7 +1290,6 @@ import (
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
-	AttributesOpt                          "Attributes option"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1504,16 +1503,6 @@ PlacementCount:
 
 PlacementLabelConstraints:
 	"CONSTRAINTS" "=" stringLit
-	{
-		$$ = $3
-	}
-
-AttributesOpt:
-	"ATTRIBUTES" "=" "DEFAULT"
-	{
-		$$ = $3
-	}
-|	"ATTRIBUTES" "=" stringLit
 	{
 		$$ = $3
 	}
@@ -1761,22 +1750,18 @@ AlterTableSpec:
 			Statistics:  statsSpec,
 		}
 	}
-|	AttributesOpt
+|	"ATTRIBUTES" "=" "DEFAULT"
 	{
-		var attrSpec *ast.AttributesSpec
-		opt := $1.(string)
-		if opt == "DEFAULT" {
-			attrSpec = &ast.AttributesSpec{
-				Default: true,
-			}
-		} else {
-			attrSpec = &ast.AttributesSpec{
-				Attributes: opt,
-			}
-		}
 		$$ = &ast.AlterTableSpec{
 			Tp:             ast.AlterTableAttributes,
-			AttributesSpec: attrSpec,
+			AttributesSpec: &ast.AttributesSpec{Default: true},
+		}
+	}
+|	"ATTRIBUTES" "=" stringLit
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAttributes,
+			AttributesSpec: &ast.AttributesSpec{Default: false, Attributes: $3},
 		}
 	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
@@ -3709,23 +3694,20 @@ PartitionOpt:
 		}
 		$$ = opt
 	}
-|	"PARTITION" Identifier AttributesOpt
+|	"PARTITION" Identifier "ATTRIBUTES" "=" "DEFAULT"
 	{
-		var attrSpec *ast.AttributesSpec
-		opt := $3.(string)
-		if opt == "DEFAULT" {
-			attrSpec = &ast.AttributesSpec{
-				Default: true,
-			}
-		} else {
-			attrSpec = &ast.AttributesSpec{
-				Attributes: opt,
-			}
-		}
 		$$ = &ast.AlterTableSpec{
 			Tp:             ast.AlterTablePartitionAttributes,
 			PartitionNames: []model.CIStr{model.NewCIStr($2)},
-			AttributesSpec: attrSpec,
+			AttributesSpec: &ast.AttributesSpec{Default: true},
+		}
+	}
+|	"PARTITION" Identifier "ATTRIBUTES" "=" stringLit
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($2)},
+			AttributesSpec: &ast.AttributesSpec{Default: false, Attributes: $5},
 		}
 	}
 
