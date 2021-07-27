@@ -26,6 +26,6 @@ The TiDB security team will confirm the vulnerabilities and contact you within 2
 
 We will publicly thank you after fixing the security vulnerability. To avoid negative impact, please keep the vulnerability confidential until we fix it. We would appreciate it if you could obey the following code of conduct:
 
-The vulnerability will not be disclosed until TiDB releases a patch for it.
+The vulnerability will not be disclosed until a patch is released for it.
 
 The details of the vulnerability, for example, exploits code, will not be disclosed.
