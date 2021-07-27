@@ -19,6 +19,7 @@ import (
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser/mysql"
+	tidbfeature "github.com/pingcap/parser/tidb"
 )
 
 var _ = Suite(&testLexerSuite{})
@@ -159,7 +160,7 @@ func runTest(c *C, table []testCaseItem) {
 }
 
 func (s *testLexerSuite) TestComment(c *C) {
-	SpecialCommentsController.Register("test")
+	tidbfeature.SpecialComments["test"] = struct{}{}
 	table := []testCaseItem{
 		{"-- select --\n1", intLit},
 		{"/*!40101 SET character_set_client = utf8 */;", set},
@@ -273,7 +274,7 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 }
 
 func (s *testLexerSuite) TestFeatureIDsComment(c *C) {
-	SpecialCommentsController.Register("auto_rand")
+	tidbfeature.SpecialComments["auto_rand"] = struct{}{}
 	l := NewScanner("/*T![auto_rand] auto_random(5) */")
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
@@ -317,7 +318,7 @@ func (s *testLexerSuite) TestOptimizerHint(c *C) {
 }
 
 func (s *testLexerSuite) TestOptimizerHintAfterCertainKeywordOnly(c *C) {
-	SpecialCommentsController.Register("test")
+	tidbfeature.SpecialComments["test"] = struct{}{}
 	tests := []struct {
 		input  string
 		tokens []int
