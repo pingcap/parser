@@ -1589,11 +1589,11 @@ PlacementSpecList:
 	}
 
 AttributesOpt:
-	"ATTRIBUTES" "=" "DEFAULT"
+	"ATTRIBUTES" EqOpt "DEFAULT"
 	{
 		$$ = &ast.AttributesSpec{Default: true}
 	}
-|	"ATTRIBUTES" "=" stringLit
+|	"ATTRIBUTES" EqOpt stringLit
 	{
 		$$ = &ast.AttributesSpec{Default: false, Attributes: $3}
 	}
