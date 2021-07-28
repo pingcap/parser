@@ -19,7 +19,6 @@ import (
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser/mysql"
-	tidbfeature "github.com/pingcap/parser/tidb"
 )
 
 var _ = Suite(&testLexerSuite{})
@@ -160,7 +159,6 @@ func runTest(c *C, table []testCaseItem) {
 }
 
 func (s *testLexerSuite) TestComment(c *C) {
-	tidbfeature.SpecialComments["test"] = struct{}{}
 	table := []testCaseItem{
 		{"-- select --\n1", intLit},
 		{"/*!40101 SET character_set_client = utf8 */;", set},
@@ -179,8 +177,8 @@ SELECT`, selectKwd},
 
 		// The odd behavior of '*/' inside conditional comment is the same as
 		// that of MySQL.
-		{"/*T![unsupported] '*/0 -- ' */", intLit}, // equivalent to 0
-		{"/*T![test] '*/0 -- ' */", stringLit},     // equivalent to '*/0 -- '
+		{"/*T![unsupported] '*/0 -- ' */", intLit},  // equivalent to 0
+		{"/*T![auto_rand] '*/0 -- ' */", stringLit}, // equivalent to '*/0 -- '
 	}
 	runTest(c, table)
 }
@@ -274,7 +272,6 @@ func (s *testLexerSuite) TestSpecialComment(c *C) {
 }
 
 func (s *testLexerSuite) TestFeatureIDsComment(c *C) {
-	tidbfeature.SpecialComments["auto_rand"] = struct{}{}
 	l := NewScanner("/*T![auto_rand] auto_random(5) */")
 	tok, pos, lit := l.scan()
 	c.Assert(tok, Equals, identifier)
@@ -318,7 +315,6 @@ func (s *testLexerSuite) TestOptimizerHint(c *C) {
 }
 
 func (s *testLexerSuite) TestOptimizerHintAfterCertainKeywordOnly(c *C) {
-	tidbfeature.SpecialComments["test"] = struct{}{}
 	tests := []struct {
 		input  string
 		tokens []int
@@ -360,7 +356,7 @@ func (s *testLexerSuite) TestOptimizerHintAfterCertainKeywordOnly(c *C) {
 			tokens: []int{selectKwd, '*', 0},
 		},
 		{
-			input:  "SELECT /*T![test] * */ /*+ hint */",
+			input:  "SELECT /*T![auto_rand] * */ /*+ hint */",
 			tokens: []int{selectKwd, '*', 0},
 		},
 		{

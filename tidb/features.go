@@ -28,7 +28,7 @@ const (
 	FeatureIDForceAutoInc = "force_inc"
 )
 
-var SpecialComments = map[string]struct{}{
+var featureIDs = map[string]struct{}{
 	FeatureIDAutoRandom:     {},
 	FeatureIDAutoIDCache:    {},
 	FeatureIDAutoRandomBase: {},
@@ -38,7 +38,7 @@ var SpecialComments = map[string]struct{}{
 
 func CanParseFeature(fs ...string) bool {
 	for _, f := range fs {
-		if _, ok := SpecialComments[f]; !ok {
+		if _, ok := featureIDs[f]; !ok {
 			return false
 		}
 	}
