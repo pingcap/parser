@@ -1290,6 +1290,7 @@ import (
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
+	AttributesOpt                          "Attributes options"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1587,17 +1588,23 @@ PlacementSpecList:
 		$$ = append($1.([]*ast.PlacementSpec), $3.(*ast.PlacementSpec))
 	}
 
+AttributesOpt:
+	"ATTRIBUTES" "=" "DEFAULT"
+	{
+		$$ = &ast.AttributesSpec{Default: true}
+	}
+|	"ATTRIBUTES" "=" stringLit
+	{
+		$$ = &ast.AttributesSpec{Default: false, Attributes: $3}
+	}
+
 AlterTablePartitionOpt:
 	PartitionOpt
 	{
 		if $1 != nil {
-			if alterTableSpec, ok := $1.(*ast.AlterTableSpec); ok {
-				$$ = alterTableSpec
-			} else {
-				$$ = &ast.AlterTableSpec{
-					Tp:        ast.AlterTablePartition,
-					Partition: $1.(*ast.PartitionOptions),
-				}
+			$$ = &ast.AlterTableSpec{
+				Tp:        ast.AlterTablePartition,
+				Partition: $1.(*ast.PartitionOptions),
 			}
 		} else {
 			$$ = nil
@@ -1614,6 +1621,14 @@ AlterTablePartitionOpt:
 		ret := $4.(*ast.AlterTableSpec)
 		ret.NoWriteToBinlog = $3.(bool)
 		$$ = ret
+	}
+|	"PARTITION" Identifier AttributesOpt
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($2)},
+			AttributesSpec: $3.(*ast.AttributesSpec),
+		}
 	}
 
 LocationLabelList:
@@ -1750,18 +1765,11 @@ AlterTableSpec:
 			Statistics:  statsSpec,
 		}
 	}
-|	"ATTRIBUTES" "=" "DEFAULT"
+|	AttributesOpt
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:             ast.AlterTableAttributes,
-			AttributesSpec: &ast.AttributesSpec{Default: true},
-		}
-	}
-|	"ATTRIBUTES" "=" stringLit
-	{
-		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTableAttributes,
-			AttributesSpec: &ast.AttributesSpec{Default: false, Attributes: $3},
+			AttributesSpec: $1.(*ast.AttributesSpec),
 		}
 	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
@@ -3693,22 +3701,6 @@ PartitionOpt:
 			return 1
 		}
 		$$ = opt
-	}
-|	"PARTITION" Identifier "ATTRIBUTES" "=" "DEFAULT"
-	{
-		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTablePartitionAttributes,
-			PartitionNames: []model.CIStr{model.NewCIStr($2)},
-			AttributesSpec: &ast.AttributesSpec{Default: true},
-		}
-	}
-|	"PARTITION" Identifier "ATTRIBUTES" "=" stringLit
-	{
-		$$ = &ast.AlterTableSpec{
-			Tp:             ast.AlterTablePartitionAttributes,
-			PartitionNames: []model.CIStr{model.NewCIStr($2)},
-			AttributesSpec: &ast.AttributesSpec{Default: false, Attributes: $5},
-		}
 	}
 
 SubPartitionMethod:
