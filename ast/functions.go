@@ -339,8 +339,9 @@ const (
 	JSONLength        = "json_length"
 
 	// TiDB internal function.
-	TiDBDecodeKey       = "tidb_decode_key"
-	TiDBDecodeBase64Key = "tidb_decode_base64_key"
+	TiDBDecodeKey                 = "tidb_decode_key"
+	TiDBDecodeBase64Key           = "tidb_decode_base64_key"
+	TiDBFindStatementsFromDigests = "tidb_find_statements_from_digests"
 
 	// MVCC information fetching function.
 	GetMvccInfo = "get_mvcc_info"
