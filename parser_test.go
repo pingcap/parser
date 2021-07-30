@@ -71,7 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "until", "placement", "tablesample",
+		"match", "until", "placement", "tablesample", "attributes",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -2782,6 +2782,26 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
+
+		// alter attributes
+		{"ALTER TABLE t ATTRIBUTES='str'", true, "ALTER TABLE `t` ATTRIBUTES='str'"},
+		{"ALTER TABLE t ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES=\"str1,str2\"", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES 'str1,str2'", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES \"str1,str2\"", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES=DEFAULT", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES=default", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES=DeFaUlT", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES", false, ""},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES='str'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=\"str1,str2\"", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES 'str1,str2'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES \"str1,str2\"", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=DEFAULT", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=default", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=DeFaUlT", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES", false, ""},
 
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
@@ -6062,4 +6082,37 @@ func (s *testParserSuite) TestCTEBindings(c *C) {
 			c.Assert(restoreSQLs, Equals, t.restore, comment)
 		}
 	}
+}
+
+func (s *testParserSuite) TestPlanRecreator(c *C) {
+	table := []testCase{
+		{"PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", true, "PLAN RECREATOR DUMP EXPLAIN SELECT `a` FROM `t`"},
+		{"PLAN RECREATOR DUMP EXPLAIN SELECT * FROM t WHERE a > 10", true, "PLAN RECREATOR DUMP EXPLAIN SELECT * FROM `t` WHERE `a`>10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT * FROM t WHERE a > 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT * FROM `t` WHERE `a`>10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE a > 10 and t < 1 ORDER BY t LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE `a`>10 AND `t`<1 ORDER BY `t` LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE a > 10 and t < 1 ORDER BY t LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE `a`>10 AND `t`<1 ORDER BY `t` LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE a > 10 and t < 1 LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE `a`>10 AND `t`<1 LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE a > 10 and t < 1 LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE `a`>10 AND `t`<1 LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY"},
+		{"PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'", true, "PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'"},
+	}
+	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsFalse)
+
+	sms, _, err = p.Parse("PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok = sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsTrue)
 }
