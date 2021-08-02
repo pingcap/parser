@@ -1131,6 +1131,7 @@ import (
 	ShowTargetFilterable                   "Show target that can be filtered by WHERE or LIKE"
 	ShowTableAliasOpt                      "Show table alias option"
 	ShowLikeOrWhereOpt                     "Show like or where clause option"
+	ShowPlacementTarget                    "Show placement target"
 	ShowProfileArgsOpt                     "Show profile args option"
 	ShowProfileTypesOpt                    "Show profile types option"
 	ShowProfileType                        "Show profile type"
@@ -10085,6 +10086,34 @@ ShowStmt:
 			Tp: ast.ShowBuiltins,
 		}
 	}
+|	"SHOW" "PLACEMENT" "FOR" ShowPlacementTarget
+	{
+		$$ = $4.(*ast.ShowStmt)
+	}
+
+ShowPlacementTarget:
+	DatabaseSym DBName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:     ast.ShowPlacementForDatabase,
+			DBName: $2,
+		}
+	}
+|	"TABLE" TableName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:    ast.ShowPlacementForTable,
+			Table: $2.(*ast.TableName),
+		}
+	}
+|	"TABLE" TableName "PARTITION" Identifier
+	{
+		$$ = &ast.ShowStmt{
+			Tp:        ast.ShowPlacementForPartition,
+			Table:     $2.(*ast.TableName),
+			Partition: model.NewCIStr($4),
+		}
+	}
 
 ShowProfileTypesOpt:
 	{
@@ -10365,6 +10394,10 @@ ShowTargetFilterable:
 |	"IMPORTS"
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowImports}
+	}
+|	"PLACEMENT"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowPlacement}
 	}
 
 ShowLikeOrWhereOpt:
@@ -13205,7 +13238,7 @@ RowStmt:
 /********************************************************************
  *
  * Plan Recreator Statement
- * 
+ *
  * PLAN RECREATOR
  * 		[DUMP EXPLAIN
  *			[ANALYZE]
