@@ -1000,6 +1000,24 @@ AAAAAAAAAAAA5gm5Mg==
 
 		{"select `t`.`1a`.1 from t;", true, "SELECT `t`.`1a`.`1` FROM `t`"},
 		{"select * from 1db.1table;", true, "SELECT * FROM `1db`.`1table`"},
+
+		// for show placement
+		{"SHOW PLACEMENT", true, "SHOW PLACEMENT"},
+		{"SHOW PLACEMENT LIKE 'POLICY foo%'", true, "SHOW PLACEMENT LIKE _UTF8MB4'POLICY foo%'"},
+		{"SHOW PLACEMENT WHERE Target='TABLE test.t1'", true, "SHOW PLACEMENT WHERE `Target`=_UTF8MB4'TABLE test.t1'"},
+		{"SHOW PLACEMENT FOR DATABASE db1", true, "SHOW PLACEMENT FOR DATABASE `db1`"},
+		{"SHOW PLACEMENT FOR SCHEMA db1", true, "SHOW PLACEMENT FOR DATABASE `db1`"},
+		{"SHOW PLACEMENT FOR TABLE tb1", true, "SHOW PLACEMENT FOR TABLE `tb1`"},
+		{"SHOW PLACEMENT FOR TABLE db1.tb1", true, "SHOW PLACEMENT FOR TABLE `db1`.`tb1`"},
+		{"SHOW PLACEMENT FOR TABLE tb1 PARTITION p1", true, "SHOW PLACEMENT FOR TABLE `tb1` PARTITION `p1`"},
+		{"SHOW PLACEMENT FOR TABLE db1.tb1 PARTITION p1", true, "SHOW PLACEMENT FOR TABLE `db1`.`tb1` PARTITION `p1`"},
+		{"SHOW PLACEMENT FOR", false, ""},
+		{"SHOW PLACEMENT DATABASE db1", false, ""},
+		{"SHOW PLACEMENT FOR DB db1", false, ""},
+		{"SHOW PLACEMENT FOR DATABASE db1 TABLE tb1", false, ""},
+		{"SHOW PLACEMENT FOR PARTITION p1", false, ""},
+		{"SHOW PLACEMENT FOR DB LIKE '%'", false, ""},
+		{"SHOW PLACEMENT FOR DB db1 LIKE '%'", false, ""},
 	}
 	s.RunTest(c, table)
 }
@@ -1489,6 +1507,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`SELECT tidb_decode_plan();`, true, "SELECT TIDB_DECODE_PLAN()"},
 		{`SELECT tidb_decode_key('abc');`, true, "SELECT TIDB_DECODE_KEY(_UTF8MB4'abc')"},
 		{`SELECT tidb_decode_base64_key('abc');`, true, "SELECT TIDB_DECODE_BASE64_KEY(_UTF8MB4'abc')"},
+		{`SELECT tidb_decode_sql_digests('[]');`, true, "SELECT TIDB_DECODE_SQL_DIGESTS(_UTF8MB4'[]')"},
 		{`SELECT get_mvcc_info('hex', '0xabc');`, true, "SELECT GET_MVCC_INFO(_UTF8MB4'hex', _UTF8MB4'0xabc')"},
 
 		// for time fsp
