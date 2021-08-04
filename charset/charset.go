@@ -15,6 +15,7 @@ package charset
 
 import (
 	"strings"
+	"sync/atomic"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/mysql"
@@ -24,7 +25,28 @@ import (
 var (
 	ErrUnknownCollation         = terror.ClassDDL.NewStd(mysql.ErrUnknownCollation)
 	ErrCollationCharsetMismatch = terror.ClassDDL.NewStd(mysql.ErrCollationCharsetMismatch)
+
+	// enableCharsetFeat is 1 indicate the charset feature is enabled.
+	enableCharsetFeat = int32(0)
 )
+
+func EnableCharsetFeat() {
+	SetCharsetFratEnabledForTest(true)
+}
+
+// SetCharsetFratEnabledForTest set charset feature enabled. Only used in test.
+func SetCharsetFratEnabledForTest(flag bool) {
+	if flag {
+		atomic.StoreInt32(&enableCharsetFeat, 1)
+		return
+	}
+	atomic.StoreInt32(&enableCharsetFeat, 0)
+}
+
+// CharsetFeatEnabled return true if charset feature is enabled.
+func CharsetFeatEnabled() bool {
+	return atomic.LoadInt32(&enableCharsetFeat) == 1
+}
 
 // Charset is a charset.
 // Now we only support MySQL.
@@ -45,19 +67,22 @@ type Collation struct {
 	IsDefault   bool
 }
 
-var charsets = make(map[string]*Charset)
 var collationsIDMap = make(map[int]*Collation)
 var collationsNameMap = make(map[string]*Collation)
-var descs = make([]*Desc, 0, len(charsetInfos))
 var supportedCollations = make([]*Collation, 0, len(supportedCollationNames))
 
 // All the supported charsets should be in the following table.
-var charsetInfos = []*Charset{
-	{CharsetUTF8, CollationUTF8, make(map[string]*Collation), "UTF-8 Unicode", 3},
-	{CharsetUTF8MB4, CollationUTF8MB4, make(map[string]*Collation), "UTF-8 Unicode", 4},
-	{CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
-	{CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
-	{CharsetBin, CollationBin, make(map[string]*Collation), "binary", 1},
+var charsetInfos = map[string]*Charset{
+	CharsetUTF8:    {CharsetUTF8, CollationUTF8, make(map[string]*Collation), "UTF-8 Unicode", 3},
+	CharsetUTF8MB4: {CharsetUTF8MB4, CollationUTF8MB4, make(map[string]*Collation), "UTF-8 Unicode", 4},
+	CharsetASCII:   {CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
+	CharsetLatin1:  {CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
+	CharsetBin:     {CharsetBin, CollationBin, make(map[string]*Collation), "binary", 1},
+}
+
+// All the experimental supported charset should be in the following table, only used when charset feature is enable.
+var experimentalCharsetInfo = map[string]*Charset{
+	CharsetGBK: {CharsetGBK, CollationGBK, make(map[string]*Collation), "Chinese Internal Code Specification", 4},
 }
 
 // All the names supported collations should be in the following table.
@@ -69,17 +94,20 @@ var supportedCollationNames = map[string]struct{}{
 	CollationBin:     {},
 }
 
-// Desc is a charset description.
-type Desc struct {
-	Name             string
-	Desc             string
-	DefaultCollation string
-	Maxlen           int
-}
-
 // GetSupportedCharsets gets descriptions for all charsets supported so far.
-func GetSupportedCharsets() []*Desc {
-	return descs
+func GetSupportedCharsets() []*Charset {
+	charsets := make([]*Charset, 0, len(charsetInfos))
+	for _, ch := range charsetInfos {
+		charsets = append(charsets, ch)
+	}
+
+	if CharsetFeatEnabled() {
+		for _, ch := range experimentalCharsetInfo {
+			charsets = append(charsets, ch)
+		}
+	}
+
+	return charsets
 }
 
 // GetSupportedCollations gets information for all collations supported so far.
@@ -94,9 +122,8 @@ func ValidCharsetAndCollation(cs string, co string) bool {
 	if cs == "" {
 		cs = "utf8"
 	}
-	cs = strings.ToLower(cs)
-	c, ok := charsets[cs]
-	if !ok {
+	chs, err := GetCharsetInfo(cs)
+	if err != nil {
 		return false
 	}
 
@@ -104,21 +131,17 @@ func ValidCharsetAndCollation(cs string, co string) bool {
 		return true
 	}
 	co = strings.ToLower(co)
-	_, ok = c.Collations[co]
+	_, ok := chs.Collations[co]
 	return ok
 }
 
 // GetDefaultCollation returns the default collation for charset.
 func GetDefaultCollation(charset string) (string, error) {
-	charset = strings.ToLower(charset)
-	if charset == CharsetBin {
-		return CollationBin, nil
+	cs, err := GetCharsetInfo(charset)
+	if err != nil {
+		return "", err
 	}
-	c, ok := charsets[charset]
-	if !ok {
-		return "", errors.Errorf("Unknown charset %s", charset)
-	}
-	return c.DefaultCollation, nil
+	return cs.DefaultCollation, nil
 }
 
 // GetDefaultCharsetAndCollate returns the default charset and collation.
@@ -127,30 +150,16 @@ func GetDefaultCharsetAndCollate() (string, string) {
 }
 
 // GetCharsetInfo returns charset and collation for cs as name.
-func GetCharsetInfo(cs string) (string, string, error) {
-	c, ok := charsets[strings.ToLower(cs)]
-	if !ok {
-		return "", "", errors.Errorf("Unknown charset %s", cs)
+func GetCharsetInfo(cs string) (*Charset, error) {
+	if c, ok := charsetInfos[strings.ToLower(cs)]; ok {
+		return c, nil
 	}
-	return c.Name, c.DefaultCollation, nil
-}
-
-// GetCharsetDesc gets charset descriptions in the local charsets.
-func GetCharsetDesc(cs string) (*Desc, error) {
-	switch strings.ToLower(cs) {
-	case CharsetUTF8:
-		return descs[0], nil
-	case CharsetUTF8MB4:
-		return descs[1], nil
-	case CharsetASCII:
-		return descs[2], nil
-	case CharsetLatin1:
-		return descs[3], nil
-	case CharsetBin:
-		return descs[4], nil
-	default:
-		return nil, errors.Errorf("Unknown charset %s", cs)
+	if CharsetFeatEnabled() {
+		if c, ok := experimentalCharsetInfo[strings.ToLower(cs)]; ok {
+			return c, nil
+		}
 	}
+	return nil, errors.Errorf("Unknown charset %s", cs)
 }
 
 // GetCharsetInfoByID returns charset and collation for id as cs_number.
@@ -208,6 +217,10 @@ const (
 	CharsetLatin1 = "latin1"
 	// CollationLatin1 is the default collation for CharsetLatin1.
 	CollationLatin1 = "latin1_bin"
+	// CharsetGBK represents gbk character encoding.
+	CharsetGBK = "gbk"
+	// CollationGBK is the default collation for CharsetGBK.
+	CollationGBK = "gbk_chinese_ci"
 )
 
 var collations = []*Collation{
@@ -436,17 +449,6 @@ var collations = []*Collation{
 
 // init method always puts to the end of file.
 func init() {
-	for _, c := range charsetInfos {
-		charsets[c.Name] = c
-		desc := &Desc{
-			Name:             c.Name,
-			DefaultCollation: c.DefaultCollation,
-			Desc:             c.Desc,
-			Maxlen:           c.Maxlen,
-		}
-		descs = append(descs, desc)
-	}
-
 	for _, c := range collations {
 		collationsIDMap[c.ID] = c
 		collationsNameMap[c.Name] = c
@@ -455,7 +457,7 @@ func init() {
 			supportedCollations = append(supportedCollations, c)
 		}
 
-		if charset, ok := charsets[c.CharsetName]; ok {
+		if charset, ok := charsetInfos[c.CharsetName]; ok {
 			charset.Collations[c.Name] = c
 		}
 	}
