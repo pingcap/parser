@@ -214,7 +214,7 @@ func (ts *testDDLSuite) TestDDLConstraintRestore(c *C) {
 	}
 	RunNodeRestoreTestWithFlags(c, specialCommentCases,
 		"CREATE TABLE child (id INT, parent_id INT, %s)",
-		extractNodeFunc, format.DefaultRestoreFlags | format.RestoreTiDBSpecialComment)
+		extractNodeFunc, format.DefaultRestoreFlags|format.RestoreTiDBSpecialComment)
 }
 
 func (ts *testDDLSuite) TestDDLColumnOptionRestore(c *C) {
