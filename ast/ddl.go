@@ -637,7 +637,9 @@ type IndexOption struct {
 func (n *IndexOption) Restore(ctx *format.RestoreCtx) error {
 	hasPrevOption := false
 	if n.PrimaryKeyTp != model.PrimaryKeyTypeDefault {
-		ctx.WriteKeyWord(n.PrimaryKeyTp.String())
+		ctx.WriteWithSpecialComments(tidb.FeatureIDClusteredIndex, func() {
+			ctx.WriteKeyWord(n.PrimaryKeyTp.String())
+		})
 		hasPrevOption = true
 	}
 	if n.KeyBlockSize > 0 {
