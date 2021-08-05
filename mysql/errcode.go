@@ -943,6 +943,7 @@ const (
 	ErrFKIncompatibleColumns                                 = 3780
 	ErrFunctionalIndexRowValueIsNotAllowed                   = 3800
 	ErrDependentByFunctionalIndex                            = 3837
+	ErrCannotConvertString                                   = 3854
 	ErrInvalidJsonValueForFuncIndex                          = 3903
 	ErrJsonValueOutOfRangeForFuncIndex                       = 3904
 	ErrFunctionalIndexDataIsTooLong                          = 3907
