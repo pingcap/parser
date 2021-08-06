@@ -243,7 +243,7 @@ func (n *ExplainStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
-// PlanReplayerStmt is a statement to dump or load information for recreating plans
+// PlanReplayerStmt is a statement to dump or load information for replaying plans
 type PlanReplayerStmt struct {
 	stmtNode
 
