@@ -1693,12 +1693,12 @@ AlterTablePartitionOpt:
 			AttributesSpec: $3.(*ast.AttributesSpec),
 		}
 	}
-|	"PARTITION" Identifier PlacementOption
+|	"PARTITION" Identifier PartDefOptionList
 	{
 		$$ = &ast.AlterTableSpec{
 			Tp:             ast.AlterTablePartitionOptions,
 			PartitionNames: []model.CIStr{model.NewCIStr($2)},
-			Options:        []*ast.TableOption{$3.(*ast.TableOption)},
+			Options:        $3.([]*ast.TableOption),
 		}
 	}
 

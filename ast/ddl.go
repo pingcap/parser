@@ -2788,10 +2788,10 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 
 		for i, opt := range n.Options {
 			if i != 0 {
-				ctx.WritePlain(", ")
+				ctx.WritePlain(" ")
 			}
 			if err := opt.Restore(ctx); err != nil {
-				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.Options[%d]", i)
+				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.Options[%d] for PARTITION `%s`", i, n.PartitionNames[0].O)
 			}
 		}
 	case AlterTablePartitionAttributes:

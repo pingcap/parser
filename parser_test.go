@@ -2386,6 +2386,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`alter table m partition t primary_region="us";`, true, "ALTER TABLE `m` PARTITION `t` PRIMARY_REGION = 'us'"},
 		{`alter table m partition t regions="us,3";`, true, "ALTER TABLE `m` PARTITION `t` REGIONS = 'us,3'"},
 		{`alter table m partition t followers=3;`, true, "ALTER TABLE `m` PARTITION `t` FOLLOWERS = 3"},
+		{`alter table m partition t primary_region="us" followers=3;`, true, "ALTER TABLE `m` PARTITION `t` PRIMARY_REGION = 'us' FOLLOWERS = 3"},
 		{`alter table m partition t voters=3;`, true, "ALTER TABLE `m` PARTITION `t` VOTERS = 3"},
 		{`alter table m partition t learners=3;`, true, "ALTER TABLE `m` PARTITION `t` LEARNERS = 3"},
 		{`alter table m partition t schedule="even";`, true, "ALTER TABLE `m` PARTITION `t` SCHEDULE = 'even'"},
