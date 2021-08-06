@@ -346,7 +346,6 @@ import (
 	connection            "CONNECTION"
 	consistency           "CONSISTENCY"
 	consistent            "CONSISTENT"
-	constraints           "CONSTRAINTS"
 	context               "CONTEXT"
 	cpu                   "CPU"
 	csvBackslashEscape    "CSV_BACKSLASH_ESCAPE"
@@ -691,6 +690,16 @@ import (
 	learner               "LEARNER"
 	verboseType           "VERBOSE"
 	voter                 "VOTER"
+	constraints           "CONSTRAINTS"
+	followers             "FOLLOWERS"
+	learners              "LEARNERS"
+	voters                "VOTERS"
+	primaryRegion         "PRIMARY_REGION"
+	schedule              "SCHEDULE"
+	leaderConstraints     "LEADER_CONSTRAINTS"
+	followerConstraints   "FOLLOWER_CONSTRAINTS"
+	learnerConstraints    "LEARNER_CONSTRAINTS"
+	voterConstraints      "VOTER_CONSTRAINTS"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
 	admin                      "ADMIN"
@@ -1289,7 +1298,8 @@ import (
 	PlacementCount                         "Placement rules count option"
 	PlacementLabelConstraints              "Placement rules label constraints option"
 	PlacementRole                          "Placement rules role option"
-	PlacementOptions                       "Placement rules options"
+	OldPlacementOptions                    "Placement rules options"
+	PlacementOption                        "Anonymous or direct placement option"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
 	AttributesOpt                          "Attributes options"
@@ -1513,7 +1523,57 @@ PlacementLabelConstraints:
 		$$ = $3
 	}
 
-PlacementOptions:
+PlacementOption:
+	"PRIMARY_REGION" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementPrimaryRegion, StrValue: $3}
+	}
+|	"REGIONS" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementRegions, StrValue: $3}
+	}
+|	"FOLLOWERS" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementFollowerCount, UintValue: $3.(uint64)}
+	}
+|	"VOTERS" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementVoterCount, UintValue: $3.(uint64)}
+	}
+|	"LEARNERS" EqOpt LengthNum
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementLearnerCount, UintValue: $3.(uint64)}
+	}
+|	"SCHEDULE" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementSchedule, StrValue: $3}
+	}
+|	"CONSTRAINTS" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementConstraints, StrValue: $3}
+	}
+|	"LEADER_CONSTRAINTS" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementLeaderConstraints, StrValue: $3}
+	}
+|	"FOLLOWER_CONSTRAINTS" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementFollowerConstraints, StrValue: $3}
+	}
+|	"VOTER_CONSTRAINTS" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementVoterConstraints, StrValue: $3}
+	}
+|	"LEARNER_CONSTRAINTS" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementLearnerConstraints, StrValue: $3}
+	}
+|	"PLACEMENT" "POLICY" EqOpt stringLit
+	{
+		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementPolicy, StrValue: $4}
+	}
+
+OldPlacementOptions:
 	PlacementCount
 	{
 		$$ = &ast.PlacementSpec{
@@ -1532,7 +1592,7 @@ PlacementOptions:
 			Role: $1.(ast.PlacementRole),
 		}
 	}
-|	PlacementOptions PlacementCount
+|	OldPlacementOptions PlacementCount
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if spec.Replicas != 0 {
@@ -1542,7 +1602,7 @@ PlacementOptions:
 		spec.Replicas = $2.(uint64)
 		$$ = spec
 	}
-|	PlacementOptions PlacementLabelConstraints
+|	OldPlacementOptions PlacementLabelConstraints
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if len(spec.Constraints) > 0 {
@@ -1552,7 +1612,7 @@ PlacementOptions:
 		spec.Constraints = $2.(string)
 		$$ = spec
 	}
-|	PlacementOptions PlacementRole
+|	OldPlacementOptions PlacementRole
 	{
 		spec := $1.(*ast.PlacementSpec)
 		if spec.Role != ast.PlacementRoleNone {
@@ -1564,13 +1624,13 @@ PlacementOptions:
 	}
 
 PlacementSpec:
-	"ADD" "PLACEMENT" "POLICY" PlacementOptions
+	"ADD" "PLACEMENT" "POLICY" OldPlacementOptions
 	{
 		spec := $4.(*ast.PlacementSpec)
 		spec.Tp = ast.PlacementAdd
 		$$ = spec
 	}
-|	"ALTER" "PLACEMENT" "POLICY" PlacementOptions
+|	"ALTER" "PLACEMENT" "POLICY" OldPlacementOptions
 	{
 		spec := $4.(*ast.PlacementSpec)
 		spec.Tp = ast.PlacementAlter
@@ -1633,6 +1693,14 @@ AlterTablePartitionOpt:
 			Tp:             ast.AlterTablePartitionAttributes,
 			PartitionNames: []model.CIStr{model.NewCIStr($2)},
 			AttributesSpec: $3.(*ast.AttributesSpec),
+		}
+	}
+|	"PARTITION" Identifier PlacementOption
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePartitionOptions,
+			PartitionNames: []model.CIStr{model.NewCIStr($2)},
+			Options:        []*ast.TableOption{$3.(*ast.TableOption)},
 		}
 	}
 
@@ -3599,6 +3667,16 @@ DatabaseOption:
 	{
 		$$ = &ast.DatabaseOption{Tp: ast.DatabaseOptionEncryption, Value: $4}
 	}
+|	PlacementOption
+	{
+		tableOptions := $1.(*ast.TableOption)
+		$$ = &ast.DatabaseOption{
+			// offset trick, enums are identical but starts differently
+			Tp:        ast.DatabaseOptionType(tableOptions.Tp-ast.TableOptionPlacementPrimaryRegion) + ast.DatabaseOptionPlacementPrimaryRegion,
+			Value:     tableOptions.StrValue,
+			UintValue: tableOptions.UintValue,
+		}
+	}
 
 DatabaseOptionListOpt:
 	{
@@ -3958,6 +4036,7 @@ PartDefOption:
 	{
 		$$ = &ast.TableOption{Tp: ast.TableOptionNodegroup, UintValue: $3.(uint64)}
 	}
+|	PlacementOption
 
 PartDefValuesOpt:
 	{
@@ -5932,7 +6011,6 @@ UnReservedKeyword:
 |	"CSV_SEPARATOR"
 |	"ON_DUPLICATE"
 |	"TIKV_IMPORTER"
-|	"CONSTRAINTS"
 |	"REPLICAS"
 |	"POLICY"
 |	"WAIT"
@@ -6055,10 +6133,20 @@ NotKeywordToken:
 |	"JSON_ARRAYAGG"
 |	"TLS"
 |	"FOLLOWER"
+|	"FOLLOWERS"
 |	"LEADER"
 |	"LEARNER"
+|	"LEARNERS"
 |	"VERBOSE"
 |	"VOTER"
+|	"VOTERS"
+|	"CONSTRAINTS"
+|	"PRIMARY_REGION"
+|	"SCHEDULE"
+|	"LEADER_CONSTRAINTS"
+|	"FOLLOWER_CONSTRAINTS"
+|	"LEARNER_CONSTRAINTS"
+|	"VOTER_CONSTRAINTS"
 
 /************************************************************************************
  *
