@@ -790,7 +790,7 @@ yynewstate:
 	mustFormat(f, `%u
 	}
 
-	if !parser.skipPositionRecording {
+	if !parser.lexer.skipPositionRecording {
 		%[1]sSetOffset(parser.yyVAL, parser.yyVAL.offset)
 	}
 

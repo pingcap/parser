@@ -85,7 +85,6 @@ type Parser struct {
 
 	explicitCharset       bool
 	strictDoubleFieldType bool
-	skipPositionRecording bool // Whether record the original text keyword position to the AST node.
 
 	// the following fields are used by yyParse to reduce allocation.
 	cache  []yySymType
@@ -132,7 +131,7 @@ func (parser *Parser) SetStrictDoubleTypeCheck(val bool) {
 func (parser *Parser) SetParserConfig(config ParserConfig) {
 	parser.EnableWindowFunc(config.EnableWindowFunction)
 	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
-	parser.skipPositionRecording = config.SkipPositionRecording
+	parser.lexer.skipPositionRecording = config.SkipPositionRecording
 }
 
 // Parse parses a query string to raw ast.StmtNode.

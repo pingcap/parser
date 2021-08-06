@@ -1321,7 +1321,7 @@ yynewstate:
 
 	}
 
-	if !parser.skipPositionRecording {
+	if !parser.lexer.skipPositionRecording {
 		yyhintSetOffset(parser.yyVAL, parser.yyVAL.offset)
 	}
 
