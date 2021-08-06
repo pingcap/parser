@@ -852,6 +852,7 @@ import (
 	DropStatisticsStmt     "DROP STATISTICS statement"
 	DropStatsStmt          "DROP STATS statement"
 	DropTableStmt          "DROP TABLE statement"
+	DropPolicyStmt         "DROP PLACEMENT POLICY statement"
 	DropSequenceStmt       "DROP SEQUENCE statement"
 	DropUserStmt           "DROP USER"
 	DropRoleStmt           "DROP ROLE"
@@ -1351,6 +1352,7 @@ import (
 	CollationName                   "Collation name"
 	ColumnFormat                    "Column format"
 	DBName                          "Database Name"
+	PolicyName                      "Placement Policy Name"
 	ExplainFormatType               "explain format type"
 	FieldAsName                     "Field alias name"
 	FieldAsNameOpt                  "Field alias name opt"
@@ -3577,6 +3579,9 @@ CreateDatabaseStmt:
 	}
 
 DBName:
+	Identifier
+
+PolicyName:
 	Identifier
 
 DatabaseOption:
@@ -9979,6 +9984,13 @@ ShowStmt:
 			Table: $4.(*ast.TableName),
 		}
 	}
+|	"SHOW" "CREATE" "PLACEMENT" "POLICY" PolicyName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:     ast.ShowCreatePlacementPolicy,
+			DBName: $5,
+		}
+	}
 |	"SHOW" "CREATE" "USER" Username
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
@@ -10628,6 +10640,7 @@ Statement:
 |	DropImportStmt
 |	DropIndexStmt
 |	DropTableStmt
+|	DropPolicyStmt
 |	DropSequenceStmt
 |	DropViewStmt
 |	DropUserStmt
@@ -12949,6 +12962,15 @@ LoadStatsStmt:
 	{
 		$$ = &ast.LoadStatsStmt{
 			Path: $3,
+		}
+	}
+
+DropPolicyStmt:
+	"DROP" "PLACEMENT" "POLICY" IfExists PolicyName
+	{
+		$$ = &ast.DropPlacementPolicyStmt{
+			IfExists:   $4.(bool),
+			PolicyName: model.NewCIStr($5),
 		}
 	}
 

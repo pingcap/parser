@@ -1507,6 +1507,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`SELECT tidb_decode_plan();`, true, "SELECT TIDB_DECODE_PLAN()"},
 		{`SELECT tidb_decode_key('abc');`, true, "SELECT TIDB_DECODE_KEY(_UTF8MB4'abc')"},
 		{`SELECT tidb_decode_base64_key('abc');`, true, "SELECT TIDB_DECODE_BASE64_KEY(_UTF8MB4'abc')"},
+		{`SELECT tidb_decode_sql_digests('[]');`, true, "SELECT TIDB_DECODE_SQL_DIGESTS(_UTF8MB4'[]')"},
 		{`SELECT get_mvcc_info('hex', '0xabc');`, true, "SELECT GET_MVCC_INFO(_UTF8MB4'hex', _UTF8MB4'0xabc')"},
 
 		// for time fsp
@@ -3260,6 +3261,17 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a int, b varchar(255) primary key nonclustered clustered)", false, ""},
 		{"alter table t add primary key (`a`, `b`) clustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) CLUSTERED"},
 		{"alter table t add primary key (`a`, `b`) nonclustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) NONCLUSTERED"},
+
+		// for drop placement policy
+		{"drop placement policy x", true, "DROP PLACEMENT POLICY `x`"},
+		{"drop placement policy x, y", false, ""},
+		{"drop placement policy if exists x", true, "DROP PLACEMENT POLICY IF EXISTS `x`"},
+		{"drop placement policy if exists x, y", false, ""},
+		// for show create placement policy
+		{"show create placement policy x", true, "SHOW CREATE PLACEMENT POLICY `x`"},
+		{"show create placement policy if exists x", false, ""},
+		{"show create placement policy x, y", false, ""},
+		{"show create placement policy `placement`", true, "SHOW CREATE PLACEMENT POLICY `placement`"},
 	}
 	s.RunTest(c, table)
 }
