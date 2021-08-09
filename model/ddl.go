@@ -79,12 +79,8 @@ const (
 	ActionAlterTableAlterPartition      ActionType = 46
 	ActionRenameTables                  ActionType = 47
 	ActionDropIndexes                   ActionType = 48
-)
-
-const (
-	// AddIndexStr is a string related to the operation of "add index".
-	AddIndexStr      = "add index"
-	AddPrimaryKeyStr = "add primary key"
+	ActionAlterTableAttributes          ActionType = 49
+	ActionAlterTablePartitionAttributes ActionType = 50
 )
 
 var actionMap = map[ActionType]string{
@@ -94,7 +90,7 @@ var actionMap = map[ActionType]string{
 	ActionDropTable:                     "drop table",
 	ActionAddColumn:                     "add column",
 	ActionDropColumn:                    "drop column",
-	ActionAddIndex:                      AddIndexStr,
+	ActionAddIndex:                      "add index",
 	ActionDropIndex:                     "drop index",
 	ActionAddForeignKey:                 "add foreign key",
 	ActionDropForeignKey:                "drop foreign key",
@@ -119,7 +115,7 @@ var actionMap = map[ActionType]string{
 	ActionRepairTable:                   "repair table",
 	ActionSetTiFlashReplica:             "set tiflash replica",
 	ActionUpdateTiFlashReplicaStatus:    "update tiflash replica status",
-	ActionAddPrimaryKey:                 AddPrimaryKeyStr,
+	ActionAddPrimaryKey:                 "add primary key",
 	ActionDropPrimaryKey:                "drop primary key",
 	ActionCreateSequence:                "create sequence",
 	ActionAlterSequence:                 "alter sequence",
@@ -135,6 +131,8 @@ var actionMap = map[ActionType]string{
 	ActionAlterCheckConstraint:          "alter check constraint",
 	ActionAlterTableAlterPartition:      "alter partition",
 	ActionDropIndexes:                   "drop multi-indexes",
+	ActionAlterTableAttributes:          "alter table attributes",
+	ActionAlterTablePartitionAttributes: "alter table partition attributes",
 }
 
 // String return current ddl action in string
