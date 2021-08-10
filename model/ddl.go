@@ -79,6 +79,8 @@ const (
 	ActionAlterTableAlterPartition      ActionType = 46
 	ActionRenameTables                  ActionType = 47
 	ActionDropIndexes                   ActionType = 48
+	ActionAlterTableAttributes          ActionType = 49
+	ActionAlterTablePartitionAttributes ActionType = 50
 )
 
 var actionMap = map[ActionType]string{
@@ -129,6 +131,8 @@ var actionMap = map[ActionType]string{
 	ActionAlterCheckConstraint:          "alter check constraint",
 	ActionAlterTableAlterPartition:      "alter partition",
 	ActionDropIndexes:                   "drop multi-indexes",
+	ActionAlterTableAttributes:          "alter table attributes",
+	ActionAlterTablePartitionAttributes: "alter table partition attributes",
 }
 
 // String return current ddl action in string
@@ -186,6 +190,11 @@ func NewDDLReorgMeta() *DDLReorgMeta {
 	}
 }
 
+// MultiSchemaInfo keeps some information for multi schema change.
+type MultiSchemaInfo struct {
+	Warnings []*errors.Error
+}
+
 // Job is for a DDL operation.
 type Job struct {
 	ID         int64         `json:"id"`
@@ -227,6 +236,9 @@ type Job struct {
 	// ReorgMeta is meta info of ddl reorganization.
 	// This field is depreciated.
 	ReorgMeta *DDLReorgMeta `json:"reorg_meta"`
+
+	// MultiSchemaInfo keeps some warning now for multi schema change.
+	MultiSchemaInfo *MultiSchemaInfo `json:"multi_schema_info"`
 
 	// Priority is only used to set the operation priority of adding indices.
 	Priority int `json:"priority"`

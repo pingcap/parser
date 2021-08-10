@@ -2496,6 +2496,7 @@ const (
 	ShowCreateView
 	ShowCreateUser
 	ShowCreateSequence
+	ShowCreatePlacementPolicy
 	ShowGrants
 	ShowTriggers
 	ShowProcedureStatus
@@ -2528,6 +2529,11 @@ const (
 	ShowRestores
 	ShowImports
 	ShowCreateImport
+	ShowPlacement
+	ShowPlacementForDatabase
+	ShowPlacementForTable
+	ShowPlacementForPartition
+	ShowPlacementLabels
 )
 
 const (
@@ -2551,6 +2557,7 @@ type ShowStmt struct {
 	Tp          ShowStmtType // Databases/Tables/Columns/....
 	DBName      string
 	Table       *TableName  // Used for showing columns.
+	Partition   model.CIStr // Used for showing partition.
 	Column      *ColumnName // Used for `desc table column`.
 	IndexName   model.CIStr
 	Flag        int // Some flag parsed from sql, such as FULL.
@@ -2629,6 +2636,9 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		if err := n.Table.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore ShowStmt.SEQUENCE")
 		}
+	case ShowCreatePlacementPolicy:
+		ctx.WriteKeyWord("CREATE PLACEMENT POLICY ")
+		ctx.WriteName(n.DBName)
 	case ShowCreateUser:
 		ctx.WriteKeyWord("CREATE USER ")
 		if err := n.User.Restore(ctx); err != nil {
@@ -2738,6 +2748,21 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 	case ShowCreateImport:
 		ctx.WriteKeyWord("CREATE IMPORT ")
 		ctx.WriteName(n.DBName)
+	case ShowPlacementForDatabase:
+		ctx.WriteKeyWord("PLACEMENT FOR DATABASE ")
+		ctx.WriteName(n.DBName)
+	case ShowPlacementForTable:
+		ctx.WriteKeyWord("PLACEMENT FOR TABLE ")
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while resotre ShowStmt.Table")
+		}
+	case ShowPlacementForPartition:
+		ctx.WriteKeyWord("PLACEMENT FOR TABLE ")
+		if err := n.Table.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while resotre ShowStmt.Table")
+		}
+		ctx.WriteKeyWord(" PARTITION ")
+		ctx.WriteName(n.Partition.String())
 	// ShowTargetFilterable
 	default:
 		switch n.Tp {
@@ -2842,6 +2867,10 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("RESTORES")
 		case ShowImports:
 			ctx.WriteKeyWord("IMPORTS")
+		case ShowPlacement:
+			ctx.WriteKeyWord("PLACEMENT")
+		case ShowPlacementLabels:
+			ctx.WriteKeyWord("PLACEMENT LABELS")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}

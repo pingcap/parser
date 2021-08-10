@@ -20,6 +20,7 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"github.com/pingcap/parser/tidb"
 	"github.com/pingcap/parser/types"
 )
 
@@ -35,6 +36,7 @@ var (
 	_ DDLNode = &DropIndexStmt{}
 	_ DDLNode = &DropTableStmt{}
 	_ DDLNode = &DropSequenceStmt{}
+	_ DDLNode = &DropPlacementPolicyStmt{}
 	_ DDLNode = &RenameTableStmt{}
 	_ DDLNode = &TruncateTableStmt{}
 	_ DDLNode = &RepairTableStmt{}
@@ -501,7 +503,9 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		pkTp := n.PrimaryKeyTp.String()
 		if len(pkTp) != 0 {
 			ctx.WritePlain(" ")
-			ctx.WriteKeyWord(pkTp)
+			ctx.WriteWithSpecialComments(tidb.FeatureIDClusteredIndex, func() {
+				ctx.WriteKeyWord(pkTp)
+			})
 		}
 	case ColumnOptionNotNull:
 		ctx.WriteKeyWord("NOT NULL")
@@ -574,10 +578,12 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
 	case ColumnOptionAutoRandom:
-		ctx.WriteKeyWord("AUTO_RANDOM")
-		if n.AutoRandomBitLength != types.UnspecifiedLength {
-			ctx.WritePlainf("(%d)", n.AutoRandomBitLength)
-		}
+		ctx.WriteWithSpecialComments(tidb.FeatureIDAutoRandom, func() {
+			ctx.WriteKeyWord("AUTO_RANDOM")
+			if n.AutoRandomBitLength != types.UnspecifiedLength {
+				ctx.WritePlainf("(%d)", n.AutoRandomBitLength)
+			}
+		})
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
@@ -632,7 +638,9 @@ type IndexOption struct {
 func (n *IndexOption) Restore(ctx *format.RestoreCtx) error {
 	hasPrevOption := false
 	if n.PrimaryKeyTp != model.PrimaryKeyTypeDefault {
-		ctx.WriteKeyWord(n.PrimaryKeyTp.String())
+		ctx.WriteWithSpecialComments(tidb.FeatureIDClusteredIndex, func() {
+			ctx.WriteKeyWord(n.PrimaryKeyTp.String())
+		})
 		hasPrevOption = true
 	}
 	if n.KeyBlockSize > 0 {
@@ -1155,6 +1163,33 @@ func (n *DropTableStmt) Accept(v Visitor) (Node, bool) {
 		}
 		n.Tables[i] = node.(*TableName)
 	}
+	return v.Leave(n)
+}
+
+// DropPlacementPolicyStmt is a statement to drop a Policy.
+type DropPlacementPolicyStmt struct {
+	ddlNode
+
+	IfExists   bool
+	PolicyName model.CIStr
+}
+
+// Restore implements Restore interface.
+func (n *DropPlacementPolicyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("DROP PLACEMENT POLICY ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.PolicyName.O)
+	return nil
+}
+
+func (n *DropPlacementPolicyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*DropPlacementPolicyStmt)
 	return v.Leave(n)
 }
 
@@ -1891,22 +1926,32 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionAutoIncrement:
 		if n.BoolValue {
-			ctx.WriteKeyWord("FORCE ")
+			ctx.WriteWithSpecialComments(tidb.FeatureIDForceAutoInc, func() {
+				ctx.WriteKeyWord("FORCE")
+			})
+			ctx.WritePlain(" ")
 		}
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionAutoIdCache:
-		ctx.WriteKeyWord("AUTO_ID_CACHE ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("%d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDAutoIDCache, func() {
+			ctx.WriteKeyWord("AUTO_ID_CACHE ")
+			ctx.WritePlain("= ")
+			ctx.WritePlainf("%d", n.UintValue)
+		})
 	case TableOptionAutoRandomBase:
 		if n.BoolValue {
-			ctx.WriteKeyWord("FORCE ")
+			ctx.WriteWithSpecialComments(tidb.FeatureIDForceAutoInc, func() {
+				ctx.WriteKeyWord("FORCE")
+			})
+			ctx.WritePlain(" ")
 		}
-		ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("%d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDAutoRandomBase, func() {
+			ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
+			ctx.WritePlain("= ")
+			ctx.WritePlainf("%d", n.UintValue)
+		})
 	case TableOptionComment:
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WritePlain("= ")
@@ -1997,11 +2042,15 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlainf("%d", n.UintValue)
 		}
 	case TableOptionShardRowID:
-		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
-		ctx.WritePlainf("= %d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDTiDB, func() {
+			ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
+			ctx.WritePlainf("= %d", n.UintValue)
+		})
 	case TableOptionPreSplitRegion:
-		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
-		ctx.WritePlainf("= %d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDTiDB, func() {
+			ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
+			ctx.WritePlainf("= %d", n.UintValue)
+		})
 	case TableOptionPackKeys:
 		// TODO: not support
 		ctx.WriteKeyWord("PACK_KEYS ")
@@ -2213,6 +2262,7 @@ const (
 	AlterTableForce
 	AlterTableAddPartitions
 	AlterTableAlterPartition
+	AlterTablePartitionAttributes
 	AlterTableCoalescePartitions
 	AlterTableDropPartition
 	AlterTableTruncatePartition
@@ -2244,6 +2294,7 @@ const (
 	AlterTablePlacement
 	AlterTableAddStatistics
 	AlterTableDropStatistics
+	AlterTableAttributes
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2343,6 +2394,7 @@ type AlterTableSpec struct {
 	PlacementSpecs  []*PlacementSpec
 	Writeable       bool
 	Statistics      *StatisticsSpec
+	AttributesSpec  *AttributesSpec
 }
 
 type TiFlashReplicaSpec struct {
@@ -2648,6 +2700,15 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
 		}
+	case AlterTablePartitionAttributes:
+		ctx.WriteKeyWord("PARTITION ")
+		ctx.WriteName(n.PartitionNames[0].O)
+		ctx.WritePlain(" ")
+
+		spec := n.AttributesSpec
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.AttributesSpec")
+		}
 	case AlterTableCoalescePartitions:
 		ctx.WriteKeyWord("COALESCE PARTITION ")
 		if n.NoWriteToBinlog {
@@ -2847,6 +2908,12 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
 		}
+	case AlterTableAttributes:
+		spec := n.AttributesSpec
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.AttributesSpec")
+		}
+
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -3665,6 +3732,33 @@ func (n *PlacementSpec) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*PlacementSpec)
+	return v.Leave(n)
+}
+
+type AttributesSpec struct {
+	node
+
+	Attributes string
+	Default    bool
+}
+
+func (n *AttributesSpec) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("ATTRIBUTES")
+	ctx.WritePlain("=")
+	if n.Default {
+		ctx.WriteKeyWord("DEFAULT")
+		return nil
+	}
+	ctx.WriteString(n.Attributes)
+	return nil
+}
+
+func (n *AttributesSpec) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AttributesSpec)
 	return v.Leave(n)
 }
 
