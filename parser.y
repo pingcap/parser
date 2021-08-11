@@ -839,6 +839,7 @@ import (
 	AlterImportStmt        "ALTER IMPORT statement"
 	AlterInstanceStmt      "Alter instance statement"
 	AlterSequenceStmt      "Alter sequence statement"
+	AlterPolicyStmt        "Alter Placement Policy statement"
 	AnalyzeTableStmt       "Analyze table statement"
 	BeginTransactionStmt   "BEGIN TRANSACTION statement"
 	BinlogStmt             "Binlog base64 statement"
@@ -10723,6 +10724,7 @@ Statement:
 |	AlterImportStmt
 |	AlterInstanceStmt
 |	AlterSequenceStmt
+|	AlterPolicyStmt
 |	AnalyzeTableStmt
 |	BeginTransactionStmt
 |	BinlogStmt
@@ -13088,6 +13090,16 @@ CreatePolicyStmt:
 	{
 		$$ = &ast.CreatePlacementPolicyStmt{
 			IfNotExists:      $4.(bool),
+			PolicyName:       model.NewCIStr($5),
+			PlacementOptions: $6.([]*ast.TableOption),
+		}
+	}
+
+AlterPolicyStmt:
+	"ALTER" "PLACEMENT" "POLICY" IfExists PolicyName PlacementOptionList
+	{
+		$$ = &ast.AlterPlacementPolicyStmt{
+			IfExists:         $4.(bool),
 			PolicyName:       model.NewCIStr($5),
 			PlacementOptions: $6.([]*ast.TableOption),
 		}
