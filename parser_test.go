@@ -3361,6 +3361,21 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"show create placement policy if exists x", false, ""},
 		{"show create placement policy x, y", false, ""},
 		{"show create placement policy `placement`", true, "SHOW CREATE PLACEMENT POLICY `placement`"},
+		// for create placement policy
+		{"create placement policy x primary_region='us'", true, "CREATE PLACEMENT POLICY `x` PRIMARY_REGION = 'us'"},
+		{"create placement policy x region='us, 3'", false, ""},
+		{"create placement policy x followers=3", true, "CREATE PLACEMENT POLICY `x` FOLLOWERS = 3"},
+		{"create placement policy x voters=3", true, "CREATE PLACEMENT POLICY `x` VOTERS = 3"},
+		{"create placement policy x learners=3", true, "CREATE PLACEMENT POLICY `x` LEARNERS = 3"},
+		{"create placement policy x schedule='even'", true, "CREATE PLACEMENT POLICY `x` SCHEDULE = 'even'"},
+		{"create placement policy x constraints='ww'", true, "CREATE PLACEMENT POLICY `x` CONSTRAINTS = 'ww'"},
+		{"create placement policy x leader_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` LEADER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x follower_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x voter_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` VOTER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x learner_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` LEARNER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x primary_region='cn' regions='us' schedule='even'", true, "CREATE PLACEMENT POLICY `x` PRIMARY_REGION = 'cn' REGIONS = 'us' SCHEDULE = 'even'"},
+		{"create placement policy x primary_region='cn', leader_constraints='ww', leader_constraints='yy'", true, "CREATE PLACEMENT POLICY `x` PRIMARY_REGION = 'cn' LEADER_CONSTRAINTS = 'ww' LEADER_CONSTRAINTS = 'yy'"},
+		{"create placement policy if not exists x regions = 'us', follower_constraints='yy'", true, "CREATE PLACEMENT POLICY IF NOT EXISTS `x` REGIONS = 'us' FOLLOWER_CONSTRAINTS = 'yy'"},
 	}
 	s.RunTest(c, table)
 }
