@@ -27,6 +27,7 @@ import (
 var (
 	_ DDLNode = &AlterTableStmt{}
 	_ DDLNode = &AlterSequenceStmt{}
+	_ DDLNode = &AlterPlacementPolicyStmt{}
 	_ DDLNode = &CreateDatabaseStmt{}
 	_ DDLNode = &CreateIndexStmt{}
 	_ DDLNode = &CreateTableStmt{}
@@ -3930,6 +3931,39 @@ func (n *AttributesSpec) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*AttributesSpec)
+	return v.Leave(n)
+}
+
+// AlterPlacementPolicyStmt is a statement to alter placement policy option.
+type AlterPlacementPolicyStmt struct {
+	ddlNode
+
+	PolicyName       model.CIStr
+	IfExists         bool
+	PlacementOptions []*TableOption
+}
+
+func (n *AlterPlacementPolicyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("ALTER PLACEMENT POLICY ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.PolicyName.O)
+	for i, option := range n.PlacementOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing AlterPlacementPolicyStmt TableOption: [%v]", i)
+		}
+	}
+	return nil
+}
+
+func (n *AlterPlacementPolicyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AlterPlacementPolicyStmt)
 	return v.Leave(n)
 }
 
