@@ -851,6 +851,7 @@ import (
 	CreateIndexStmt            "CREATE INDEX statement"
 	CreateImportStmt           "CREATE IMPORT statement"
 	CreateBindingStmt          "CREATE BINDING  statement"
+	CreatePolicyStmt           "CREATE PLACEMENT POLICY statement"
 	CreateSequenceStmt         "CREATE SEQUENCE statement"
 	CreateStatisticsStmt       "CREATE STATISTICS statement"
 	DoStmt                     "Do statement"
@@ -1300,6 +1301,7 @@ import (
 	PlacementRole                          "Placement rules role option"
 	OldPlacementOptions                    "Placement rules options"
 	PlacementOption                        "Anonymous or direct placement option"
+	PlacementOptionList                    "Anomymous or direct placement option list"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
 	AttributesOpt                          "Attributes options"
@@ -1521,6 +1523,20 @@ PlacementLabelConstraints:
 	"CONSTRAINTS" "=" stringLit
 	{
 		$$ = $3
+	}
+
+PlacementOptionList:
+	PlacementOption
+	{
+		$$ = []*ast.TableOption{$1.(*ast.TableOption)}
+	}
+|	PlacementOptionList PlacementOption
+	{
+		$$ = append($1.([]*ast.TableOption), $2.(*ast.TableOption))
+	}
+|	PlacementOptionList ',' PlacementOption
+	{
+		$$ = append($1.([]*ast.TableOption), $3.(*ast.TableOption))
 	}
 
 PlacementOption:
@@ -10803,6 +10819,7 @@ Statement:
 |	CreateUserStmt
 |	CreateRoleStmt
 |	CreateBindingStmt
+|	CreatePolicyStmt
 |	CreateSequenceStmt
 |	CreateStatisticsStmt
 |	DoStmt
@@ -13195,6 +13212,16 @@ DropPolicyStmt:
 		$$ = &ast.DropPlacementPolicyStmt{
 			IfExists:   $4.(bool),
 			PolicyName: model.NewCIStr($5),
+		}
+	}
+
+CreatePolicyStmt:
+	"CREATE" "PLACEMENT" "POLICY" IfNotExists PolicyName PlacementOptionList
+	{
+		$$ = &ast.CreatePlacementPolicyStmt{
+			IfNotExists:      $4.(bool),
+			PolicyName:       model.NewCIStr($5),
+			PlacementOptions: $6.([]*ast.TableOption),
 		}
 	}
 
