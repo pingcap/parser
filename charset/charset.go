@@ -56,17 +56,19 @@ var charsetInfos = []*Charset{
 	{CharsetUTF8, CollationUTF8, make(map[string]*Collation), "UTF-8 Unicode", 3},
 	{CharsetUTF8MB4, CollationUTF8MB4, make(map[string]*Collation), "UTF-8 Unicode", 4},
 	{CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
-	{CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
-	{CharsetBin, CollationBin, make(map[string]*Collation), "binary", 1},
+	{CharsetLatin1, CollationLatin1, make(map[string]*Collation), "cp1252 West European", 1},
+	{CharsetBin, CollationBin, make(map[string]*Collation), "Binary pseudo charset", 1},
+	{CharsetGBK, CollationGBKChineseCi, make(map[string]*Collation), "GBK Simplified Chinese", 2},
 }
 
 // All the names supported collations should be in the following table.
 var supportedCollationNames = map[string]struct{}{
-	CollationUTF8:    {},
-	CollationUTF8MB4: {},
-	CollationASCII:   {},
-	CollationLatin1:  {},
-	CollationBin:     {},
+	CollationUTF8:         {},
+	CollationUTF8MB4:      {},
+	CollationASCII:        {},
+	CollationLatin1:       {},
+	CollationBin:          {},
+	CollationGBKChineseCi: {},
 }
 
 // Desc is a charset description.
@@ -196,6 +198,10 @@ const (
 	CharsetUTF8 = "utf8"
 	// CollationUTF8 is the default collation for CharsetUTF8.
 	CollationUTF8 = "utf8_bin"
+	// CharsetGBK is an extension of the GB2312 character set for simplified Chinese characters.
+	CharsetGBK = "gbk"
+	// CollationGBKChineseCi is the default collation for CharsetGBK.
+	CollationGBKChineseCi = "gbk_chinese_ci"
 	// CharsetUTF8MB4 represents 4 bytes utf8, which works the same way as utf8 in Go.
 	CharsetUTF8MB4 = "utf8mb4"
 	// CollationUTF8MB4 is the default collation for CharsetUTF8MB4.
