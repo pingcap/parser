@@ -1018,6 +1018,11 @@ AAAAAAAAAAAA5gm5Mg==
 		{"SHOW PLACEMENT FOR PARTITION p1", false, ""},
 		{"SHOW PLACEMENT FOR DB LIKE '%'", false, ""},
 		{"SHOW PLACEMENT FOR DB db1 LIKE '%'", false, ""},
+
+		// for show placement labels
+		{"SHOW PLACEMENT LABELS", true, "SHOW PLACEMENT LABELS"},
+		{"SHOW PLACEMENT LABELS LIKE '%zone%'", true, "SHOW PLACEMENT LABELS LIKE _UTF8MB4'%zone%'"},
+		{"SHOW PLACEMENT LABELS WHERE label='l123'", true, "SHOW PLACEMENT LABELS WHERE `label`=_UTF8MB4'l123'"},
 	}
 	s.RunTest(c, table)
 }
@@ -1545,8 +1550,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
 		{"select cast(1 as float(54));", false, ""},
 
-		// for cast as real
 		{"select cast(1 as real);", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast('2000' as year);", true, "SELECT CAST(_UTF8MB4'2000' AS YEAR)"},
+		{"select cast(time '2000' as year);", true, "SELECT CAST(TIME '2000' AS YEAR)"},
 
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
@@ -3260,6 +3266,17 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a int, b varchar(255) primary key nonclustered clustered)", false, ""},
 		{"alter table t add primary key (`a`, `b`) clustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) CLUSTERED"},
 		{"alter table t add primary key (`a`, `b`) nonclustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) NONCLUSTERED"},
+
+		// for drop placement policy
+		{"drop placement policy x", true, "DROP PLACEMENT POLICY `x`"},
+		{"drop placement policy x, y", false, ""},
+		{"drop placement policy if exists x", true, "DROP PLACEMENT POLICY IF EXISTS `x`"},
+		{"drop placement policy if exists x, y", false, ""},
+		// for show create placement policy
+		{"show create placement policy x", true, "SHOW CREATE PLACEMENT POLICY `x`"},
+		{"show create placement policy if exists x", false, ""},
+		{"show create placement policy x, y", false, ""},
+		{"show create placement policy `placement`", true, "SHOW CREATE PLACEMENT POLICY `placement`"},
 	}
 	s.RunTest(c, table)
 }

@@ -2496,6 +2496,7 @@ const (
 	ShowCreateView
 	ShowCreateUser
 	ShowCreateSequence
+	ShowCreatePlacementPolicy
 	ShowGrants
 	ShowTriggers
 	ShowProcedureStatus
@@ -2532,6 +2533,7 @@ const (
 	ShowPlacementForDatabase
 	ShowPlacementForTable
 	ShowPlacementForPartition
+	ShowPlacementLabels
 )
 
 const (
@@ -2634,6 +2636,9 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 		if err := n.Table.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore ShowStmt.SEQUENCE")
 		}
+	case ShowCreatePlacementPolicy:
+		ctx.WriteKeyWord("CREATE PLACEMENT POLICY ")
+		ctx.WriteName(n.DBName)
 	case ShowCreateUser:
 		ctx.WriteKeyWord("CREATE USER ")
 		if err := n.User.Restore(ctx); err != nil {
@@ -2864,6 +2869,8 @@ func (n *ShowStmt) Restore(ctx *format.RestoreCtx) error {
 			ctx.WriteKeyWord("IMPORTS")
 		case ShowPlacement:
 			ctx.WriteKeyWord("PLACEMENT")
+		case ShowPlacementLabels:
+			ctx.WriteKeyWord("PLACEMENT LABELS")
 		default:
 			return errors.New("Unknown ShowStmt type")
 		}
