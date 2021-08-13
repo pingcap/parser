@@ -77,11 +77,6 @@ func (s *testCharsetSuite) TestValidCustomCharset(c *C) {
 	}
 }
 
-func (s *testCharsetSuite) TestGetSupportedCharsets(c *C) {
-	descs := GetSupportedCharsets()
-	c.Assert(len(descs), Equals, len(charsetInfos))
-}
-
 func testGetDefaultCollation(c *C, charset string, expectCollation string, succ bool) {
 	b, err := GetDefaultCollation(charset)
 	if !succ {
