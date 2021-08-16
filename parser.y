@@ -1526,51 +1526,51 @@ PlacementLabelConstraints:
 PlacementOption:
 	"PRIMARY_REGION" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementPrimaryRegion, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPrimaryRegion, StrValue: $3}
 	}
 |	"REGIONS" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementRegions, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionRegions, StrValue: $3}
 	}
 |	"FOLLOWERS" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementFollowerCount, UintValue: $3.(uint64)}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionFollowerCount, UintValue: $3.(uint64)}
 	}
 |	"VOTERS" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementVoterCount, UintValue: $3.(uint64)}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionVoterCount, UintValue: $3.(uint64)}
 	}
 |	"LEARNERS" EqOpt LengthNum
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementLearnerCount, UintValue: $3.(uint64)}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionLearnerCount, UintValue: $3.(uint64)}
 	}
 |	"SCHEDULE" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementSchedule, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionSchedule, StrValue: $3}
 	}
 |	"CONSTRAINTS" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementConstraints, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionConstraints, StrValue: $3}
 	}
 |	"LEADER_CONSTRAINTS" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementLeaderConstraints, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionLeaderConstraints, StrValue: $3}
 	}
 |	"FOLLOWER_CONSTRAINTS" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementFollowerConstraints, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionFollowerConstraints, StrValue: $3}
 	}
 |	"VOTER_CONSTRAINTS" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementVoterConstraints, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionVoterConstraints, StrValue: $3}
 	}
 |	"LEARNER_CONSTRAINTS" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementLearnerConstraints, StrValue: $3}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionLearnerConstraints, StrValue: $3}
 	}
 |	"PLACEMENT" "POLICY" EqOpt stringLit
 	{
-		$$ = &ast.TableOption{Tp: ast.TableOptionPlacementPolicy, StrValue: $4}
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPolicy, StrValue: $4}
 	}
 
 OldPlacementOptions:
@@ -3669,12 +3669,12 @@ DatabaseOption:
 	}
 |	PlacementOption
 	{
-		tableOptions := $1.(*ast.TableOption)
+		placementOptions := $1.(*ast.PlacementOption)
 		$$ = &ast.DatabaseOption{
-			// offset trick, enums are identical but starts differently
-			Tp:        ast.DatabaseOptionType(tableOptions.Tp-ast.TableOptionPlacementPrimaryRegion) + ast.DatabaseOptionPlacementPrimaryRegion,
-			Value:     tableOptions.StrValue,
-			UintValue: tableOptions.UintValue,
+			// offset trick, enums are identical but of different type
+			Tp:        ast.DatabaseOptionType(placementOptions.Tp),
+			Value:     placementOptions.StrValue,
+			UintValue: placementOptions.UintValue,
 		}
 	}
 
@@ -4037,6 +4037,15 @@ PartDefOption:
 		$$ = &ast.TableOption{Tp: ast.TableOptionNodegroup, UintValue: $3.(uint64)}
 	}
 |	PlacementOption
+	{
+		placementOptions := $1.(*ast.PlacementOption)
+		$$ = &ast.TableOption{
+			// offset trick, enums are identical but of different type
+			Tp:        ast.TableOptionType(placementOptions.Tp),
+			StrValue:  placementOptions.StrValue,
+			UintValue: placementOptions.UintValue,
+		}
+	}
 
 PartDefValuesOpt:
 	{
