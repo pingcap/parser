@@ -298,6 +298,7 @@ import (
 	always                "ALWAYS"
 	any                   "ANY"
 	ascii                 "ASCII"
+	attributes            "ATTRIBUTES"
 	autoIdCache           "AUTO_ID_CACHE"
 	autoIncrement         "AUTO_INCREMENT"
 	autoRandom            "AUTO_RANDOM"
@@ -628,11 +629,14 @@ import (
 	bitOr                 "BIT_OR"
 	bitXor                "BIT_XOR"
 	bound                 "BOUND"
+	briefType             "BRIEF"
 	cast                  "CAST"
 	copyKwd               "COPY"
 	curTime               "CURTIME"
 	dateAdd               "DATE_ADD"
 	dateSub               "DATE_SUB"
+	dotType               "DOT"
+	dump                  "DUMP"
 	exact                 "EXACT"
 	extract               "EXTRACT"
 	flashback             "FLASHBACK"
@@ -645,8 +649,10 @@ import (
 	min                   "MIN"
 	max                   "MAX"
 	now                   "NOW"
+	plan                  "PLAN"
 	position              "POSITION"
 	recent                "RECENT"
+	recreator             "RECREATOR"
 	running               "RUNNING"
 	s3                    "S3"
 	staleness             "STALENESS"
@@ -683,6 +689,7 @@ import (
 	follower              "FOLLOWER"
 	leader                "LEADER"
 	learner               "LEARNER"
+	verboseType           "VERBOSE"
 	voter                 "VOTER"
 
 	/* The following tokens belong to TiDBKeyword. Notice: make sure these tokens are contained in TiDBKeyword. */
@@ -746,6 +753,7 @@ import (
 	builtinSysDate
 	builtinStddevPop
 	builtinStddevSamp
+	builtinTranslate
 	builtinTrim
 	builtinUser
 	builtinVarPop
@@ -848,6 +856,7 @@ import (
 	DropRoleStmt               "DROP ROLE"
 	DropViewStmt               "DROP VIEW statement"
 	DropBindingStmt            "DROP BINDING  statement"
+	DropPolicyStmt	           "DROP PLACEMENT POLICY statement"
 	DeallocateStmt             "Deallocate prepared statement"
 	DeleteFromStmt             "DELETE FROM statement"
 	DeleteWithoutUsingStmt     "Normal DELETE statement"
@@ -868,6 +877,7 @@ import (
 	LoadDataStmt               "Load data statement"
 	LoadStatsStmt              "Load statistic statement"
 	LockTablesStmt             "Lock tables statement"
+	PlanRecreatorStmt	       "Plan recreator statement"
 	PreparedStmt               "PreparedStmt"
 	PurgeImportStmt            "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt                 "SELECT statement"
@@ -899,6 +909,7 @@ import (
 	SetOprStmtWoutLimitOrderBy "Union/Except/Intersect select statement without limit and order by"
 	UseStmt                    "USE statement"
 	ShutdownStmt               "SHUTDOWN statement"
+	RestartStmt	        	   "RESTART statement"
 	CreateViewSelectOpt        "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	BindableStmt               "Statement that can be created binding on"
 	UpdateStmtNoWith           "Update statement without CTE clause"
@@ -1121,6 +1132,7 @@ import (
 	ShowTargetFilterable                   "Show target that can be filtered by WHERE or LIKE"
 	ShowTableAliasOpt                      "Show table alias option"
 	ShowLikeOrWhereOpt                     "Show like or where clause option"
+	ShowPlacementTarget                    "Show placement target"
 	ShowProfileArgsOpt                     "Show profile args option"
 	ShowProfileTypesOpt                    "Show profile types option"
 	ShowProfileType                        "Show profile type"
@@ -1280,6 +1292,7 @@ import (
 	PlacementOptions                       "Placement rules options"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
+	AttributesOpt                          "Attributes options"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -1339,6 +1352,7 @@ import (
 	CollationName                   "Collation name"
 	ColumnFormat                    "Column format"
 	DBName                          "Database Name"
+	PolicyName                      "Placement Policy Name"
 	ExplainFormatType               "explain format type"
 	FieldAsName                     "Field alias name"
 	FieldAsNameOpt                  "Field alias name opt"
@@ -1579,6 +1593,16 @@ PlacementSpecList:
 		$$ = append($1.([]*ast.PlacementSpec), $3.(*ast.PlacementSpec))
 	}
 
+AttributesOpt:
+	"ATTRIBUTES" EqOpt "DEFAULT"
+	{
+		$$ = &ast.AttributesSpec{Default: true}
+	}
+|	"ATTRIBUTES" EqOpt stringLit
+	{
+		$$ = &ast.AttributesSpec{Default: false, Attributes: $3}
+	}
+
 AlterTablePartitionOpt:
 	PartitionOpt
 	{
@@ -1602,6 +1626,14 @@ AlterTablePartitionOpt:
 		ret := $4.(*ast.AlterTableSpec)
 		ret.NoWriteToBinlog = $3.(bool)
 		$$ = ret
+	}
+|	"PARTITION" Identifier AttributesOpt
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTablePartitionAttributes,
+			PartitionNames: []model.CIStr{model.NewCIStr($2)},
+			AttributesSpec: $3.(*ast.AttributesSpec),
+		}
 	}
 
 LocationLabelList:
@@ -1736,6 +1768,13 @@ AlterTableSpec:
 			Tp:          ast.AlterTableAddStatistics,
 			IfNotExists: $3.(bool),
 			Statistics:  statsSpec,
+		}
+	}
+|	AttributesOpt
+	{
+		$$ = &ast.AlterTableSpec{
+			Tp:             ast.AlterTableAttributes,
+			AttributesSpec: $1.(*ast.AttributesSpec),
 		}
 	}
 |	"ALTER" "PARTITION" Identifier PlacementSpecList %prec lowerThanComma
@@ -3544,6 +3583,9 @@ CreateDatabaseStmt:
 DBName:
 	Identifier
 
+PolicyName:
+	Identifier
+
 DatabaseOption:
 	DefaultKwdOpt CharsetKw EqOpt CharsetName
 	{
@@ -4496,13 +4538,11 @@ ExplainStmt:
 
 ExplainFormatType:
 	"TRADITIONAL"
-	{
-		$$ = "row"
-	}
 |	"JSON"
-	{
-		$$ = "json"
-	}
+|	"ROW"
+|	"DOT"
+|	"BRIEF"
+|	"VERBOSE"
 
 /*******************************************************************
  * Backup / restore / import statements
@@ -5008,7 +5048,7 @@ Expression:
 	{
 		expr, ok := $2.(*ast.ExistsSubqueryExpr)
 		if ok {
-			expr.Not = true
+			expr.Not = !expr.Not
 			$$ = $2
 		} else {
 			$$ = &ast.UnaryOperationExpr{Op: opcode.Not, V: $2}
@@ -5582,6 +5622,7 @@ UnReservedKeyword:
 	"ACTION"
 |	"ADVISE"
 |	"ASCII"
+|	"ATTRIBUTES"
 |	"AUTO_ID_CACHE"
 |	"AUTO_INCREMENT"
 |	"AFTER"
@@ -5955,11 +5996,14 @@ NotKeywordToken:
 |	"BIT_AND"
 |	"BIT_OR"
 |	"BIT_XOR"
+|	"BRIEF"
 |	"CAST"
 |	"COPY"
 |	"CURTIME"
 |	"DATE_ADD"
 |	"DATE_SUB"
+|	"DOT"
+|	"DUMP"
 |	"EXTRACT"
 |	"GET_FORMAT"
 |	"GROUP_CONCAT"
@@ -5970,7 +6014,9 @@ NotKeywordToken:
 |	"MAX"
 |	"NOW"
 |	"RECENT"
+|	"RECREATOR"
 |	"RUNNING"
+|	"PLAN"
 |	"POSITION"
 |	"S3"
 |	"STRICT"
@@ -6011,6 +6057,7 @@ NotKeywordToken:
 |	"FOLLOWER"
 |	"LEADER"
 |	"LEARNER"
+|	"VERBOSE"
 |	"VOTER"
 
 /************************************************************************************
@@ -7038,6 +7085,13 @@ FunctionCallNonKeyword:
 		}
 	}
 |	FunctionNameSequence
+|	builtinTranslate '(' Expression ',' Expression ',' Expression ')'
+	{
+		$$ = &ast.FuncCallExpr{
+			FnName: model.NewCIStr($1),
+			Args:   []ast.ExprNode{$3, $5, $7},
+		}
+	}
 
 GetFormatSelector:
 	"DATE"
@@ -7555,6 +7609,14 @@ CastType:
 		x.Flag |= mysql.BinaryFlag
 		$$ = x
 	}
+|	"YEAR"
+	{
+		x := types.NewFieldType(mysql.TypeYear)
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		x.Flag |= mysql.BinaryFlag
+		$$ = x
+	}
 |	"DATETIME" OptFieldLen
 	{
 		x := types.NewFieldType(mysql.TypeDatetime)
@@ -7853,6 +7915,12 @@ ShutdownStmt:
 	"SHUTDOWN"
 	{
 		$$ = &ast.ShutdownStmt{}
+	}
+
+RestartStmt:
+	"RESTART"
+	{
+		$$ = &ast.RestartStmt{}
 	}
 
 HelpStmt:
@@ -9985,6 +10053,13 @@ ShowStmt:
 			Table: $4.(*ast.TableName),
 		}
 	}
+|	"SHOW" "CREATE" "PLACEMENT" "POLICY" PolicyName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:     ast.ShowCreatePlacementPolicy,
+			DBName: $5,
+		}
+	}
 |	"SHOW" "CREATE" "USER" Username
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/show-create-user.html
@@ -10099,6 +10174,34 @@ ShowStmt:
 	{
 		$$ = &ast.ShowStmt{
 			Tp: ast.ShowBuiltins,
+		}
+	}
+|	"SHOW" "PLACEMENT" "FOR" ShowPlacementTarget
+	{
+		$$ = $4.(*ast.ShowStmt)
+	}
+
+ShowPlacementTarget:
+	DatabaseSym DBName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:     ast.ShowPlacementForDatabase,
+			DBName: $2,
+		}
+	}
+|	"TABLE" TableName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:    ast.ShowPlacementForTable,
+			Table: $2.(*ast.TableName),
+		}
+	}
+|	"TABLE" TableName "PARTITION" Identifier
+	{
+		$$ = &ast.ShowStmt{
+			Tp:        ast.ShowPlacementForPartition,
+			Table:     $2.(*ast.TableName),
+			Partition: model.NewCIStr($4),
 		}
 	}
 
@@ -10382,6 +10485,14 @@ ShowTargetFilterable:
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowImports}
 	}
+|	"PLACEMENT"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowPlacement}
+	}
+|	"PLACEMENT" "LABELS"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowPlacementLabels}
+	}
 
 ShowLikeOrWhereOpt:
 	{
@@ -10602,6 +10713,7 @@ Statement:
 |	DropImportStmt
 |	DropIndexStmt
 |	DropTableStmt
+|	DropPolicyStmt
 |	DropSequenceStmt
 |	DropViewStmt
 |	DropUserStmt
@@ -10620,6 +10732,7 @@ Statement:
 |	KillStmt
 |	LoadDataStmt
 |	LoadStatsStmt
+|	PlanRecreatorStmt
 |	PreparedStmt
 |	PurgeImportStmt
 |	RollbackStmt
@@ -10660,6 +10773,7 @@ Statement:
 |	UnlockTablesStmt
 |	LockTablesStmt
 |	ShutdownStmt
+|	RestartStmt
 |	HelpStmt
 
 TraceableStmt:
@@ -11961,7 +12075,7 @@ RequireClause:
 	"REQUIRE" "NONE"
 	{
 		t := &ast.TLSOption{
-			Type: ast.TslNone,
+			Type: ast.TlsNone,
 		}
 		$$ = []*ast.TLSOption{t}
 	}
@@ -12978,6 +13092,15 @@ LoadStatsStmt:
 		}
 	}
 
+DropPolicyStmt:
+	"DROP" "PLACEMENT" "POLICY" IfExists PolicyName
+	{
+		$$ = &ast.DropPlacementPolicyStmt{
+			IfExists:   $4.(bool),
+			PolicyName: model.NewCIStr($5),
+		}
+	}
+
 /********************************************************************************************
  *
  *  Create Sequence Statement
@@ -13268,5 +13391,107 @@ RowStmt:
 	"ROW" RowValue
 	{
 		$$ = &ast.RowExpr{Values: $2.([]ast.ExprNode)}
+	}
+
+/********************************************************************
+ *
+ * Plan Recreator Statement
+ *
+ * PLAN RECREATOR
+ * 		[DUMP EXPLAIN
+ *			[ANALYZE]
+ *			{ExplainableStmt
+ *			| [WHERE where_condition]
+ *			  [ORDER BY {col_name | expr | position}
+ *    			[ASC | DESC], ... [WITH ROLLUP]]
+ *  		  [LIMIT {[offset,] row_count | row_count OFFSET offset}]}
+ *		| LOAD 'file_name']
+ *******************************************************************/
+PlanRecreatorStmt:
+	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" ExplainableStmt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    $5,
+			Analyze: false,
+			Load:    false,
+			File:    "",
+			Where:   nil,
+			OrderBy: nil,
+			Limit:   nil,
+		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		x.Stmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" "ANALYZE" ExplainableStmt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    $6,
+			Analyze: true,
+			Load:    false,
+			File:    "",
+			Where:   nil,
+			OrderBy: nil,
+			Limit:   nil,
+		}
+		startOffset := parser.startOffset(&yyS[yypt])
+		x.Stmt.SetText(strings.TrimSpace(parser.src[startOffset:]))
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" "SLOW" "QUERY" WhereClauseOptional OrderByOptional SelectStmtLimitOpt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    nil,
+			Analyze: false,
+			Load:    false,
+			File:    "",
+		}
+		if $7 != nil {
+			x.Where = $7.(ast.ExprNode)
+		}
+		if $8 != nil {
+			x.OrderBy = $8.(*ast.OrderByClause)
+		}
+		if $9 != nil {
+			x.Limit = $9.(*ast.Limit)
+		}
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "DUMP" "EXPLAIN" "ANALYZE" "SLOW" "QUERY" WhereClauseOptional OrderByOptional SelectStmtLimitOpt
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    nil,
+			Analyze: true,
+			Load:    false,
+			File:    "",
+		}
+		if $8 != nil {
+			x.Where = $8.(ast.ExprNode)
+		}
+		if $9 != nil {
+			x.OrderBy = $9.(*ast.OrderByClause)
+		}
+		if $10 != nil {
+			x.Limit = $10.(*ast.Limit)
+		}
+
+		$$ = x
+	}
+|	"PLAN" "RECREATOR" "LOAD" stringLit
+	{
+		x := &ast.PlanRecreatorStmt{
+			Stmt:    nil,
+			Analyze: false,
+			Load:    true,
+			File:    $4,
+			Where:   nil,
+			OrderBy: nil,
+			Limit:   nil,
+		}
+
+		$$ = x
 	}
 %%

@@ -71,7 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "until", "placement", "tablesample",
+		"match", "until", "placement", "tablesample", "attributes",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -1000,6 +1000,29 @@ AAAAAAAAAAAA5gm5Mg==
 
 		{"select `t`.`1a`.1 from t;", true, "SELECT `t`.`1a`.`1` FROM `t`"},
 		{"select * from 1db.1table;", true, "SELECT * FROM `1db`.`1table`"},
+
+		// for show placement
+		{"SHOW PLACEMENT", true, "SHOW PLACEMENT"},
+		{"SHOW PLACEMENT LIKE 'POLICY foo%'", true, "SHOW PLACEMENT LIKE _UTF8MB4'POLICY foo%'"},
+		{"SHOW PLACEMENT WHERE Target='TABLE test.t1'", true, "SHOW PLACEMENT WHERE `Target`=_UTF8MB4'TABLE test.t1'"},
+		{"SHOW PLACEMENT FOR DATABASE db1", true, "SHOW PLACEMENT FOR DATABASE `db1`"},
+		{"SHOW PLACEMENT FOR SCHEMA db1", true, "SHOW PLACEMENT FOR DATABASE `db1`"},
+		{"SHOW PLACEMENT FOR TABLE tb1", true, "SHOW PLACEMENT FOR TABLE `tb1`"},
+		{"SHOW PLACEMENT FOR TABLE db1.tb1", true, "SHOW PLACEMENT FOR TABLE `db1`.`tb1`"},
+		{"SHOW PLACEMENT FOR TABLE tb1 PARTITION p1", true, "SHOW PLACEMENT FOR TABLE `tb1` PARTITION `p1`"},
+		{"SHOW PLACEMENT FOR TABLE db1.tb1 PARTITION p1", true, "SHOW PLACEMENT FOR TABLE `db1`.`tb1` PARTITION `p1`"},
+		{"SHOW PLACEMENT FOR", false, ""},
+		{"SHOW PLACEMENT DATABASE db1", false, ""},
+		{"SHOW PLACEMENT FOR DB db1", false, ""},
+		{"SHOW PLACEMENT FOR DATABASE db1 TABLE tb1", false, ""},
+		{"SHOW PLACEMENT FOR PARTITION p1", false, ""},
+		{"SHOW PLACEMENT FOR DB LIKE '%'", false, ""},
+		{"SHOW PLACEMENT FOR DB db1 LIKE '%'", false, ""},
+
+		// for show placement labels
+		{"SHOW PLACEMENT LABELS", true, "SHOW PLACEMENT LABELS"},
+		{"SHOW PLACEMENT LABELS LIKE '%zone%'", true, "SHOW PLACEMENT LABELS LIKE _UTF8MB4'%zone%'"},
+		{"SHOW PLACEMENT LABELS WHERE label='l123'", true, "SHOW PLACEMENT LABELS WHERE `label`=_UTF8MB4'l123'"},
 	}
 	s.RunTest(c, table)
 }
@@ -1489,6 +1512,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`SELECT tidb_decode_plan();`, true, "SELECT TIDB_DECODE_PLAN()"},
 		{`SELECT tidb_decode_key('abc');`, true, "SELECT TIDB_DECODE_KEY(_UTF8MB4'abc')"},
 		{`SELECT tidb_decode_base64_key('abc');`, true, "SELECT TIDB_DECODE_BASE64_KEY(_UTF8MB4'abc')"},
+		{`SELECT tidb_decode_sql_digests('[]');`, true, "SELECT TIDB_DECODE_SQL_DIGESTS(_UTF8MB4'[]')"},
 		{`SELECT get_mvcc_info('hex', '0xabc');`, true, "SELECT GET_MVCC_INFO(_UTF8MB4'hex', _UTF8MB4'0xabc')"},
 
 		// for time fsp
@@ -1526,8 +1550,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
 		{"select cast(1 as float(54));", false, ""},
 
-		// for cast as real
 		{"select cast(1 as real);", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast('2000' as year);", true, "SELECT CAST(_UTF8MB4'2000' AS YEAR)"},
+		{"select cast(time '2000' as year);", true, "SELECT CAST(TIME '2000' AS YEAR)"},
 
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
@@ -2111,6 +2136,7 @@ func (s *testParserSuite) TestIdentifier(c *C) {
 		{`select * from t as "a"`, false, ""},
 		{`select * from t a`, true, "SELECT * FROM `t` AS `a`"},
 		// reserved keyword can't be used as identifier directly, but A.B pattern is an exception
+		{`select * from ROW`, false, ""},
 		{`select COUNT from DESC`, false, ""},
 		{`select COUNT from SELECT.DESC`, true, "SELECT `COUNT` FROM `SELECT`.`DESC`"},
 		{"use `select`", true, "USE `select`"},
@@ -2782,6 +2808,28 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 
+		// alter attributes
+		{"ALTER TABLE t ATTRIBUTES='str'", true, "ALTER TABLE `t` ATTRIBUTES='str'"},
+		{"ALTER TABLE t ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES=\"str1,str2\"", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES 'str1,str2'", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES \"str1,str2\"", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES=DEFAULT", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES=default", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES=DeFaUlT", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES", false, ""},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES='str'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=\"str1,str2\"", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES 'str1,str2'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES \"str1,str2\"", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=DEFAULT", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=default", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=DeFaUlT", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES", false, ""},
+		// For https://github.com/pingcap/tidb/issues/26778
+		{"CREATE TABLE t1 (attributes int);", true, "CREATE TABLE `t1` (`attributes` INT)"},
+
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
@@ -3218,6 +3266,17 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a int, b varchar(255) primary key nonclustered clustered)", false, ""},
 		{"alter table t add primary key (`a`, `b`) clustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) CLUSTERED"},
 		{"alter table t add primary key (`a`, `b`) nonclustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) NONCLUSTERED"},
+
+		// for drop placement policy
+		{"drop placement policy x", true, "DROP PLACEMENT POLICY `x`"},
+		{"drop placement policy x, y", false, ""},
+		{"drop placement policy if exists x", true, "DROP PLACEMENT POLICY IF EXISTS `x`"},
+		{"drop placement policy if exists x, y", false, ""},
+		// for show create placement policy
+		{"show create placement policy x", true, "SHOW CREATE PLACEMENT POLICY `x`"},
+		{"show create placement policy if exists x", false, ""},
+		{"show create placement policy x, y", false, ""},
+		{"show create placement policy `placement`", true, "SHOW CREATE PLACEMENT POLICY `placement`"},
 	}
 	s.RunTest(c, table)
 }
@@ -4426,17 +4485,31 @@ func (s *testParserSuite) TestExplain(c *C) {
 		{"DESCRIBE SCHE.TABL COLUM", true, "DESC `SCHE`.`TABL` `COLUM`"},
 		{"EXPLAIN ANALYZE SELECT 1", true, "EXPLAIN ANALYZE SELECT 1"},
 		{"EXPLAIN FORMAT = 'dot' SELECT 1", true, "EXPLAIN FORMAT = 'dot' SELECT 1"},
+		{"EXPLAIN FORMAT = DOT SELECT 1", true, "EXPLAIN FORMAT = 'DOT' SELECT 1"},
 		{"EXPLAIN FORMAT = 'row' SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
 		{"EXPLAIN FORMAT = 'ROW' SELECT 1", true, "EXPLAIN FORMAT = 'ROW' SELECT 1"},
+		{"EXPLAIN FORMAT = 'BRIEF' SELECT 1", true, "EXPLAIN FORMAT = 'BRIEF' SELECT 1"},
+		{"EXPLAIN FORMAT = BRIEF SELECT 1", true, "EXPLAIN FORMAT = 'BRIEF' SELECT 1"},
+		{"EXPLAIN FORMAT = 'verbose' SELECT 1", true, "EXPLAIN FORMAT = 'verbose' SELECT 1"},
+		{"EXPLAIN FORMAT = 'VERBOSE' SELECT 1", true, "EXPLAIN FORMAT = 'VERBOSE' SELECT 1"},
+		{"EXPLAIN FORMAT = VERBOSE SELECT 1", true, "EXPLAIN FORMAT = 'VERBOSE' SELECT 1"},
 		{"EXPLAIN SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
 		{"EXPLAIN FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
 		{"EXPLAIN FOR connection 42", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 42"},
 		{"EXPLAIN FORMAT = 'dot' FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'dot' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = DOT FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'DOT' FOR CONNECTION 1"},
 		{"EXPLAIN FORMAT = 'row' FOR connection 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
-		{"EXPLAIN FORMAT = TRADITIONAL FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'row' FOR CONNECTION 1"},
-		{"EXPLAIN FORMAT = TRADITIONAL SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
-		{"EXPLAIN FORMAT = JSON FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'json' FOR CONNECTION 1"},
-		{"EXPLAIN FORMAT = JSON SELECT 1", true, "EXPLAIN FORMAT = 'json' SELECT 1"},
+		{"EXPLAIN FORMAT = ROW FOR connection 1", true, "EXPLAIN FORMAT = 'ROW' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = TRADITIONAL FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'TRADITIONAL' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = TRADITIONAL SELECT 1", true, "EXPLAIN FORMAT = 'TRADITIONAL' SELECT 1"},
+		{"EXPLAIN FORMAT = BRIEF SELECT 1", true, "EXPLAIN FORMAT = 'BRIEF' SELECT 1"},
+		{"EXPLAIN FORMAT = 'brief' SELECT 1", true, "EXPLAIN FORMAT = 'brief' SELECT 1"},
+		{"EXPLAIN FORMAT = DOT SELECT 1", true, "EXPLAIN FORMAT = 'DOT' SELECT 1"},
+		{"EXPLAIN FORMAT = 'dot' SELECT 1", true, "EXPLAIN FORMAT = 'dot' SELECT 1"},
+		{"EXPLAIN FORMAT = VERBOSE SELECT 1", true, "EXPLAIN FORMAT = 'VERBOSE' SELECT 1"},
+		{"EXPLAIN FORMAT = 'verbose' SELECT 1", true, "EXPLAIN FORMAT = 'verbose' SELECT 1"},
+		{"EXPLAIN FORMAT = JSON FOR CONNECTION 1", true, "EXPLAIN FORMAT = 'JSON' FOR CONNECTION 1"},
+		{"EXPLAIN FORMAT = JSON SELECT 1", true, "EXPLAIN FORMAT = 'JSON' SELECT 1"},
 		{"EXPLAIN FORMAT = 'hint' SELECT 1", true, "EXPLAIN FORMAT = 'hint' SELECT 1"},
 		{"EXPLAIN ALTER TABLE t1 ADD INDEX (a)", true, "EXPLAIN FORMAT = 'row' ALTER TABLE `t1` ADD INDEX(`a`)"},
 		{"EXPLAIN ALTER TABLE t1 ADD a varchar(255)", true, "EXPLAIN FORMAT = 'row' ALTER TABLE `t1` ADD COLUMN `a` VARCHAR(255)"},
@@ -4742,6 +4815,7 @@ func (s *testParserSuite) TestSessionManage(c *C) {
 		{"show processlist", true, "SHOW PROCESSLIST"},
 		{"show full processlist", true, "SHOW FULL PROCESSLIST"},
 		{"shutdown", true, "SHUTDOWN"},
+		{"restart", true, "RESTART"},
 	}
 	s.RunTest(c, table)
 }
@@ -6052,4 +6126,37 @@ func (s *testParserSuite) TestCTEBindings(c *C) {
 			c.Assert(restoreSQLs, Equals, t.restore, comment)
 		}
 	}
+}
+
+func (s *testParserSuite) TestPlanRecreator(c *C) {
+	table := []testCase{
+		{"PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", true, "PLAN RECREATOR DUMP EXPLAIN SELECT `a` FROM `t`"},
+		{"PLAN RECREATOR DUMP EXPLAIN SELECT * FROM t WHERE a > 10", true, "PLAN RECREATOR DUMP EXPLAIN SELECT * FROM `t` WHERE `a`>10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT * FROM t WHERE a > 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT * FROM `t` WHERE `a`>10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE a > 10 and t < 1 ORDER BY t LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE `a`>10 AND `t`<1 ORDER BY `t` LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE a > 10 and t < 1 ORDER BY t LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE `a`>10 AND `t`<1 ORDER BY `t` LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE a > 10 and t < 1 LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE `a`>10 AND `t`<1 LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE a > 10 and t < 1 LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE `a`>10 AND `t`<1 LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY"},
+		{"PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'", true, "PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'"},
+	}
+	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsFalse)
+
+	sms, _, err = p.Parse("PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok = sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsTrue)
 }
