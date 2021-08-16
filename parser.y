@@ -712,6 +712,7 @@ import (
 	pessimistic                "PESSIMISTIC"
 	pump                       "PUMP"
 	samples                    "SAMPLES"
+	sampleRate                 "SAMPLERATE"
 	statistics                 "STATISTICS"
 	stats                      "STATS"
 	statsMeta                  "STATS_META"
@@ -2642,6 +2643,10 @@ AnalyzeOption:
 |	NUM "SAMPLES"
 	{
 		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptNumSamples, Value: getUint64FromNUM($1)}
+	}
+|	NUM "SAMPLERATE"
+	{
+		$$ = ast.AnalyzeOpt{Type: ast.AnalyzeOptSampleRate, Value: getUint64FromNUM($1)}
 	}
 
 /*******************************************************************************************/
@@ -5969,6 +5974,7 @@ TiDBKeyword:
 |	"NODE_STATE"
 |	"PUMP"
 |	"SAMPLES"
+|	"SAMPLERATE"
 |	"STATISTICS"
 |	"STATS"
 |	"STATS_META"

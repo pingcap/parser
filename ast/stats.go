@@ -52,6 +52,7 @@ const (
 	AnalyzeOptCMSketchDepth
 	AnalyzeOptCMSketchWidth
 	AnalyzeOptNumSamples
+	AnalyzeOptSampleRate
 )
 
 // AnalyzeOptionString stores the string form of analyze options.
