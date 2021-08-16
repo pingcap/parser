@@ -856,7 +856,7 @@ import (
 	DropRoleStmt               "DROP ROLE"
 	DropViewStmt               "DROP VIEW statement"
 	DropBindingStmt            "DROP BINDING  statement"
-	DropPolicyStmt	           "DROP PLACEMENT POLICY statement"
+	DropPolicyStmt             "DROP PLACEMENT POLICY statement"
 	DeallocateStmt             "Deallocate prepared statement"
 	DeleteFromStmt             "DELETE FROM statement"
 	DeleteWithoutUsingStmt     "Normal DELETE statement"
@@ -877,7 +877,7 @@ import (
 	LoadDataStmt               "Load data statement"
 	LoadStatsStmt              "Load statistic statement"
 	LockTablesStmt             "Lock tables statement"
-	PlanRecreatorStmt	       "Plan recreator statement"
+	PlanRecreatorStmt          "Plan recreator statement"
 	PreparedStmt               "PreparedStmt"
 	PurgeImportStmt            "PURGE IMPORT statement that removes a IMPORT task record"
 	SelectStmt                 "SELECT statement"
@@ -909,7 +909,7 @@ import (
 	SetOprStmtWoutLimitOrderBy "Union/Except/Intersect select statement without limit and order by"
 	UseStmt                    "USE statement"
 	ShutdownStmt               "SHUTDOWN statement"
-	RestartStmt	        	   "RESTART statement"
+	RestartStmt                "RESTART statement"
 	CreateViewSelectOpt        "Select/Union/Except/Intersect statement in CREATE VIEW ... AS SELECT"
 	BindableStmt               "Statement that can be created binding on"
 	UpdateStmtNoWith           "Update statement without CTE clause"
@@ -4040,10 +4040,7 @@ CreateTableSelectOpt:
 	{
 		var sel ast.ResultSetNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -4058,10 +4055,7 @@ CreateViewSelectOpt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -6162,10 +6156,7 @@ InsertValues:
 	{
 		var sel ast.ResultSetNode
 		switch x := $4.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -6191,10 +6182,7 @@ InsertValues:
 	{
 		var sel ast.ResultSetNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -10750,10 +10738,7 @@ Statement:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -10788,10 +10773,7 @@ TraceableStmt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -10815,10 +10797,7 @@ ExplainableStmt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -12302,10 +12281,7 @@ BindableStmt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt:
-			x.IsInBraces = true
-			sel = x
-		case *ast.SetOprStmt:
+		case *ast.SelectStmt, *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
