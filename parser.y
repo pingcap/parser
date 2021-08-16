@@ -4040,7 +4040,10 @@ CreateTableSelectOpt:
 	{
 		var sel ast.ResultSetNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -4055,7 +4058,10 @@ CreateViewSelectOpt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -6156,7 +6162,10 @@ InsertValues:
 	{
 		var sel ast.ResultSetNode
 		switch x := $4.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -6182,7 +6191,10 @@ InsertValues:
 	{
 		var sel ast.ResultSetNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -10738,7 +10750,10 @@ Statement:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -10773,7 +10788,10 @@ TraceableStmt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -10797,7 +10815,10 @@ ExplainableStmt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
@@ -12281,7 +12302,10 @@ BindableStmt:
 	{
 		var sel ast.StmtNode
 		switch x := $1.(*ast.SubqueryExpr).Query.(type) {
-		case *ast.SelectStmt, *ast.SetOprStmt:
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			sel = x
+		case *ast.SetOprStmt:
 			x.IsInBraces = true
 			sel = x
 		}
