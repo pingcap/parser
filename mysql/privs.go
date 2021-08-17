@@ -64,6 +64,7 @@ var Priv2SetStr = map[PrivilegeType]string{
 	DropPriv:       "Drop",
 	GrantPriv:      "Grant",
 	ReferencesPriv: "References",
+	LockTablesPriv: "Lock Tables",
 	AlterPriv:      "Alter",
 	ExecutePriv:    "Execute",
 	IndexPriv:      "Index",
@@ -84,6 +85,7 @@ var SetStr2Priv = map[string]PrivilegeType{
 	"Drop":        DropPriv,
 	"Grant":       GrantPriv,
 	"References":  ReferencesPriv,
+	"Lock Tables": LockTablesPriv,
 	"Alter":       AlterPriv,
 	"Execute":     ExecutePriv,
 	"Index":       IndexPriv,
@@ -302,7 +304,7 @@ var AllGlobalPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, 
 var AllDBPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ReferencesPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
 
 // AllTablePrivs is all the privileges in table scope.
-var AllTablePrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, IndexPriv, ReferencesPriv, AlterPriv, CreateViewPriv, ShowViewPriv}
+var AllTablePrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, IndexPriv, ReferencesPriv, LockTablesPriv, AlterPriv, CreateViewPriv, ShowViewPriv}
 
 // AllColumnPrivs is all the privileges in column scope.
 var AllColumnPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv}
