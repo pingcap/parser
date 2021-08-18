@@ -9111,6 +9111,11 @@ SetOprStmt:
 SetOprStmtWoutLimitOrderBy:
 	SetOprClauseList SetOpr SelectStmt
 	{
+		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-1])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $1.([]ast.Node)}}
 		st := $3.(*ast.SelectStmt)
 		setOpr.Limit = st.Limit
