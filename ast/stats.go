@@ -62,6 +62,7 @@ var AnalyzeOptionString = map[AnalyzeOptionType]string{
 	AnalyzeOptCMSketchWidth: "CMSKETCH WIDTH",
 	AnalyzeOptCMSketchDepth: "CMSKETCH DEPTH",
 	AnalyzeOptNumSamples:    "SAMPLES",
+	AnalyzeOptSampleRate:    "SAMPLERATE",
 }
 
 // HistogramOperationType is the type for histogram operation.

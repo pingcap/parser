@@ -4935,6 +4935,7 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t with 4 cmsketch width", true, "ANALYZE TABLE `t` WITH 4 CMSKETCH WIDTH"},
 		{"analyze table t with 4 cmsketch depth", true, "ANALYZE TABLE `t` WITH 4 CMSKETCH DEPTH"},
 		{"analyze table t with 4 samples", true, "ANALYZE TABLE `t` WITH 4 SAMPLES"},
+		{"analyze table t with 4 samplerate", true, "ANALYZE TABLE `t` WITH 4 SAMPLERATE"},
 		{"analyze table t with 4 buckets, 4 topn, 4 cmsketch width, 4 cmsketch depth, 4 samples", true, "ANALYZE TABLE `t` WITH 4 BUCKETS, 4 TOPN, 4 CMSKETCH WIDTH, 4 CMSKETCH DEPTH, 4 SAMPLES"},
 		{"analyze table t index a with 4 buckets", true, "ANALYZE TABLE `t` INDEX `a` WITH 4 BUCKETS"},
 		{"analyze table t partition a", true, "ANALYZE TABLE `t` PARTITION `a`"},
