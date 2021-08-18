@@ -25,6 +25,8 @@ import (
 	"github.com/pingcap/parser/auth"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/transform"
 )
 
 var (
@@ -72,10 +74,12 @@ type ParserConfig struct {
 	EnableWindowFunction        bool
 	EnableStrictDoubleTypeCheck bool
 	SkipPositionRecording       bool
+	Decoder                     *encoding.Decoder
 }
 
 // Parser represents a parser instance. Some temporary objects are stored in it to reduce object allocation during Parse function.
 type Parser struct {
+	decoder    *encoding.Decoder
 	charset    string
 	collation  string
 	result     []ast.StmtNode
@@ -132,11 +136,18 @@ func (parser *Parser) SetParserConfig(config ParserConfig) {
 	parser.EnableWindowFunc(config.EnableWindowFunction)
 	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
 	parser.lexer.skipPositionRecording = config.SkipPositionRecording
+	parser.decoder = config.Decoder
 }
 
 // Parse parses a query string to raw ast.StmtNode.
 // If charset or collation is "", default charset and collation will be used.
 func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode, warns []error, err error) {
+	if parser.decoder != nil {
+		sql, _, err = transform.String(parser.decoder, sql)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+	}
 	if charset == "" {
 		charset = mysql.DefaultCharset
 	}

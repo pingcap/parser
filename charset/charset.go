@@ -57,15 +57,18 @@ var charsetInfos = map[string]*Charset{
 	CharsetASCII:   {CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
 	CharsetLatin1:  {CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
 	CharsetBin:     {CharsetBin, CollationBin, make(map[string]*Collation), "binary", 1},
+	CharsetGBK:     {CharsetGBK, CollationGBKChineseCI, make(map[string]*Collation), "GBK", 2},
 }
 
 // All the names supported collations should be in the following table.
 var supportedCollationNames = map[string]struct{}{
-	CollationUTF8:    {},
-	CollationUTF8MB4: {},
-	CollationASCII:   {},
-	CollationLatin1:  {},
-	CollationBin:     {},
+	CollationUTF8:          {},
+	CollationUTF8MB4:       {},
+	CollationASCII:         {},
+	CollationLatin1:        {},
+	CollationBin:           {},
+	CollationGBKChineseCI:  {},
+	CollationGBKUTF8MB4Bin: {},
 }
 
 // GetSupportedCharsets gets descriptions for all charsets supported so far.
@@ -186,7 +189,9 @@ const (
 	// CollationLatin1 is the default collation for CharsetLatin1.
 	CollationLatin1 = "latin1_bin"
 
-	CollationGBKBin = "gbk_bin"
+	CollationGBKBin        = "gbk_bin"
+	CollationGBKChineseCI  = "gbk_chinese_ci"
+	CollationGBKUTF8MB4Bin = "gbk_utf8mb4_bin"
 
 	CharsetARMSCII8 = "armscii8"
 	CharsetBig5     = "big5"
