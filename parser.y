@@ -2804,7 +2804,14 @@ ColumnDefList:
 ColumnDef:
 	ColumnName Type ColumnOptionListOpt
 	{
-		colDef := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: $2.(*types.FieldType), Options: $3.([]*ast.ColumnOption)}
+		tp := $2.(*types.FieldType)
+		for _, opt := range $3.([]*ast.ColumnOption) {
+			if opt.Tp == ast.ColumnOptionCollate {
+				tp.Collate = opt.StrValue
+				break
+			}
+		}
+		colDef := &ast.ColumnDef{Name: $1.(*ast.ColumnName), Tp: tp, Options: $3.([]*ast.ColumnOption)}
 		if !colDef.Validate() {
 			yylex.AppendError(yylex.Errorf("Invalid column definition"))
 			return 1
