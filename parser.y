@@ -9193,7 +9193,7 @@ SetOprStmtWithLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect OrderBy SelectStmtLimit
 	{
 		setOprList1 := $1.([]ast.Node)
-		if sel, isSelect := setOprList1[len(setOprList1)-3].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
 			endOffset := parser.endOffset(&yyS[yypt-3])
 			parser.setLastSelectFieldText(sel, endOffset)
 		}
