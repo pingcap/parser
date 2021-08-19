@@ -1302,7 +1302,7 @@ import (
 	PlacementRole                          "Placement rules role option"
 	OldPlacementOptions                    "Placement rules options"
 	PlacementOption                        "Anonymous or direct placement option"
-	PlacementOption2                       "Subset of anonymous or direct placement option"
+	DirectPlacementOption                  "Subset of anonymous or direct placement option"
 	PlacementOptionList                    "Anomymous or direct placement option list"
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
@@ -1528,20 +1528,20 @@ PlacementLabelConstraints:
 	}
 
 PlacementOptionList:
-	PlacementOption2
+	DirectPlacementOption
 	{
 		$$ = []*ast.PlacementOption{$1.(*ast.PlacementOption)}
 	}
-|	PlacementOptionList PlacementOption2
+|	PlacementOptionList DirectPlacementOption
 	{
 		$$ = append($1.([]*ast.PlacementOption), $2.(*ast.PlacementOption))
 	}
-|	PlacementOptionList ',' PlacementOption2
+|	PlacementOptionList ',' DirectPlacementOption
 	{
 		$$ = append($1.([]*ast.PlacementOption), $3.(*ast.PlacementOption))
 	}
 
-PlacementOption2:
+DirectPlacementOption:
 	"PRIMARY_REGION" EqOpt stringLit
 	{
 		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPrimaryRegion, StrValue: $3}
@@ -1588,7 +1588,7 @@ PlacementOption2:
 	}
 
 PlacementOption:
-	PlacementOption2
+	DirectPlacementOption
 |	"PLACEMENT" "POLICY" EqOpt stringLit
 	{
 		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPolicy, StrValue: $4}
