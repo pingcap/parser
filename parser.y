@@ -9146,7 +9146,7 @@ SetOprStmtWithLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
-			endOffset := parser.endOffset(&yyS[yypt-2])
+			endOffset := parser.endOffset(&yyS[yypt-1])
 			parser.setLastSelectFieldText(sel, endOffset)
 		}
 		var setOprList2 []ast.Node
@@ -9170,7 +9170,7 @@ SetOprStmtWithLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
-			endOffset := parser.endOffset(&yyS[yypt-3])
+			endOffset := parser.endOffset(&yyS[yypt-2])
 			parser.setLastSelectFieldText(sel, endOffset)
 		}
 		var setOprList2 []ast.Node
@@ -9193,6 +9193,10 @@ SetOprStmtWithLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect OrderBy SelectStmtLimit
 	{
 		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-3].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-3])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		var setOprList2 []ast.Node
 		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
