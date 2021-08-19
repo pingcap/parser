@@ -1437,7 +1437,7 @@ type CreatePlacementPolicyStmt struct {
 
 	IfNotExists      bool
 	PolicyName       model.CIStr
-	PlacementOptions []*TableOption
+	PlacementOptions []*PlacementOption
 }
 
 // Restore implements Node interface.
@@ -3940,7 +3940,7 @@ type AlterPlacementPolicyStmt struct {
 
 	PolicyName       model.CIStr
 	IfExists         bool
-	PlacementOptions []*TableOption
+	PlacementOptions []*PlacementOption
 }
 
 func (n *AlterPlacementPolicyStmt) Restore(ctx *format.RestoreCtx) error {

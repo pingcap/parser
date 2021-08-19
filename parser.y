@@ -1529,15 +1529,15 @@ PlacementLabelConstraints:
 PlacementOptionList:
 	PlacementOption
 	{
-		$$ = []*ast.TableOption{$1.(*ast.TableOption)}
+		$$ = []*ast.PlacementOption{$1.(*ast.PlacementOption)}
 	}
 |	PlacementOptionList PlacementOption
 	{
-		$$ = append($1.([]*ast.TableOption), $2.(*ast.TableOption))
+		$$ = append($1.([]*ast.PlacementOption), $2.(*ast.PlacementOption))
 	}
 |	PlacementOptionList ',' PlacementOption
 	{
-		$$ = append($1.([]*ast.TableOption), $3.(*ast.TableOption))
+		$$ = append($1.([]*ast.PlacementOption), $3.(*ast.PlacementOption))
 	}
 
 PlacementOption:
@@ -13223,7 +13223,7 @@ CreatePolicyStmt:
 		$$ = &ast.CreatePlacementPolicyStmt{
 			IfNotExists:      $4.(bool),
 			PolicyName:       model.NewCIStr($5),
-			PlacementOptions: $6.([]*ast.TableOption),
+			PlacementOptions: $6.([]*ast.PlacementOption),
 		}
 	}
 
@@ -13233,7 +13233,7 @@ AlterPolicyStmt:
 		$$ = &ast.AlterPlacementPolicyStmt{
 			IfExists:         $4.(bool),
 			PolicyName:       model.NewCIStr($5),
-			PlacementOptions: $6.([]*ast.TableOption),
+			PlacementOptions: $6.([]*ast.PlacementOption),
 		}
 	}
 
