@@ -9170,7 +9170,7 @@ SetOprStmtWithLimitOrderBy:
 	{
 		setOprList1 := $1.([]ast.Node)
 		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
-			endOffset := parser.endOffset(&yyS[yypt-2])
+			endOffset := parser.endOffset(&yyS[yypt-3])
 			parser.setLastSelectFieldText(sel, endOffset)
 		}
 		var setOprList2 []ast.Node
