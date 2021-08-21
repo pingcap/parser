@@ -5448,6 +5448,15 @@ IndexOption:
 			Comment: $2,
 		}
 	}
+|	"TABLESPACE" EqOpt Identifier
+	{
+		$$ = &ast.IndexOption{}
+	}
+|	"TABLESPACE" EqOpt Identifier "LOCAL" '(' error ')'
+	{
+		yyerrok()
+		parser.lastErrorAsWarn()
+	}
 |	IndexInvisible
 	{
 		$$ = &ast.IndexOption{
