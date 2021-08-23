@@ -5452,10 +5452,9 @@ IndexOption:
 	{
 		$$ = &ast.IndexOption{}
 	}
-|	"TABLESPACE" EqOpt Identifier "LOCAL" '(' error ')'
+|	"TABLESPACE" EqOpt Identifier "LOCAL" PartitionDefinitionListOpt
 	{
-		yyerrok()
-		parser.lastErrorAsWarn()
+		$$ = &ast.IndexOption{}
 	}
 |	IndexInvisible
 	{
