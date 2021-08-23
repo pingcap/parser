@@ -198,7 +198,8 @@ func NewDDLReorgMeta() *DDLReorgMeta {
 
 // MultiSchemaInfo keeps some information for multi schema change.
 type MultiSchemaInfo struct {
-	Warnings []*errors.Error
+	Enable   bool            `json:"enable"`
+	Warnings []*errors.Error `json:"warnings"`
 }
 
 // Job is for a DDL operation.
