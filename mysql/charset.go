@@ -29,8 +29,6 @@ func CharsetNameToID(charset string) uint8 {
 		return ASCIIDefaultCollationID
 	} else if charset == "latin1" {
 		return Latin1DefaultCollationID
-	} else if charset == "gbk" {
-		return GBKDefaultCollationID
 	} else {
 		return CharsetIDs[charset]
 	}
@@ -584,7 +582,6 @@ const (
 	UTF8DefaultCollationID    = 83
 	UTF8MB4DefaultCollationID = 46
 	BinaryDefaultCollationID  = 63
-	GBKDefaultCollationID     = 28
 	UTF8DefaultCollation      = "utf8_bin"
 	UTF8MB4DefaultCollation   = "utf8mb4_bin"
 	DefaultCollationName      = UTF8MB4DefaultCollation

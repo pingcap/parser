@@ -23,6 +23,8 @@ import (
 
 	"github.com/pingcap/parser/mysql"
 	tidbfeature "github.com/pingcap/parser/tidb"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/transform"
 )
 
 var _ = yyLexer(&Scanner{})
@@ -36,8 +38,9 @@ type Pos struct {
 
 // Scanner implements the yyLexer interface.
 type Scanner struct {
-	r   reader
-	buf bytes.Buffer
+	r       reader
+	buf     bytes.Buffer
+	decoder *encoding.Decoder
 
 	errs         []error
 	warns        []error
@@ -134,6 +137,17 @@ func (s *Scanner) AppendError(err error) {
 	s.errs = append(s.errs, err)
 }
 
+func (s *Scanner) tryDecodeToUTF8(lit string) string {
+	if s.decoder != nil {
+		var err error
+		lit, _, err = transform.String(s.decoder, lit)
+		if err != nil {
+			lit = "?"
+		}
+	}
+	return lit
+}
+
 func (s *Scanner) getNextToken() int {
 	r := s.r
 	tok, pos, lit := s.scan()
@@ -175,6 +189,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 		tok == stringLit &&
 		s.r.s[v.offset] == '"' {
 		tok = identifier
+		v.ident = s.tryDecodeToUTF8(v.ident)
 	}
 
 	if tok == pipes && !(s.sqlMode.HasPipesAsConcatMode()) {
@@ -242,6 +257,7 @@ func (s *Scanner) InheritScanner(sql string) *Scanner {
 		r:                 reader{s: sql},
 		sqlMode:           s.sqlMode,
 		supportWindowFunc: s.supportWindowFunc,
+		decoder:           s.decoder,
 	}
 }
 
@@ -266,7 +282,7 @@ func (s *Scanner) scan() (tok int, pos Pos, lit string) {
 		return 0, pos, ""
 	}
 
-	if !s.r.eof() && isIdentExtend(ch0) {
+	if isIdentExtend(ch0) {
 		return scanIdentifier(s)
 	}
 
@@ -516,7 +532,7 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
 	s.r.incAsLongAs(isIdentChar)
-	return identifier, pos, s.r.data(&pos)
+	return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
 }
 
 func scanIdentifierOrString(s *Scanner) (tok int, lit string) {
@@ -530,7 +546,7 @@ func scanIdentifierOrString(s *Scanner) (tok int, lit string) {
 		if isUserVarChar(ch1) {
 			pos := s.r.pos()
 			s.r.incAsLongAs(isUserVarChar)
-			tok, lit = identifier, s.r.data(&pos)
+			tok, lit = identifier, s.tryDecodeToUTF8(s.r.data(&pos))
 		} else {
 			tok = int(ch1)
 		}
@@ -687,7 +703,7 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			// 0x, 0x7fz3 are identifier
 			if p1 == p2 || isDigit(s.r.peek()) {
 				s.r.incAsLongAs(isIdentChar)
-				return identifier, pos, s.r.data(&pos)
+				return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
 			}
 			tok = hexLit
 		case ch1 == 'b':
@@ -698,14 +714,14 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			// 0b, 0b123, 0b1ab are identifier
 			if p1 == p2 || isDigit(s.r.peek()) {
 				s.r.incAsLongAs(isIdentChar)
-				return identifier, pos, s.r.data(&pos)
+				return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
 			}
 			tok = bitLit
 		case ch1 == '.':
 			return s.scanFloat(&pos)
 		case ch1 == 'B':
 			s.r.incAsLongAs(isIdentChar)
-			return identifier, pos, s.r.data(&pos)
+			return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
 		}
 	}
 
@@ -718,7 +734,7 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 	// Identifiers may begin with a digit but unless quoted may not consist solely of digits.
 	if !s.r.eof() && isIdentChar(ch0) {
 		s.r.incAsLongAs(isIdentChar)
-		return identifier, pos, s.r.data(&pos)
+		return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
 	}
 	lit = s.r.data(&pos)
 	return
@@ -792,6 +808,9 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 		tok = decLit
 	}
 	pos, lit = *beg, s.r.data(beg)
+	if tok == identifier {
+		lit = s.tryDecodeToUTF8(lit)
+	}
 	return
 }
 
@@ -892,11 +911,7 @@ func (r *reader) peek() rune {
 		return unicode.ReplacementChar
 	}
 	v, w := rune(r.s[r.p.Offset]), 1
-	switch {
-	case v == 0:
-		r.w = w
-		return v // illegal UTF-8 encoding
-	case v >= 0x80:
+	if v >= 0x80 {
 		v, w = utf8.DecodeRuneInString(r.s[r.p.Offset:])
 		if v == utf8.RuneError && w == 1 {
 			v = rune(r.s[r.p.Offset]) // illegal UTF-8 encoding

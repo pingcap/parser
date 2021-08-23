@@ -6248,7 +6248,7 @@ func (s *testParserSuite) TestPlanRecreator(c *C) {
 func (s *testParserSuite) TestGBKEncoding(c *C) {
 	p := parser.New()
 	gbkEncoding, _ := charset.Lookup("gbk")
-	encoder, decoder := gbkEncoding.NewEncoder(), gbkEncoding.NewDecoder()
+	encoder := gbkEncoding.NewEncoder()
 	sql, err := encoder.String("create table 测试表 (测试列 varchar(255) default 'GBK测试用例');")
 	c.Assert(err, IsNil)
 
@@ -6258,15 +6258,13 @@ func (s *testParserSuite) TestGBKEncoding(c *C) {
 	_, _ = stmt.Accept(checker)
 	c.Assert(checker.tblName, Not(Equals), "测试表")
 	c.Assert(checker.colName, Not(Equals), "测试列")
-	c.Assert(checker.expr, Not(Equals), "GBK测试用例")
 
-	p.SetParserConfig(parser.ParserConfig{Decoder: decoder})
-	stmt, err = p.ParseOneStmt(sql, "", "")
+	stmt, err = p.ParseOneStmt(sql, "gbk", "")
 	c.Assert(err, IsNil)
 	_, _ = stmt.Accept(checker)
 	c.Assert(checker.tblName, Equals, "测试表")
 	c.Assert(checker.colName, Equals, "测试列")
-	c.Assert(checker.expr, Equals, "GBK测试用例")
+	c.Assert(checker.expr, Equals, "GBK\xb2\xe2\xca\xd4\xd3\xc3\xc0\xfd")
 }
 
 type gbkEncodingChecker struct {
