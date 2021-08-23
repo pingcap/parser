@@ -15,11 +15,11 @@ package parser
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/charset"
 	"golang.org/x/text/transform"
 	"unicode"
 
 	. "github.com/pingcap/check"
+	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 )
 
