@@ -189,7 +189,6 @@ func (s *Scanner) Lex(v *yySymType) int {
 		tok == stringLit &&
 		s.r.s[v.offset] == '"' {
 		tok = identifier
-		v.ident = s.tryDecodeToUTF8(v.ident)
 	}
 
 	if tok == pipes && !(s.sqlMode.HasPipesAsConcatMode()) {
@@ -219,7 +218,11 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return toHex(s, v, lit)
 	case bitLit:
 		return toBit(s, v, lit)
-	case singleAtIdentifier, doubleAtIdentifier, cast, extract:
+	case singleAtIdentifier, doubleAtIdentifier:
+		v.item = lit
+		v.ident = s.tryDecodeToUTF8(v.ident)
+		return tok
+	case cast, extract:
 		v.item = lit
 		return tok
 	case null:
@@ -227,6 +230,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 	case quotedIdentifier, identifier:
 		tok = identifier
 		s.identifierDot = s.r.peek() == '.'
+		v.ident = s.tryDecodeToUTF8(v.ident)
 	}
 
 	if tok == unicode.ReplacementChar {
@@ -532,7 +536,7 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
 	s.r.incAsLongAs(isIdentChar)
-	return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
+	return identifier, pos, s.r.data(&pos)
 }
 
 func scanIdentifierOrString(s *Scanner) (tok int, lit string) {
@@ -546,7 +550,7 @@ func scanIdentifierOrString(s *Scanner) (tok int, lit string) {
 		if isUserVarChar(ch1) {
 			pos := s.r.pos()
 			s.r.incAsLongAs(isUserVarChar)
-			tok, lit = identifier, s.tryDecodeToUTF8(s.r.data(&pos))
+			tok, lit = identifier, s.r.data(&pos)
 		} else {
 			tok = int(ch1)
 		}
@@ -703,7 +707,7 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			// 0x, 0x7fz3 are identifier
 			if p1 == p2 || isDigit(s.r.peek()) {
 				s.r.incAsLongAs(isIdentChar)
-				return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
+				return identifier, pos, s.r.data(&pos)
 			}
 			tok = hexLit
 		case ch1 == 'b':
@@ -714,14 +718,14 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 			// 0b, 0b123, 0b1ab are identifier
 			if p1 == p2 || isDigit(s.r.peek()) {
 				s.r.incAsLongAs(isIdentChar)
-				return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
+				return identifier, pos, s.r.data(&pos)
 			}
 			tok = bitLit
 		case ch1 == '.':
 			return s.scanFloat(&pos)
 		case ch1 == 'B':
 			s.r.incAsLongAs(isIdentChar)
-			return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
+			return identifier, pos, s.r.data(&pos)
 		}
 	}
 
@@ -734,7 +738,7 @@ func startWithNumber(s *Scanner) (tok int, pos Pos, lit string) {
 	// Identifiers may begin with a digit but unless quoted may not consist solely of digits.
 	if !s.r.eof() && isIdentChar(ch0) {
 		s.r.incAsLongAs(isIdentChar)
-		return identifier, pos, s.tryDecodeToUTF8(s.r.data(&pos))
+		return identifier, pos, s.r.data(&pos)
 	}
 	lit = s.r.data(&pos)
 	return
@@ -808,9 +812,6 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 		tok = decLit
 	}
 	pos, lit = *beg, s.r.data(beg)
-	if tok == identifier {
-		lit = s.tryDecodeToUTF8(lit)
-	}
 	return
 }
 

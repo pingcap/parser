@@ -15,12 +15,12 @@ package parser
 
 import (
 	"fmt"
-	"golang.org/x/text/transform"
 	"unicode"
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
+	"golang.org/x/text/transform"
 )
 
 var _ = Suite(&testLexerSuite{})
