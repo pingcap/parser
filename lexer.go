@@ -21,6 +21,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 	tidbfeature "github.com/pingcap/parser/tidb"
 	"golang.org/x/text/encoding"
@@ -74,6 +75,8 @@ type Scanner struct {
 	// to disambiguate hint after create binding for update, which should
 	// be pertained.
 	lastKeyword3 int
+
+	nextTokenCharset string
 
 	// hintPos records the start position of the previous optimizer hint.
 	lastHintPos Pos
@@ -137,7 +140,24 @@ func (s *Scanner) AppendError(err error) {
 	s.errs = append(s.errs, err)
 }
 
-func (s *Scanner) tryDecodeToUTF8(lit string) string {
+func (s *Scanner) tryDecodeToUTF8String(lit string) string {
+	decoder := s.decoder
+	if len(s.nextTokenCharset) != 0 {
+		e, _ := charset.Lookup(s.nextTokenCharset)
+		decoder = e.NewDecoder()
+	}
+	if decoder == nil {
+		return lit
+	}
+	utf8Lit, _, err := transform.String(decoder, lit)
+	if err != nil {
+		s.AppendError(err)
+		s.lastErrorAsWarn()
+	}
+	return utf8Lit
+}
+
+func (s *Scanner) tryDecodeToUTF8Ident(lit string) string {
 	if s.decoder != nil {
 		var err error
 		lit, _, err = transform.String(s.decoder, lit)
@@ -152,7 +172,7 @@ func (s *Scanner) getNextToken() int {
 	r := s.r
 	tok, pos, lit := s.scan()
 	if tok == identifier {
-		tok = handleIdent(&yySymType{})
+		tok = s.handleIdent(&yySymType{})
 	}
 	if tok == identifier {
 		if tok1 := s.isTokenIdentifier(lit, pos.Offset); tok1 != 0 {
@@ -177,7 +197,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 	v.offset = pos.Offset
 	v.ident = lit
 	if tok == identifier {
-		tok = handleIdent(v)
+		tok = s.handleIdent(v)
 	}
 	if tok == identifier {
 		if tok1 := s.isTokenIdentifier(lit, pos.Offset); tok1 != 0 {
@@ -220,7 +240,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return toBit(s, v, lit)
 	case singleAtIdentifier, doubleAtIdentifier:
 		v.item = lit
-		v.ident = s.tryDecodeToUTF8(v.ident)
+		v.ident = s.tryDecodeToUTF8Ident(v.ident)
 		return tok
 	case cast, extract:
 		v.item = lit
@@ -230,9 +250,14 @@ func (s *Scanner) Lex(v *yySymType) int {
 	case quotedIdentifier, identifier:
 		tok = identifier
 		s.identifierDot = s.r.peek() == '.'
-		v.ident = s.tryDecodeToUTF8(v.ident)
+		v.ident = s.tryDecodeToUTF8Ident(v.ident)
+	case stringLit:
+		v.ident = s.tryDecodeToUTF8String(v.ident)
 	}
 
+	if tok != underscoreCS {
+		s.nextTokenCharset = ""
+	}
 	if tok == unicode.ReplacementChar {
 		return invalid
 	}
@@ -268,6 +293,23 @@ func (s *Scanner) InheritScanner(sql string) *Scanner {
 // NewScanner returns a new scanner object.
 func NewScanner(s string) *Scanner {
 	return &Scanner{r: reader{s: s}}
+}
+
+func (s *Scanner) handleIdent(lval *yySymType) int {
+	str := lval.ident
+	// A character string literal may have an optional character set introducer and COLLATE clause:
+	// [_charset_name]'string' [COLLATE collation_name]
+	// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
+	if !strings.HasPrefix(str, "_") {
+		return identifier
+	}
+	cs, err := charset.GetCharsetInfo(str[1:])
+	if err != nil {
+		return identifier
+	}
+	lval.ident = cs.Name
+	s.nextTokenCharset = cs.Name
+	return underscoreCS
 }
 
 func (s *Scanner) skipWhitespace() rune {

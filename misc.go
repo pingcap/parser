@@ -13,12 +13,6 @@
 
 package parser
 
-import (
-	"strings"
-
-	"github.com/pingcap/parser/charset"
-)
-
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 }
@@ -989,20 +983,4 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		tok = windowFuncTokenMap[string(data)]
 	}
 	return tok
-}
-
-func handleIdent(lval *yySymType) int {
-	s := lval.ident
-	// A character string literal may have an optional character set introducer and COLLATE clause:
-	// [_charset_name]'string' [COLLATE collation_name]
-	// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
-	if !strings.HasPrefix(s, "_") {
-		return identifier
-	}
-	cs, err := charset.GetCharsetInfo(s[1:])
-	if err != nil {
-		return identifier
-	}
-	lval.ident = cs.Name
-	return underscoreCS
 }

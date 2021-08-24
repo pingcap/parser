@@ -6264,7 +6264,7 @@ func (s *testParserSuite) TestGBKEncoding(c *C) {
 	_, _ = stmt.Accept(checker)
 	c.Assert(checker.tblName, Equals, "测试表")
 	c.Assert(checker.colName, Equals, "测试列")
-	c.Assert(checker.expr, Equals, "GBK\xb2\xe2\xca\xd4\xd3\xc3\xc0\xfd")
+	c.Assert(checker.expr, Equals, "GBK测试用例")
 }
 
 type gbkEncodingChecker struct {
