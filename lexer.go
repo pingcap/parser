@@ -42,8 +42,8 @@ type Scanner struct {
 	r   reader
 	buf bytes.Buffer
 
-	decoder       *encoding.Decoder
-	maxLenPerChar int // size in bytes.
+	decoder    *encoding.Decoder
+	charLength func([]byte) int // size in bytes
 
 	errs         []error
 	warns        []error
@@ -145,19 +145,21 @@ func (s *Scanner) AppendError(err error) {
 
 func (s *Scanner) tryDecodeRune(lit string) (r rune, size int) {
 	decoder := s.decoder
-	maxLenPerChar := s.maxLenPerChar
+	charLength := s.charLength
 	if len(s.nextTokenCharset) != 0 {
 		e, _ := charset.Lookup(s.nextTokenCharset)
 		decoder = e.NewDecoder()
-		if cs, err := charset.GetCharsetInfo(s.nextTokenCharset); err == nil {
-			maxLenPerChar = cs.Maxlen
-		}
+		charLength = charset.LookupCharLength(s.nextTokenCharset)
 	}
 	if decoder == nil {
 		return utf8.DecodeRuneInString(lit)
 	}
-	if len(lit) >= maxLenPerChar {
-		lit = lit[:maxLenPerChar]
+	sliceLen := 4
+	if charLength != nil {
+		sliceLen = charLength(Slice(lit))
+	}
+	if len(lit) >= sliceLen {
+		lit = lit[:sliceLen]
 	}
 	for {
 		result, size, err := transform.Bytes(decoder, Slice(lit))
@@ -321,7 +323,7 @@ func (s *Scanner) InheritScanner(sql string) *Scanner {
 		sqlMode:           s.sqlMode,
 		supportWindowFunc: s.supportWindowFunc,
 		decoder:           s.decoder,
-		maxLenPerChar:     s.maxLenPerChar,
+		charLength:        s.charLength,
 	}
 	newScanner.r.scanner = newScanner
 	return newScanner
@@ -403,7 +405,7 @@ func startWithXx(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.p = pos
+	s.r.updatePos(pos)
 	return scanIdentifier(s)
 }
 
@@ -435,7 +437,7 @@ func startWithBb(s *Scanner) (tok int, pos Pos, lit string) {
 		}
 		return
 	}
-	s.r.p = pos
+	s.r.updatePos(pos)
 	return scanIdentifier(s)
 }
 
@@ -863,7 +865,7 @@ func (s *Scanner) scanBit() {
 }
 
 func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
-	s.r.p = *beg
+	s.r.updatePos(*beg)
 	// float = D1 . D2 e D3
 	s.scanDigits()
 	ch0 := s.r.peek()
@@ -885,7 +887,7 @@ func (s *Scanner) scanFloat(beg *Pos) (tok int, pos Pos, lit string) {
 			// D1 . D2 e XX when XX is not D3, parse the result to an identifier.
 			// 9e9e = 9e9(float) + e(identifier)
 			// 9est = 9est(identifier)
-			s.r.p = *beg
+			s.r.updatePos(*beg)
 			s.r.incAsLongAs(isIdentChar)
 			tok = identifier
 		}
@@ -911,7 +913,7 @@ func (s *Scanner) scanVersionDigits(min, max int) {
 		if isDigit(ch) {
 			s.r.inc()
 		} else if i < min {
-			s.r.p = pos
+			s.r.updatePos(pos)
 			return
 		} else {
 			break
@@ -933,7 +935,7 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 				state = expectChar
 				break
 			}
-			s.r.p = pos
+			s.r.updatePos(pos)
 			return nil
 		case expectChar:
 			if isIdentChar(ch) {
@@ -941,7 +943,7 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 				state = obtainChar
 				break
 			}
-			s.r.p = pos
+			s.r.updatePos(pos)
 			return nil
 		case obtainChar:
 			if isIdentChar(ch) {
@@ -957,11 +959,11 @@ func (s *Scanner) scanFeatureIDs() (featureIDs []string) {
 				featureIDs = append(featureIDs, b.String())
 				return featureIDs
 			}
-			s.r.p = pos
+			s.r.updatePos(pos)
 			return nil
 		}
 	}
-	s.r.p = pos
+	s.r.updatePos(pos)
 	return nil
 }
 
@@ -978,6 +980,9 @@ type reader struct {
 	p       Pos
 	w       int
 	scanner *Scanner
+
+	peekRune        rune
+	peekRuneUpdated bool
 }
 
 var eof = Pos{-1, -1, -1}
@@ -990,6 +995,9 @@ func (r *reader) eof() bool {
 // if reader meets EOF, it will return unicode.ReplacementChar. to distinguish from
 // the real unicode.ReplacementChar, the caller should call r.eof() again to check.
 func (r *reader) peek() rune {
+	if r.peekRuneUpdated {
+		return r.peekRune
+	}
 	if r.eof() {
 		return unicode.ReplacementChar
 	}
@@ -1001,6 +1009,8 @@ func (r *reader) peek() rune {
 		}
 	}
 	r.w = w
+	r.peekRune = v
+	r.peekRuneUpdated = true
 	return v
 }
 
@@ -1013,6 +1023,7 @@ func (r *reader) inc() {
 	}
 	r.p.Offset += r.w
 	r.p.Col++
+	r.peekRuneUpdated = false
 }
 
 func (r *reader) incN(n int) {
@@ -1032,6 +1043,13 @@ func (r *reader) readByte() (ch rune) {
 
 func (r *reader) pos() Pos {
 	return r.p
+}
+
+func (r *reader) updatePos(pos Pos) {
+	if r.p.Offset != pos.Offset {
+		r.peekRuneUpdated = false
+	}
+	r.p = pos
 }
 
 func (r *reader) data(from *Pos) string {

@@ -273,7 +273,7 @@ func (s *testLexerSuite) TestEncodedIdentifier(c *C) {
 		{"023哈4", "023哈4"},
 		{"9e哈哈", "9e哈哈"},
 	}
-	l := &Scanner{decoder: dec, maxLenPerChar: 2}
+	l := &Scanner{decoder: dec}
 	for _, item := range table {
 		sql, _, err := transform.String(enc, item[0])
 		c.Assert(err, IsNil)
