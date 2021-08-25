@@ -13,6 +13,11 @@
 
 package parser
 
+import (
+	"reflect"
+	"unsafe"
+)
+
 func isLetter(ch rune) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 }
@@ -983,4 +988,15 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		tok = windowFuncTokenMap[string(data)]
 	}
 	return tok
+}
+
+// Slice converts string to slice without copy.
+// Use at your own risk.
+func Slice(s string) (b []byte) {
+	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	pbytes.Data = pstring.Data
+	pbytes.Len = pstring.Len
+	pbytes.Cap = pstring.Len
+	return
 }

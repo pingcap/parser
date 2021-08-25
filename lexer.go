@@ -39,9 +39,11 @@ type Pos struct {
 
 // Scanner implements the yyLexer interface.
 type Scanner struct {
-	r       reader
-	buf     bytes.Buffer
-	decoder *encoding.Decoder
+	r   reader
+	buf bytes.Buffer
+
+	decoder       *encoding.Decoder
+	maxLenPerChar int // size in bytes.
 
 	errs         []error
 	warns        []error
@@ -76,6 +78,7 @@ type Scanner struct {
 	// be pertained.
 	lastKeyword3 int
 
+	// nextTokenCharset records the decoding charset for the next token.
 	nextTokenCharset string
 
 	// hintPos records the start position of the previous optimizer hint.
@@ -92,7 +95,7 @@ func (s *Scanner) Errors() (warns []error, errs []error) {
 
 // reset resets the sql string to be scanned.
 func (s *Scanner) reset(sql string) {
-	s.r = reader{s: sql, p: Pos{Line: 1}}
+	s.r = reader{s: sql, p: Pos{Line: 1}, scanner: s}
 	s.buf.Reset()
 	s.errs = s.errs[:0]
 	s.warns = s.warns[:0]
@@ -138,6 +141,37 @@ func (s *Scanner) AppendError(err error) {
 		return
 	}
 	s.errs = append(s.errs, err)
+}
+
+func (s *Scanner) tryDecodeRune(lit string) (r rune, size int) {
+	decoder := s.decoder
+	maxLenPerChar := s.maxLenPerChar
+	if len(s.nextTokenCharset) != 0 {
+		e, _ := charset.Lookup(s.nextTokenCharset)
+		decoder = e.NewDecoder()
+		if cs, err := charset.GetCharsetInfo(s.nextTokenCharset); err == nil {
+			maxLenPerChar = cs.Maxlen
+		}
+	}
+	if decoder == nil {
+		return utf8.DecodeRuneInString(lit)
+	}
+	if len(lit) >= maxLenPerChar {
+		lit = lit[:maxLenPerChar]
+	}
+	for {
+		result, size, err := transform.Bytes(decoder, Slice(lit))
+		if err != nil && size == 0 {
+			return utf8.RuneError, 1
+		}
+		if utf8.RuneCount(result) > 1 {
+			// Too much characters, we only need one.
+			lit = lit[:len(lit)-1]
+			continue
+		}
+		ur, _ := utf8.DecodeRune(result)
+		return ur, size
+	}
 }
 
 func (s *Scanner) tryDecodeToUTF8String(lit string) string {
@@ -282,17 +316,22 @@ func (s *Scanner) EnableWindowFunc(val bool) {
 
 // InheritScanner returns a new scanner object which inherits configurations from the parent scanner.
 func (s *Scanner) InheritScanner(sql string) *Scanner {
-	return &Scanner{
+	newScanner := &Scanner{
 		r:                 reader{s: sql},
 		sqlMode:           s.sqlMode,
 		supportWindowFunc: s.supportWindowFunc,
 		decoder:           s.decoder,
+		maxLenPerChar:     s.maxLenPerChar,
 	}
+	newScanner.r.scanner = newScanner
+	return newScanner
 }
 
 // NewScanner returns a new scanner object.
 func NewScanner(s string) *Scanner {
-	return &Scanner{r: reader{s: s}}
+	scanner := &Scanner{r: reader{s: s}}
+	scanner.r.scanner = scanner
+	return scanner
 }
 
 func (s *Scanner) handleIdent(lval *yySymType) int {
@@ -935,9 +974,10 @@ func (s *Scanner) lastErrorAsWarn() {
 }
 
 type reader struct {
-	s string
-	p Pos
-	w int
+	s       string
+	p       Pos
+	w       int
+	scanner *Scanner
 }
 
 var eof = Pos{-1, -1, -1}
@@ -955,9 +995,9 @@ func (r *reader) peek() rune {
 	}
 	v, w := rune(r.s[r.p.Offset]), 1
 	if v >= 0x80 {
-		v, w = utf8.DecodeRuneInString(r.s[r.p.Offset:])
+		v, w = r.scanner.tryDecodeRune(r.s[r.p.Offset:])
 		if v == utf8.RuneError && w == 1 {
-			v = rune(r.s[r.p.Offset]) // illegal UTF-8 encoding
+			v = rune(r.s[r.p.Offset]) // illegal encoding
 		}
 	}
 	r.w = w

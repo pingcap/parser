@@ -143,6 +143,11 @@ func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode
 	} else {
 		enc, _ := chs.Lookup(charset)
 		parser.lexer.decoder = enc.NewDecoder()
+		maxLen := 4
+		if cs, err := chs.GetCharsetInfo(charset); err == nil {
+			maxLen = cs.Maxlen
+		}
+		parser.lexer.maxLenPerChar = maxLen
 	}
 	if collation == "" {
 		collation = mysql.DefaultCollationName
