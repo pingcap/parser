@@ -140,6 +140,8 @@ func (parser *Parser) SetParserConfig(config ParserConfig) {
 func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode, warns []error, err error) {
 	if charset == "" {
 		charset = mysql.DefaultCharset
+		parser.lexer.decoder = nil
+		parser.lexer.charLength = nil
 	} else {
 		enc, _ := chs.Lookup(charset)
 		parser.lexer.decoder = enc.NewDecoder()

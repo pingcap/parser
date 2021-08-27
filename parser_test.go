@@ -6297,6 +6297,16 @@ func (s *testParserSuite) TestGBKEncoding(c *C) {
 	c.Assert(checker.tblName, Equals, "测试表")
 	c.Assert(checker.colName, Equals, "测试列")
 	c.Assert(checker.expr, Equals, "GBK测试用例")
+
+	utf8SQL := "select '芢' from `玚`;"
+	sql, err = encoder.String(utf8SQL)
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt(sql, "gbk", "")
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt("select '\xc6\x5c' from `\xab\x60`;", "gbk", "")
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt("select _gbk '\xc6\x5c' from dual;", "", "")
+	c.Assert(err, NotNil)
 }
 
 type gbkEncodingChecker struct {

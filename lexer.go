@@ -44,6 +44,7 @@ type Scanner struct {
 
 	decoder    *encoding.Decoder
 	charLength func([]byte) int // size in bytes
+	peekBuf    [8]byte
 
 	errs         []error
 	warns        []error
@@ -144,35 +145,31 @@ func (s *Scanner) AppendError(err error) {
 }
 
 func (s *Scanner) tryDecodeRune(lit string) (r rune, size int) {
-	decoder := s.decoder
-	charLength := s.charLength
-	if len(s.nextTokenCharset) != 0 {
-		e, _ := charset.Lookup(s.nextTokenCharset)
-		decoder = e.NewDecoder()
-		charLength = charset.LookupCharLength(s.nextTokenCharset)
-	}
-	if decoder == nil {
+	if s.decoder == nil {
 		return utf8.DecodeRuneInString(lit)
 	}
 	sliceLen := 4
-	if charLength != nil {
-		sliceLen = charLength(Slice(lit))
+	if s.charLength != nil {
+		sliceLen = s.charLength(Slice(lit))
 	}
+	atEOF := true
 	if len(lit) >= sliceLen {
 		lit = lit[:sliceLen]
+		atEOF = false
 	}
+	dest := s.peekBuf[:]
 	for {
-		result, size, err := transform.Bytes(decoder, Slice(lit))
-		if err != nil && size == 0 {
+		nDest, nSrc, err := s.decoder.Transform(dest, Slice(lit), atEOF)
+		if err != nil && nSrc == 0 {
 			return utf8.RuneError, 1
 		}
-		if utf8.RuneCount(result) > 1 {
+		if utf8.RuneCount(dest[:nDest]) > 1 {
 			// Too much characters, we only need one.
 			lit = lit[:len(lit)-1]
 			continue
 		}
-		ur, _ := utf8.DecodeRune(result)
-		return ur, size
+		ur, _ := utf8.DecodeRune(dest[:nDest])
+		return ur, nSrc
 	}
 }
 
