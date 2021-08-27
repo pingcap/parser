@@ -103,13 +103,15 @@ func (s *testTErrorSuite) TestTraceAndLocation(c *C) {
 	stack := errors.ErrorStack(err)
 	lines := strings.Split(stack, "\n")
 	goroot := strings.ReplaceAll(runtime.GOROOT(), string(os.PathSeparator), "/")
-	var sysStack = 0
+	// Some system may put GOROOT in the same path as GOPATH, so we add a "/src" postfix to better differentiate sysStack
+	sysStackPrefix := goroot + "/src"
+	var sysStackCount = 0
 	for _, line := range lines {
-		if strings.Contains(line, goroot) {
-			sysStack++
+		if strings.Contains(line, sysStackPrefix) {
+			sysStackCount++
 		}
 	}
-	c.Assert(len(lines)-(2*sysStack), Equals, 15, Commentf("stack =\n%s", stack))
+	c.Assert(len(lines)-(2*sysStackCount), Equals, 15, Commentf("stack =\n%s", stack))
 	var containTerr bool
 	for _, v := range lines {
 		if strings.Contains(v, "terror_test.go") {
