@@ -20,21 +20,25 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"github.com/pingcap/parser/tidb"
 	"github.com/pingcap/parser/types"
 )
 
 var (
 	_ DDLNode = &AlterTableStmt{}
 	_ DDLNode = &AlterSequenceStmt{}
+	_ DDLNode = &AlterPlacementPolicyStmt{}
 	_ DDLNode = &CreateDatabaseStmt{}
 	_ DDLNode = &CreateIndexStmt{}
 	_ DDLNode = &CreateTableStmt{}
 	_ DDLNode = &CreateViewStmt{}
 	_ DDLNode = &CreateSequenceStmt{}
+	_ DDLNode = &CreatePlacementPolicyStmt{}
 	_ DDLNode = &DropDatabaseStmt{}
 	_ DDLNode = &DropIndexStmt{}
 	_ DDLNode = &DropTableStmt{}
 	_ DDLNode = &DropSequenceStmt{}
+	_ DDLNode = &DropPlacementPolicyStmt{}
 	_ DDLNode = &RenameTableStmt{}
 	_ DDLNode = &TruncateTableStmt{}
 	_ DDLNode = &RepairTableStmt{}
@@ -69,12 +73,25 @@ const (
 	DatabaseOptionCharset
 	DatabaseOptionCollate
 	DatabaseOptionEncryption
+	DatabaseOptionPlacementPrimaryRegion       = DatabaseOptionType(PlacementOptionPrimaryRegion)
+	DatabaseOptionPlacementRegions             = DatabaseOptionType(PlacementOptionRegions)
+	DatabaseOptionPlacementFollowerCount       = DatabaseOptionType(PlacementOptionFollowerCount)
+	DatabaseOptionPlacementVoterCount          = DatabaseOptionType(PlacementOptionVoterCount)
+	DatabaseOptionPlacementLearnerCount        = DatabaseOptionType(PlacementOptionLearnerCount)
+	DatabaseOptionPlacementSchedule            = DatabaseOptionType(PlacementOptionSchedule)
+	DatabaseOptionPlacementConstraints         = DatabaseOptionType(PlacementOptionConstraints)
+	DatabaseOptionPlacementLeaderConstraints   = DatabaseOptionType(PlacementOptionLeaderConstraints)
+	DatabaseOptionPlacementLearnerConstraints  = DatabaseOptionType(PlacementOptionLearnerConstraints)
+	DatabaseOptionPlacementFollowerConstraints = DatabaseOptionType(PlacementOptionFollowerConstraints)
+	DatabaseOptionPlacementVoterConstraints    = DatabaseOptionType(PlacementOptionVoterConstraints)
+	DatabaseOptionPlacementPolicy              = DatabaseOptionType(PlacementOptionPolicy)
 )
 
 // DatabaseOption represents database option.
 type DatabaseOption struct {
-	Tp    DatabaseOptionType
-	Value string
+	Tp        DatabaseOptionType
+	Value     string
+	UintValue uint64
 }
 
 // Restore implements Node interface.
@@ -92,6 +109,13 @@ func (n *DatabaseOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("ENCRYPTION")
 		ctx.WritePlain(" = ")
 		ctx.WriteString(n.Value)
+	case DatabaseOptionPlacementPrimaryRegion, DatabaseOptionPlacementRegions, DatabaseOptionPlacementFollowerCount, DatabaseOptionPlacementLeaderConstraints, DatabaseOptionPlacementLearnerCount, DatabaseOptionPlacementVoterCount, DatabaseOptionPlacementSchedule, DatabaseOptionPlacementConstraints, DatabaseOptionPlacementFollowerConstraints, DatabaseOptionPlacementVoterConstraints, DatabaseOptionPlacementLearnerConstraints, DatabaseOptionPlacementPolicy:
+		placementOpt := PlacementOption{
+			Tp:        PlacementOptionType(n.Tp),
+			UintValue: n.UintValue,
+			StrValue:  n.Value,
+		}
+		return placementOpt.Restore(ctx)
 	default:
 		return errors.Errorf("invalid DatabaseOptionType: %d", n.Tp)
 	}
@@ -501,7 +525,9 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		pkTp := n.PrimaryKeyTp.String()
 		if len(pkTp) != 0 {
 			ctx.WritePlain(" ")
-			ctx.WriteKeyWord(pkTp)
+			ctx.WriteWithSpecialComments(tidb.FeatureIDClusteredIndex, func() {
+				ctx.WriteKeyWord(pkTp)
+			})
 		}
 	case ColumnOptionNotNull:
 		ctx.WriteKeyWord("NOT NULL")
@@ -574,10 +600,12 @@ func (n *ColumnOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("STORAGE ")
 		ctx.WriteKeyWord(n.StrValue)
 	case ColumnOptionAutoRandom:
-		ctx.WriteKeyWord("AUTO_RANDOM")
-		if n.AutoRandomBitLength != types.UnspecifiedLength {
-			ctx.WritePlainf("(%d)", n.AutoRandomBitLength)
-		}
+		ctx.WriteWithSpecialComments(tidb.FeatureIDAutoRandom, func() {
+			ctx.WriteKeyWord("AUTO_RANDOM")
+			if n.AutoRandomBitLength != types.UnspecifiedLength {
+				ctx.WritePlainf("(%d)", n.AutoRandomBitLength)
+			}
+		})
 	default:
 		return errors.New("An error occurred while splicing ColumnOption")
 	}
@@ -632,7 +660,9 @@ type IndexOption struct {
 func (n *IndexOption) Restore(ctx *format.RestoreCtx) error {
 	hasPrevOption := false
 	if n.PrimaryKeyTp != model.PrimaryKeyTypeDefault {
-		ctx.WriteKeyWord(n.PrimaryKeyTp.String())
+		ctx.WriteWithSpecialComments(tidb.FeatureIDClusteredIndex, func() {
+			ctx.WriteKeyWord(n.PrimaryKeyTp.String())
+		})
 		hasPrevOption = true
 	}
 	if n.KeyBlockSize > 0 {
@@ -1158,6 +1188,33 @@ func (n *DropTableStmt) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// DropPlacementPolicyStmt is a statement to drop a Policy.
+type DropPlacementPolicyStmt struct {
+	ddlNode
+
+	IfExists   bool
+	PolicyName model.CIStr
+}
+
+// Restore implements Restore interface.
+func (n *DropPlacementPolicyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("DROP PLACEMENT POLICY ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.PolicyName.O)
+	return nil
+}
+
+func (n *DropPlacementPolicyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*DropPlacementPolicyStmt)
+	return v.Leave(n)
+}
+
 // DropSequenceStmt is a statement to drop a Sequence.
 type DropSequenceStmt struct {
 	ddlNode
@@ -1371,6 +1428,41 @@ func (n *CreateViewStmt) Accept(v Visitor) (Node, bool) {
 		return n, false
 	}
 	n.Select = selnode.(StmtNode)
+	return v.Leave(n)
+}
+
+// CreatePlacementPolicyStmt is a statement to create a policy.
+type CreatePlacementPolicyStmt struct {
+	ddlNode
+
+	IfNotExists      bool
+	PolicyName       model.CIStr
+	PlacementOptions []*PlacementOption
+}
+
+// Restore implements Node interface.
+func (n *CreatePlacementPolicyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("CREATE PLACEMENT POLICY ")
+	if n.IfNotExists {
+		ctx.WriteKeyWord("IF NOT EXISTS ")
+	}
+	ctx.WriteName(n.PolicyName.O)
+	for i, option := range n.PlacementOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing CreatePlacementPolicy TableOption: [%v]", i)
+		}
+	}
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *CreatePlacementPolicyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*CreatePlacementPolicyStmt)
 	return v.Leave(n)
 }
 
@@ -1773,6 +1865,88 @@ func (n *RepairTableStmt) Restore(ctx *format.RestoreCtx) error {
 	return nil
 }
 
+// PlacementOptionType is the type for PlacementOption
+type PlacementOptionType int
+
+// PlacementOption types.
+const (
+	PlacementOptionPrimaryRegion PlacementOptionType = 0x3000 + iota
+	PlacementOptionRegions
+	PlacementOptionFollowerCount
+	PlacementOptionVoterCount
+	PlacementOptionLearnerCount
+	PlacementOptionSchedule
+	PlacementOptionConstraints
+	PlacementOptionLeaderConstraints
+	PlacementOptionLearnerConstraints
+	PlacementOptionFollowerConstraints
+	PlacementOptionVoterConstraints
+	PlacementOptionPolicy
+)
+
+// PlacementOption is used for parsing placement option.
+type PlacementOption struct {
+	Tp        PlacementOptionType
+	StrValue  string
+	UintValue uint64
+}
+
+func (n *PlacementOption) Restore(ctx *format.RestoreCtx) error {
+	switch n.Tp {
+	case PlacementOptionPrimaryRegion:
+		ctx.WriteKeyWord("PRIMARY_REGION ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionRegions:
+		ctx.WriteKeyWord("REGIONS ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionFollowerCount:
+		ctx.WriteKeyWord("FOLLOWERS ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case PlacementOptionVoterCount:
+		ctx.WriteKeyWord("VOTERS ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case PlacementOptionLearnerCount:
+		ctx.WriteKeyWord("LEARNERS ")
+		ctx.WritePlain("= ")
+		ctx.WritePlainf("%d", n.UintValue)
+	case PlacementOptionSchedule:
+		ctx.WriteKeyWord("SCHEDULE ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionConstraints:
+		ctx.WriteKeyWord("CONSTRAINTS ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionLeaderConstraints:
+		ctx.WriteKeyWord("LEADER_CONSTRAINTS ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionFollowerConstraints:
+		ctx.WriteKeyWord("FOLLOWER_CONSTRAINTS ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionVoterConstraints:
+		ctx.WriteKeyWord("VOTER_CONSTRAINTS ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionLearnerConstraints:
+		ctx.WriteKeyWord("LEARNER_CONSTRAINTS ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	case PlacementOptionPolicy:
+		ctx.WriteKeyWord("PLACEMENT POLICY ")
+		ctx.WritePlain("= ")
+		ctx.WriteString(n.StrValue)
+	default:
+		return errors.Errorf("invalid PlacementOption: %d", n.Tp)
+	}
+	return nil
+}
+
 // TableOptionType is the type for TableOption
 type TableOptionType int
 
@@ -1813,6 +1987,18 @@ const (
 	TableOptionTableCheckSum
 	TableOptionUnion
 	TableOptionEncryption
+	TableOptionPlacementPrimaryRegion       = TableOptionType(PlacementOptionPrimaryRegion)
+	TableOptionPlacementRegions             = TableOptionType(PlacementOptionRegions)
+	TableOptionPlacementFollowerCount       = TableOptionType(PlacementOptionFollowerCount)
+	TableOptionPlacementVoterCount          = TableOptionType(PlacementOptionVoterCount)
+	TableOptionPlacementLearnerCount        = TableOptionType(PlacementOptionLearnerCount)
+	TableOptionPlacementSchedule            = TableOptionType(PlacementOptionSchedule)
+	TableOptionPlacementConstraints         = TableOptionType(PlacementOptionConstraints)
+	TableOptionPlacementLeaderConstraints   = TableOptionType(PlacementOptionLeaderConstraints)
+	TableOptionPlacementLearnerConstraints  = TableOptionType(PlacementOptionLearnerConstraints)
+	TableOptionPlacementFollowerConstraints = TableOptionType(PlacementOptionFollowerConstraints)
+	TableOptionPlacementVoterConstraints    = TableOptionType(PlacementOptionVoterConstraints)
+	TableOptionPlacementPolicy              = TableOptionType(PlacementOptionPolicy)
 )
 
 // RowFormat types
@@ -1891,22 +2077,32 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord(n.StrValue)
 	case TableOptionAutoIncrement:
 		if n.BoolValue {
-			ctx.WriteKeyWord("FORCE ")
+			ctx.WriteWithSpecialComments(tidb.FeatureIDForceAutoInc, func() {
+				ctx.WriteKeyWord("FORCE")
+			})
+			ctx.WritePlain(" ")
 		}
 		ctx.WriteKeyWord("AUTO_INCREMENT ")
 		ctx.WritePlain("= ")
 		ctx.WritePlainf("%d", n.UintValue)
 	case TableOptionAutoIdCache:
-		ctx.WriteKeyWord("AUTO_ID_CACHE ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("%d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDAutoIDCache, func() {
+			ctx.WriteKeyWord("AUTO_ID_CACHE ")
+			ctx.WritePlain("= ")
+			ctx.WritePlainf("%d", n.UintValue)
+		})
 	case TableOptionAutoRandomBase:
 		if n.BoolValue {
-			ctx.WriteKeyWord("FORCE ")
+			ctx.WriteWithSpecialComments(tidb.FeatureIDForceAutoInc, func() {
+				ctx.WriteKeyWord("FORCE")
+			})
+			ctx.WritePlain(" ")
 		}
-		ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
-		ctx.WritePlain("= ")
-		ctx.WritePlainf("%d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDAutoRandomBase, func() {
+			ctx.WriteKeyWord("AUTO_RANDOM_BASE ")
+			ctx.WritePlain("= ")
+			ctx.WritePlainf("%d", n.UintValue)
+		})
 	case TableOptionComment:
 		ctx.WriteKeyWord("COMMENT ")
 		ctx.WritePlain("= ")
@@ -1997,11 +2193,15 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlainf("%d", n.UintValue)
 		}
 	case TableOptionShardRowID:
-		ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
-		ctx.WritePlainf("= %d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDTiDB, func() {
+			ctx.WriteKeyWord("SHARD_ROW_ID_BITS ")
+			ctx.WritePlainf("= %d", n.UintValue)
+		})
 	case TableOptionPreSplitRegion:
-		ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
-		ctx.WritePlainf("= %d", n.UintValue)
+		ctx.WriteWithSpecialComments(tidb.FeatureIDTiDB, func() {
+			ctx.WriteKeyWord("PRE_SPLIT_REGIONS ")
+			ctx.WritePlainf("= %d", n.UintValue)
+		})
 	case TableOptionPackKeys:
 		// TODO: not support
 		ctx.WriteKeyWord("PACK_KEYS ")
@@ -2064,6 +2264,13 @@ func (n *TableOption) Restore(ctx *format.RestoreCtx) error {
 		ctx.WriteKeyWord("ENCRYPTION ")
 		ctx.WritePlain("= ")
 		ctx.WriteString(n.StrValue)
+	case TableOptionPlacementPrimaryRegion, TableOptionPlacementRegions, TableOptionPlacementFollowerCount, TableOptionPlacementLeaderConstraints, TableOptionPlacementLearnerCount, TableOptionPlacementVoterCount, TableOptionPlacementSchedule, TableOptionPlacementConstraints, TableOptionPlacementFollowerConstraints, TableOptionPlacementVoterConstraints, TableOptionPlacementLearnerConstraints, TableOptionPlacementPolicy:
+		placementOpt := PlacementOption{
+			Tp:        PlacementOptionType(n.Tp),
+			UintValue: n.UintValue,
+			StrValue:  n.StrValue,
+		}
+		return placementOpt.Restore(ctx)
 	default:
 		return errors.Errorf("invalid TableOption: %d", n.Tp)
 	}
@@ -2213,6 +2420,8 @@ const (
 	AlterTableForce
 	AlterTableAddPartitions
 	AlterTableAlterPartition
+	AlterTablePartitionAttributes
+	AlterTablePartitionOptions
 	AlterTableCoalescePartitions
 	AlterTableDropPartition
 	AlterTableTruncatePartition
@@ -2244,6 +2453,7 @@ const (
 	AlterTablePlacement
 	AlterTableAddStatistics
 	AlterTableDropStatistics
+	AlterTableAttributes
 )
 
 // LockType is the type for AlterTableSpec.
@@ -2343,6 +2553,7 @@ type AlterTableSpec struct {
 	PlacementSpecs  []*PlacementSpec
 	Writeable       bool
 	Statistics      *StatisticsSpec
+	AttributesSpec  *AttributesSpec
 }
 
 type TiFlashReplicaSpec struct {
@@ -2648,6 +2859,28 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
 		}
+	case AlterTablePartitionOptions:
+		ctx.WriteKeyWord("PARTITION ")
+		ctx.WriteName(n.PartitionNames[0].O)
+		ctx.WritePlain(" ")
+
+		for i, opt := range n.Options {
+			if i != 0 {
+				ctx.WritePlain(" ")
+			}
+			if err := opt.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.Options[%d] for PARTITION `%s`", i, n.PartitionNames[0].O)
+			}
+		}
+	case AlterTablePartitionAttributes:
+		ctx.WriteKeyWord("PARTITION ")
+		ctx.WriteName(n.PartitionNames[0].O)
+		ctx.WritePlain(" ")
+
+		spec := n.AttributesSpec
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.AttributesSpec")
+		}
 	case AlterTableCoalescePartitions:
 		ctx.WriteKeyWord("COALESCE PARTITION ")
 		if n.NoWriteToBinlog {
@@ -2847,6 +3080,12 @@ func (n *AlterTableSpec) Restore(ctx *format.RestoreCtx) error {
 				return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.PlacementSpecs[%d]", i)
 			}
 		}
+	case AlterTableAttributes:
+		spec := n.AttributesSpec
+		if err := spec.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore AlterTableSpec.AttributesSpec")
+		}
+
 	default:
 		// TODO: not support
 		ctx.WritePlainf(" /* AlterTableType(%d) is not supported */ ", n.Tp)
@@ -3665,6 +3904,66 @@ func (n *PlacementSpec) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*PlacementSpec)
+	return v.Leave(n)
+}
+
+type AttributesSpec struct {
+	node
+
+	Attributes string
+	Default    bool
+}
+
+func (n *AttributesSpec) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("ATTRIBUTES")
+	ctx.WritePlain("=")
+	if n.Default {
+		ctx.WriteKeyWord("DEFAULT")
+		return nil
+	}
+	ctx.WriteString(n.Attributes)
+	return nil
+}
+
+func (n *AttributesSpec) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AttributesSpec)
+	return v.Leave(n)
+}
+
+// AlterPlacementPolicyStmt is a statement to alter placement policy option.
+type AlterPlacementPolicyStmt struct {
+	ddlNode
+
+	PolicyName       model.CIStr
+	IfExists         bool
+	PlacementOptions []*PlacementOption
+}
+
+func (n *AlterPlacementPolicyStmt) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("ALTER PLACEMENT POLICY ")
+	if n.IfExists {
+		ctx.WriteKeyWord("IF EXISTS ")
+	}
+	ctx.WriteName(n.PolicyName.O)
+	for i, option := range n.PlacementOptions {
+		ctx.WritePlain(" ")
+		if err := option.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while splicing AlterPlacementPolicyStmt TableOption: [%v]", i)
+		}
+	}
+	return nil
+}
+
+func (n *AlterPlacementPolicyStmt) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AlterPlacementPolicyStmt)
 	return v.Leave(n)
 }
 

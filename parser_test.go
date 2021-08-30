@@ -71,7 +71,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"delayed", "high_priority", "low_priority",
 		"cumeDist", "denseRank", "firstValue", "lag", "lastValue", "lead", "nthValue", "ntile",
 		"over", "percentRank", "rank", "row", "rows", "rowNumber", "window", "linear",
-		"match", "until", "placement", "tablesample",
+		"match", "until", "placement", "tablesample", "attributes",
 		// TODO: support the following keywords
 		// "with",
 	}
@@ -108,7 +108,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
-		"constraints", "role", "replicas", "policy", "s3", "strict", "running", "stop", "preserve",
+		"constraints", "role", "replicas", "policy", "s3", "strict", "running", "stop", "preserve", "placement",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -1000,6 +1000,29 @@ AAAAAAAAAAAA5gm5Mg==
 
 		{"select `t`.`1a`.1 from t;", true, "SELECT `t`.`1a`.`1` FROM `t`"},
 		{"select * from 1db.1table;", true, "SELECT * FROM `1db`.`1table`"},
+
+		// for show placement
+		{"SHOW PLACEMENT", true, "SHOW PLACEMENT"},
+		{"SHOW PLACEMENT LIKE 'POLICY foo%'", true, "SHOW PLACEMENT LIKE _UTF8MB4'POLICY foo%'"},
+		{"SHOW PLACEMENT WHERE Target='TABLE test.t1'", true, "SHOW PLACEMENT WHERE `Target`=_UTF8MB4'TABLE test.t1'"},
+		{"SHOW PLACEMENT FOR DATABASE db1", true, "SHOW PLACEMENT FOR DATABASE `db1`"},
+		{"SHOW PLACEMENT FOR SCHEMA db1", true, "SHOW PLACEMENT FOR DATABASE `db1`"},
+		{"SHOW PLACEMENT FOR TABLE tb1", true, "SHOW PLACEMENT FOR TABLE `tb1`"},
+		{"SHOW PLACEMENT FOR TABLE db1.tb1", true, "SHOW PLACEMENT FOR TABLE `db1`.`tb1`"},
+		{"SHOW PLACEMENT FOR TABLE tb1 PARTITION p1", true, "SHOW PLACEMENT FOR TABLE `tb1` PARTITION `p1`"},
+		{"SHOW PLACEMENT FOR TABLE db1.tb1 PARTITION p1", true, "SHOW PLACEMENT FOR TABLE `db1`.`tb1` PARTITION `p1`"},
+		{"SHOW PLACEMENT FOR", false, ""},
+		{"SHOW PLACEMENT DATABASE db1", false, ""},
+		{"SHOW PLACEMENT FOR DB db1", false, ""},
+		{"SHOW PLACEMENT FOR DATABASE db1 TABLE tb1", false, ""},
+		{"SHOW PLACEMENT FOR PARTITION p1", false, ""},
+		{"SHOW PLACEMENT FOR DB LIKE '%'", false, ""},
+		{"SHOW PLACEMENT FOR DB db1 LIKE '%'", false, ""},
+
+		// for show placement labels
+		{"SHOW PLACEMENT LABELS", true, "SHOW PLACEMENT LABELS"},
+		{"SHOW PLACEMENT LABELS LIKE '%zone%'", true, "SHOW PLACEMENT LABELS LIKE _UTF8MB4'%zone%'"},
+		{"SHOW PLACEMENT LABELS WHERE label='l123'", true, "SHOW PLACEMENT LABELS WHERE `label`=_UTF8MB4'l123'"},
 	}
 	s.RunTest(c, table)
 }
@@ -1489,6 +1512,7 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{`SELECT tidb_decode_plan();`, true, "SELECT TIDB_DECODE_PLAN()"},
 		{`SELECT tidb_decode_key('abc');`, true, "SELECT TIDB_DECODE_KEY(_UTF8MB4'abc')"},
 		{`SELECT tidb_decode_base64_key('abc');`, true, "SELECT TIDB_DECODE_BASE64_KEY(_UTF8MB4'abc')"},
+		{`SELECT tidb_decode_sql_digests('[]');`, true, "SELECT TIDB_DECODE_SQL_DIGESTS(_UTF8MB4'[]')"},
 		{`SELECT get_mvcc_info('hex', '0xabc');`, true, "SELECT GET_MVCC_INFO(_UTF8MB4'hex', _UTF8MB4'0xabc')"},
 
 		// for time fsp
@@ -1526,8 +1550,9 @@ func (s *testParserSuite) TestBuiltin(c *C) {
 		{"select cast(1 as float(53));", true, "SELECT CAST(1 AS DOUBLE)"},
 		{"select cast(1 as float(54));", false, ""},
 
-		// for cast as real
 		{"select cast(1 as real);", true, "SELECT CAST(1 AS DOUBLE)"},
+		{"select cast('2000' as year);", true, "SELECT CAST(_UTF8MB4'2000' AS YEAR)"},
+		{"select cast(time '2000' as year);", true, "SELECT CAST(TIME '2000' AS YEAR)"},
 
 		// for last_insert_id
 		{"SELECT last_insert_id();", true, "SELECT LAST_INSERT_ID()"},
@@ -2288,6 +2313,90 @@ func (s *testParserSuite) TestDDL(c *C) {
  PARTITION part10 VALUES LESS THAN (11) COMMENT = '11月份' ENGINE = InnoDB,
  PARTITION part11 VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB) */ ;`, true, "CREATE TABLE `app_channel_daily_report` (`id` BIGINT(20) NOT NULL AUTO_INCREMENT,`app_version` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT _UTF8MB4'default',`gmt_create` DATETIME NOT NULL COMMENT '创建时间',PRIMARY KEY(`id`)) ENGINE = InnoDB AUTO_INCREMENT = 33703438 DEFAULT CHARACTER SET = UTF8 DEFAULT COLLATE = UTF8_UNICODE_CI PARTITION BY RANGE (MONTH(`gmt_create`)-1) (PARTITION `part0` VALUES LESS THAN (1) COMMENT = '1月份' ENGINE = InnoDB,PARTITION `part1` VALUES LESS THAN (2) COMMENT = '2月份' ENGINE = InnoDB,PARTITION `part2` VALUES LESS THAN (3) COMMENT = '3月份' ENGINE = InnoDB,PARTITION `part3` VALUES LESS THAN (4) COMMENT = '4月份' ENGINE = InnoDB,PARTITION `part4` VALUES LESS THAN (5) COMMENT = '5月份' ENGINE = InnoDB,PARTITION `part5` VALUES LESS THAN (6) COMMENT = '6月份' ENGINE = InnoDB,PARTITION `part6` VALUES LESS THAN (7) COMMENT = '7月份' ENGINE = InnoDB,PARTITION `part7` VALUES LESS THAN (8) COMMENT = '8月份' ENGINE = InnoDB,PARTITION `part8` VALUES LESS THAN (9) COMMENT = '9月份' ENGINE = InnoDB,PARTITION `part9` VALUES LESS THAN (10) COMMENT = '10月份' ENGINE = InnoDB,PARTITION `part10` VALUES LESS THAN (11) COMMENT = '11月份' ENGINE = InnoDB,PARTITION `part11` VALUES LESS THAN (12) COMMENT = '12月份' ENGINE = InnoDB)"},
 
+		// for placement option
+		// 1. create table
+		{`create table t (c int) primary_region="us";`, true, "CREATE TABLE `t` (`c` INT) PRIMARY_REGION = 'us'"},
+		{`create table t (c int) regions="us,3";`, true, "CREATE TABLE `t` (`c` INT) REGIONS = 'us,3'"},
+		{`create table t (c int) followers="us,3";`, false, ""},
+		{`create table t (c int) followers=3;`, true, "CREATE TABLE `t` (`c` INT) FOLLOWERS = 3"},
+		{`create table t (c int) voters="us,3";`, false, ""},
+		{`create table t (c int) voters=3;`, true, "CREATE TABLE `t` (`c` INT) VOTERS = 3"},
+		{`create table t (c int) learners="us,3";`, false, ""},
+		{`create table t (c int) learners=3;`, true, "CREATE TABLE `t` (`c` INT) LEARNERS = 3"},
+		{`create table t (c int) schedule="even";`, true, "CREATE TABLE `t` (`c` INT) SCHEDULE = 'even'"},
+		{`create table t (c int) constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) CONSTRAINTS = 'ww'"},
+		{`create table t (c int) leader_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) LEADER_CONSTRAINTS = 'ww'"},
+		{`create table t (c int) follower_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) FOLLOWER_CONSTRAINTS = 'ww'"},
+		{`create table t (c int) voter_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) VOTER_CONSTRAINTS = 'ww'"},
+		{`create table t (c int) learner_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) LEARNER_CONSTRAINTS = 'ww'"},
+		{`create table t (c int) placement policy="ww";`, true, "CREATE TABLE `t` (`c` INT) PLACEMENT POLICY = 'ww'"},
+		// 2. alter table
+		{`alter table t primary_region="us";`, true, "ALTER TABLE `t` PRIMARY_REGION = 'us'"},
+		{`alter table t regions="us,3";`, true, "ALTER TABLE `t` REGIONS = 'us,3'"},
+		{`alter table t followers=3;`, true, "ALTER TABLE `t` FOLLOWERS = 3"},
+		{`alter table t voters=3;`, true, "ALTER TABLE `t` VOTERS = 3"},
+		{`alter table t learners=3;`, true, "ALTER TABLE `t` LEARNERS = 3"},
+		{`alter table t schedule="even";`, true, "ALTER TABLE `t` SCHEDULE = 'even'"},
+		{`alter table t constraints="ww";`, true, "ALTER TABLE `t` CONSTRAINTS = 'ww'"},
+		{`alter table t leader_constraints="ww";`, true, "ALTER TABLE `t` LEADER_CONSTRAINTS = 'ww'"},
+		{`alter table t follower_constraints="ww";`, true, "ALTER TABLE `t` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{`alter table t voter_constraints="ww";`, true, "ALTER TABLE `t` VOTER_CONSTRAINTS = 'ww'"},
+		{`alter table t learner_constraints="ww";`, true, "ALTER TABLE `t` LEARNER_CONSTRAINTS = 'ww'"},
+		{`alter table t placement policy="ww";`, true, "ALTER TABLE `t` PLACEMENT POLICY = 'ww'"},
+		// 3. create db
+		{`create database t primary_region="us";`, true, "CREATE DATABASE `t` PRIMARY_REGION = 'us'"},
+		{`create database t regions="us,3";`, true, "CREATE DATABASE `t` REGIONS = 'us,3'"},
+		{`create database t followers=3;`, true, "CREATE DATABASE `t` FOLLOWERS = 3"},
+		{`create database t voters=3;`, true, "CREATE DATABASE `t` VOTERS = 3"},
+		{`create database t learners=3;`, true, "CREATE DATABASE `t` LEARNERS = 3"},
+		{`create database t schedule="even";`, true, "CREATE DATABASE `t` SCHEDULE = 'even'"},
+		{`create database t constraints="ww";`, true, "CREATE DATABASE `t` CONSTRAINTS = 'ww'"},
+		{`create database t leader_constraints="ww";`, true, "CREATE DATABASE `t` LEADER_CONSTRAINTS = 'ww'"},
+		{`create database t follower_constraints="ww";`, true, "CREATE DATABASE `t` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{`create database t voter_constraints="ww";`, true, "CREATE DATABASE `t` VOTER_CONSTRAINTS = 'ww'"},
+		{`create database t learner_constraints="ww";`, true, "CREATE DATABASE `t` LEARNER_CONSTRAINTS = 'ww'"},
+		{`create database t placement policy="ww";`, true, "CREATE DATABASE `t` PLACEMENT POLICY = 'ww'"},
+		// 4. alter db
+		{`alter database t primary_region="us";`, true, "ALTER DATABASE `t` PRIMARY_REGION = 'us'"},
+		{`alter database t regions="us,3";`, true, "ALTER DATABASE `t` REGIONS = 'us,3'"},
+		{`alter database t followers=3;`, true, "ALTER DATABASE `t` FOLLOWERS = 3"},
+		{`alter database t voters=3;`, true, "ALTER DATABASE `t` VOTERS = 3"},
+		{`alter database t learners=3;`, true, "ALTER DATABASE `t` LEARNERS = 3"},
+		{`alter database t schedule="even";`, true, "ALTER DATABASE `t` SCHEDULE = 'even'"},
+		{`alter database t constraints="ww";`, true, "ALTER DATABASE `t` CONSTRAINTS = 'ww'"},
+		{`alter database t leader_constraints="ww";`, true, "ALTER DATABASE `t` LEADER_CONSTRAINTS = 'ww'"},
+		{`alter database t follower_constraints="ww";`, true, "ALTER DATABASE `t` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{`alter database t voter_constraints="ww";`, true, "ALTER DATABASE `t` VOTER_CONSTRAINTS = 'ww'"},
+		{`alter database t learner_constraints="ww";`, true, "ALTER DATABASE `t` LEARNER_CONSTRAINTS = 'ww'"},
+		{`alter database t placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = 'ww'"},
+		// 5. create partition
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) primary_region="us");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) PRIMARY_REGION = 'us')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) regions="us,3");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) REGIONS = 'us,3')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) followers=3);`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) FOLLOWERS = 3)"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) voters=3);`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) VOTERS = 3)"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) learners=3);`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) LEARNERS = 3)"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) schedule="even");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) SCHEDULE = 'even')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) CONSTRAINTS = 'ww')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) leader_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) LEADER_CONSTRAINTS = 'ww')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) follower_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) FOLLOWER_CONSTRAINTS = 'ww')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) voter_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) VOTER_CONSTRAINTS = 'ww')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) learner_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) LEARNER_CONSTRAINTS = 'ww')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) placement policy="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) PLACEMENT POLICY = 'ww')"},
+		// 6. alter partition
+		{`alter table m partition t primary_region="us";`, true, "ALTER TABLE `m` PARTITION `t` PRIMARY_REGION = 'us'"},
+		{`alter table m partition t regions="us,3";`, true, "ALTER TABLE `m` PARTITION `t` REGIONS = 'us,3'"},
+		{`alter table m partition t followers=3;`, true, "ALTER TABLE `m` PARTITION `t` FOLLOWERS = 3"},
+		{`alter table m partition t primary_region="us" followers=3;`, true, "ALTER TABLE `m` PARTITION `t` PRIMARY_REGION = 'us' FOLLOWERS = 3"},
+		{`alter table m partition t voters=3;`, true, "ALTER TABLE `m` PARTITION `t` VOTERS = 3"},
+		{`alter table m partition t learners=3;`, true, "ALTER TABLE `m` PARTITION `t` LEARNERS = 3"},
+		{`alter table m partition t schedule="even";`, true, "ALTER TABLE `m` PARTITION `t` SCHEDULE = 'even'"},
+		{`alter table m partition t constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` CONSTRAINTS = 'ww'"},
+		{`alter table m partition t leader_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` LEADER_CONSTRAINTS = 'ww'"},
+		{`alter table m partition t follower_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{`alter table m partition t voter_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` VOTER_CONSTRAINTS = 'ww'"},
+		{`alter table m partition t learner_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` LEARNER_CONSTRAINTS = 'ww'"},
+		{`alter table m partition t placement policy="ww";`, true, "ALTER TABLE `m` PARTITION `t` PLACEMENT POLICY = 'ww'"},
+
 		// for check clause
 		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)) not enforced, check (c2 in (0, 1)))", true, "CREATE TABLE `t` (`c1` TINYINT(1),`c2` TINYINT(1),CHECK(`c1` IN (0,1)) NOT ENFORCED,CHECK(`c2` IN (0,1)) ENFORCED)"},
 		{"CREATE TABLE Customer (SD integer CHECK (SD > 0), First_Name varchar(30));", true, "CREATE TABLE `Customer` (`SD` INT CHECK(`SD`>0) ENFORCED,`First_Name` VARCHAR(30))"},
@@ -2783,6 +2892,28 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"ALTER TABLE t ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ALTER PLACEMENT POLICY CONSTRAINTS='str' ROLE=LEADER REPLICAS=1"},
 		{"ALTER TABLE t ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=leader REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=leader REPLICAS=1", true, "ALTER TABLE `t` ADD PLACEMENT POLICY CONSTRAINTS='str1' ROLE=LEADER REPLICAS=1, ADD PLACEMENT POLICY CONSTRAINTS='str2' ROLE=LEADER REPLICAS=1"},
 
+		// alter attributes
+		{"ALTER TABLE t ATTRIBUTES='str'", true, "ALTER TABLE `t` ATTRIBUTES='str'"},
+		{"ALTER TABLE t ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES=\"str1,str2\"", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES 'str1,str2'", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES \"str1,str2\"", true, "ALTER TABLE `t` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t ATTRIBUTES=DEFAULT", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES=default", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES=DeFaUlT", true, "ALTER TABLE `t` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t ATTRIBUTES", false, ""},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES='str'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES='str1,str2'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=\"str1,str2\"", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES 'str1,str2'", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES \"str1,str2\"", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES='str1,str2'"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=DEFAULT", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=default", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES=DeFaUlT", true, "ALTER TABLE `t` PARTITION `p` ATTRIBUTES=DEFAULT"},
+		{"ALTER TABLE t PARTITION p ATTRIBUTES", false, ""},
+		// For https://github.com/pingcap/tidb/issues/26778
+		{"CREATE TABLE t1 (attributes int);", true, "CREATE TABLE `t1` (`attributes` INT)"},
+
 		// For create index statement
 		{"CREATE INDEX idx ON t (a)", true, "CREATE INDEX `idx` ON `t` (`a`)"},
 		{"CREATE INDEX IF NOT EXISTS idx ON t (a)", true, "CREATE INDEX IF NOT EXISTS `idx` ON `t` (`a`)"},
@@ -3219,6 +3350,49 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"create table t (a int, b varchar(255) primary key nonclustered clustered)", false, ""},
 		{"alter table t add primary key (`a`, `b`) clustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) CLUSTERED"},
 		{"alter table t add primary key (`a`, `b`) nonclustered", true, "ALTER TABLE `t` ADD PRIMARY KEY(`a`, `b`) NONCLUSTERED"},
+
+		// for drop placement policy
+		{"drop placement policy x", true, "DROP PLACEMENT POLICY `x`"},
+		{"drop placement policy x, y", false, ""},
+		{"drop placement policy if exists x", true, "DROP PLACEMENT POLICY IF EXISTS `x`"},
+		{"drop placement policy if exists x, y", false, ""},
+		// for show create placement policy
+		{"show create placement policy x", true, "SHOW CREATE PLACEMENT POLICY `x`"},
+		{"show create placement policy if exists x", false, ""},
+		{"show create placement policy x, y", false, ""},
+		{"show create placement policy `placement`", true, "SHOW CREATE PLACEMENT POLICY `placement`"},
+		// for create placement policy
+		{"create placement policy x primary_region='us'", true, "CREATE PLACEMENT POLICY `x` PRIMARY_REGION = 'us'"},
+		{"create placement policy x region='us, 3'", false, ""},
+		{"create placement policy x followers=3", true, "CREATE PLACEMENT POLICY `x` FOLLOWERS = 3"},
+		{"create placement policy x voters=3", true, "CREATE PLACEMENT POLICY `x` VOTERS = 3"},
+		{"create placement policy x learners=3", true, "CREATE PLACEMENT POLICY `x` LEARNERS = 3"},
+		{"create placement policy x schedule='even'", true, "CREATE PLACEMENT POLICY `x` SCHEDULE = 'even'"},
+		{"create placement policy x constraints='ww'", true, "CREATE PLACEMENT POLICY `x` CONSTRAINTS = 'ww'"},
+		{"create placement policy x leader_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` LEADER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x follower_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x voter_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` VOTER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x learner_constraints='ww'", true, "CREATE PLACEMENT POLICY `x` LEARNER_CONSTRAINTS = 'ww'"},
+		{"create placement policy x primary_region='cn' regions='us' schedule='even'", true, "CREATE PLACEMENT POLICY `x` PRIMARY_REGION = 'cn' REGIONS = 'us' SCHEDULE = 'even'"},
+		{"create placement policy x primary_region='cn', leader_constraints='ww', leader_constraints='yy'", true, "CREATE PLACEMENT POLICY `x` PRIMARY_REGION = 'cn' LEADER_CONSTRAINTS = 'ww' LEADER_CONSTRAINTS = 'yy'"},
+		{"create placement policy if not exists x regions = 'us', follower_constraints='yy'", true, "CREATE PLACEMENT POLICY IF NOT EXISTS `x` REGIONS = 'us' FOLLOWER_CONSTRAINTS = 'yy'"},
+		{"create placement policy x placement policy y", false, ""},
+
+		{"alter placement policy x primary_region='us'", true, "ALTER PLACEMENT POLICY `x` PRIMARY_REGION = 'us'"},
+		{"alter placement policy x region='us, 3'", false, ""},
+		{"alter placement policy x followers=3", true, "ALTER PLACEMENT POLICY `x` FOLLOWERS = 3"},
+		{"alter placement policy x voters=3", true, "ALTER PLACEMENT POLICY `x` VOTERS = 3"},
+		{"alter placement policy x learners=3", true, "ALTER PLACEMENT POLICY `x` LEARNERS = 3"},
+		{"alter placement policy x schedule='even'", true, "ALTER PLACEMENT POLICY `x` SCHEDULE = 'even'"},
+		{"alter placement policy x constraints='ww'", true, "ALTER PLACEMENT POLICY `x` CONSTRAINTS = 'ww'"},
+		{"alter placement policy x leader_constraints='ww'", true, "ALTER PLACEMENT POLICY `x` LEADER_CONSTRAINTS = 'ww'"},
+		{"alter placement policy x follower_constraints='ww'", true, "ALTER PLACEMENT POLICY `x` FOLLOWER_CONSTRAINTS = 'ww'"},
+		{"alter placement policy x voter_constraints='ww'", true, "ALTER PLACEMENT POLICY `x` VOTER_CONSTRAINTS = 'ww'"},
+		{"alter placement policy x learner_constraints='ww'", true, "ALTER PLACEMENT POLICY `x` LEARNER_CONSTRAINTS = 'ww'"},
+		{"alter placement policy x primary_region='cn' regions='us' schedule='even'", true, "ALTER PLACEMENT POLICY `x` PRIMARY_REGION = 'cn' REGIONS = 'us' SCHEDULE = 'even'"},
+		{"alter placement policy x primary_region='cn', leader_constraints='ww', leader_constraints='yy'", true, "ALTER PLACEMENT POLICY `x` PRIMARY_REGION = 'cn' LEADER_CONSTRAINTS = 'ww' LEADER_CONSTRAINTS = 'yy'"},
+		{"alter placement policy if exists x regions = 'us', follower_constraints='yy'", true, "ALTER PLACEMENT POLICY IF EXISTS `x` REGIONS = 'us' FOLLOWER_CONSTRAINTS = 'yy'"},
+		{"alter placement policy x placement policy y", false, ""},
 	}
 	s.RunTest(c, table)
 }
@@ -4088,6 +4262,12 @@ func (s *testParserSuite) TestSubquery(c *C) {
 		{"SELECT * FROM t where t.a in (select a from t limit 1, 10)", true, "SELECT * FROM `t` WHERE `t`.`a` IN (SELECT `a` FROM `t` LIMIT 1,10)"},
 		{"SELECT * FROM t where t.a in ((select a from t limit 1, 10))", true, "SELECT * FROM `t` WHERE `t`.`a` IN ((SELECT `a` FROM `t` LIMIT 1,10))"},
 		{"SELECT * FROM t where t.a in ((select a from t limit 1, 10), 1)", true, "SELECT * FROM `t` WHERE `t`.`a` IN ((SELECT `a` FROM `t` LIMIT 1,10),1)"},
+		{"select * from ((select a from t) t1 join t t2) join t3", true, "SELECT * FROM ((SELECT `a` FROM `t`) AS `t1` JOIN `t` AS `t2`) JOIN `t3`"},
+		{"SELECT t1.a AS a FROM ((SELECT a FROM t) AS t1)", true, "SELECT `t1`.`a` AS `a` FROM (SELECT `a` FROM `t`) AS `t1`"},
+		{"select count(*) from (select a, b from x1 union all select a, b from x3 union all (select x1.a, x3.b from (select * from x3 union all select * from x2) x3 left join x1 on x3.a = x1.b))", true, "SELECT COUNT(1) FROM (SELECT `a`,`b` FROM `x1` UNION ALL SELECT `a`,`b` FROM `x3` UNION ALL (SELECT `x1`.`a`,`x3`.`b` FROM (SELECT * FROM `x3` UNION ALL SELECT * FROM `x2`) AS `x3` LEFT JOIN `x1` ON `x3`.`a`=`x1`.`b`))"},
+		{"(SELECT 1 a,3 b) UNION (SELECT 2,1) ORDER BY (SELECT 2)", true, "(SELECT 1 AS `a`,3 AS `b`) UNION (SELECT 2,1) ORDER BY (SELECT 2)"},
+		{"select * from ((SELECT 1 a,3 b) UNION (SELECT 2,1) ORDER BY (SELECT 2)) t order by a,b", true, "SELECT * FROM ((SELECT 1 AS `a`,3 AS `b`) UNION (SELECT 2,1) ORDER BY (SELECT 2)) AS `t` ORDER BY `a`,`b`"},
+		{"select (select * from t1 where a != t.a union all (select * from t2 where a != t.a) order by a limit 1) from t1 t", true, "SELECT (SELECT * FROM `t1` WHERE `a`!=`t`.`a` UNION ALL (SELECT * FROM `t2` WHERE `a`!=`t`.`a`) ORDER BY `a` LIMIT 1) FROM `t1` AS `t`"},
 	}
 	s.RunTest(c, table)
 
@@ -5963,7 +6143,7 @@ func (s *testParserSuite) TestCTE(c *C) {
 		{"select * from t where 1 > (with cte as (select 2) select * from cte)", true, "SELECT * FROM `t` WHERE 1>(WITH `cte` AS (SELECT 2) SELECT * FROM `cte`)"},
 		{"( with cte(n) as ( select 1 )  select n+1 from cte  union select n+2 from cte) union select 1", true, "(WITH `cte` (`n`) AS (SELECT 1) SELECT `n`+1 FROM `cte` UNION SELECT `n`+2 FROM `cte`) UNION SELECT 1"},
 		{"( with cte(n) as ( select 1 )  select n+1 from cte) union select 1", true, "(WITH `cte` (`n`) AS (SELECT 1) SELECT `n`+1 FROM `cte`) UNION SELECT 1"},
-		{"( with cte(n) as ( select 1 )  (select n+1 from cte)) union select 1", true, "(WITH `cte` (`n`) AS (SELECT 1) SELECT `n`+1 FROM `cte`) UNION SELECT 1"},
+		{"( with cte(n) as ( select 1 )  (select n+1 from cte)) union select 1", true, "(WITH `cte` (`n`) AS (SELECT 1) (SELECT `n`+1 FROM `cte`)) UNION SELECT 1"},
 	}
 
 	s.RunTest(c, table)
@@ -6062,4 +6242,37 @@ func (s *testParserSuite) TestCTEBindings(c *C) {
 			c.Assert(restoreSQLs, Equals, t.restore, comment)
 		}
 	}
+}
+
+func (s *testParserSuite) TestPlanRecreator(c *C) {
+	table := []testCase{
+		{"PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", true, "PLAN RECREATOR DUMP EXPLAIN SELECT `a` FROM `t`"},
+		{"PLAN RECREATOR DUMP EXPLAIN SELECT * FROM t WHERE a > 10", true, "PLAN RECREATOR DUMP EXPLAIN SELECT * FROM `t` WHERE `a`>10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT * FROM t WHERE a > 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT * FROM `t` WHERE `a`>10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE a > 10 and t < 1 ORDER BY t LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE `a`>10 AND `t`<1 ORDER BY `t` LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE a > 10 and t < 1 ORDER BY t LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE `a`>10 AND `t`<1 ORDER BY `t` LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE a > 10 and t < 1 LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY WHERE `a`>10 AND `t`<1 LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE a > 10 and t < 1 LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY WHERE `a`>10 AND `t`<1 LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY LIMIT 10", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY LIMIT 10"},
+		{"PLAN RECREATOR DUMP EXPLAIN SLOW QUERY", true, "PLAN RECREATOR DUMP EXPLAIN SLOW QUERY"},
+		{"PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY", true, "PLAN RECREATOR DUMP EXPLAIN ANALYZE SLOW QUERY"},
+		{"PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'", true, "PLAN RECREATOR LOAD '/tmp/sdfaalskdjf.zip'"},
+	}
+	s.RunTest(c, table)
+
+	p := parser.New()
+	sms, _, err := p.Parse("PLAN RECREATOR DUMP EXPLAIN SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok := sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsFalse)
+
+	sms, _, err = p.Parse("PLAN RECREATOR DUMP EXPLAIN ANALYZE SELECT a FROM t", "", "")
+	c.Assert(err, IsNil)
+	v, ok = sms[0].(*ast.PlanRecreatorStmt)
+	c.Assert(ok, IsTrue)
+	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
+	c.Assert(v.Analyze, IsTrue)
 }
