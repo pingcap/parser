@@ -23,7 +23,6 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/auth"
-	chs "github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
@@ -138,14 +137,9 @@ func (parser *Parser) SetParserConfig(config ParserConfig) {
 // Parse parses a query string to raw ast.StmtNode.
 // If charset or collation is "", default charset and collation will be used.
 func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode, warns []error, err error) {
+	parser.lexer.setEncoding(charset)
 	if charset == "" {
 		charset = mysql.DefaultCharset
-		parser.lexer.decoder = nil
-		parser.lexer.charLength = nil
-	} else {
-		enc, _ := chs.Lookup(charset)
-		parser.lexer.decoder = enc.NewDecoder()
-		parser.lexer.charLength = chs.LookupCharLength(charset)
 	}
 	if collation == "" {
 		collation = mysql.DefaultCollationName

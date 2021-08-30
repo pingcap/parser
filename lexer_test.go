@@ -262,7 +262,7 @@ func (s *testLexerSuite) TestIdentifier(c *C) {
 
 func (s *testLexerSuite) TestEncodedIdentifier(c *C) {
 	encoding, _ := charset.Lookup("gbk")
-	enc, dec := encoding.NewEncoder(), encoding.NewDecoder()
+	enc := encoding.NewEncoder()
 	table := [][2]string{
 		{`哈哈`, "哈哈"},
 		{`5哈`, `5哈`},
@@ -273,7 +273,8 @@ func (s *testLexerSuite) TestEncodedIdentifier(c *C) {
 		{"023哈4", "023哈4"},
 		{"9e哈哈", "9e哈哈"},
 	}
-	l := &Scanner{decoder: dec}
+	l := &Scanner{}
+	l.setEncoding("gbk")
 	for _, item := range table {
 		sql, _, err := transform.String(enc, item[0])
 		c.Assert(err, IsNil)

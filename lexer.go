@@ -37,14 +37,22 @@ type Pos struct {
 	Offset int
 }
 
+type Encoding struct {
+	decoder *encoding.Decoder
+	name    string
+	peekBuf [8]byte
+}
+
+func (e *Encoding) Enabled() bool {
+	return len(e.name) > 0
+}
+
 // Scanner implements the yyLexer interface.
 type Scanner struct {
 	r   reader
 	buf bytes.Buffer
 
-	decoder    *encoding.Decoder
-	charLength func([]byte) int // size in bytes
-	peekBuf    [8]byte
+	encoding Encoding
 
 	errs         []error
 	warns        []error
@@ -144,28 +152,41 @@ func (s *Scanner) AppendError(err error) {
 	s.errs = append(s.errs, err)
 }
 
-func (s *Scanner) tryDecodeRune(lit string) (r rune, size int) {
-	if s.decoder == nil {
-		return utf8.DecodeRuneInString(lit)
+func (s *Scanner) setEncoding(label string) {
+	if len(label) == 0 {
+		s.encoding.name = ""
+		s.encoding.decoder = nil
+		return
 	}
-	sliceLen := 4
-	if s.charLength != nil {
-		sliceLen = s.charLength(Slice(lit))
+	e, name := charset.Lookup(label)
+	if e == nil {
+		return
 	}
+	s.encoding.name = name
+	s.encoding.decoder = e.NewDecoder()
+}
+
+func (s *Scanner) tryDecodeRune(rest string) (r rune, size int) {
+	if !s.encoding.Enabled() {
+		return utf8.DecodeRuneInString(rest)
+	}
+	peekCharLen := charset.PeekNextCharacterLength(s.encoding.name, Slice(rest))
 	atEOF := true
-	if len(lit) >= sliceLen {
-		lit = lit[:sliceLen]
+	if len(rest) > peekCharLen {
 		atEOF = false
 	}
-	dest := s.peekBuf[:]
+	if len(rest) >= peekCharLen {
+		rest = rest[:peekCharLen]
+	}
+	dest := s.encoding.peekBuf[:]
 	for {
-		nDest, nSrc, err := s.decoder.Transform(dest, Slice(lit), atEOF)
+		nDest, nSrc, err := s.encoding.decoder.Transform(dest, Slice(rest), atEOF)
 		if err != nil && nSrc == 0 {
 			return utf8.RuneError, 1
 		}
 		if utf8.RuneCount(dest[:nDest]) > 1 {
 			// Too much characters, we only need one.
-			lit = lit[:len(lit)-1]
+			rest = rest[:len(rest)-1]
 			continue
 		}
 		ur, _ := utf8.DecodeRune(dest[:nDest])
@@ -174,7 +195,7 @@ func (s *Scanner) tryDecodeRune(lit string) (r rune, size int) {
 }
 
 func (s *Scanner) tryDecodeToUTF8String(lit string) string {
-	decoder := s.decoder
+	decoder := s.encoding.decoder
 	if len(s.nextTokenCharset) != 0 {
 		e, _ := charset.Lookup(s.nextTokenCharset)
 		decoder = e.NewDecoder()
@@ -191,9 +212,9 @@ func (s *Scanner) tryDecodeToUTF8String(lit string) string {
 }
 
 func (s *Scanner) tryDecodeToUTF8Ident(lit string) string {
-	if s.decoder != nil {
+	if s.encoding.Enabled() {
 		var err error
-		lit, _, err = transform.String(s.decoder, lit)
+		lit, _, err = transform.String(s.encoding.decoder, lit)
 		if err != nil {
 			lit = "?"
 		}
@@ -319,8 +340,6 @@ func (s *Scanner) InheritScanner(sql string) *Scanner {
 		r:                 reader{s: sql},
 		sqlMode:           s.sqlMode,
 		supportWindowFunc: s.supportWindowFunc,
-		decoder:           s.decoder,
-		charLength:        s.charLength,
 	}
 	newScanner.r.scanner = newScanner
 	return newScanner
