@@ -34,12 +34,12 @@ var (
 	CustomizedReleaseVersion = "None"
 
 	// ServerVersion is the version information of this tidb-server in MySQL's format.
-	ServerVersion = fmt.Sprintf("5.7.25-%s", CustomizedReleaseVersion)
+	ServerVersion = fmt.Sprintf("5.7.25-TiDB-%s", TiDBReleaseVersion)
 )
 
 func init() {
-	if CustomizedReleaseVersion == "None" {
-		ServerVersion = fmt.Sprintf("5.7.25-TiDB-%s", TiDBReleaseVersion)
+	if CustomizedReleaseVersion != "None" {
+		ServerVersion = fmt.Sprintf("5.7.25-%s", CustomizedReleaseVersion)
 	}
 }
 
