@@ -30,9 +30,18 @@ var (
 	// TiDBReleaseVersion is initialized by (git describe --tags) in Makefile.
 	TiDBReleaseVersion = "None"
 
+	// CustomizedReleaseVersion is initialized by (your definition) in Makefile.
+	CustomizedReleaseVersion = "None"
+
 	// ServerVersion is the version information of this tidb-server in MySQL's format.
-	ServerVersion = fmt.Sprintf("5.7.25-TiDB-%s", TiDBReleaseVersion)
+	ServerVersion = fmt.Sprintf("5.7.25-%s", CustomizedReleaseVersion)
 )
+
+func init() {
+	if CustomizedReleaseVersion == "None" {
+		ServerVersion = fmt.Sprintf("5.7.25-TiDB-%s", TiDBReleaseVersion)
+	}
+}
 
 // Header information.
 const (
