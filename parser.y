@@ -9111,6 +9111,11 @@ SetOprStmt:
 SetOprStmtWoutLimitOrderBy:
 	SetOprClauseList SetOpr SelectStmt
 	{
+		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-1])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		setOpr := &ast.SetOprStmt{SelectList: &ast.SetOprSelectList{Selects: $1.([]ast.Node)}}
 		st := $3.(*ast.SelectStmt)
 		setOpr.Limit = st.Limit
@@ -9124,6 +9129,10 @@ SetOprStmtWoutLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect
 	{
 		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-1])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		var setOprList2 []ast.Node
 		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
@@ -9145,6 +9154,10 @@ SetOprStmtWithLimitOrderBy:
 	SetOprClauseList SetOpr SubSelect OrderBy
 	{
 		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-2])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		var setOprList2 []ast.Node
 		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
@@ -9165,6 +9178,10 @@ SetOprStmtWithLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect SelectStmtLimit
 	{
 		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-2])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		var setOprList2 []ast.Node
 		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
@@ -9185,6 +9202,10 @@ SetOprStmtWithLimitOrderBy:
 |	SetOprClauseList SetOpr SubSelect OrderBy SelectStmtLimit
 	{
 		setOprList1 := $1.([]ast.Node)
+		if sel, isSelect := setOprList1[len(setOprList1)-1].(*ast.SelectStmt); isSelect && !sel.IsInBraces {
+			endOffset := parser.endOffset(&yyS[yypt-3])
+			parser.setLastSelectFieldText(sel, endOffset)
+		}
 		var setOprList2 []ast.Node
 		var with2 *ast.WithClause
 		switch x := $3.(*ast.SubqueryExpr).Query.(type) {
