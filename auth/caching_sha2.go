@@ -44,6 +44,7 @@ const (
 	MIXCHARS             = 32
 	SALT_LENGTH          = 20
 	ITERATION_MULTIPLIER = 1000
+	MAX_PASSWORD_LENGTH  = 256
 )
 
 func b64From24bit(b []byte, n int) []byte {
@@ -217,4 +218,30 @@ func NewSha2Password(pwd string) string {
 	}
 
 	return sha256crypt(pwd, salt, 5*ITERATION_MULTIPLIER)
+}
+
+// GenerateScramble creates a scrambe that can be used for caching_sha2 fast authentication
+// See also: https://dev.mysql.com/doc/dev/mysql-server/latest/page_caching_sha2_authentication_exchanges.html
+func GenerateScramble(password []byte, nonce []byte) ([]byte, error) {
+	if len(password) > MAX_PASSWORD_LENGTH {
+		return nil, errors.New("invalid password length for caching_sha2_password scramble generation")
+	}
+
+	if len(nonce) != SALT_LENGTH {
+		return nil, errors.New("invalid nonce length for caching_sha2_password scramble generation")
+	}
+
+	digestStage1 := sha256.Sum256(password)
+	digestStage2 := sha256.Sum256(digestStage1[:])
+	tempStage3 := sha256.New()
+	tempStage3.Write(digestStage2[:])
+	tempStage3.Write(nonce)
+	digestStage3 := tempStage3.Sum(nil)
+
+	newscramble := digestStage1
+	for i := range digestStage1 {
+		newscramble[i] ^= digestStage3[i]
+	}
+
+	return newscramble[:], nil
 }

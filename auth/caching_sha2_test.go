@@ -15,6 +15,7 @@ package auth
 
 import (
 	"encoding/hex"
+	"strings"
 
 	. "github.com/pingcap/check"
 )
@@ -70,4 +71,22 @@ func (s *testAuthSuite) TestNewSha2Password(c *C) {
 		c.Assert(pwhash[r], Not(Equals), 0)  // NUL
 		c.Assert(pwhash[r], Not(Equals), 36) // '$'
 	}
+}
+
+func (s *testAuthSuite) TestGenerateScramble(c *C) {
+	pwd := []byte("abc")
+	nonce, _ := hex.DecodeString("6d642b676464321c561d476e094c316d05180b16")
+	storedScramble, _ := hex.DecodeString("3455aae998ae2959d7170229375c9626735bf545d2a828a7d45f94f9b2cf19f4")
+	scramble, err := GenerateScramble(pwd, nonce)
+	c.Assert(err, IsNil)
+	c.Assert(scramble, BytesEquals, storedScramble)
+
+	_, err = GenerateScramble([]byte(strings.Repeat("x", MAX_PASSWORD_LENGTH+1)), nonce)
+	c.Assert(err, NotNil)
+
+	_, err = GenerateScramble(pwd, append(nonce, byte('A')))
+	c.Assert(err, NotNil)
+
+	_, err = GenerateScramble(pwd, nonce[:SALT_LENGTH-1])
+	c.Assert(err, NotNil)
 }
