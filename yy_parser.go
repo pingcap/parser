@@ -139,6 +139,7 @@ func (parser *Parser) SetParserConfig(config ParserConfig) {
 // Parse parses a query string to raw ast.StmtNode.
 // If charset or collation is "", default charset and collation will be used.
 func (parser *Parser) Parse(sql, charset, collation string) (stmt []ast.StmtNode, warns []error, err error) {
+	sql = parser.lexer.tryDecodeToUTF8String(sql)
 	if charset == "" {
 		charset = mysql.DefaultCharset
 	}

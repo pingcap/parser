@@ -40,7 +40,6 @@ type Pos struct {
 type Encoding struct {
 	decoder *encoding.Decoder
 	name    string
-	peekBuf [8]byte
 }
 
 func (e *Encoding) Enabled() bool {
@@ -101,7 +100,7 @@ func (s *Scanner) Errors() (warns []error, errs []error) {
 
 // reset resets the sql string to be scanned.
 func (s *Scanner) reset(sql string) {
-	s.r = reader{s: sql, p: Pos{Line: 1}, scanner: s}
+	s.r = reader{s: sql, p: Pos{Line: 1}}
 	s.buf.Reset()
 	s.errs = s.errs[:0]
 	s.warns = s.warns[:0]
@@ -163,41 +162,13 @@ func (s *Scanner) setEncoding(label string) {
 	s.encoding.decoder = e.NewDecoder()
 }
 
-func (s *Scanner) tryDecodeRune(rest string) (r rune, size int) {
+func (s *Scanner) tryDecodeToUTF8String(sql string) string {
 	if !s.encoding.Enabled() {
-		return utf8.DecodeRuneInString(rest)
+		return sql
 	}
-	peekCharLen := charset.PeekNextCharacterLength(s.encoding.name, Slice(rest))
-	atEOF := true
-	if len(rest) > peekCharLen {
-		atEOF = false
-	}
-	if len(rest) >= peekCharLen {
-		rest = rest[:peekCharLen]
-	}
-	dest := s.encoding.peekBuf[:]
-	for {
-		nDest, nSrc, err := s.encoding.decoder.Transform(dest, Slice(rest), atEOF)
-		if err != nil && nSrc == 0 {
-			return utf8.RuneError, 1
-		}
-		if utf8.RuneCount(dest[:nDest]) > 1 {
-			// Too much characters, we only need one.
-			rest = rest[:len(rest)-1]
-			continue
-		}
-		ur, _ := utf8.DecodeRune(dest[:nDest])
-		return ur, nSrc
-	}
-}
-
-func (s *Scanner) tryDecodeToUTF8String(lit string) string {
-	if !s.encoding.Enabled() {
-		return lit
-	}
-	utf8Lit, ok := transformString(s.encoding.decoder, lit)
+	utf8Lit, ok := transformString(s.encoding.decoder, sql)
 	if !ok {
-		s.AppendError(errors.Errorf("Cannot convert string '%x' from %s to utf8mb4", lit, s.encoding.name))
+		s.AppendError(errors.Errorf("Cannot convert string '%x' from %s to utf8mb4", sql, s.encoding.name))
 		s.lastErrorAsWarn()
 	}
 	return utf8Lit
@@ -273,11 +244,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return toHex(s, v, lit)
 	case bitLit:
 		return toBit(s, v, lit)
-	case singleAtIdentifier, doubleAtIdentifier:
-		v.item = lit
-		v.ident = s.tryDecodeToUTF8String(v.ident)
-		return tok
-	case cast, extract:
+	case singleAtIdentifier, doubleAtIdentifier, cast, extract:
 		v.item = lit
 		return tok
 	case null:
@@ -285,9 +252,6 @@ func (s *Scanner) Lex(v *yySymType) int {
 	case quotedIdentifier, identifier:
 		tok = identifier
 		s.identifierDot = s.r.peek() == '.'
-		v.ident = s.tryDecodeToUTF8String(v.ident)
-	case stringLit:
-		v.ident = s.tryDecodeToUTF8String(v.ident)
 	}
 
 	if tok == unicode.ReplacementChar {
@@ -314,20 +278,16 @@ func (s *Scanner) EnableWindowFunc(val bool) {
 
 // InheritScanner returns a new scanner object which inherits configurations from the parent scanner.
 func (s *Scanner) InheritScanner(sql string) *Scanner {
-	newScanner := &Scanner{
+	return &Scanner{
 		r:                 reader{s: sql},
 		sqlMode:           s.sqlMode,
 		supportWindowFunc: s.supportWindowFunc,
 	}
-	newScanner.r.scanner = newScanner
-	return newScanner
 }
 
 // NewScanner returns a new scanner object.
 func NewScanner(s string) *Scanner {
-	scanner := &Scanner{r: reader{s: s}}
-	scanner.r.scanner = scanner
-	return scanner
+	return &Scanner{r: reader{s: s}}
 }
 
 func (s *Scanner) handleIdent(lval *yySymType) int {
@@ -969,10 +929,9 @@ func (s *Scanner) lastErrorAsWarn() {
 }
 
 type reader struct {
-	s       string
-	p       Pos
-	w       int
-	scanner *Scanner
+	s string
+	p Pos
+	w int
 
 	peekRune        rune
 	peekRuneUpdated bool
@@ -996,7 +955,7 @@ func (r *reader) peek() rune {
 	}
 	v, w := rune(r.s[r.p.Offset]), 1
 	if v >= 0x80 {
-		v, w = r.scanner.tryDecodeRune(r.s[r.p.Offset:])
+		v, w = utf8.DecodeRuneInString(r.s[r.p.Offset:])
 		if v == utf8.RuneError && w == 1 {
 			v = rune(r.s[r.p.Offset]) // illegal encoding
 		}

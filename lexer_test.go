@@ -18,9 +18,7 @@ import (
 	"unicode"
 
 	. "github.com/pingcap/check"
-	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
-	"golang.org/x/text/transform"
 )
 
 var _ = Suite(&testLexerSuite{})
@@ -253,32 +251,6 @@ func (s *testLexerSuite) TestIdentifier(c *C) {
 	l := &Scanner{}
 	for _, item := range table {
 		l.reset(item[0])
-		var v yySymType
-		tok := l.Lex(&v)
-		c.Assert(tok, Equals, identifier)
-		c.Assert(v.ident, Equals, item[1])
-	}
-}
-
-func (s *testLexerSuite) TestEncodedIdentifier(c *C) {
-	encoding, _ := charset.Lookup("gbk")
-	enc := encoding.NewEncoder()
-	table := [][2]string{
-		{`哈哈`, "哈哈"},
-		{`5哈`, `5哈`},
-		{"1_哈", "1_哈"},
-		{"0_哈", "0_哈"},
-		{"0b1哈哈", "0b1哈哈"},
-		{"0x7哈哈3", "0x7哈哈3"},
-		{"023哈4", "023哈4"},
-		{"9e哈哈", "9e哈哈"},
-	}
-	l := &Scanner{}
-	l.setEncoding("gbk")
-	for _, item := range table {
-		sql, _, err := transform.String(enc, item[0])
-		c.Assert(err, IsNil)
-		l.reset(sql)
 		var v yySymType
 		tok := l.Lex(&v)
 		c.Assert(tok, Equals, identifier)
