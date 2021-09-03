@@ -663,6 +663,7 @@ import (
 	placement             "PLACEMENT"
 	plan                  "PLAN"
 	position              "POSITION"
+	predicate             "PREDICATE"
 	primaryRegion         "PRIMARY_REGION"
 	recent                "RECENT"
 	recreator             "RECREATOR"
@@ -1307,6 +1308,7 @@ import (
 	PlacementSpec                          "Placement rules specification"
 	PlacementSpecList                      "Placement rules specifications"
 	AttributesOpt                          "Attributes options"
+	PredicateColumnsOpt                    "predicate columns option"
 
 %type	<ident>
 	AsOpt             "AS or EmptyString"
@@ -2640,9 +2642,9 @@ SplitSyntaxOption:
 	}
 
 AnalyzeTableStmt:
-	"ANALYZE" "TABLE" TableNameList AnalyzeOptionListOpt
+	"ANALYZE" "TABLE" TableNameList PredicateColumnsOpt AnalyzeOptionListOpt
 	{
-		$$ = &ast.AnalyzeTableStmt{TableNames: $3.([]*ast.TableName), AnalyzeOpts: $4.([]ast.AnalyzeOpt)}
+		$$ = &ast.AnalyzeTableStmt{TableNames: $3.([]*ast.TableName), PredicateColumns: $4.(bool), AnalyzeOpts: $5.([]ast.AnalyzeOpt)}
 	}
 |	"ANALYZE" "TABLE" TableName "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
@@ -2652,9 +2654,9 @@ AnalyzeTableStmt:
 	{
 		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$4.(*ast.TableName)}, IndexNames: $6.([]model.CIStr), IndexFlag: true, Incremental: true, AnalyzeOpts: $7.([]ast.AnalyzeOpt)}
 	}
-|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList AnalyzeOptionListOpt
+|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList PredicateColumnsOpt AnalyzeOptionListOpt
 	{
-		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, PartitionNames: $5.([]model.CIStr), AnalyzeOpts: $6.([]ast.AnalyzeOpt)}
+		$$ = &ast.AnalyzeTableStmt{TableNames: []*ast.TableName{$3.(*ast.TableName)}, PartitionNames: $5.([]model.CIStr), PredicateColumns: $6.(bool), AnalyzeOpts: $7.([]ast.AnalyzeOpt)}
 	}
 |	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList "INDEX" IndexNameList AnalyzeOptionListOpt
 	{
@@ -2693,6 +2695,31 @@ AnalyzeTableStmt:
 			ColumnNames:        $7.([]*ast.ColumnName),
 			HistogramOperation: ast.HistogramOperationDrop,
 		}
+	}
+|	"ANALYZE" "TABLE" TableName "COLUMN" ColumnNameList AnalyzeOptionListOpt
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames:  []*ast.TableName{$3.(*ast.TableName)},
+			ColumnNames: $5.([]*ast.ColumnName),
+			AnalyzeOpts: $6.([]ast.AnalyzeOpt)}
+	}
+|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList "COLUMN" ColumnNameList AnalyzeOptionListOpt
+	{
+		$$ = &ast.AnalyzeTableStmt{
+			TableNames:     []*ast.TableName{$3.(*ast.TableName)},
+			PartitionNames: $5.([]model.CIStr),
+			ColumnNames:    $7.([]*ast.ColumnName),
+			AnalyzeOpts:    $8.([]ast.AnalyzeOpt)}
+	}
+
+PredicateColumnsOpt:
+	/* empty */
+	{
+		$$ = false
+	}
+|	"PREDICATE" "COLUMNS"
+	{
+		$$ = true
 	}
 
 AnalyzeOptionListOpt:
@@ -6130,6 +6157,7 @@ NotKeywordToken:
 |	"PLACEMENT"
 |	"PLAN"
 |	"POSITION"
+|	"PREDICATE"
 |	"S3"
 |	"STRICT"
 |	"SUBDATE"

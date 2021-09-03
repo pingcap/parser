@@ -5063,6 +5063,16 @@ func (s *testParserSuite) TestAnalyze(c *C) {
 		{"analyze table t drop histogram on b", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `b`"},
 		{"analyze table t update histogram on c1, c2;", true, "ANALYZE TABLE `t` UPDATE HISTOGRAM ON `c1`,`c2`"},
 		{"analyze table t drop histogram on c1, c2;", true, "ANALYZE TABLE `t` DROP HISTOGRAM ON `c1`,`c2`"},
+		{"analyze table t1,t2 predicate columns", true, "ANALYZE TABLE `t1`,`t2` PREDICATE COLUMNS"},
+		{"analyze table t partition a predicate columns", true, "ANALYZE TABLE `t` PARTITION `a` PREDICATE COLUMNS"},
+		{"analyze table t1,t2 predicate columns with 4 topn", true, "ANALYZE TABLE `t1`,`t2` PREDICATE COLUMNS WITH 4 TOPN"},
+		{"analyze table t partition a predicate columns with 1024 buckets", true, "ANALYZE TABLE `t` PARTITION `a` PREDICATE COLUMNS WITH 1024 BUCKETS"},
+		{"analyze table t column c1,c2", true, "ANALYZE TABLE `t` COLUMN `c1`,`c2`"},
+		{"analyze table t partition a column c1,c2", true, "ANALYZE TABLE `t` PARTITION `a` COLUMN `c1`,`c2`"},
+		{"analyze table t column c1,c2 with 4 topn", true, "ANALYZE TABLE `t` COLUMN `c1`,`c2` WITH 4 TOPN"},
+		{"analyze table t partition a column c1,c2 with 1024 buckets", true, "ANALYZE TABLE `t` PARTITION `a` COLUMN `c1`,`c2` WITH 1024 BUCKETS"},
+		{"analyze table t index a column c", false, ""},
+		{"analyze table t index a predicate columns", false, ""},
 	}
 	s.RunTest(c, table)
 }
