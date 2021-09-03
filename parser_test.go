@@ -6291,7 +6291,8 @@ func (s *testParserSuite) TestGBKEncoding(c *C) {
 	c.Assert(checker.tblName, Not(Equals), "测试表")
 	c.Assert(checker.colName, Not(Equals), "测试列")
 
-	stmt, err = p.ParseOneStmt(sql, "gbk", "")
+	p.SetParserConfig(parser.ParserConfig{CharsetClient: "gbk"})
+	stmt, err = p.ParseOneStmt(sql, "", "")
 	c.Assert(err, IsNil)
 	_, _ = stmt.Accept(checker)
 	c.Assert(checker.tblName, Equals, "测试表")
@@ -6301,10 +6302,12 @@ func (s *testParserSuite) TestGBKEncoding(c *C) {
 	utf8SQL := "select '芢' from `玚`;"
 	sql, err = encoder.String(utf8SQL)
 	c.Assert(err, IsNil)
-	stmt, err = p.ParseOneStmt(sql, "gbk", "")
+	stmt, err = p.ParseOneStmt(sql, "", "")
 	c.Assert(err, IsNil)
-	stmt, err = p.ParseOneStmt("select '\xc6\x5c' from `\xab\x60`;", "gbk", "")
+	stmt, err = p.ParseOneStmt("select '\xc6\x5c' from `\xab\x60`;", "", "")
 	c.Assert(err, IsNil)
+
+	p.SetParserConfig(parser.ParserConfig{CharsetClient: ""})
 	stmt, err = p.ParseOneStmt("select _gbk '\xc6\x5c' from dual;", "", "")
 	c.Assert(err, NotNil)
 }
