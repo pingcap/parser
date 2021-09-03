@@ -21,11 +21,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 	tidbfeature "github.com/pingcap/parser/tidb"
 	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
 )
 
 var _ = yyLexer(&Scanner{})
@@ -86,9 +86,6 @@ type Scanner struct {
 	// to disambiguate hint after create binding for update, which should
 	// be pertained.
 	lastKeyword3 int
-
-	// nextTokenCharset records the decoding charset for the next token.
-	nextTokenCharset string
 
 	// hintPos records the start position of the previous optimizer hint.
 	lastHintPos Pos
@@ -195,31 +192,15 @@ func (s *Scanner) tryDecodeRune(rest string) (r rune, size int) {
 }
 
 func (s *Scanner) tryDecodeToUTF8String(lit string) string {
-	decoder := s.encoding.decoder
-	if len(s.nextTokenCharset) != 0 {
-		e, _ := charset.Lookup(s.nextTokenCharset)
-		decoder = e.NewDecoder()
-	}
-	if decoder == nil {
+	if !s.encoding.Enabled() {
 		return lit
 	}
-	utf8Lit, _, err := transform.String(decoder, lit)
-	if err != nil {
-		s.AppendError(err)
+	utf8Lit, ok := transformString(s.encoding.decoder, lit)
+	if !ok {
+		s.AppendError(errors.Errorf("Cannot convert string '%x' from %s to utf8mb4", lit, s.encoding.name))
 		s.lastErrorAsWarn()
 	}
 	return utf8Lit
-}
-
-func (s *Scanner) tryDecodeToUTF8Ident(lit string) string {
-	if s.encoding.Enabled() {
-		var err error
-		lit, _, err = transform.String(s.encoding.decoder, lit)
-		if err != nil {
-			lit = "?"
-		}
-	}
-	return lit
 }
 
 func (s *Scanner) getNextToken() int {
@@ -294,7 +275,7 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return toBit(s, v, lit)
 	case singleAtIdentifier, doubleAtIdentifier:
 		v.item = lit
-		v.ident = s.tryDecodeToUTF8Ident(v.ident)
+		v.ident = s.tryDecodeToUTF8String(v.ident)
 		return tok
 	case cast, extract:
 		v.item = lit
@@ -304,14 +285,11 @@ func (s *Scanner) Lex(v *yySymType) int {
 	case quotedIdentifier, identifier:
 		tok = identifier
 		s.identifierDot = s.r.peek() == '.'
-		v.ident = s.tryDecodeToUTF8Ident(v.ident)
+		v.ident = s.tryDecodeToUTF8String(v.ident)
 	case stringLit:
 		v.ident = s.tryDecodeToUTF8String(v.ident)
 	}
 
-	if tok != underscoreCS {
-		s.nextTokenCharset = ""
-	}
 	if tok == unicode.ReplacementChar {
 		return invalid
 	}
@@ -365,7 +343,6 @@ func (s *Scanner) handleIdent(lval *yySymType) int {
 		return identifier
 	}
 	lval.ident = cs.Name
-	s.nextTokenCharset = cs.Name
 	return underscoreCS
 }
 

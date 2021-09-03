@@ -14,6 +14,8 @@
 package parser
 
 import (
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/transform"
 	"reflect"
 	"unsafe"
 )
@@ -988,6 +990,30 @@ func (s *Scanner) isTokenIdentifier(lit string, offset int) int {
 		tok = windowFuncTokenMap[string(data)]
 	}
 	return tok
+}
+
+func transformString(dec *encoding.Decoder, lit string) (string, bool) {
+	src := Slice(lit)
+	dest := make([]byte, len(src)*2)
+	var destOffset, srcOffset int
+	ok := true
+	for {
+		nDest, nSrc, err := dec.Transform(dest[destOffset:], src[srcOffset:], true)
+		destOffset += nDest
+		srcOffset += nSrc
+		if err == nil {
+			return string(dest[:destOffset]), ok
+		} else if err == transform.ErrShortDst {
+			newDest := make([]byte, len(dest)*2)
+			copy(newDest, dest)
+			dest = newDest
+		} else {
+			dest[destOffset] = byte('?')
+			destOffset += 1
+			srcOffset += 1
+			ok = false
+		}
+	}
 }
 
 // Slice converts string to slice without copy.

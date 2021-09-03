@@ -14,8 +14,6 @@
 package charset
 
 import (
-	"strings"
-
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -23,6 +21,7 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
+	"strings"
 )
 
 // Lookup returns the encoding with the specified label, and its canonical
