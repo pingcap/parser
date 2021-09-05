@@ -1438,6 +1438,18 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 		n.Limit = node.(*Limit)
 	}
 
+	if n.LockInfo != nil {
+		if n.LockInfo.Tables != nil {
+			for i, t := range n.LockInfo.Tables {
+				node, ok := t.Accept(v)
+				if !ok {
+					return n, false
+				}
+				n.LockInfo.Tables[i] = node.(*TableName)
+			}
+		}
+	}
+
 	return v.Leave(n)
 }
 
