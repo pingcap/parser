@@ -615,6 +615,7 @@ const (
 type SelectLockInfo struct {
 	LockType SelectLockType
 	WaitSec  uint64
+	Tables   []*TableName
 }
 
 // String implements fmt.Stringer.

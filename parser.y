@@ -8904,6 +8904,13 @@ SelectLockOpt:
 			WaitSec:  getUint64FromNUM($4),
 		}
 	}
+|	"FOR" "UPDATE" "OF" TableNameList
+	{
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForUpdate,
+			Tables:   $4.([]*ast.TableName),
+		}
+	}
 |	"FOR" "SHARE" "NOWAIT"
 	{
 		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareNoWait}
