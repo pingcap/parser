@@ -15,6 +15,7 @@ package charset
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
@@ -259,17 +260,25 @@ var encodings = map[string]struct {
 	"x-user-defined":      {charmap.XUserDefined, "x-user-defined"},
 }
 
-// PeekNextCharacterLength is used in lexer.peek() to determine the next character length.
-func PeekNextCharacterLength(name string, bs []byte) int {
-	switch name {
-	case "gbk": // https://en.wikipedia.org/wiki/GBK_(character_encoding)#Layout_diagram
+// FindNextCharacterLength is used in lexer.peek() to determine the next character length.
+func FindNextCharacterLength(label string) func([]byte) int {
+	if f, ok := encodingNextCharacterLength[label]; ok {
+		return f
+	}
+	return nil
+}
+
+var encodingNextCharacterLength = map[string]func([]byte) int{
+	// https://en.wikipedia.org/wiki/GBK_(character_encoding)#Layout_diagram
+	"gbk": func(bs []byte) int {
 		if len(bs) == 0 || bs[0] < 0x80 {
 			// A byte in the range 00–7F is a single byte that means the same thing as it does in ASCII.
 			return 1
 		}
 		return 2
-	default:
-		// None of the encoding has more than 4 bytes per character.
-		return 4
-	}
+	},
+	"utf-8": func(bs []byte) int {
+		_, size := utf8.DecodeRune(bs)
+		return size
+	},
 }

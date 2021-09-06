@@ -133,7 +133,7 @@ func (parser *Parser) SetParserConfig(config ParserConfig) {
 	parser.EnableWindowFunc(config.EnableWindowFunction)
 	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
 	parser.lexer.skipPositionRecording = config.SkipPositionRecording
-	parser.lexer.setEncoding(config.CharsetClient)
+	parser.lexer.encoding = NewEncoding(config.CharsetClient)
 }
 
 // Parse parses a query string to raw ast.StmtNode.
