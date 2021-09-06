@@ -16,13 +16,13 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestT(t *testing.T) {
