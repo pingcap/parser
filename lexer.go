@@ -202,7 +202,7 @@ func (s *Scanner) AppendError(err error) {
 func (s *Scanner) tryDecodeToUTF8String(sql string) string {
 	if !s.encoding.Enabled() {
 		if len(s.encoding.name) > 0 {
-			s.AppendError(errors.Errorf("Encoding %s is not supported", sql, s.encoding.name))
+			s.AppendError(errors.Errorf("Encoding %s is not supported", s.encoding.name))
 			s.lastErrorAsWarn()
 		}
 		return sql
