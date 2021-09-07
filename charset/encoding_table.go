@@ -15,7 +15,6 @@ package charset
 
 import (
 	"strings"
-	"unicode/utf8"
 
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
@@ -278,7 +277,13 @@ var encodingNextCharacterLength = map[string]func([]byte) int{
 		return 2
 	},
 	"utf-8": func(bs []byte) int {
-		_, size := utf8.DecodeRune(bs)
-		return size
+		if len(bs) == 0 || bs[0] < 0x80 {
+			return 1
+		} else if bs[0] < 0xe0 {
+			return 2
+		} else if bs[0] < 0xf0 {
+			return 3
+		}
+		return 4
 	},
 }
