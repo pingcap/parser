@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/pingcap/parser/mysql"
+	tidbfeature "github.com/pingcap/parser/tidb"
 )
 
 var _ = yyLexer(&Scanner{})
@@ -52,6 +53,9 @@ type Scanner struct {
 	// It may break the compatibility when support those keywords,
 	// because some application may already use them as identifiers.
 	supportWindowFunc bool
+
+	// Whether record the original text keyword position to the AST node.
+	skipPositionRecording bool
 
 	// lastScanOffset indicates last offset returned by scan().
 	// It's used to substring sql in syntax error message.
@@ -171,7 +175,6 @@ func (s *Scanner) Lex(v *yySymType) int {
 		tok == stringLit &&
 		s.r.s[v.offset] == '"' {
 		tok = identifier
-		s.identifierDot = false
 	}
 
 	if tok == pipes && !(s.sqlMode.HasPipesAsConcatMode()) {
@@ -206,8 +209,9 @@ func (s *Scanner) Lex(v *yySymType) int {
 		return tok
 	case null:
 		v.item = nil
-	case quotedIdentifier:
+	case quotedIdentifier, identifier:
 		tok = identifier
+		s.identifierDot = s.r.peek() == '.'
 	}
 
 	if tok == unicode.ReplacementChar {
@@ -397,11 +401,10 @@ func startWithSlash(s *Scanner) (tok int, pos Pos, lit string) {
 		s.r.inc()
 		// in '/*T!', try to match the pattern '/*T![feature1,feature2,...]'.
 		features := s.scanFeatureIDs()
-		if SpecialCommentsController.ContainsAll(features) {
+		if tidbfeature.CanParseFeature(features...) {
 			s.inBangComment = true
 			return s.scan()
 		}
-
 	case 'M': // '/*M' maybe MariaDB-specific comments
 		// no special treatment for now.
 		break
@@ -513,7 +516,6 @@ func startWithAt(s *Scanner) (tok int, pos Pos, lit string) {
 func scanIdentifier(s *Scanner) (int, Pos, string) {
 	pos := s.r.pos()
 	s.r.incAsLongAs(isIdentChar)
-	s.identifierDot = s.r.peek() == '.'
 	return identifier, pos, s.r.data(&pos)
 }
 
@@ -554,7 +556,6 @@ func scanQuotedIdent(s *Scanner) (tok int, pos Pos, lit string) {
 			if s.r.peek() != '`' {
 				// don't return identifier in case that it's interpreted as keyword token later.
 				tok, lit = quotedIdentifier, s.buf.String()
-				s.identifierDot = false
 				return
 			}
 			s.r.inc()
