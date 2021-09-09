@@ -108,7 +108,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"max_connections_per_hour", "max_queries_per_hour", "max_updates_per_hour", "max_user_connections", "event", "reload", "routine", "temporary",
 		"following", "preceding", "unbounded", "respect", "nulls", "current", "last", "against", "expansion",
 		"chain", "error", "general", "nvarchar", "pack_keys", "parser", "shard_row_id_bits", "pre_split_regions",
-		"constraints", "role", "replicas", "policy", "s3", "strict", "running", "stop", "preserve",
+		"constraints", "role", "replicas", "policy", "s3", "strict", "running", "stop", "preserve", "placement",
 	}
 	for _, kw := range unreservedKws {
 		src := fmt.Sprintf("SELECT %s FROM tbl;", kw)
@@ -6184,6 +6184,48 @@ func (s *testParserSuite) TestHelp(c *C) {
 	}
 
 	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestRestoreBinOpWithBrackets(c *C) {
+	cases := []testCase{
+		{"select mod(a+b, 4)+1", true, "SELECT (((`a` + `b`) % 4) + 1)"},
+		{"select mod( year(a) - abs(weekday(a) + dayofweek(a)), 4) + 1", true, "SELECT (((year(`a`) - abs((weekday(`a`) + dayofweek(`a`)))) % 4) + 1)"},
+	}
+
+	parser := parser.New()
+	parser.EnableWindowFunc(s.enableWindowFunc)
+	for _, t := range cases {
+		_, _, err := parser.Parse(t.src, "", "")
+		comment := Commentf("source %v", t.src)
+		if !t.ok {
+			c.Assert(err, NotNil, comment)
+			continue
+		}
+		c.Assert(err, IsNil, comment)
+		// restore correctness test
+		if t.ok {
+			var sb strings.Builder
+			comment := Commentf("source %v", t.src)
+			stmts, _, err := parser.Parse(t.src, "", "")
+			c.Assert(err, IsNil, comment)
+			restoreSQLs := ""
+			for _, stmt := range stmts {
+				sb.Reset()
+				ctx := NewRestoreCtx(RestoreStringSingleQuotes|RestoreSpacesAroundBinaryOperation|RestoreBracketAroundBinaryOperation|RestoreStringWithoutCharset|RestoreNameBackQuotes, &sb)
+				ctx.DefaultDB = "test"
+				err = stmt.Restore(ctx)
+				c.Assert(err, IsNil, comment)
+				restoreSQL := sb.String()
+				comment = Commentf("source %v; restore %v", t.src, restoreSQL)
+				if restoreSQLs != "" {
+					restoreSQLs += "; "
+				}
+				restoreSQLs += restoreSQL
+			}
+			comment = Commentf("restore %v; expect %v", restoreSQLs, t.restore)
+			c.Assert(restoreSQLs, Equals, t.restore, comment)
+		}
+	}
 }
 
 // For CTE bindings.
