@@ -223,7 +223,7 @@ const (
 	SuperPriv
 	// CreateUserPriv is the privilege to create user.
 	CreateUserPriv
-	// TriggerPriv is not checked yet.
+	// TriggerPriv is privilege to create, drop, execute, or display triggers for tables.
 	TriggerPriv
 	// DropPriv is the privilege to drop schema/table.
 	DropPriv
@@ -301,10 +301,10 @@ func (privs Privileges) Has(p PrivilegeType) bool {
 var AllGlobalPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, CreateTablespacePriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv, CreateTMPTablePriv, LockTablesPriv, CreateRoutinePriv, AlterRoutinePriv, EventPriv, ShutdownPriv, ReloadPriv, FilePriv, ConfigPriv, ReplicationClientPriv, ReplicationSlavePriv}
 
 // AllDBPrivs is all the privileges in database scope.
-var AllDBPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ReferencesPriv, LockTablesPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
+var AllDBPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ReferencesPriv, LockTablesPriv, CreateRoutinePriv, AlterRoutinePriv, AlterPriv, ExecutePriv, IndexPriv, EventPriv, TriggerPriv, CreateViewPriv, ShowViewPriv}
 
 // AllTablePrivs is all the privileges in table scope.
-var AllTablePrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, IndexPriv, ReferencesPriv, AlterPriv, CreateViewPriv, ShowViewPriv}
+var AllTablePrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, IndexPriv, TriggerPriv, ReferencesPriv, AlterPriv, CreateViewPriv, ShowViewPriv}
 
 // AllColumnPrivs is all the privileges in column scope.
 var AllColumnPrivs = Privileges{SelectPriv, InsertPriv, UpdatePriv}
