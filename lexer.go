@@ -25,8 +25,6 @@ import (
 	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 	tidbfeature "github.com/pingcap/parser/tidb"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
 )
 
 var _ = yyLexer(&Scanner{})
@@ -38,71 +36,12 @@ type Pos struct {
 	Offset int
 }
 
-type Encoding struct {
-	decoder    *encoding.Decoder
-	name       string
-	charLength func([]byte) int
-}
-
-func (e *Encoding) Enabled() bool {
-	return e.decoder != nil && e.charLength != nil
-}
-
-func NewEncoding(label string) Encoding {
-	if len(label) == 0 {
-		return Encoding{}
-	}
-	e, name := charset.Lookup(label)
-	if e == nil {
-		return Encoding{name: name}
-	}
-	return Encoding{
-		decoder:    e.NewDecoder(),
-		name:       name,
-		charLength: charset.FindNextCharacterLength(name),
-	}
-}
-
-func (e *Encoding) transformString(lit string) (string, bool) {
-	src := Slice(lit)
-	dest := make([]byte, len(src)*2)
-	var destOffset, srcOffset int
-	ok := true
-	for {
-		nextLen := 4
-		if e.charLength != nil {
-			nextLen = e.charLength(src[srcOffset:])
-		}
-		srcEnd := srcOffset + nextLen
-		if srcEnd > len(src) {
-			srcEnd = len(src)
-		}
-		nDest, nSrc, err := e.decoder.Transform(dest[destOffset:], src[srcOffset:srcEnd], false)
-		destOffset += nDest
-		srcOffset += nSrc
-		if err == nil {
-			if srcOffset >= len(src) {
-				return string(dest[:destOffset]), ok
-			}
-		} else if err == transform.ErrShortDst {
-			newDest := make([]byte, len(dest)*2)
-			copy(newDest, dest)
-			dest = newDest
-		} else {
-			dest[destOffset] = 0x3f
-			destOffset += 1
-			srcOffset += 1
-			ok = false
-		}
-	}
-}
-
 // Scanner implements the yyLexer interface.
 type Scanner struct {
 	r   reader
 	buf bytes.Buffer
 
-	encoding Encoding
+	encoding charset.Encoding
 
 	errs         []error
 	warns        []error
@@ -201,15 +140,16 @@ func (s *Scanner) AppendError(err error) {
 
 func (s *Scanner) tryDecodeToUTF8String(sql string) string {
 	if !s.encoding.Enabled() {
-		if len(s.encoding.name) > 0 {
-			s.AppendError(errors.Errorf("Encoding %s is not supported", s.encoding.name))
+		name := s.encoding.Name()
+		if len(name) > 0 {
+			s.AppendError(errors.Errorf("Encoding %s is not supported", name))
 			s.lastErrorAsWarn()
 		}
 		return sql
 	}
-	utf8Lit, ok := s.encoding.transformString(sql)
+	utf8Lit, ok := s.encoding.Decode(Slice(sql))
 	if !ok {
-		s.AppendError(errors.Errorf("Cannot convert string '%x' from %s to utf8mb4", sql, s.encoding.name))
+		s.AppendError(errors.Errorf("Cannot convert string '%x' from %s to utf8mb4", sql, s.encoding.Name()))
 		s.lastErrorAsWarn()
 	}
 	return utf8Lit
@@ -321,6 +261,7 @@ func (s *Scanner) EnableWindowFunc(val bool) {
 func (s *Scanner) InheritScanner(sql string) *Scanner {
 	return &Scanner{
 		r:                 reader{s: sql},
+		encoding:          s.encoding,
 		sqlMode:           s.sqlMode,
 		supportWindowFunc: s.supportWindowFunc,
 	}

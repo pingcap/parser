@@ -23,6 +23,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/auth"
+	"github.com/pingcap/parser/charset"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 )
@@ -133,7 +134,7 @@ func (parser *Parser) SetParserConfig(config ParserConfig) {
 	parser.EnableWindowFunc(config.EnableWindowFunction)
 	parser.SetStrictDoubleTypeCheck(config.EnableStrictDoubleTypeCheck)
 	parser.lexer.skipPositionRecording = config.SkipPositionRecording
-	parser.lexer.encoding = NewEncoding(config.CharsetClient)
+	parser.lexer.encoding = *charset.NewEncoding(charset.Format(config.CharsetClient))
 }
 
 // Parse parses a query string to raw ast.StmtNode.

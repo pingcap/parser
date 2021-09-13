@@ -31,7 +31,11 @@ import (
 // leading and trailing whitespace.
 func Lookup(label string) (e encoding.Encoding, name string) {
 	label = strings.ToLower(strings.Trim(label, "\t\n\r\f "))
-	enc := encodings[label]
+	return lookup(Formatted(label))
+}
+
+func lookup(label EncodingLabel) (e encoding.Encoding, name string) {
+	enc := encodings[string(label)]
 	return enc.e, enc.name
 }
 
