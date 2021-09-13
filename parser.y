@@ -6453,7 +6453,7 @@ Literal:
 |	"UNDERSCORE_CHARSET" stringLit
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
-		co, err := charset.GetDefaultCollation($1)
+		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
 			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
@@ -6477,7 +6477,7 @@ Literal:
 	}
 |	"UNDERSCORE_CHARSET" hexLit
 	{
-		co, err := charset.GetDefaultCollation($1)
+		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
 			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
@@ -6493,7 +6493,7 @@ Literal:
 	}
 |	"UNDERSCORE_CHARSET" bitLit
 	{
-		co, err := charset.GetDefaultCollation($1)
+		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
 			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
