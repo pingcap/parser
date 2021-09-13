@@ -2,7 +2,6 @@ name: Unit Test
 on:
   push:
     branches:
-      - master
       - release-5.0
       - release-4.0
       - release-3.0
