@@ -1063,6 +1063,7 @@ import (
 	OnDuplicateKeyUpdate                   "ON DUPLICATE KEY UPDATE value list"
 	OnCommitOpt                            "ON COMMIT DELETE |PRESERVE ROWS"
 	DuplicateOpt                           "[IGNORE|REPLACE] in CREATE TABLE ... SELECT statement or LOAD DATA statement"
+	OfTablesOpt                            "OF table_name [, ...]"
 	OptErrors                              "ERRORS or empty"
 	OptFull                                "Full or empty"
 	OptTemporary                           "TEMPORARY or empty"
@@ -6452,7 +6453,7 @@ Literal:
 |	"UNDERSCORE_CHARSET" stringLit
 	{
 		// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
-		co, err := charset.GetDefaultCollation($1)
+		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
 			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
@@ -6476,7 +6477,7 @@ Literal:
 	}
 |	"UNDERSCORE_CHARSET" hexLit
 	{
-		co, err := charset.GetDefaultCollation($1)
+		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
 			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
@@ -6492,7 +6493,7 @@ Literal:
 	}
 |	"UNDERSCORE_CHARSET" bitLit
 	{
-		co, err := charset.GetDefaultCollation($1)
+		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
 			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
 			return 1
@@ -9175,40 +9176,72 @@ SelectLockOpt:
 	{
 		$$ = nil
 	}
-|	"FOR" "UPDATE"
+|	"FOR" "UPDATE" OfTablesOpt
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdate}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForUpdate,
+			Tables:   $3.([]*ast.TableName),
+		}
 	}
-|	"FOR" "SHARE"
+|	"FOR" "SHARE" OfTablesOpt
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForShare,
+			Tables:   $3.([]*ast.TableName),
+		}
 	}
-|	"FOR" "UPDATE" "NOWAIT"
+|	"FOR" "UPDATE" OfTablesOpt "NOWAIT"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdateNoWait}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForUpdateNoWait,
+			Tables:   $3.([]*ast.TableName),
+		}
 	}
-|	"FOR" "UPDATE" "WAIT" NUM
+|	"FOR" "UPDATE" OfTablesOpt "WAIT" NUM
 	{
 		$$ = &ast.SelectLockInfo{
 			LockType: ast.SelectLockForUpdateWaitN,
-			WaitSec:  getUint64FromNUM($4),
+			WaitSec:  getUint64FromNUM($5),
+			Tables:   $3.([]*ast.TableName),
 		}
 	}
-|	"FOR" "SHARE" "NOWAIT"
+|	"FOR" "SHARE" OfTablesOpt "NOWAIT"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareNoWait}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForShareNoWait,
+			Tables:   $3.([]*ast.TableName),
+		}
 	}
-|	"FOR" "UPDATE" "SKIP" "LOCKED"
+|	"FOR" "UPDATE" OfTablesOpt "SKIP" "LOCKED"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForUpdateSkipLocked}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForUpdateSkipLocked,
+			Tables:   $3.([]*ast.TableName),
+		}
 	}
-|	"FOR" "SHARE" "SKIP" "LOCKED"
+|	"FOR" "SHARE" OfTablesOpt "SKIP" "LOCKED"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShareSkipLocked}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForShareSkipLocked,
+			Tables:   $3.([]*ast.TableName),
+		}
 	}
 |	"LOCK" "IN" "SHARE" "MODE"
 	{
-		$$ = &ast.SelectLockInfo{LockType: ast.SelectLockForShare}
+		$$ = &ast.SelectLockInfo{
+			LockType: ast.SelectLockForShare,
+			Tables:   []*ast.TableName{},
+		}
+	}
+
+OfTablesOpt:
+	/* empty */
+	{
+		$$ = []*ast.TableName{}
+	}
+|	"OF" TableNameList
+	{
+		$$ = $2.([]*ast.TableName)
 	}
 
 SetOprStmt:

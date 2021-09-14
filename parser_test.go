@@ -680,6 +680,15 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select * from t lock in share mode nowait", false, ""},
 		{"select * from t lock in share mode skip locked", false, ""},
 
+		{"select * from t for update of t", true, "SELECT * FROM `t` FOR UPDATE OF `t`"},
+		{"select * from t for share of t", true, "SELECT * FROM `t` FOR SHARE OF `t`"},
+		{"select * from t for update of t nowait", true, "SELECT * FROM `t` FOR UPDATE OF `t` NOWAIT"},
+		{"select * from t for update of t wait 5", true, "SELECT * FROM `t` FOR UPDATE OF `t` WAIT 5"},
+		{"select * from t limit 1 for update of t wait 11", true, "SELECT * FROM `t` LIMIT 1 FOR UPDATE OF `t` WAIT 11"},
+		{"select * from t for share of t nowait", true, "SELECT * FROM `t` FOR SHARE OF `t` NOWAIT"},
+		{"select * from t for update of t skip locked", true, "SELECT * FROM `t` FOR UPDATE OF `t` SKIP LOCKED"},
+		{"select * from t for share of t skip locked", true, "SELECT * FROM `t` FOR SHARE OF `t` SKIP LOCKED"},
+
 		// select into outfile
 		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
 		{"select a from t order by a into outfile '/tmp/abc'", true, "SELECT `a` FROM `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
@@ -6319,4 +6328,67 @@ func (s *testParserSuite) TestPlanRecreator(c *C) {
 	c.Assert(ok, IsTrue)
 	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
 	c.Assert(v.Analyze, IsTrue)
+}
+
+func (s *testParserSuite) TestGBKEncoding(c *C) {
+	p := parser.New()
+	gbkEncoding, _ := charset.Lookup("gbk")
+	encoder := gbkEncoding.NewEncoder()
+	sql, err := encoder.String("create table 测试表 (测试列 varchar(255) default 'GBK测试用例');")
+	c.Assert(err, IsNil)
+
+	stmt, err := p.ParseOneStmt(sql, "", "")
+	c.Assert(err, IsNil)
+	checker := &gbkEncodingChecker{}
+	_, _ = stmt.Accept(checker)
+	c.Assert(checker.tblName, Not(Equals), "测试表")
+	c.Assert(checker.colName, Not(Equals), "测试列")
+
+	p.SetParserConfig(parser.ParserConfig{CharsetClient: "gbk"})
+	stmt, err = p.ParseOneStmt(sql, "", "")
+	c.Assert(err, IsNil)
+	_, _ = stmt.Accept(checker)
+	c.Assert(checker.tblName, Equals, "测试表")
+	c.Assert(checker.colName, Equals, "测试列")
+	c.Assert(checker.expr, Equals, "GBK测试用例")
+
+	utf8SQL := "select '芢' from `玚`;"
+	sql, err = encoder.String(utf8SQL)
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt(sql, "", "")
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt("select '\xc6\x5c' from `\xab\x60`;", "", "")
+	c.Assert(err, IsNil)
+
+	p.SetParserConfig(parser.ParserConfig{CharsetClient: ""})
+	stmt, err = p.ParseOneStmt("select _gbk '\xc6\x5c' from dual;", "", "")
+	c.Assert(err, NotNil)
+}
+
+type gbkEncodingChecker struct {
+	tblName string
+	colName string
+	expr    string
+}
+
+func (g *gbkEncodingChecker) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	if tn, ok := n.(*ast.TableName); ok {
+		g.tblName = tn.Name.O
+		return n, false
+	}
+	if cn, ok := n.(*ast.ColumnName); ok {
+		g.colName = cn.Name.O
+		return n, false
+	}
+	if c, ok := n.(*ast.ColumnOption); ok {
+		if ve, ok := c.Expr.(ast.ValueExpr); ok {
+			g.expr = ve.GetString()
+			return n, false
+		}
+	}
+	return n, false
+}
+
+func (g *gbkEncodingChecker) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }
