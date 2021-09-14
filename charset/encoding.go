@@ -21,10 +21,9 @@ import (
 )
 
 const (
-	encodingBufferSizeDefault          = 1024
 	encodingBufferSizeRecycleThreshold = 4 * 1024
 
-	encodingDefault = "utf-8"
+	encodingLegacy = "utf-8" // utf-8 encoding is compatible with old default behavior.
 )
 
 type EncodingLabel string
@@ -63,12 +62,11 @@ func NewEncoding(label EncodingLabel) *Encoding {
 		return &Encoding{}
 	}
 	e, name := lookup(label)
-	if e != nil && name != encodingDefault {
+	if e != nil && name != encodingLegacy {
 		return &Encoding{
 			enc:        e,
 			name:       name,
 			charLength: FindNextCharacterLength(name),
-			buffer:     make([]byte, encodingBufferSizeDefault),
 		}
 	}
 	return &Encoding{name: name}
@@ -78,38 +76,35 @@ func NewEncoding(label EncodingLabel) *Encoding {
 func (e *Encoding) UpdateEncoding(label EncodingLabel) {
 	enc, name := lookup(label)
 	e.name = name
-	if enc != nil && name != encodingDefault {
+	if enc != nil && name != encodingLegacy {
 		e.enc = enc
-	}
-	if len(e.buffer) == 0 {
-		e.buffer = make([]byte, encodingBufferSizeDefault)
+		e.charLength = FindNextCharacterLength(name)
+	} else {
+		e.enc = nil
+		e.charLength = nil
 	}
 }
 
 // Encode encodes the bytes to a string.
 func (e *Encoding) Encode(src []byte) (string, bool) {
-	return e.transform(e.enc.NewEncoder(), src)
+	return e.transform(e.enc.NewEncoder(), src, false)
 }
 
 // Decode decodes the bytes to a string.
 func (e *Encoding) Decode(src []byte) (string, bool) {
-	return e.transform(e.enc.NewDecoder(), src)
+	return e.transform(e.enc.NewDecoder(), src, true)
 }
 
-func (e *Encoding) transform(transformer transform.Transformer, src []byte) (string, bool) {
+func (e *Encoding) transform(transformer transform.Transformer, src []byte, isDecoding bool) (string, bool) {
 	if len(e.buffer) < len(src) {
 		e.buffer = make([]byte, len(src)*2)
 	}
 	var destOffset, srcOffset int
 	ok := true
 	for {
-		nextLen := 4
-		if e.charLength != nil {
-			nextLen = e.charLength(src[srcOffset:])
-		}
-		srcEnd := srcOffset + nextLen
-		if srcEnd > len(src) {
-			srcEnd = len(src)
+		srcEnd := len(src)
+		if isDecoding {
+			srcEnd = e.nextCharacterOffset(src, srcOffset)
 		}
 		nDest, nSrc, err := transformer.Transform(e.buffer[destOffset:], src[srcOffset:srcEnd], false)
 		destOffset += nDest
@@ -119,7 +114,7 @@ func (e *Encoding) transform(transformer transform.Transformer, src []byte) (str
 				result := string(e.buffer[:destOffset])
 				if len(e.buffer) > encodingBufferSizeRecycleThreshold {
 					// This prevents Encoding from holding too much memory.
-					e.buffer = make([]byte, encodingBufferSizeDefault)
+					e.buffer = nil
 				}
 				return result, ok
 			}
@@ -134,4 +129,16 @@ func (e *Encoding) transform(transformer transform.Transformer, src []byte) (str
 			ok = false
 		}
 	}
+}
+
+func (e *Encoding) nextCharacterOffset(src []byte, srcOffset int) int {
+	nextLen := 4
+	if e.charLength != nil {
+		nextLen = e.charLength(src[srcOffset:])
+	}
+	srcEnd := srcOffset + nextLen
+	if srcEnd > len(src) {
+		srcEnd = len(src)
+	}
+	return srcEnd
 }
