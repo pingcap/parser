@@ -1942,7 +1942,7 @@ func (n *PlacementOption) Restore(ctx *format.RestoreCtx) error {
 		case PlacementOptionPolicy:
 			ctx.WriteKeyWord("PLACEMENT POLICY ")
 			ctx.WritePlain("= ")
-			ctx.WriteString(n.StrValue)
+			ctx.WriteName(n.StrValue)
 		default:
 			UnSupportType = n.Tp
 		}
