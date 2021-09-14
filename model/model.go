@@ -863,9 +863,6 @@ type PartitionDefinition struct {
 	LessThan []string   `json:"less_than"`
 	InValues [][]string `json:"in_values"`
 	Comment  string     `json:"comment,omitempty"`
-
-	PlacementPolicyRef  *PolicyRefInfo     `json:"policy_ref_info"`
-	DirectPlacementOpts *PlacementSettings `json:"placement_settings"`
 }
 
 // Clone clones ConstraintInfo.
@@ -1051,9 +1048,6 @@ type DBInfo struct {
 	Collate string       `json:"collate"`
 	Tables  []*TableInfo `json:"-"` // Tables in the DB.
 	State   SchemaState  `json:"state"`
-
-	PlacementPolicyRef  *PolicyRefInfo     `json:"policy_ref_info"`
-	DirectPlacementOpts *PlacementSettings `json:"placement_settings"`
 }
 
 // Clone clones DBInfo.
