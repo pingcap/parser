@@ -6455,7 +6455,7 @@ Literal:
 		// See https://dev.mysql.com/doc/refman/5.7/en/charset-literal.html
 		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
-			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
+			yylex.AppendError(ast.ErrUnknownCharacterSet.GenWithStack("Unsupported character introducer: '%-.64s'", $1))
 			return 1
 		}
 		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
@@ -6479,7 +6479,7 @@ Literal:
 	{
 		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
-			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
+			yylex.AppendError(ast.ErrUnknownCharacterSet.GenWithStack("Unsupported character introducer: '%-.64s'", $1))
 			return 1
 		}
 		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
@@ -6495,7 +6495,7 @@ Literal:
 	{
 		co, err := charset.GetDefaultCollationLegacy($1)
 		if err != nil {
-			yylex.AppendError(yylex.Errorf("Get collation error for charset: %s", $1))
+			yylex.AppendError(ast.ErrUnknownCharacterSet.GenWithStack("Unsupported character introducer: '%-.64s'", $1))
 			return 1
 		}
 		expr := ast.NewValueExpr($2, parser.charset, parser.collation)
