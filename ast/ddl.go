@@ -1892,7 +1892,7 @@ type PlacementOption struct {
 }
 
 func (n *PlacementOption) Restore(ctx *format.RestoreCtx) error {
-	var UnSupportType PlacementOptionType
+	isSupported := true
 	fn := func() {
 		switch n.Tp {
 		case PlacementOptionPrimaryRegion:
@@ -1944,13 +1944,13 @@ func (n *PlacementOption) Restore(ctx *format.RestoreCtx) error {
 			ctx.WritePlain("= ")
 			ctx.WriteName(n.StrValue)
 		default:
-			UnSupportType = n.Tp
+			isSupported = false
 		}
 	}
 	// WriteSpecialComment
 	ctx.WriteWithSpecialComments(tidb.FeatureIDPlacement, fn)
-	if UnSupportType != 0 {
-		return errors.Errorf("invalid PlacementOption: %d", UnSupportType)
+	if !isSupported {
+		return errors.Errorf("invalid PlacementOption: %d", n.Tp)
 	}
 
 	return nil
