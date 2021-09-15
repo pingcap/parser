@@ -1947,11 +1947,11 @@ func (n *PlacementOption) Restore(ctx *format.RestoreCtx) error {
 			isSupported = false
 		}
 	}
-	// WriteSpecialComment
-	ctx.WriteWithSpecialComments(tidb.FeatureIDPlacement, fn)
 	if !isSupported {
 		return errors.Errorf("invalid PlacementOption: %d", n.Tp)
 	}
+	// WriteSpecialComment
+	ctx.WriteWithSpecialComments(tidb.FeatureIDPlacement, fn)
 
 	return nil
 }
