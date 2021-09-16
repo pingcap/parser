@@ -104,32 +104,16 @@ func (e *Encoding) transform(transformer transform.Transformer, dest, src []byte
 	var destOffset, srcOffset int
 	var encodingErr error
 	for {
-		srcEnd, nextLen := len(src), 1
-		if isDecoding {
-			if e.charLength != nil {
-				nextLen = e.charLength(src[srcOffset:])
-			}
-			srcEnd = srcOffset + nextLen
-			if srcEnd > len(src) {
-				srcEnd = len(src)
-			}
-		}
+		srcNextLen := e.nextCharLenInSrc(src[srcOffset:], isDecoding)
+		srcEnd := mathutil.Min(srcOffset+srcNextLen, len(src))
 		nDest, nSrc, err := transformer.Transform(dest[destOffset:], src[srcOffset:srcEnd], false)
 		if err == transform.ErrShortDst {
-			// The destination buffer is too small. Enlarge the capacity.
-			newDest := make([]byte, len(dest)*2)
-			copy(newDest, dest)
-			dest = newDest
+			dest = enlargeCapacity(dest)
 		} else if err != nil || isDecoding && e.beginWithReplacementChar(dest[destOffset:destOffset+nDest]) {
 			if encodingErr == nil {
-				cutEnd := mathutil.Min(srcOffset+nextLen, len(src))
-				invalidBytes := fmt.Sprintf("%X", string(src[srcOffset:cutEnd]))
-				encodingErr = errInvalidCharacterString.GenWithStackByArgs(e.name, invalidBytes)
+				encodingErr = e.generateErr(src[srcOffset:], srcNextLen)
 			}
-			// Append '?' to the destination buffer.
-			dest[destOffset] = byte('?')
-			nDest = 1
-			nSrc = nextLen // skip the source bytes that cannot be decoded normally.
+			nDest, nSrc = appendQuestionMark(dest, destOffset, srcNextLen)
 		}
 		destOffset += nDest
 		srcOffset += nSrc
@@ -138,6 +122,30 @@ func (e *Encoding) transform(transformer transform.Transformer, dest, src []byte
 			return dest[:destOffset], encodingErr
 		}
 	}
+}
+
+func (e *Encoding) nextCharLenInSrc(srcRest []byte, isDecoding bool) int {
+	if isDecoding && e.charLength != nil {
+		return e.charLength(srcRest)
+	}
+	return len(srcRest)
+}
+
+func enlargeCapacity(dest []byte) []byte {
+	newDest := make([]byte, len(dest)*2)
+	copy(newDest, dest)
+	return newDest
+}
+
+func (e *Encoding) generateErr(srcRest []byte, srcNextLen int) error {
+	cutEnd := mathutil.Min(srcNextLen, len(srcRest))
+	invalidBytes := fmt.Sprintf("%X", string(srcRest[:cutEnd]))
+	return errInvalidCharacterString.GenWithStackByArgs(e.name, invalidBytes)
+}
+
+func appendQuestionMark(dest []byte, destOffset, srcNextLen int) (nDest, nSrc int) {
+	dest[destOffset] = byte('?')
+	return 1, srcNextLen // skip the source bytes that cannot be decoded normally.
 }
 
 var replacementBytes = []byte{0xEF, 0xBF, 0xBD}
