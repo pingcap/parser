@@ -109,11 +109,12 @@ func (e *Encoding) transform(transformer transform.Transformer, dest, src []byte
 		nDest, nSrc, err := transformer.Transform(dest[destOffset:], src[srcOffset:srcEnd], false)
 		if err == transform.ErrShortDst {
 			dest = enlargeCapacity(dest)
-		} else if err != nil || isDecoding && e.beginWithReplacementChar(dest[destOffset:destOffset+nDest]) {
+		} else if err != nil || isDecoding && beginWithReplacementChar(dest[destOffset:destOffset+nDest]) {
 			if encodingErr == nil {
 				encodingErr = e.generateErr(src[srcOffset:], srcNextLen)
 			}
-			nDest, nSrc = appendQuestionMark(dest, destOffset, srcNextLen)
+			dest[destOffset] = byte('?')
+			nDest, nSrc = 1, srcNextLen // skip the source bytes that cannot be decoded normally.
 		}
 		destOffset += nDest
 		srcOffset += nSrc
@@ -143,14 +144,9 @@ func (e *Encoding) generateErr(srcRest []byte, srcNextLen int) error {
 	return errInvalidCharacterString.GenWithStackByArgs(e.name, invalidBytes)
 }
 
-func appendQuestionMark(dest []byte, destOffset, srcNextLen int) (nDest, nSrc int) {
-	dest[destOffset] = byte('?')
-	return 1, srcNextLen // skip the source bytes that cannot be decoded normally.
-}
-
 var replacementBytes = []byte{0xEF, 0xBF, 0xBD}
 
 // beginWithReplacementChar check if dst has the prefix '0xEFBFBD'.
-func (e *Encoding) beginWithReplacementChar(dst []byte) bool {
+func beginWithReplacementChar(dst []byte) bool {
 	return bytes.HasPrefix(dst, replacementBytes)
 }
