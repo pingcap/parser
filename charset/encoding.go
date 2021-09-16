@@ -14,17 +14,19 @@
 package charset
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/cznic/mathutil"
+	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/terror"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
 )
 
-const (
-	encodingBufferSizeRecycleThreshold = 4 * 1024
+const encodingLegacy = "utf-8" // utf-8 encoding is compatible with old default behavior.
 
-	encodingLegacy = "utf-8" // utf-8 encoding is compatible with old default behavior.
-)
+var errInvalidCharacterString = terror.ClassParser.NewStd(mysql.ErrInvalidCharacterString)
 
 type EncodingLabel string
 
@@ -43,7 +45,6 @@ type Encoding struct {
 	enc        encoding.Encoding
 	name       string
 	charLength func([]byte) int
-	buffer     []byte
 }
 
 // Enabled indicates whether the non-utf8 encoding is used.
@@ -57,11 +58,11 @@ func (e *Encoding) Name() string {
 }
 
 // NewEncoding creates a new Encoding.
-func NewEncoding(label EncodingLabel) *Encoding {
+func NewEncoding(label string) *Encoding {
 	if len(label) == 0 {
 		return &Encoding{}
 	}
-	e, name := lookup(label)
+	e, name := Lookup(label)
 	if e != nil && name != encodingLegacy {
 		return &Encoding{
 			enc:        e,
@@ -72,7 +73,7 @@ func NewEncoding(label EncodingLabel) *Encoding {
 	return &Encoding{name: name}
 }
 
-// UpdateEncoding updates to a new Encoding without changing the buffer.
+// UpdateEncoding updates to a new Encoding.
 func (e *Encoding) UpdateEncoding(label EncodingLabel) {
 	enc, name := lookup(label)
 	e.name = name
@@ -86,59 +87,59 @@ func (e *Encoding) UpdateEncoding(label EncodingLabel) {
 }
 
 // Encode encodes the bytes to a string.
-func (e *Encoding) Encode(src []byte) (string, bool) {
-	return e.transform(e.enc.NewEncoder(), src, false)
+func (e *Encoding) Encode(dest, src []byte) ([]byte, error) {
+	return e.transform(e.enc.NewEncoder(), dest, src, false)
 }
 
-// Decode decodes the bytes to a string.
-func (e *Encoding) Decode(src []byte) (string, bool) {
-	return e.transform(e.enc.NewDecoder(), src, true)
+// Decode decodes the bytes to a string. Please copy the result after calling this.
+func (e *Encoding) Decode(dest, src []byte) ([]byte, error) {
+	return e.transform(e.enc.NewDecoder(), dest, src, true)
 }
 
-func (e *Encoding) transform(transformer transform.Transformer, src []byte, isDecoding bool) (string, bool) {
-	if len(e.buffer) < len(src) {
-		e.buffer = make([]byte, len(src)*2)
+func (e *Encoding) transform(transformer transform.Transformer, dest, src []byte, isDecoding bool) ([]byte, error) {
+	if len(dest) < len(src) {
+		dest = make([]byte, len(src)*2)
 	}
 	var destOffset, srcOffset int
-	ok := true
+	var encodingErr error
 	for {
-		srcEnd := len(src)
+		srcEnd, nextLen := len(src), 1
 		if isDecoding {
-			srcEnd = e.nextCharacterOffset(src, srcOffset)
+			if e.charLength != nil {
+				nextLen = e.charLength(src[srcOffset:])
+			}
+			srcEnd = srcOffset + nextLen
+			if srcEnd > len(src) {
+				srcEnd = len(src)
+			}
 		}
-		nDest, nSrc, err := transformer.Transform(e.buffer[destOffset:], src[srcOffset:srcEnd], false)
+		nDest, nSrc, err := transformer.Transform(dest[destOffset:], src[srcOffset:srcEnd], false)
+		if err == transform.ErrShortDst {
+			// The destination buffer is too small. Enlarge the capacity.
+			newDest := make([]byte, len(dest)*2)
+			copy(newDest, dest)
+			dest = newDest
+		} else if err != nil || isDecoding && e.startWithReplacementChar(dest[destOffset:destOffset+nDest]) {
+			if encodingErr == nil {
+				cutEnd := mathutil.Min(srcOffset+nextLen, len(src))
+				invalidBytes := fmt.Sprintf("%X", string(src[srcOffset:cutEnd]))
+				encodingErr = errInvalidCharacterString.GenWithStackByArgs(e.name, invalidBytes)
+			}
+			// Append '?' to the destination buffer.
+			dest[destOffset] = byte('?')
+			nDest = 1
+			nSrc = nextLen // skip the source bytes that cannot be decoded normally.
+		}
 		destOffset += nDest
 		srcOffset += nSrc
-		if err == nil {
-			if srcOffset >= len(src) {
-				result := string(e.buffer[:destOffset])
-				if len(e.buffer) > encodingBufferSizeRecycleThreshold {
-					// This prevents Encoding from holding too much memory.
-					e.buffer = nil
-				}
-				return result, ok
-			}
-		} else if err == transform.ErrShortDst {
-			newDest := make([]byte, len(e.buffer)*2)
-			copy(newDest, e.buffer)
-			e.buffer = newDest
-		} else {
-			e.buffer[destOffset] = byte('?')
-			destOffset += 1
-			srcOffset += 1
-			ok = false
+		// The source bytes are exhausted.
+		if srcOffset >= len(src) {
+			return dest[:destOffset], encodingErr
 		}
 	}
 }
 
-func (e *Encoding) nextCharacterOffset(src []byte, srcOffset int) int {
-	nextLen := 4
-	if e.charLength != nil {
-		nextLen = e.charLength(src[srcOffset:])
-	}
-	srcEnd := srcOffset + nextLen
-	if srcEnd > len(src) {
-		srcEnd = len(src)
-	}
-	return srcEnd
+// startWithReplacementChar indicates the first bytes are 0xEFBFBD.
+func (e *Encoding) startWithReplacementChar(dst []byte) bool {
+	return len(dst) >= 3 && dst[0] == 0xEF && dst[1] == 0xBF && dst[2] == 0xBD
 }

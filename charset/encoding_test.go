@@ -34,25 +34,43 @@ func (s *testEncodingSuite) TestEncoding(c *C) {
 	c.Assert(enc.Name(), Equals, "gbk")
 	c.Assert(enc.Enabled(), IsTrue)
 
-	txt := "一二三四"
+	txt := []byte("一二三四")
 	e, _ := charset.Lookup("gbk")
-	gbkEncodedTxt, _, err := transform.String(e.NewEncoder(), txt)
+	gbkEncodedTxt, _, err := transform.Bytes(e.NewEncoder(), txt)
 	c.Assert(err, IsNil)
-	result, ok := enc.Decode([]byte(gbkEncodedTxt))
-	c.Assert(ok, IsTrue)
-	c.Assert(result, Equals, txt)
+	result, err := enc.Decode(nil, gbkEncodedTxt)
+	c.Assert(err, IsNil)
+	c.Assert(result, DeepEquals, txt)
 
-	gbkEncodedTxt2, ok := enc.Encode([]byte(txt))
-	c.Assert(ok, IsTrue)
-	c.Assert(gbkEncodedTxt, Equals, gbkEncodedTxt2)
-	result, ok = enc.Decode([]byte(gbkEncodedTxt2))
-	c.Assert(ok, IsTrue)
-	c.Assert(result, Equals, txt)
+	gbkEncodedTxt2, err := enc.Encode(nil, txt)
+	c.Assert(err, IsNil)
+	c.Assert(gbkEncodedTxt, DeepEquals, gbkEncodedTxt2)
+	result, err = enc.Decode(nil, gbkEncodedTxt2)
+	c.Assert(err, IsNil)
+	c.Assert(result, DeepEquals, txt)
 
-	invalidGBK := []byte{0xE4, 0xB8, 0x80, 0xE4, 0xBA, 0x8C, 0xE4, 0xB8, 0x89}
-	result, ok = enc.Decode(invalidGBK)
-	c.Assert(ok, IsFalse)
-	// MySQL reports "涓?簩涓" and throws a warning "Invalid gbk character string: '80E4BA'"
-	// However, in GBK decoder provided by 'golang.org/x/text', '0x80' is decoded to '€' normally.
-	c.Assert(result, Equals, "涓€?簩涓?")
+	GBKCases := []struct {
+		utf8Str string
+		result  string
+		isValid bool
+	}{
+		{"一二三", "涓?簩涓?", false}, // MySQL reports '涓?簩涓'.
+		{"一二三123", "涓?簩涓?23", false},
+		{"案1案2", "妗?妗?", false},
+		{"焊䏷菡釬", "鐒婁彿鑿￠嚞", true},
+		{"鞍杏以伊位依", "闉嶆潖浠ヤ紛浣嶄緷", true},
+		{"移維緯胃萎衣謂違", "绉荤董绶?儍钀庤。璎傞仌", false},
+		{"仆仂仗仞仭仟价伉佚估", "浠嗕粋浠椾粸浠?粺浠蜂級浣氫及", false},
+		{"佝佗佇佶侈侏侘佻佩佰侑佯", "浣濅綏浣囦蕉渚堜緩渚樹交浣╀桨渚戜蒋", true},
+	}
+	for _, tc := range GBKCases {
+		cmt := Commentf("%v", tc)
+		result, err = enc.Decode(nil, []byte(tc.utf8Str))
+		if tc.isValid {
+			c.Assert(err, IsNil, cmt)
+		} else {
+			c.Assert(err, NotNil, cmt)
+		}
+		c.Assert(string(result), Equals, tc.result, Commentf("%v", tc))
+	}
 }
