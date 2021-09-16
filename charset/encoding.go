@@ -87,12 +87,12 @@ func (e *Encoding) UpdateEncoding(label EncodingLabel) {
 	}
 }
 
-// Encode encodes the bytes to a string.
+// Encode convert bytes from utf-8 charset to a specific charset.
 func (e *Encoding) Encode(dest, src []byte) ([]byte, error) {
 	return e.transform(e.enc.NewEncoder(), dest, src, false)
 }
 
-// Decode decodes the bytes to a string.
+// Decode convert bytes from a specific charset to utf-8 charset.
 func (e *Encoding) Decode(dest, src []byte) ([]byte, error) {
 	return e.transform(e.enc.NewDecoder(), dest, src, true)
 }
@@ -144,6 +144,7 @@ func (e *Encoding) generateErr(srcRest []byte, srcNextLen int) error {
 	return errInvalidCharacterString.GenWithStackByArgs(e.name, invalidBytes)
 }
 
+// replacementBytes are bytes for the replacement rune 0xfffd.
 var replacementBytes = []byte{0xEF, 0xBF, 0xBD}
 
 // beginWithReplacementChar check if dst has the prefix '0xEFBFBD'.
