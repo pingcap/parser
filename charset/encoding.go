@@ -14,6 +14,7 @@
 package charset
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -91,7 +92,7 @@ func (e *Encoding) Encode(dest, src []byte) ([]byte, error) {
 	return e.transform(e.enc.NewEncoder(), dest, src, false)
 }
 
-// Decode decodes the bytes to a string. Please copy the result after calling this.
+// Decode decodes the bytes to a string.
 func (e *Encoding) Decode(dest, src []byte) ([]byte, error) {
 	return e.transform(e.enc.NewDecoder(), dest, src, true)
 }
@@ -119,7 +120,7 @@ func (e *Encoding) transform(transformer transform.Transformer, dest, src []byte
 			newDest := make([]byte, len(dest)*2)
 			copy(newDest, dest)
 			dest = newDest
-		} else if err != nil || isDecoding && e.startWithReplacementChar(dest[destOffset:destOffset+nDest]) {
+		} else if err != nil || isDecoding && e.beginWithReplacementChar(dest[destOffset:destOffset+nDest]) {
 			if encodingErr == nil {
 				cutEnd := mathutil.Min(srcOffset+nextLen, len(src))
 				invalidBytes := fmt.Sprintf("%X", string(src[srcOffset:cutEnd]))
@@ -139,7 +140,9 @@ func (e *Encoding) transform(transformer transform.Transformer, dest, src []byte
 	}
 }
 
-// startWithReplacementChar indicates the first bytes are 0xEFBFBD.
-func (e *Encoding) startWithReplacementChar(dst []byte) bool {
-	return len(dst) >= 3 && dst[0] == 0xEF && dst[1] == 0xBF && dst[2] == 0xBD
+var replacementBytes = []byte{0xEF, 0xBF, 0xBD}
+
+// beginWithReplacementChar check if dst has the prefix '0xEFBFBD'.
+func (e *Encoding) beginWithReplacementChar(dst []byte) bool {
+	return bytes.HasPrefix(dst, replacementBytes)
 }
