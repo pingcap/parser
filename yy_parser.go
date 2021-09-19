@@ -63,6 +63,19 @@ var (
 	specCodeEnd      = regexp.MustCompile(`[ \t]*\*\/$`)
 )
 
+type SymType struct {
+	Item interface{}
+	YyType yySymType
+}
+
+func NewSymType() SymType {
+	return SymType{YyType: yySymType{}}
+}
+
+func (s *SymType) Extract() {
+	s.Item = s.YyType.item
+}
+
 // TrimComment trim comment for special comment code of MySQL.
 func TrimComment(txt string) string {
 	txt = specCodeStart.ReplaceAllString(txt, "")
