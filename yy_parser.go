@@ -73,7 +73,11 @@ func NewSymType() SymType {
 }
 
 func (s *SymType) Extract() {
-	s.Item = s.YyType.item
+	if s.YyType.item == nil {
+		s.Item = s.YyType.ident
+	} else {
+	    s.Item = s.YyType.item
+	}
 }
 
 // TrimComment trim comment for special comment code of MySQL.
