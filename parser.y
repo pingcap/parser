@@ -709,6 +709,7 @@ import (
 	cancel                     "CANCEL"
 	cardinality                "CARDINALITY"
 	cmSketch                   "CMSKETCH"
+	columnStatsUsage           "COLUMN_STATS_USAGE"
 	correlation                "CORRELATION"
 	ddl                        "DDL"
 	dependency                 "DEPENDENCY"
@@ -6101,6 +6102,7 @@ TiDBKeyword:
 |	"CANCEL"
 |	"CARDINALITY"
 |	"CMSKETCH"
+|	"COLUMN_STATS_USAGE"
 |	"CORRELATION"
 |	"DDL"
 |	"DEPENDENCY"
@@ -10680,6 +10682,10 @@ ShowTargetFilterable:
 |	"STATS_HEALTHY"
 	{
 		$$ = &ast.ShowStmt{Tp: ast.ShowStatsHealthy}
+	}
+|	"COLUMN_STATS_USAGE"
+	{
+		$$ = &ast.ShowStmt{Tp: ast.ShowColumnStatsUsage}
 	}
 |	"ANALYZE" "STATUS"
 	{

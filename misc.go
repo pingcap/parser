@@ -223,6 +223,7 @@ var tokenMap = map[string]int{
 	"COLLATE":                  collate,
 	"COLLATION":                collation,
 	"COLUMN_FORMAT":            columnFormat,
+	"COLUMN_STATS_USAGE":       columnStatsUsage,
 	"COLUMN":                   column,
 	"COLUMNS":                  columns,
 	"COMMENT":                  comment,

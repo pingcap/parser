@@ -1131,6 +1131,9 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// for show stats_topn.
 		{"show stats_topn", true, "SHOW STATS_TOPN"},
 		{"show stats_topn where table_name = 't'", true, "SHOW STATS_TOPN WHERE `table_name`=_UTF8MB4't'"},
+		// for show column_stats_usage.
+		{"show column_stats_usage", true, "SHOW COLUMN_STATS_USAGE"},
+		{"show column_stats_usage where table_name = 't'", true, "SHOW COLUMN_STATS_USAGE WHERE `table_name`=_UTF8MB4't'"},
 		// for show pump/drainer status.
 		{"show pump status", true, "SHOW PUMP STATUS"},
 		{"show drainer status", true, "SHOW DRAINER STATUS"},
