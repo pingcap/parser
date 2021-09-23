@@ -2696,14 +2696,14 @@ AnalyzeTableStmt:
 			HistogramOperation: ast.HistogramOperationDrop,
 		}
 	}
-|	"ANALYZE" "TABLE" TableName "COLUMN" ColumnNameList AnalyzeOptionListOpt
+|	"ANALYZE" "TABLE" TableName "COLUMNS" ColumnNameList AnalyzeOptionListOpt
 	{
 		$$ = &ast.AnalyzeTableStmt{
 			TableNames:  []*ast.TableName{$3.(*ast.TableName)},
 			ColumnNames: $5.([]*ast.ColumnName),
 			AnalyzeOpts: $6.([]ast.AnalyzeOpt)}
 	}
-|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList "COLUMN" ColumnNameList AnalyzeOptionListOpt
+|	"ANALYZE" "TABLE" TableName "PARTITION" PartitionNameList "COLUMNS" ColumnNameList AnalyzeOptionListOpt
 	{
 		$$ = &ast.AnalyzeTableStmt{
 			TableNames:     []*ast.TableName{$3.(*ast.TableName)},
