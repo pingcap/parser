@@ -132,7 +132,7 @@ func (n *AnalyzeTableStmt) Restore(ctx *format.RestoreCtx) error {
 			}
 		}
 	} else if len(n.ColumnNames) > 0 {
-		ctx.WriteKeyWord(" COLUMN ")
+		ctx.WriteKeyWord(" COLUMNS ")
 		for i, columnName := range n.ColumnNames {
 			if i != 0 {
 				ctx.WritePlain(",")
