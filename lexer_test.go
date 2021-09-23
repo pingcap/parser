@@ -147,6 +147,7 @@ func (s *testLexerSuite) TestLiteral(c *C) {
 		{`0b0101`, bitLit},
 	}
 	runTest(c, table)
+	runLiteralTest(c, table)
 }
 
 func runTest(c *C, table []testCaseItem) {
@@ -155,6 +156,20 @@ func runTest(c *C, table []testCaseItem) {
 		l := NewScanner(v.str)
 		tok := l.Lex(&val)
 		c.Check(tok, Equals, v.tok, Commentf(v.str))
+	}
+}
+
+func runLiteralTest(c *C, table []testCaseItem) {
+	for _, v := range table {
+		var val yySymType
+		l := NewScanner(v.str)
+		l.Lex(&val)
+
+		var itemValue = val.item
+		if val.item == nil {
+			itemValue = val.ident
+		}
+		c.Check(itemValue, DeepEquals, NewScanner(v.str).LexLiteral(), Commentf(v.str))
 	}
 }
 
