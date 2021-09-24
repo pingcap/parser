@@ -680,6 +680,15 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select * from t lock in share mode nowait", false, ""},
 		{"select * from t lock in share mode skip locked", false, ""},
 
+		{"select * from t for update of t", true, "SELECT * FROM `t` FOR UPDATE OF `t`"},
+		{"select * from t for share of t", true, "SELECT * FROM `t` FOR SHARE OF `t`"},
+		{"select * from t for update of t nowait", true, "SELECT * FROM `t` FOR UPDATE OF `t` NOWAIT"},
+		{"select * from t for update of t wait 5", true, "SELECT * FROM `t` FOR UPDATE OF `t` WAIT 5"},
+		{"select * from t limit 1 for update of t wait 11", true, "SELECT * FROM `t` LIMIT 1 FOR UPDATE OF `t` WAIT 11"},
+		{"select * from t for share of t nowait", true, "SELECT * FROM `t` FOR SHARE OF `t` NOWAIT"},
+		{"select * from t for update of t skip locked", true, "SELECT * FROM `t` FOR UPDATE OF `t` SKIP LOCKED"},
+		{"select * from t for share of t skip locked", true, "SELECT * FROM `t` FOR SHARE OF `t` SKIP LOCKED"},
+
 		// select into outfile
 		{"select a, b from t into outfile '/tmp/result.txt'", true, "SELECT `a`,`b` FROM `t` INTO OUTFILE '/tmp/result.txt'"},
 		{"select a from t order by a into outfile '/tmp/abc'", true, "SELECT `a` FROM `t` ORDER BY `a` INTO OUTFILE '/tmp/abc'"},
@@ -1179,6 +1188,8 @@ func (s *testParserSuite) TestDBAStmt(c *C) {
 		// set default value
 		{"SET @@global.autocommit = default", true, "SET @@GLOBAL.`autocommit`=DEFAULT"},
 		{"SET @@session.autocommit = default", true, "SET @@SESSION.`autocommit`=DEFAULT"},
+		// set binary value
+		{"SET @@character_set_results = binary", true, "SET @@SESSION.`character_set_results`=_UTF8MB4'BINARY'"},
 		// SET CHARACTER SET
 		{"SET CHARACTER SET utf8mb4;", true, "SET CHARSET 'utf8mb4'"},
 		{"SET CHARACTER SET 'utf8mb4';", true, "SET CHARSET 'utf8mb4'"},
@@ -2329,7 +2340,15 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`create table t (c int) follower_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) FOLLOWER_CONSTRAINTS = 'ww'"},
 		{`create table t (c int) voter_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) VOTER_CONSTRAINTS = 'ww'"},
 		{`create table t (c int) learner_constraints="ww";`, true, "CREATE TABLE `t` (`c` INT) LEARNER_CONSTRAINTS = 'ww'"},
-		{`create table t (c int) placement policy="ww";`, true, "CREATE TABLE `t` (`c` INT) PLACEMENT POLICY = 'ww'"},
+		{`create table t (c int) placement policy="ww";`, true, "CREATE TABLE `t` (`c` INT) PLACEMENT POLICY = `ww`"},
+		{`create table t (c int) /*T![placement] primary_region="us" */;`, true, "CREATE TABLE `t` (`c` INT) PRIMARY_REGION = 'us'"},
+		{`create table t (c int) /*T![placement] regions="us,3" */;`, true, "CREATE TABLE `t` (`c` INT) REGIONS = 'us,3'"},
+		{`create table t (c int) /*T![placement] followers="us,3 */";`, false, ""},
+		{`create table t (c int) /*T![placement] followers=3 */;`, true, "CREATE TABLE `t` (`c` INT) FOLLOWERS = 3"},
+		{`create table t (c int) /*T![placement] voters="us,3" */;`, false, ""},
+		{`create table t (c int) /*T![placement] primary_region="us" regions="us,3"  */;`, true, "CREATE TABLE `t` (`c` INT) PRIMARY_REGION = 'us' REGIONS = 'us,3'"},
+		{"create table t (c int) /*T![placement] placement policy=`x` */;", true, "CREATE TABLE `t` (`c` INT) PLACEMENT POLICY = `x`"},
+		{`create table t (c int) /*T![placement] placement policy="y" */;`, true, "CREATE TABLE `t` (`c` INT) PLACEMENT POLICY = `y`"},
 		// 2. alter table
 		{`alter table t primary_region="us";`, true, "ALTER TABLE `t` PRIMARY_REGION = 'us'"},
 		{`alter table t regions="us,3";`, true, "ALTER TABLE `t` REGIONS = 'us,3'"},
@@ -2342,7 +2361,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`alter table t follower_constraints="ww";`, true, "ALTER TABLE `t` FOLLOWER_CONSTRAINTS = 'ww'"},
 		{`alter table t voter_constraints="ww";`, true, "ALTER TABLE `t` VOTER_CONSTRAINTS = 'ww'"},
 		{`alter table t learner_constraints="ww";`, true, "ALTER TABLE `t` LEARNER_CONSTRAINTS = 'ww'"},
-		{`alter table t placement policy="ww";`, true, "ALTER TABLE `t` PLACEMENT POLICY = 'ww'"},
+		{`alter table t placement policy="ww";`, true, "ALTER TABLE `t` PLACEMENT POLICY = `ww`"},
+		{`alter table t /*T![placement] primary_region="us" */;`, true, "ALTER TABLE `t` PRIMARY_REGION = 'us'"},
 		// 3. create db
 		{`create database t primary_region="us";`, true, "CREATE DATABASE `t` PRIMARY_REGION = 'us'"},
 		{`create database t regions="us,3";`, true, "CREATE DATABASE `t` REGIONS = 'us,3'"},
@@ -2355,7 +2375,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`create database t follower_constraints="ww";`, true, "CREATE DATABASE `t` FOLLOWER_CONSTRAINTS = 'ww'"},
 		{`create database t voter_constraints="ww";`, true, "CREATE DATABASE `t` VOTER_CONSTRAINTS = 'ww'"},
 		{`create database t learner_constraints="ww";`, true, "CREATE DATABASE `t` LEARNER_CONSTRAINTS = 'ww'"},
-		{`create database t placement policy="ww";`, true, "CREATE DATABASE `t` PLACEMENT POLICY = 'ww'"},
+		{`create database t placement policy="ww";`, true, "CREATE DATABASE `t` PLACEMENT POLICY = `ww`"},
+		{`create database t /*T![placement] primary_region="us" */;`, true, "CREATE DATABASE `t` PRIMARY_REGION = 'us'"},
 		// 4. alter db
 		{`alter database t primary_region="us";`, true, "ALTER DATABASE `t` PRIMARY_REGION = 'us'"},
 		{`alter database t regions="us,3";`, true, "ALTER DATABASE `t` REGIONS = 'us,3'"},
@@ -2368,7 +2389,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`alter database t follower_constraints="ww";`, true, "ALTER DATABASE `t` FOLLOWER_CONSTRAINTS = 'ww'"},
 		{`alter database t voter_constraints="ww";`, true, "ALTER DATABASE `t` VOTER_CONSTRAINTS = 'ww'"},
 		{`alter database t learner_constraints="ww";`, true, "ALTER DATABASE `t` LEARNER_CONSTRAINTS = 'ww'"},
-		{`alter database t placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = 'ww'"},
+		{`alter database t placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = `ww`"},
+		{`alter database t /*T![placement] primary_region="us" */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = 'us'"},
 		// 5. create partition
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) primary_region="us");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) PRIMARY_REGION = 'us')"},
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) regions="us,3");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) REGIONS = 'us,3')"},
@@ -2381,7 +2403,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) follower_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) FOLLOWER_CONSTRAINTS = 'ww')"},
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) voter_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) VOTER_CONSTRAINTS = 'ww')"},
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) learner_constraints="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) LEARNER_CONSTRAINTS = 'ww')"},
-		{`create table m (c int) partition by range (c) (partition p1 values less than (200) placement policy="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) PLACEMENT POLICY = 'ww')"},
+		{`create table m (c int) partition by range (c) (partition p1 values less than (200) placement policy="ww");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) PLACEMENT POLICY = `ww`)"},
 		// 6. alter partition
 		{`alter table m partition t primary_region="us";`, true, "ALTER TABLE `m` PARTITION `t` PRIMARY_REGION = 'us'"},
 		{`alter table m partition t regions="us,3";`, true, "ALTER TABLE `m` PARTITION `t` REGIONS = 'us,3'"},
@@ -2395,7 +2417,7 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`alter table m partition t follower_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` FOLLOWER_CONSTRAINTS = 'ww'"},
 		{`alter table m partition t voter_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` VOTER_CONSTRAINTS = 'ww'"},
 		{`alter table m partition t learner_constraints="ww";`, true, "ALTER TABLE `m` PARTITION `t` LEARNER_CONSTRAINTS = 'ww'"},
-		{`alter table m partition t placement policy="ww";`, true, "ALTER TABLE `m` PARTITION `t` PLACEMENT POLICY = 'ww'"},
+		{`alter table m partition t placement policy="ww";`, true, "ALTER TABLE `m` PARTITION `t` PLACEMENT POLICY = `ww`"},
 
 		// for check clause
 		{"create table t (c1 bool, c2 bool, check (c1 in (0, 1)) not enforced, check (c2 in (0, 1)))", true, "CREATE TABLE `t` (`c1` TINYINT(1),`c2` TINYINT(1),CHECK(`c1` IN (0,1)) NOT ENFORCED,CHECK(`c2` IN (0,1)) ENFORCED)"},
@@ -6317,4 +6339,93 @@ func (s *testParserSuite) TestPlanRecreator(c *C) {
 	c.Assert(ok, IsTrue)
 	c.Assert(v.Stmt.Text(), Equals, "SELECT a FROM t")
 	c.Assert(v.Analyze, IsTrue)
+}
+
+func (s *testParserSuite) TestCharsetIntroducer(c *C) {
+	p := parser.New()
+	// `_gbk` is treated as an identifier.
+	_, _, err := p.Parse("select _gbk 'a';", "", "")
+	c.Assert(err, IsNil)
+
+	charset.AddCharset(&charset.Charset{
+		Name:             "gbk",
+		DefaultCollation: "gbk_bin",
+		Collations:       map[string]*charset.Collation{},
+		Desc:             "gbk",
+		Maxlen:           2,
+	})
+	defer charset.RemoveCharset("gbk")
+	// `_gbk` is treated as a character set.
+	_, _, err = p.Parse("select _gbk 'a';", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "[ddl:1115]Unsupported character introducer: 'gbk'")
+	_, _, err = p.Parse("select _gbk 0x1234;", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "[ddl:1115]Unsupported character introducer: 'gbk'")
+	_, _, err = p.Parse("select _gbk 0b101001;", "", "")
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "[ddl:1115]Unsupported character introducer: 'gbk'")
+}
+
+func (s *testParserSuite) TestGBKEncoding(c *C) {
+	p := parser.New()
+	gbkEncoding, _ := charset.Lookup("gbk")
+	encoder := gbkEncoding.NewEncoder()
+	sql, err := encoder.String("create table 测试表 (测试列 varchar(255) default 'GBK测试用例');")
+	c.Assert(err, IsNil)
+
+	stmt, err := p.ParseOneStmt(sql, "", "")
+	c.Assert(err, IsNil)
+	checker := &gbkEncodingChecker{}
+	_, _ = stmt.Accept(checker)
+	c.Assert(checker.tblName, Not(Equals), "测试表")
+	c.Assert(checker.colName, Not(Equals), "测试列")
+
+	p.SetParserConfig(parser.ParserConfig{CharsetClient: "gbk"})
+	stmt, err = p.ParseOneStmt(sql, "", "")
+	c.Assert(err, IsNil)
+	_, _ = stmt.Accept(checker)
+	c.Assert(checker.tblName, Equals, "测试表")
+	c.Assert(checker.colName, Equals, "测试列")
+	c.Assert(checker.expr, Equals, "GBK测试用例")
+
+	utf8SQL := "select '芢' from `玚`;"
+	sql, err = encoder.String(utf8SQL)
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt(sql, "", "")
+	c.Assert(err, IsNil)
+	stmt, err = p.ParseOneStmt("select '\xc6\x5c' from `\xab\x60`;", "", "")
+	c.Assert(err, IsNil)
+
+	p.SetParserConfig(parser.ParserConfig{CharsetClient: ""})
+	stmt, err = p.ParseOneStmt("select _gbk '\xc6\x5c' from dual;", "", "")
+	c.Assert(err, NotNil)
+}
+
+type gbkEncodingChecker struct {
+	tblName string
+	colName string
+	expr    string
+}
+
+func (g *gbkEncodingChecker) Enter(n ast.Node) (node ast.Node, skipChildren bool) {
+	if tn, ok := n.(*ast.TableName); ok {
+		g.tblName = tn.Name.O
+		return n, false
+	}
+	if cn, ok := n.(*ast.ColumnName); ok {
+		g.colName = cn.Name.O
+		return n, false
+	}
+	if c, ok := n.(*ast.ColumnOption); ok {
+		if ve, ok := c.Expr.(ast.ValueExpr); ok {
+			g.expr = ve.GetString()
+			return n, false
+		}
+	}
+	return n, false
+}
+
+func (g *gbkEncodingChecker) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }
