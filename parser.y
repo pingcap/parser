@@ -3717,16 +3717,16 @@ DatabaseOption:
 			UintValue: placementOptions.UintValue,
 		}
 	}
-|   PlacementOption
-    {
-    	placementOptions := $1.(*ast.PlacementOption)
-    	$$ = &ast.DatabaseOption{
-    		// offset trick, enums are identical but of different type
-    		Tp:        ast.DatabaseOptionType(placementOptions.Tp),
-    		Value:     placementOptions.StrValue,
-    		UintValue: placementOptions.UintValue,
-    	}
-    }
+|	PlacementOption
+	{
+		placementOptions := $1.(*ast.PlacementOption)
+		$$ = &ast.DatabaseOption{
+			// offset trick, enums are identical but of different type
+			Tp:        ast.DatabaseOptionType(placementOptions.Tp),
+			Value:     placementOptions.StrValue,
+			UintValue: placementOptions.UintValue,
+		}
+	}
 
 DatabaseOptionListOpt:
 	{
