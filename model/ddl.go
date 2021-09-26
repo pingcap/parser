@@ -85,6 +85,7 @@ const (
 	ActionAlterPlacementPolicy          ActionType = 52
 	ActionDropPlacementPolicy           ActionType = 53
 	ActionAlterTablePartitionPolicy     ActionType = 54
+	ActionRebaseRowID                   ActionType = 55
 )
 
 var actionMap = map[ActionType]string{
