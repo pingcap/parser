@@ -259,6 +259,12 @@ const (
 	CurrLatestTableInfoVersion = TableInfoVersion5
 )
 
+// AutoIncrementIDIsSeparated indicates whether auto_increment ID of is separated from _tidb_row_id.
+// For details, see https://github.com/pingcap/tidb/issues/982.
+func AutoIncrementIDIsSeparated(ver uint16) bool {
+	return ver >= TableInfoVersion5
+}
+
 // ExtraHandleName is the name of ExtraHandle Column.
 var ExtraHandleName = NewCIStr("_tidb_rowid")
 
