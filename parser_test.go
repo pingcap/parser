@@ -2393,7 +2393,6 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`alter database t placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = `ww`"},
 		{`alter database t default placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = `ww`"},
 		{`alter database t /*T![placement] primary_region="us" */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = 'us'"},
-		// TODO: sylzd
 		{`alter database t /*T![placement] placement policy=default */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = DEFAULT"},
 		{`alter database t /*T![placement] placement policy set default */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = DEFAULT"},
 		// 5. create partition
