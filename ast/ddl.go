@@ -22,6 +22,7 @@ import (
 	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/parser/tidb"
 	"github.com/pingcap/parser/types"
+	"strings"
 )
 
 var (
@@ -1942,7 +1943,11 @@ func (n *PlacementOption) Restore(ctx *format.RestoreCtx) error {
 		case PlacementOptionPolicy:
 			ctx.WriteKeyWord("PLACEMENT POLICY ")
 			ctx.WritePlain("= ")
-			ctx.WriteName(n.StrValue)
+			if strings.ToLower(n.StrValue) == "default" {
+				ctx.WriteKeyWord("DEFAULT")
+			} else {
+				ctx.WriteName(n.StrValue)
+			}
 		default:
 			isSupported = false
 		}

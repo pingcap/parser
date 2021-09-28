@@ -2393,6 +2393,9 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{`alter database t placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = `ww`"},
 		{`alter database t default placement policy="ww";`, true, "ALTER DATABASE `t` PLACEMENT POLICY = `ww`"},
 		{`alter database t /*T![placement] primary_region="us" */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = 'us'"},
+		// TODO: sylzd
+		{`alter database t /*T![placement] placement policy=default */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = DEFAULT"},
+		{`alter database t /*T![placement] placement policy set default */;`, true, "ALTER DATABASE `t` PRIMARY_REGION = DEFAULT"},
 		// 5. create partition
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) primary_region="us");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) PRIMARY_REGION = 'us')"},
 		{`create table m (c int) partition by range (c) (partition p1 values less than (200) regions="us,3");`, true, "CREATE TABLE `m` (`c` INT) PARTITION BY RANGE (`c`) (PARTITION `p1` VALUES LESS THAN (200) REGIONS = 'us,3')"},

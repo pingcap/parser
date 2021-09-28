@@ -1610,6 +1610,14 @@ PlacementPolicyOption:
 	{
 		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPolicy, StrValue: $4}
 	}
+|	"PLACEMENT" "POLICY" EqOpt "DEFAULT"
+	{
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPolicy, StrValue: $4}
+	}
+|	"PLACEMENT" "POLICY" "SET" "DEFAULT"
+	{
+		$$ = &ast.PlacementOption{Tp: ast.PlacementOptionPolicy, StrValue: $4}
+	}
 
 OldPlacementOptions:
 	PlacementCount
