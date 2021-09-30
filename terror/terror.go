@@ -111,7 +111,7 @@ func (m *code2ErrClassMap) Put(key string, err ErrClass) {
 var registerFinish uint32
 
 // RegisterFinish makes the register of new error panic.
-// The use pattern should be regist all the error during initialization, and then call RegisterFinish.
+// The use pattern should be register all the errors during initialization, and then call RegisterFinish.
 func RegisterFinish() {
 	atomic.StoreUint32(&registerFinish, 1)
 }
