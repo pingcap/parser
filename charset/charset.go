@@ -53,6 +53,7 @@ var supportedCollations = make([]*Collation, 0, len(supportedCollationNames))
 // All the supported charsets should be in the following table.
 var charsetInfos = map[string]*Charset{
 	CharsetUTF8:    {CharsetUTF8, CollationUTF8, make(map[string]*Collation), "UTF-8 Unicode", 3},
+	CharsetUTF8MB3: {CharsetUTF8MB3, CollationUTF8MB3, make(map[string]*Collation), "UTF-8 Unicode", 3},
 	CharsetUTF8MB4: {CharsetUTF8MB4, CollationUTF8MB4, make(map[string]*Collation), "UTF-8 Unicode", 4},
 	CharsetASCII:   {CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
 	CharsetLatin1:  {CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
@@ -62,6 +63,7 @@ var charsetInfos = map[string]*Charset{
 // All the names supported collations should be in the following table.
 var supportedCollationNames = map[string]struct{}{
 	CollationUTF8:    {},
+	CollationUTF8MB3: {},
 	CollationUTF8MB4: {},
 	CollationASCII:   {},
 	CollationLatin1:  {},
@@ -110,7 +112,7 @@ func ValidCharsetAndCollation(cs string, co string) bool {
 // GetDefaultCollationLegacy is compatible with the charset support in old version parser.
 func GetDefaultCollationLegacy(charset string) (string, error) {
 	switch strings.ToLower(charset) {
-	case CharsetUTF8, CharsetUTF8MB4, CharsetASCII, CharsetLatin1, CharsetBin:
+	case CharsetUTF8, CharsetUTF8MB3, CharsetUTF8MB4, CharsetASCII, CharsetLatin1, CharsetBin:
 		return GetDefaultCollation(charset)
 	default:
 		return "", errors.Errorf("Unknown charset %s", charset)
@@ -187,6 +189,10 @@ const (
 	CharsetUTF8MB4 = "utf8mb4"
 	// CollationUTF8MB4 is the default collation for CharsetUTF8MB4.
 	CollationUTF8MB4 = "utf8mb4_bin"
+	// CharsetUTF8MB3 represents 3 bytes utf8, which works the same way as utf8 in Go.
+	CharsetUTF8MB3 = "utf8mb3"
+	// CollationUTF8MB3 is the default collation for CharsetUTF8MB3.
+	CollationUTF8MB3 = "utf8mb3_bin"
 	// CharsetASCII is a subset of UTF8.
 	CharsetASCII = "ascii"
 	// CollationASCII is the default collation for CharsetACSII.
@@ -282,6 +288,7 @@ var collations = []*Collation{
 	{43, "macce", "macce_bin", false},
 	{44, "cp1250", "cp1250_croatian_ci", false},
 	{45, "utf8mb4", "utf8mb4_general_ci", false},
+	{46, "utf8mb3", "utf8mb3_bin", true},
 	{46, "utf8mb4", "utf8mb4_bin", true},
 	{47, "latin1", "latin1_bin", true},
 	{48, "latin1", "latin1_general_ci", false},

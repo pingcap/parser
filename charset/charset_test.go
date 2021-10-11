@@ -43,6 +43,7 @@ func (s *testCharsetSuite) TestValidCharset(c *C) {
 	}{
 		{"utf8", "utf8_general_ci", true},
 		{"", "utf8_general_ci", true},
+		{"utf8mb3", "utf8mb3_bin", true},
 		{"utf8mb4", "utf8mb4_bin", true},
 		{"latin1", "latin1_bin", true},
 		{"utf8", "utf8_invalid_ci", false},
@@ -50,6 +51,8 @@ func (s *testCharsetSuite) TestValidCharset(c *C) {
 		{"gb2312", "gb2312_chinese_ci", false},
 		{"UTF8", "UTF8_BIN", true},
 		{"UTF8", "utf8_bin", true},
+		{"UTF8MB3", "utf8mb3_bin", true},
+		{"UTF8MB3", "UTF8MB3_bin", true},
 		{"UTF8MB4", "utf8mb4_bin", true},
 		{"UTF8MB4", "UTF8MB4_bin", true},
 		{"UTF8MB4", "UTF8MB4_general_ci", true},
@@ -94,6 +97,7 @@ func (s *testCharsetSuite) TestGetDefaultCollation(c *C) {
 	}{
 		{"utf8", "utf8_bin", true},
 		{"UTF8", "utf8_bin", true},
+		{"utf8mb3", "utf8mb3_bin", true},
 		{"utf8mb4", "utf8mb4_bin", true},
 		{"ascii", "ascii_bin", true},
 		{"binary", "binary", true},
@@ -144,6 +148,7 @@ func (s *testCharsetSuite) TestGetCharsetDesc(c *C) {
 	}{
 		{"utf8", "utf8", true},
 		{"UTF8", "utf8", true},
+		{"utf8mb3", "utf8mb3", true},
 		{"utf8mb4", "utf8mb4", true},
 		{"ascii", "ascii", true},
 		{"binary", "binary", true},
