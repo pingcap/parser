@@ -55,6 +55,8 @@ var charsetInfos = map[string]*Charset{
 	CharsetUTF8:    {CharsetUTF8, CollationUTF8, make(map[string]*Collation), "UTF-8 Unicode", 3},
 	CharsetUTF8MB3: {CharsetUTF8MB3, CollationUTF8MB3, make(map[string]*Collation), "UTF-8 Unicode", 3},
 	CharsetUTF8MB4: {CharsetUTF8MB4, CollationUTF8MB4, make(map[string]*Collation), "UTF-8 Unicode", 4},
+	CharsetUTF16:   {CharsetUTF16, CollationUTF16, make(map[string]*Collation), "UTF-16 Unicode", 4},
+	CharsetUTF32:   {CharsetUTF32, CollationUTF32, make(map[string]*Collation), "UTF-32 Unicode", 4},
 	CharsetASCII:   {CharsetASCII, CollationASCII, make(map[string]*Collation), "US ASCII", 1},
 	CharsetLatin1:  {CharsetLatin1, CollationLatin1, make(map[string]*Collation), "Latin1", 1},
 	CharsetBin:     {CharsetBin, CollationBin, make(map[string]*Collation), "binary", 1},
@@ -65,6 +67,8 @@ var supportedCollationNames = map[string]struct{}{
 	CollationUTF8:    {},
 	CollationUTF8MB3: {},
 	CollationUTF8MB4: {},
+	CollationUTF16:   {},
+	CollationUTF32:   {},
 	CollationASCII:   {},
 	CollationLatin1:  {},
 	CollationBin:     {},
@@ -112,7 +116,8 @@ func ValidCharsetAndCollation(cs string, co string) bool {
 // GetDefaultCollationLegacy is compatible with the charset support in old version parser.
 func GetDefaultCollationLegacy(charset string) (string, error) {
 	switch strings.ToLower(charset) {
-	case CharsetUTF8, CharsetUTF8MB3, CharsetUTF8MB4, CharsetASCII, CharsetLatin1, CharsetBin:
+	case CharsetUTF8, CharsetUTF8MB3, CharsetUTF8MB4, CharsetUTF16, CharsetUTF32, CharsetASCII,
+		CharsetLatin1, CharsetBin:
 		return GetDefaultCollation(charset)
 	default:
 		return "", errors.Errorf("Unknown charset %s", charset)
@@ -239,8 +244,12 @@ const (
 	CharsetUCS2     = "ucs2"
 	CharsetUJIS     = "ujis"
 	CharsetUTF16    = "utf16"
-	CharsetUTF16LE  = "utf16le"
-	CharsetUTF32    = "utf32"
+	// CollationUTF16 is the default collation for CharsetUTF16.
+	CollationUTF16 = "utf16_bin"
+	CharsetUTF16LE = "utf16le"
+	CharsetUTF32   = "utf32"
+	// CollationUTF32 is the default collation for CharsetUTF32.
+	CollationUTF32 = "utf32_bin"
 )
 
 var collations = []*Collation{
@@ -297,14 +306,14 @@ var collations = []*Collation{
 	{51, "cp1251", "cp1251_general_ci", true},
 	{52, "cp1251", "cp1251_general_cs", false},
 	{53, "macroman", "macroman_bin", false},
-	{54, "utf16", "utf16_general_ci", true},
-	{55, "utf16", "utf16_bin", false},
+	{54, "utf16", "utf16_bin", true},
+	{55, "utf16", "utf16_general_ci", false},
 	{56, "utf16le", "utf16le_general_ci", true},
 	{57, "cp1256", "cp1256_general_ci", true},
 	{58, "cp1257", "cp1257_bin", false},
 	{59, "cp1257", "cp1257_general_ci", true},
-	{60, "utf32", "utf32_general_ci", true},
-	{61, "utf32", "utf32_bin", false},
+	{60, "utf32", "utf32_bin", true},
+	{61, "utf32", "utf32_general_ci", false},
 	{62, "utf16le", "utf16le_bin", false},
 	{63, "binary", "binary", true},
 	{64, "armscii8", "armscii8_bin", false},

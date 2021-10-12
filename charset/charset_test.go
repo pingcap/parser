@@ -47,7 +47,7 @@ func (s *testCharsetSuite) TestValidCharset(c *C) {
 		{"utf8mb4", "utf8mb4_bin", true},
 		{"latin1", "latin1_bin", true},
 		{"utf8", "utf8_invalid_ci", false},
-		{"utf16", "utf16_bin", false},
+		{"utf16", "utf16_bin", true},
 		{"gb2312", "gb2312_chinese_ci", false},
 		{"UTF8", "UTF8_BIN", true},
 		{"UTF8", "utf8_bin", true},
@@ -57,6 +57,12 @@ func (s *testCharsetSuite) TestValidCharset(c *C) {
 		{"UTF8MB4", "UTF8MB4_bin", true},
 		{"UTF8MB4", "UTF8MB4_general_ci", true},
 		{"Utf8", "uTf8_bIN", true},
+		{"UTF16", "UTF16_BIN", true},
+		{"UTF16", "utf16_bin", true},
+		{"Utf16", "uTf16_bIN", true},
+		{"UTF32", "UTF32_BIN", true},
+		{"UTF32", "utf32_bin", true},
+		{"Utf32", "uTf32_bIN", true},
 	}
 	for _, tt := range tests {
 		testValidCharset(c, tt.cs, tt.co, tt.succ)
@@ -99,6 +105,10 @@ func (s *testCharsetSuite) TestGetDefaultCollation(c *C) {
 		{"UTF8", "utf8_bin", true},
 		{"utf8mb3", "utf8mb3_bin", true},
 		{"utf8mb4", "utf8mb4_bin", true},
+		{"utf16", "utf16_bin", true},
+		{"UTF16", "utf16_bin", true},
+		{"utf32", "utf32_bin", true},
+		{"UTF32", "utf32_bin", true},
 		{"ascii", "ascii_bin", true},
 		{"binary", "binary", true},
 		{"latin1", "latin1_bin", true},
@@ -148,6 +158,10 @@ func (s *testCharsetSuite) TestGetCharsetDesc(c *C) {
 	}{
 		{"utf8", "utf8", true},
 		{"UTF8", "utf8", true},
+		{"utf16", "utf16", true},
+		{"UTF16", "utf16", true},
+		{"utf32", "utf32", true},
+		{"UTF32", "utf32", true},
 		{"utf8mb3", "utf8mb3", true},
 		{"utf8mb4", "utf8mb4", true},
 		{"ascii", "ascii", true},
@@ -167,7 +181,6 @@ func (s *testCharsetSuite) TestGetCharsetDesc(c *C) {
 }
 
 func (s *testCharsetSuite) TestGetCollationByName(c *C) {
-
 	for _, collation := range collations {
 		coll, err := GetCollationByName(collation.Name)
 		c.Assert(err, IsNil)
