@@ -13156,7 +13156,7 @@ Starting:
 	{
 		$$ = ""
 	}
-|	"STARTING" "BY" stringLit
+|	"STARTING" "BY" FieldTerminator
 	{
 		$$ = $3
 	}
@@ -13165,7 +13165,7 @@ LinesTerminated:
 	{
 		$$ = "\n"
 	}
-|	"TERMINATED" "BY" stringLit
+|	"TERMINATED" "BY" FieldTerminator
 	{
 		$$ = $3
 	}
