@@ -15,14 +15,16 @@ package auth
 
 import (
 	"encoding/hex"
+	"testing"
 
 	. "github.com/pingcap/check"
 )
 
+var foobarPwdHash, _ = hex.DecodeString("24412430303524031A69251C34295C4B35167C7F1E5A7B63091349503974624D34504B5A424679354856336868686F52485A736E4A733368786E427575516C73446469496537")
+
 func (s *testAuthSuite) TestCheckShaPasswordGood(c *C) {
 	pwd := "foobar"
-	pwhash, _ := hex.DecodeString("24412430303524031A69251C34295C4B35167C7F1E5A7B63091349503974624D34504B5A424679354856336868686F52485A736E4A733368786E427575516C73446469496537")
-	r, err := CheckShaPassword(pwhash, pwd)
+	r, err := CheckShaPassword(foobarPwdHash, pwd)
 	c.Assert(err, IsNil)
 	c.Assert(r, IsTrue)
 }
@@ -69,5 +71,14 @@ func (s *testAuthSuite) TestNewSha2Password(c *C) {
 		c.Assert(pwhash[r], Less, uint8(128))
 		c.Assert(pwhash[r], Not(Equals), 0)  // NUL
 		c.Assert(pwhash[r], Not(Equals), 36) // '$'
+	}
+}
+
+func BenchmarkCachingSHA2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		m, err := CheckShaPassword(foobarPwdHash, "foobar")
+		if !m || err != nil {
+			b.Fatal("password not match")
+		}
 	}
 }
