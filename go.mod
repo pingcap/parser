@@ -14,7 +14,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.18.1
-	golang.org/x/text v0.3.6
+	golang.org/x/text v0.3.8
 )
 
 go 1.13
