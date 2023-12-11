@@ -46,9 +46,11 @@ type Collation struct {
 	IsDefault   bool
 }
 
-var collationsIDMap = make(map[int]*Collation)
-var collationsNameMap = make(map[string]*Collation)
-var supportedCollations = make([]*Collation, 0, len(supportedCollationNames))
+var (
+	collationsIDMap     = make(map[int]*Collation)
+	collationsNameMap   = make(map[string]*Collation)
+	supportedCollations = make([]*Collation, 0, len(supportedCollationNames))
+)
 
 // All the supported charsets should be in the following table.
 var charsetInfos = map[string]*Charset{
@@ -235,6 +237,7 @@ const (
 	CharsetUTF16    = "utf16"
 	CharsetUTF16LE  = "utf16le"
 	CharsetUTF32    = "utf32"
+	CharsetUTF8MB3  = "utf8mb3"
 )
 
 var collations = []*Collation{
@@ -459,6 +462,7 @@ var collations = []*Collation{
 	{247, "utf8mb4", "utf8mb4_vietnamese_ci", false},
 	{255, "utf8mb4", "utf8mb4_0900_ai_ci", false},
 	{2048, "utf8mb4", "utf8mb4_zh_pinyin_tidb_as_cs", false},
+	{2049, "utf8mb3", "utf8mb3_general_ci", true},
 }
 
 // AddCharset adds a new charset.
