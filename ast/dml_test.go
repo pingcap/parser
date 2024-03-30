@@ -249,6 +249,7 @@ func (ts *testDMLSuite) TestTableRefsClauseRestore(c *C) {
 		{"t", "`t`"},
 		{"t1 join t2", "`t1` JOIN `t2`"},
 		{"t1, t2", "(`t1`) JOIN `t2`"},
+		{"(select * from (select * from t1) as tmp) as tmp", "(SELECT * FROM (SELECT * FROM `t1`) AS `tmp`) AS `tmp`"},
 	}
 	extractNodeFunc := func(node Node) Node {
 		return node.(*SelectStmt).From

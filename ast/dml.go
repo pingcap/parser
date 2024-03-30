@@ -775,6 +775,11 @@ type TableRefsClause struct {
 
 // Restore implements Node interface.
 func (n *TableRefsClause) Restore(ctx *format.RestoreCtx) error {
+	level := ctx.JoinLevel
+	ctx.JoinLevel = 0
+	defer func() {
+		ctx.JoinLevel = level
+	}()
 	if err := n.TableRefs.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore TableRefsClause.TableRefs")
 	}
